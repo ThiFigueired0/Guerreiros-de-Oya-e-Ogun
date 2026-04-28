@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { HerbBath, AppSettings } from '../types';
 import { cn } from '../lib/utils';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function HerbsScreen() {
   const location = useLocation();
@@ -53,6 +54,8 @@ export default function HerbsScreen() {
   });
 
   const [selectedBathForDetails, setSelectedBathForDetails] = useState<HerbBath | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Handle openBathId from navigation state
   useEffect(() => {
@@ -108,7 +111,15 @@ export default function HerbsScreen() {
   };
 
   const deleteBath = (id: string) => {
-    setBaths(baths.filter(b => b.id !== id));
+    setDeletingId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteBath = () => {
+    if (deletingId) {
+      setBaths(baths.filter(b => b.id !== deletingId));
+      setDeletingId(null);
+    }
   };
 
   const handleShare = async (bath: HerbBath) => {
@@ -290,7 +301,7 @@ export default function HerbsScreen() {
                     onClick={() => deleteBath(bath.id)}
                     className={cn(
                       "p-3 transition-colors rounded-xl",
-                      settings.darkMode ? "text-red-500/40 hover:text-red-500 hover:bg-red-500/10" : "text-gray-300 hover:text-red-600 hover:bg-red-50"
+                      settings.darkMode ? "bg-red-500/10 text-red-400 hover:text-red-300" : "bg-red-50 text-red-500 hover:bg-red-100"
                     )}
                     title="Excluir"
                   >
@@ -427,7 +438,7 @@ export default function HerbsScreen() {
               onClick={e => e.stopPropagation()}
             >
               <div className="absolute top-0 right-0 p-4">
-                 <button onClick={() => setShowRoutineModal(false)} className="text-gray-300 hover:text-gray-500">
+                 <button onClick={() => setShowRoutineModal(false)} className="p-2 text-gray-400 active:text-gray-600 transition-colors">
                     <X className="w-6 h-6" />
                  </button>
               </div>
@@ -616,6 +627,17 @@ export default function HerbsScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDeleteBath}
+        title="Excluir Banho"
+        message="Deseja realmente excluir este banho permanentemente?"
+      />
     </motion.div>
   );
 }

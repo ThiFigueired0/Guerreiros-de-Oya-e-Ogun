@@ -6,13 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { Event, AppSettings } from '../types';
 import { cn } from '../lib/utils';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function CalendarScreen() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: [
       'Gira de Baianos', 'Gira de Marinheiros', 'Gira de Exu e Pombagira', 'Gira de Malandros', 'Gira de Ciganos', 'Gira de Exu mirim',
       'Festa de Marias', 'Festa de Oxossi', 'Festa de Iemanjá', 'Festa de Ogun', 'Festa preto velho', 'Festa cigana', 'Festa de Xangô', 'Festa de Nanã', 'Festa de Omolu', 'Festa de Erês'
@@ -26,6 +27,8 @@ export default function CalendarScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
     title: '',
     category: settings.eventCategories[0],
@@ -100,6 +103,28 @@ export default function CalendarScreen() {
     setShowDayEventsModal(false);
   };
 
+  const deleteEvent = (id: string) => {
+    setEventToDeleteId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteEvent = () => {
+    if (eventToDeleteId) {
+      const updatedEvents = events.filter(e => e.id !== eventToDeleteId);
+      setEvents(updatedEvents);
+      
+      // If we are in the day modal, check if we should close it
+      if (selectedDay) {
+        const remainingOnDay = updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length;
+        if (remainingOnDay === 0) {
+          setShowDayEventsModal(false);
+        }
+      }
+      
+      setEventToDeleteId(null);
+    }
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
@@ -132,6 +157,7 @@ export default function CalendarScreen() {
       case 'Festa': return '#EF4444'; // Red
       case 'Trabalho': return '#F97316'; // Orange
       case 'Reunião': return '#EC4899'; // Pink
+      case 'Corte': return '#374151'; // Slate/Gray-700
       default: return '#D97706'; // Amber/Copper
     }
   };
@@ -175,7 +201,7 @@ export default function CalendarScreen() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.02 }}
       className={cn(
-        "p-4 bg-[#F9F9F9] min-h-full transition-colors duration-500",
+        "p-4 bg-[#F9F9F9] min-h-full pb-32 transition-colors duration-500",
         settings.darkMode && "bg-[#121212]"
       )}
     >
@@ -227,7 +253,7 @@ export default function CalendarScreen() {
                   isSameDay(day, new Date()) 
                     ? (settings.darkMode ? "bg-brand-copper text-white shadow-lg shadow-brand-copper/40 scale-110 z-10" : "bg-brand-navy text-white shadow-lg shadow-brand-navy/20 scale-110 z-10") 
                     : isDayInPreceito(day)
-                      ? (settings.darkMode ? "bg-white/10 border border-white/5" : "bg-gray-100 border border-gray-100")
+                      ? (settings.darkMode ? "bg-indigo-500/10 border border-indigo-500/20" : "bg-indigo-50 border border-indigo-100")
                       : (settings.darkMode ? "hover:bg-[#252525]" : "hover:bg-gray-50")
                 )}
               >
@@ -340,17 +366,23 @@ export default function CalendarScreen() {
                    </span>
                 </div>
               </div>
-              <div className="flex flex-col gap-1 self-start">
+              <div className="flex flex-col gap-2 self-start">
                 <button 
                   onClick={() => openEditModal(event)}
-                  className="text-gray-400 hover:text-brand-copper transition-colors p-2"
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    settings.darkMode ? "bg-white/5 text-brand-copper hover:bg-white/10" : "bg-gray-50 text-brand-copper hover:bg-gray-100"
+                  )}
                   title="Editar Evento"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => setEvents(events.filter(e => e.id !== event.id))}
-                  className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                  onClick={() => deleteEvent(event.id)}
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    settings.darkMode ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" : "bg-red-50 text-red-500 hover:bg-red-100"
+                  )}
                   title="Excluir Evento"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -407,22 +439,22 @@ export default function CalendarScreen() {
                         <span className="text-[10px] text-brand-copper font-black uppercase tracking-widest leading-none">{event.category}</span>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <button 
                         onClick={() => openEditModal(event)}
-                        className="p-2 text-gray-400 hover:text-brand-navy transition-colors"
+                        className={cn(
+                          "p-2.5 rounded-xl transition-all",
+                          settings.darkMode ? "bg-white/5 text-white" : "bg-white text-brand-navy shadow-sm border border-gray-100"
+                        )}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => {
-                          const updatedEvents = events.filter(e => e.id !== event.id);
-                          setEvents(updatedEvents);
-                          if (updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length === 0) {
-                            setShowDayEventsModal(false);
-                          }
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        onClick={() => deleteEvent(event.id)}
+                        className={cn(
+                          "p-2.5 rounded-xl transition-all",
+                          settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500 border border-red-100"
+                        )}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -630,6 +662,17 @@ export default function CalendarScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setEventToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteEvent}
+        title="Excluir Evento"
+        message="Deseja realmente excluir este evento permanentemente da agenda?"
+      />
     </motion.div>
   );
 }

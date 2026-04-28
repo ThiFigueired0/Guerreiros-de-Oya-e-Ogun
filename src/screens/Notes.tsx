@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { Note, AppSettings } from '../types';
 import { cn } from '../lib/utils';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function NotesScreen() {
   const [notes, setNotes] = useStorage<Note[]>('templo_notes', []);
@@ -25,6 +26,7 @@ export default function NotesScreen() {
   const [search, setSearch] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [noteForm, setNoteForm] = useState<Partial<Note>>({ title: '', content: '', images: [] });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,13 @@ export default function NotesScreen() {
     }));
   };
 
+  const handleDelete = () => {
+    if (selectedNote) {
+      setNotes(notes.filter(n => n.id !== selectedNote.id));
+      setSelectedNote(null);
+    }
+  };
+
   const filteredNotes = notes.filter(n => 
     n.title.toLowerCase().includes(search.toLowerCase()) || 
     n.content.toLowerCase().includes(search.toLowerCase())
@@ -91,7 +100,7 @@ export default function NotesScreen() {
 
   return (
     <motion.div className={cn(
-      "p-4 bg-[#F9F9F9] min-h-full transition-colors duration-500",
+      "p-4 bg-[#F9F9F9] min-h-full pb-32 transition-colors duration-500",
       settings.darkMode && "bg-[#121212]"
     )}>
       <div className="flex items-center justify-between mb-6 px-1">
@@ -269,12 +278,7 @@ export default function NotesScreen() {
                     
                     <div className={cn("pt-12 border-t border-gray-100", settings.darkMode && "border-gray-800")}>
                        <button 
-                         onClick={() => {
-                           if(window.confirm('Excluir esta nota permanentemente?')) {
-                            setNotes(notes.filter(n => n.id !== selectedNote?.id));
-                            setSelectedNote(null);
-                           }
-                         }}
+                         onClick={() => setShowDeleteConfirm(true)}
                          className="flex items-center gap-3 text-red-500 font-black text-xs uppercase tracking-widest p-4 bg-red-50 rounded-2xl w-full justify-center"
                        >
                          <Trash2 className="w-5 h-5" /> Excluir Anotação
@@ -286,6 +290,14 @@ export default function NotesScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Excluir Anotação"
+        message="Deseja realmente excluir esta nota permanentemente?"
+      />
     </motion.div>
   );
 }

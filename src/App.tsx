@@ -94,7 +94,7 @@ function Navigation() {
   const [showMore, setShowMore] = React.useState(false);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false,
     tabIcons: {},
@@ -113,8 +113,8 @@ function Navigation() {
   return (
     <>
       <nav className={cn(
-        "absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] h-20 rounded-2xl bg-white/90 backdrop-blur-md border border-gray-100/50 z-50 transition-all duration-500 flex items-center shadow-xl",
-        settings.darkMode && "bg-[#1A1A1A]/90 border-gray-800 shadow-black/40"
+        "fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md h-20 rounded-[28px] bg-white/95 backdrop-blur-xl border border-gray-100/50 z-[100] transition-all duration-500 flex items-center shadow-2xl",
+        settings.darkMode && "bg-[#1A1A1A]/95 border-gray-800 shadow-black/60"
       )}>
         <div className="flex justify-around items-center w-full px-2">
           {currentPrimaryTabs.map((tab) => {
@@ -190,15 +190,15 @@ function Navigation() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMore(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-[45]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[95]"
             />
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               className={cn(
-                "absolute bottom-[130px] left-1/2 -translate-x-1/2 w-[92%] sm:w-[85%] bg-white/95 backdrop-blur-md rounded-2xl p-4 grid grid-cols-2 gap-3 z-50 shadow-2xl border border-gray-100",
-                settings.darkMode && "bg-[#1A1A1A]/95 border-gray-800 shadow-black/60"
+                "fixed bottom-[130px] left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-white/98 backdrop-blur-xl rounded-[32px] p-6 grid grid-cols-2 gap-4 z-[100] shadow-2xl border border-gray-100",
+                settings.darkMode && "bg-[#1A1A1A]/98 border-gray-800 shadow-black/80"
               )}
             >
               {currentSecondaryTabs.map((tab) => {
@@ -297,7 +297,7 @@ function TempleLogo() {
 function TopHeader() {
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false
   });
@@ -376,15 +376,32 @@ function TopHeader() {
 export default function App() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false
   });
 
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
+  const [bichos, setBichos] = useStorage<any[]>('templo_bichos', []);
 
   // Migration logic to ensure categories and 2026 calendar are updated
   React.useEffect(() => {
+    // Bicho migration: if user only has 1 bicho (the old default), update to new list
+    if (bichos.length === 1 && bichos[0].name === 'Carijó' && bichos[0].purchaseCost === 65) {
+      setBichos([
+        { id: '1', name: 'Carijó', purchaseCost: 65, serviceCost: 150 },
+        { id: '2', name: 'Galo', purchaseCost: 210, serviceCost: 200 },
+        { id: '3', name: 'Preá', purchaseCost: 0, serviceCost: 250 },
+        { id: '4', name: 'Angola', purchaseCost: 0, serviceCost: 300 },
+        { id: '5', name: 'Cabrito', purchaseCost: 0, serviceCost: 600 },
+        { id: '6', name: 'Calçado', purchaseCost: 0, serviceCost: 850 },
+        { id: '7', name: 'Perua', purchaseCost: 0, serviceCost: 300 },
+        { id: '8', name: 'Pombo', purchaseCost: 40, serviceCost: 50 },
+        { id: '9', name: 'Codorna', purchaseCost: 0, serviceCost: 20 },
+        { id: '10', name: 'Garnizé', purchaseCost: 90, serviceCost: 0 }
+      ]);
+    }
+
     let settingsUpdated = false;
     let categories = [...(settings.eventCategories || [])];
 
@@ -407,6 +424,12 @@ export default function App() {
       settingsUpdated = true;
     }
 
+    // 4. Add "Corte" if missing
+    if (!categories.includes('Corte')) {
+      categories.push('Corte');
+      settingsUpdated = true;
+    }
+
     if (settingsUpdated) {
       setSettings({
         ...settings,
@@ -414,7 +437,7 @@ export default function App() {
       });
     }
 
-    // 4. Calendar 2026 migration
+    // 5. Calendar 2026 migration
     const existingDatesAndTitles = new Set(events.map(e => `${e.date}|${e.title}`));
     const newEvents = CALENDAR_2026.filter(e => !existingDatesAndTitles.has(`${e.date}|${e.title}`));
 
@@ -470,7 +493,7 @@ export default function App() {
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             <TopHeader />
             
-            <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 pb-24 px-4 scrollbar-hide">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 pb-48 px-4 scrollbar-hide">
               <AnimatePresence mode="wait">
                 <Routes>
                   <Route path="/" element={<Navigate to="/home" replace />} />

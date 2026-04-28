@@ -58,6 +58,40 @@ export interface Bicho {
   serviceCost: number;
 }
 
+export interface SimulatorItem {
+  id: string;
+  bichoId: string;
+  quantity: number;
+  entidade: string;
+  observations: string;
+}
+
+export interface SimulationRecord {
+  id: string;
+  items: SimulatorItem[];
+  total: number;
+  timestamp: number;
+  title?: string;
+}
+
+export interface OfferingEntity {
+  id: string;
+  name: string;
+  color: string;
+  sections: {
+    title?: string;
+    items: string[];
+  }[];
+}
+
+export interface Candle {
+  id: string;
+  color: string;
+  quantity: number;
+  type: string; 
+  observations?: string;
+}
+
 export interface Trabalho {
   id: string;
   title: string;

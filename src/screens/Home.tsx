@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Star, Calendar, Droplets, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen } from 'lucide-react';
+import { Heart, Star, Calendar, Droplets, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
@@ -14,7 +14,7 @@ export default function HomeScreen() {
   const navigate = useNavigate();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     bathCategories: ['Gerais', 'Orixás', 'Entidades'],
     pushNotifications: false
@@ -25,19 +25,26 @@ export default function HomeScreen() {
   const [books] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [events] = useStorage<Event[]>('templo_events', []);
   const [copied, setCopied] = React.useState<string | null>(null);
+  const [eventSearch, setEventSearch] = React.useState('');
+  const [selectedEventCategory, setSelectedEventCategory] = React.useState<string | null>(null);
 
   const favBaths = baths.filter(b => b.isFavorite);
   const favPontos = pontos.filter(p => p.isFavorite);
   const favBooks = books.filter(b => b.isFavorite);
   const inProgressBooks = books.filter(b => b.readingStatus === 'in_progress');
 
-  // Próximos eventos (hoje ou no futuro)
+  // Próximos eventos (hoje ou no futuro) com filtro
   const upcomingEvents = events
     .filter(e => {
       // Ajuste para evitar problemas de fuso horário com strings de data yyyy-MM-dd
       const [year, month, day] = e.date.split('-').map(Number);
       const eventDate = new Date(year, month - 1, day);
-      return isToday(eventDate) || isAfter(eventDate, startOfToday());
+      const isFutureOrToday = isToday(eventDate) || isAfter(eventDate, startOfToday());
+      
+      const matchesSearch = e.title.toLowerCase().includes(eventSearch.toLowerCase());
+      const matchesCategory = !selectedEventCategory || e.category === selectedEventCategory;
+      
+      return isFutureOrToday && matchesSearch && matchesCategory;
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -62,7 +69,7 @@ export default function HomeScreen() {
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       className={cn(
-        "p-4 min-h-full pb-20 transition-colors duration-500",
+        "p-4 min-h-full pb-32 transition-colors duration-500",
         settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
       )}
     >
@@ -321,11 +328,65 @@ export default function HomeScreen() {
           "p-5 rounded-[32px] border-2 space-y-4",
           settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
         )}>
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5 text-brand-navy" />
-            <p className={cn("font-black text-[9px] uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-              PRÓXIMOS EVENTOS
-            </p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-brand-navy" />
+              <p className={cn("font-black text-[9px] uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                PRÓXIMOS EVENTOS
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div className="relative">
+              <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", settings.darkMode ? "text-white/20" : "text-gray-400")} />
+              <input 
+                type="text"
+                placeholder="Buscar eventos..."
+                value={eventSearch}
+                onChange={(e) => setEventSearch(e.target.value)}
+                className={cn(
+                  "w-full pl-11 pr-4 py-3 rounded-2xl text-xs transition-all outline-none",
+                  settings.darkMode ? "bg-black/20 border-gray-800 focus:bg-black/40 text-white" : "bg-gray-50 border-gray-100 focus:bg-white text-brand-navy"
+                )}
+              />
+              {eventSearch && (
+                <button 
+                  onClick={() => setEventSearch('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full"
+                >
+                  <X className="w-3 h-3 text-gray-400" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <button 
+                onClick={() => setSelectedEventCategory(null)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all",
+                  !selectedEventCategory 
+                    ? "bg-brand-copper text-white" 
+                    : settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"
+                )}
+              >
+                Todos
+              </button>
+              {settings.eventCategories.map(cat => (
+                <button 
+                  key={cat}
+                  onClick={() => setSelectedEventCategory(selectedEventCategory === cat ? null : cat)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all",
+                    selectedEventCategory === cat 
+                      ? "bg-brand-copper text-white" 
+                      : settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
 
           {Object.keys(groupedUpcomingEvents).length > 0 ? (

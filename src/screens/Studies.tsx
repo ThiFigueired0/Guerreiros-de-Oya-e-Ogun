@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { Greeting, StudyBook, AppSettings } from '../types';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -123,7 +124,7 @@ export default function StudiesScreen() {
   const location = useLocation();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false
   });
@@ -144,6 +145,11 @@ export default function StudiesScreen() {
   const [showGreetingModal, setShowGreetingModal] = useState(false);
   const [editingGreeting, setEditingGreeting] = useState<Greeting | null>(null);
   const [selectedGreeting, setSelectedGreeting] = useState<Greeting | null>(null);
+  
+  const [showDeleteBookConfirm, setShowDeleteBookConfirm] = useState(false);
+  const [showDeleteGreetingConfirm, setShowDeleteGreetingConfirm] = useState(false);
+  const [bookToDeleteId, setBookToDeleteId] = useState<string | null>(null);
+  const [greetingToDeleteId, setGreetingToDeleteId] = useState<string | null>(null);
   
   // New Greeting state
   const [newGreeting, setNewGreeting] = useState<Partial<Greeting>>({
@@ -210,7 +216,15 @@ export default function StudiesScreen() {
   };
 
   const deleteBook = (id: string) => {
-    setBooks(books.filter(b => b.id !== id));
+    setBookToDeleteId(id);
+    setShowDeleteBookConfirm(true);
+  };
+
+  const confirmDeleteBook = () => {
+    if (bookToDeleteId) {
+      setBooks(books.filter(b => b.id !== bookToDeleteId));
+      setBookToDeleteId(null);
+    }
   };
 
   const openBook = (book: StudyBook) => {
@@ -245,7 +259,15 @@ export default function StudiesScreen() {
   };
 
   const deleteGreeting = (id: string) => {
-    setGreetings(greetings.filter(g => g.id !== id));
+    setGreetingToDeleteId(id);
+    setShowDeleteGreetingConfirm(true);
+  };
+
+  const confirmDeleteGreeting = () => {
+    if (greetingToDeleteId) {
+      setGreetings(greetings.filter(g => g.id !== greetingToDeleteId));
+      setGreetingToDeleteId(null);
+    }
   };
 
   const startEditGreeting = (g: Greeting) => {
@@ -376,7 +398,7 @@ export default function StudiesScreen() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-6"
+      className="p-6 pb-32"
     >
       <header className="flex justify-between items-center mb-6">
         <div>
@@ -620,13 +642,16 @@ export default function StudiesScreen() {
                           <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
                           <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 transition-opacity">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               startEditGreeting(g);
                             }}
-                            className="p-2 text-gray-400 hover:text-brand-copper"
+                            className={cn(
+                              "p-2 transition-colors",
+                              settings.darkMode ? "text-gray-400 hover:text-brand-copper" : "text-gray-400 hover:text-brand-copper"
+                            )}
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>
@@ -635,7 +660,10 @@ export default function StudiesScreen() {
                               e.stopPropagation();
                               deleteGreeting(g.id);
                             }}
-                            className="p-2 text-gray-400 hover:text-red-500"
+                            className={cn(
+                              "p-2 transition-colors",
+                              settings.darkMode ? "text-red-500/60 hover:text-red-500" : "text-red-400 hover:text-red-500"
+                            )}
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -994,7 +1022,7 @@ export default function StudiesScreen() {
                       </h2>
                       <button 
                         onClick={() => setIsEditingName(true)}
-                        className="p-1.5 bg-gray-50 text-gray-400 rounded-lg hover:text-brand-copper transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-1.5 bg-gray-50 text-gray-400 rounded-lg active:text-brand-copper transition-colors"
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
@@ -1190,6 +1218,27 @@ export default function StudiesScreen() {
         )}
       </AnimatePresence>
 
+      <DeleteConfirmationModal 
+        isOpen={showDeleteBookConfirm}
+        onClose={() => {
+          setShowDeleteBookConfirm(false);
+          setBookToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteBook}
+        title="Excluir Livro"
+        message="Deseja realmente excluir este livro da sua biblioteca permanentemente?"
+      />
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteGreetingConfirm}
+        onClose={() => {
+          setShowDeleteGreetingConfirm(false);
+          setGreetingToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteGreeting}
+        title="Excluir Saudação"
+        message="Deseja realmente excluir esta saudação permanentemente?"
+      />
     </motion.div>
   );
 }

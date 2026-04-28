@@ -31,7 +31,7 @@ const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/settings'];
 export default function SettingsScreen() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false,
     tabIcons: {},
@@ -258,16 +258,16 @@ export default function SettingsScreen() {
                           <button 
                             onClick={() => reorderTab('primary', idx, 'up')} 
                             disabled={idx <= 1} 
-                            className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                            className="p-2 text-gray-400 disabled:opacity-10 transition-opacity"
                           >
-                            <ArrowUp className="w-3 h-3" />
+                            <ArrowUp className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => reorderTab('primary', idx, 'down')} 
                             disabled={idx === primaryTabs.length - 1} 
-                            className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                            className="p-2 text-gray-400 disabled:opacity-10 transition-opacity"
                           >
-                            <ArrowDown className="w-3 h-3" />
+                            <ArrowDown className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => moveTab(path, 'primary', 'secondary')} 
@@ -306,16 +306,16 @@ export default function SettingsScreen() {
                         <button 
                           onClick={() => reorderTab('secondary', idx, 'up')} 
                           disabled={idx === 0} 
-                          className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                          className="p-2 text-gray-400 disabled:opacity-10 transition-opacity"
                         >
-                          <ArrowUp className="w-3 h-3" />
+                          <ArrowUp className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => reorderTab('secondary', idx, 'down')} 
                           disabled={idx === secondaryTabs.length - 1} 
-                          className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                          className="p-2 text-gray-400 disabled:opacity-10 transition-opacity"
                         >
-                          <ArrowDown className="w-3 h-3" />
+                          <ArrowDown className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => moveTab(path, 'secondary', 'primary')} 

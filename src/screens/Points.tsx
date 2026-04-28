@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { Ponto, AppSettings, Folder } from '../types';
 import { cn } from '../lib/utils';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function PointsScreen() {
   const location = useLocation();
@@ -22,6 +23,10 @@ export default function PointsScreen() {
   
   const [search, setSearch] = useState('');
   const [selectedPonto, setSelectedPonto] = useState<Ponto | null>(null);
+  const [showDeletePointConfirm, setShowDeletePointConfirm] = useState(false);
+  const [showDeleteFolderConfirm, setShowDeleteFolderConfirm] = useState(false);
+  const [pointToDeleteId, setPointToDeleteId] = useState<string | null>(null);
+  const [folderToDeleteId, setFolderToDeleteId] = useState<string | null>(null);
 
   // Handle redirection from Home screen
   useEffect(() => {
@@ -154,10 +159,18 @@ export default function PointsScreen() {
   };
 
   const deleteFolder = (id: string) => {
-    setFolders(folders.filter(f => f.id !== id));
-    // Optionally re-assign items to parent folder
-    setPontos(pontos.map(p => p.folderId === id ? { ...p, folderId: currentFolderId || undefined } : p));
-    setFolders(folders.map(f => f.parentId === id ? { ...f, parentId: currentFolderId || undefined } : f));
+    setFolderToDeleteId(id);
+    setShowDeleteFolderConfirm(true);
+  };
+
+  const confirmDeleteFolder = () => {
+    if (folderToDeleteId) {
+      setFolders(folders.filter(f => f.id !== folderToDeleteId));
+      // Optionally re-assign items to parent folder
+      setPontos(pontos.map(p => p.folderId === folderToDeleteId ? { ...p, folderId: currentFolderId || undefined } : p));
+      setFolders(folders.map(f => f.parentId === folderToDeleteId ? { ...f, parentId: currentFolderId || undefined } : f));
+      setFolderToDeleteId(null);
+    }
   };
 
   const closeModal = () => {
@@ -175,8 +188,16 @@ export default function PointsScreen() {
   };
 
   const deletePonto = (id: string) => {
-    setPontos(pontos.filter(p => p.id !== id));
-    if (selectedPonto?.id === id) setSelectedPonto(null);
+    setPointToDeleteId(id);
+    setShowDeletePointConfirm(true);
+  };
+
+  const confirmDeletePonto = () => {
+    if (pointToDeleteId) {
+      setPontos(pontos.filter(p => p.id !== pointToDeleteId));
+      if (selectedPonto?.id === pointToDeleteId) setSelectedPonto(null);
+      setPointToDeleteId(null);
+    }
   };
 
   const getYoutubeEmbed = (url?: string) => {
@@ -214,7 +235,7 @@ export default function PointsScreen() {
   };
   return (
     <motion.div className={cn(
-      "p-4 min-h-full transition-colors duration-500",
+      "p-4 min-h-full pb-32 transition-colors duration-500",
       settings.darkMode ? "bg-[#121212] text-white" : "bg-[#F9F9F9] text-brand-navy"
     )}>
       {/* Stage Mode Toggle Banner */}
@@ -344,11 +365,23 @@ export default function PointsScreen() {
                 setShowFolderModal(true);
               }}
               className={cn(
-                "p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity",
-                settings.darkMode ? "hover:bg-white/5 text-gray-500" : "hover:bg-gray-50 text-gray-400"
+                "p-2 rounded-lg transition-all",
+                settings.darkMode ? "bg-white/5 text-brand-copper/80" : "bg-gray-50 text-brand-copper"
               )}
             >
               <PenTool className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteFolder(folder.id);
+              }}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500"
+              )}
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
             <ChevronRight className="w-5 h-5 text-gray-300" />
           </div>
@@ -370,20 +403,32 @@ export default function PointsScreen() {
                 </div>
                 <h4 className={cn("font-black text-brand-navy text-lg leading-tight mb-2", settings.darkMode && "text-white")}>{ponto.title}</h4>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEdit(ponto);
                   }}
                   className={cn(
-                    "p-2 rounded-lg transition-colors",
-                    settings.darkMode ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
+                    "p-2.5 rounded-xl transition-all",
+                    settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white" : "bg-gray-50 text-gray-400 hover:text-brand-navy"
                   )}
                 >
                   <PenTool className="w-4 h-4" />
                 </button>
-                {ponto.isFavorite && <Heart className="w-5 h-5 fill-brand-red text-brand-red" />}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePonto(ponto.id);
+                  }}
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    settings.darkMode ? "bg-red-500/10 text-red-500/60" : "bg-red-50 text-red-400"
+                  )}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                {ponto.isFavorite && <Heart className="w-5 h-5 fill-brand-red text-brand-red mt-2 ml-1" />}
               </div>
             </div>
             
@@ -717,6 +762,28 @@ export default function PointsScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal 
+        isOpen={showDeletePointConfirm}
+        onClose={() => {
+          setShowDeletePointConfirm(false);
+          setPointToDeleteId(null);
+        }}
+        onConfirm={confirmDeletePonto}
+        title="Excluir Ponto"
+        message="Deseja realmente excluir este ponto permanentemente?"
+      />
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteFolderConfirm}
+        onClose={() => {
+          setShowDeleteFolderConfirm(false);
+          setFolderToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteFolder}
+        title="Excluir Pasta"
+        message="Deseja realmente excluir esta pasta permanentemente? Os itens dentro dela serão movidos para fora."
+      />
     </motion.div>
   );
 }
