@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings } from '../types';
 import { cn } from '../lib/utils';
+import { LOGO_URL } from '../constants';
 
 const AVAILABLE_ICONS: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -186,11 +187,16 @@ export default function SettingsScreen() {
           </h3>
           <div className="flex flex-col items-center">
             <div className={cn(
-              "w-24 h-24 rounded-full border-2 border-brand-copper mb-4 relative overflow-hidden bg-gray-50 flex items-center justify-center p-2",
+              "w-24 h-24 rounded-full border-2 border-brand-copper mb-4 relative overflow-hidden bg-gray-50 flex items-center justify-center",
               settings.darkMode && "bg-black/40"
             )}>
-              {settings.logoBase64 ? (
-                <img src={settings.logoBase64} alt="Preview" className="w-full h-full object-contain" />
+              {settings.logoBase64 || LOGO_URL ? (
+                <img 
+                  src={settings.logoBase64 || LOGO_URL} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover" 
+                  referrerPolicy="no-referrer"
+                />
               ) : (
                 <ImageIcon className="w-8 h-8 text-gray-200" />
               )}

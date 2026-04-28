@@ -5,6 +5,7 @@ import {
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 } from 'lucide-react';
+import { LOGO_URL } from './constants';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -231,69 +232,6 @@ function Navigation() {
   );
 }
 
-function TempleLogo() {
-  return (
-    <svg viewBox="0 0 200 200" className="w-full h-full">
-      {/* Circle Background */}
-      <circle cx="100" cy="100" r="95" fill="white" />
-      
-      {/* Decorative Orbs around the edge - representing Orixá symbols */}
-      <g opacity="0.3">
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-          <circle 
-            key={i}
-            cx={100 + 80 * Math.cos((angle * Math.PI) / 180)} 
-            cy={100 + 80 * Math.sin((angle * Math.PI) / 180)} 
-            r="4" 
-            fill="#B8860B" 
-          />
-        ))}
-      </g>
-
-      {/* Main Sword (Ogum) - Sharp grey sword */}
-      <path 
-        d="M60 170 L160 40 L175 30 L180 45 L170 155 L60 170" 
-        fill="#4A4A4A" 
-        stroke="#1A1A1A" 
-        strokeWidth="1.5"
-      />
-      <path 
-        d="M60 170 L170 35" 
-        stroke="white" 
-        strokeWidth="0.5" 
-        opacity="0.3" 
-      />
-      {/* Handle */}
-      <rect x="50" y="160" width="20" height="30" transform="rotate(-45 60 175)" fill="#1A1A1A" rx="2" />
-      <path d="M45 165 Q35 175 45 185" fill="none" stroke="#CC0000" strokeWidth="4" />
-
-      {/* Oya Figure - Silhouette with red/white details */}
-      <g transform="translate(60, 80) scale(0.6)">
-        {/* Sky/Wind elements around Oya */}
-        <path d="M20 20 Q50 0 80 20" fill="none" stroke="#CC0000" strokeWidth="2" opacity="0.5" />
-        
-        {/* Oya Figure Body */}
-        <circle cx="50" cy="30" r="10" fill="#1A1A1A" /> {/* Head */}
-        <path d="M30 65 Q50 40 70 65 L80 120 L20 120 Z" fill="#FFFFFF" stroke="#1A1A1A" strokeWidth="1" /> {/* Dress */}
-        <path d="M30 70 L70 70 L70 90 L30 90 Z" fill="#CC0000" opacity="0.8" /> {/* Red sash */}
-        
-        {/* Arms and smaller swords */}
-        <path d="M35 50 Q20 60 25 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
-        <path d="M65 50 Q80 60 75 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
-        <path d="M15 75 L35 85" stroke="#4A4A4A" strokeWidth="4" strokeLinecap="round" />
-      </g>
-
-      {/* Texts around or near the logo */}
-      <defs>
-        <path id="circlePath" d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0" />
-      </defs>
-      <text fill="#0A0F1F" fontSize="9" fontWeight="900" letterSpacing="1">
-        <textPath xlinkHref="#circlePath" startOffset="0%">TENDA DE UMBANDA • GUERREIROS DE OYA E PAI OGUM •</textPath>
-      </text>
-    </svg>
-  );
-}
-
 function TopHeader() {
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -341,27 +279,13 @@ function TopHeader() {
             </motion.div>
           </div>
 
-          <div className="w-32 h-32 rounded-full border-4 border-brand-copper bg-white shadow-[0_0_30px_rgba(184,134,11,0.3)] flex items-center justify-center p-0.5 overflow-hidden relative">
-            {settings.logoBase64 ? (
-               <img 
-                src={settings.logoBase64} 
-                alt="Logo Templo" 
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const fallback = parent.querySelector('.logo-fallback');
-                    if (fallback) fallback.classList.remove('hidden');
-                  }
-                }}
-              />
-            ) : (
-              <TempleLogo />
-            )}
-            <div className="logo-fallback hidden absolute inset-0">
-              <TempleLogo />
-            </div>
+          <div className="w-32 h-32 rounded-full border-4 border-brand-copper bg-white shadow-[0_0_30px_rgba(184,134,11,0.3)] flex items-center justify-center overflow-hidden relative">
+            <img 
+              src={settings.logoBase64 || LOGO_URL} 
+              alt="Logo Templo" 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
           </div>
         </div>
         
@@ -470,6 +394,14 @@ export default function App() {
 
     if (eventsNeedCorrection || finalizedEvents.length !== events.length) {
       setEvents(finalizedEvents);
+    }
+
+    // 7. Force clear old logos to show the new official one
+    const HAS_CLEARED_LOGO_KEY = 'templo_logo_cleared_v1';
+    if (!localStorage.getItem(HAS_CLEARED_LOGO_KEY)) {
+      const { logoBase64, ...rest } = settings;
+      setSettings(rest as AppSettings);
+      localStorage.setItem(HAS_CLEARED_LOGO_KEY, 'true');
     }
   }, []);
 
