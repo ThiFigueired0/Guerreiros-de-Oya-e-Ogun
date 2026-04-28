@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
@@ -119,6 +120,7 @@ const INITIAL_GREETINGS: Greeting[] = [
 ];
 
 export default function StudiesScreen() {
+  const location = useLocation();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
@@ -151,6 +153,19 @@ export default function StudiesScreen() {
     summary: '',
     imageUrl: ''
   });
+
+  // Handle openBookId from navigation state
+  useEffect(() => {
+    const state = location.state as { openBookId?: string } | null;
+    if (state?.openBookId && books.length > 0) {
+      const book = books.find(b => b.id === state.openBookId);
+      if (book) {
+        openBookDetails(book);
+        // Clear history state to avoid reopening on refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, books]);
 
   // PDF Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

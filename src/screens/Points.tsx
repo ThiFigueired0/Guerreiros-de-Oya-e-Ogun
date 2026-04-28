@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Heart, Share2, Youtube, Play, X, Plus, Trash2, Maximize2, Mic, Music, Square, PenTool, FolderIcon, ChevronLeft, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
@@ -6,13 +7,39 @@ import { Ponto, AppSettings, Folder } from '../types';
 import { cn } from '../lib/utils';
 
 export default function PointsScreen() {
+  const location = useLocation();
   const [pontos, setPontos] = useStorage<Ponto[]>('templo_pontos', []);
+  
+  // Cleanup test data from storage
+  useEffect(() => {
+    if (pontos.some(p => p.id === '1' || p.id === '2')) {
+      setPontos(pontos.filter(p => p.id !== '1' && p.id !== '2'));
+    }
+  }, [pontos, setPontos]);
 
   const [folders, setFolders] = useStorage<Folder[]>('templo_folders', []);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   
   const [search, setSearch] = useState('');
   const [selectedPonto, setSelectedPonto] = useState<Ponto | null>(null);
+
+  // Handle redirection from Home screen
+  useEffect(() => {
+    const state = location.state as { folderId?: string; pontoId?: string } | null;
+    if (state && (state.folderId || state.pontoId)) {
+      if (state.folderId) {
+        setCurrentFolderId(state.folderId);
+      }
+      if (state.pontoId) {
+        const ponto = pontos.find(p => p.id === state.pontoId);
+        if (ponto) {
+          setSelectedPonto(ponto);
+        }
+      }
+      // Clear state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, pontos]);
   const [modoPalco, setModoPalco] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);

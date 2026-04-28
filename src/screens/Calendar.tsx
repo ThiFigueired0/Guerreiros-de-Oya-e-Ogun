@@ -12,13 +12,18 @@ export default function CalendarScreen() {
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
-    eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
+    eventNames: [
+      'Gira de Baianos', 'Gira de Marinheiros', 'Gira de Exu e Pombagira', 'Gira de Malandros', 'Gira de Ciganos', 'Gira de Exu mirim',
+      'Festa de Marias', 'Festa de Oxossi', 'Festa de Iemanjá', 'Festa de Ogun', 'Festa preto velho', 'Festa cigana', 'Festa de Xangô', 'Festa de Nanã', 'Festa de Omolu', 'Festa de Erês'
+    ],
+    bathCategories: ['Gerais', 'Orixás', 'Entidades'],
     pushNotifications: false
   });
   
   const [showModal, setShowModal] = useState(false);
   const [showDayEventsModal, setShowDayEventsModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
@@ -27,14 +32,53 @@ export default function CalendarScreen() {
     date: format(new Date(), 'yyyy-MM-dd')
   });
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
   const parseEventDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day);
   };
+
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Preceito calculation: Monday to Saturday for weeks with Thursday Desenvolvimento + Saturday Gira/Festa
+  const preceitoRanges = React.useMemo(() => {
+    const ranges: { start: number, end: number }[] = [];
+    const targetSaturdays = events.filter(e => {
+      const date = parseEventDate(e.date);
+      return date.getDay() === 6 && (e.category === 'Gira aberta' || e.category === 'Festa');
+    });
+
+    targetSaturdays.forEach(sat => {
+      const satDate = parseEventDate(sat.date);
+      const thursday = new Date(satDate);
+      thursday.setDate(satDate.getDate() - 2);
+      const thursdayStr = format(thursday, 'yyyy-MM-dd');
+
+      const isPreceitoWeek = events.some(dev => 
+        dev.category === 'Desenvolvimento' && dev.date === thursdayStr
+      );
+
+      if (isPreceitoWeek) {
+        const monday = new Date(satDate);
+        monday.setDate(satDate.getDate() - 5);
+        ranges.push({
+          start: monday.getTime(),
+          end: satDate.getTime()
+        });
+      }
+    });
+    return ranges;
+  }, [events]);
+
+  const isDayInPreceito = (day: Date) => {
+    const time = day.getTime();
+    return preceitoRanges.some(range => time >= range.start && time <= range.end);
+  };
+  
+  // Calculate padding days to align the first day of the month with the correct column
+  const startDayOfWeek = monthStart.getDay(); // 0 is Sunday, 1 is Monday, etc.
+  const paddingDays = Array.from({ length: startDayOfWeek });
 
   const eventsInMonth = events.filter(e => isSameMonth(parseEventDate(e.date), currentDate));
 
@@ -63,7 +107,7 @@ export default function CalendarScreen() {
   };
 
   const handleDayClick = (day: Date) => {
-    const dayEvents = getEventsForDay(day);
+    const dayEvents = getEventsForDay(day, true);
     setSelectedDay(day);
     if (dayEvents.length === 0) {
       setNewEvent({ 
@@ -77,14 +121,52 @@ export default function CalendarScreen() {
     }
   };
 
-  const getEventsForDay = (day: Date) => {
-    return events.filter(e => isSameDay(parseEventDate(e.date), day));
+  const [search, setSearch] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['Todos']);
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Gira aberta': return '#3B82F6'; // Blue
+      case 'Gira Fechada': return '#8B5CF6'; // Violet
+      case 'Desenvolvimento': return '#10B981'; // Emerald
+      case 'Festa': return '#EF4444'; // Red
+      case 'Trabalho': return '#F97316'; // Orange
+      case 'Reunião': return '#EC4899'; // Pink
+      default: return '#D97706'; // Amber/Copper
+    }
   };
 
-  const [search, setSearch] = useState('');
+  const toggleCategory = (cat: string) => {
+    if (cat === 'Todos') {
+      setSelectedCategories(['Todos']);
+    } else {
+      setSelectedCategories(prev => {
+        const withoutTodos = prev.filter(c => c !== 'Todos');
+        if (prev.includes(cat)) {
+          const next = withoutTodos.filter(c => c !== cat);
+          return next.length === 0 ? ['Todos'] : next;
+        } else {
+          return [...withoutTodos, cat];
+        }
+      });
+    }
+  };
+
+  const getEventsForDay = (day: Date, ignoreFilter = false) => {
+    return events.filter(e => {
+      const isDay = isSameDay(parseEventDate(e.date), day);
+      if (!isDay) return false;
+      if (ignoreFilter || selectedCategories.includes('Todos')) return true;
+      return selectedCategories.includes(e.category);
+    });
+  };
 
   const filteredEventsInMonth = eventsInMonth
-    .filter(e => e.title.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase()))
+    .filter(e => {
+      const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = selectedCategories.includes('Todos') || selectedCategories.includes(e.category);
+      return matchesSearch && matchesCategory;
+    })
     .sort((a,b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
 
   return (
@@ -98,12 +180,15 @@ export default function CalendarScreen() {
       )}
     >
       <div className="flex items-center justify-between mb-6 px-2">
-        <h2 className={cn(
-          "text-xl font-black text-brand-navy capitalize font-serif tracking-tight",
-          settings.darkMode && "text-white"
-        )}>
+        <button 
+          onClick={() => setShowDatePicker(true)}
+          className={cn(
+            "text-xl font-black text-brand-navy capitalize font-serif tracking-tight flex items-center gap-2 hover:opacity-70 transition-opacity",
+            settings.darkMode && "text-white"
+          )}
+        >
           {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-        </h2>
+        </button>
         <div className="flex gap-2">
           <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className={cn(
             "p-2 border border-gray-100 bg-white rounded-xl shadow-sm text-brand-navy hover:bg-gray-50 transition-colors",
@@ -128,6 +213,9 @@ export default function CalendarScreen() {
           {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
             <div key={`${d}-${i}`} className="text-center text-[10px] uppercase font-black text-gray-200 tracking-tighter mb-4">{d}</div>
           ))}
+          {paddingDays.map((_, i) => (
+            <div key={`padding-${i}`} className="aspect-square" />
+          ))}
           {days.map((day, idx) => {
             const dayEvents = getEventsForDay(day);
             return (
@@ -138,15 +226,28 @@ export default function CalendarScreen() {
                   "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all duration-300 active:scale-95 group",
                   isSameDay(day, new Date()) 
                     ? (settings.darkMode ? "bg-brand-copper text-white shadow-lg shadow-brand-copper/40 scale-110 z-10" : "bg-brand-navy text-white shadow-lg shadow-brand-navy/20 scale-110 z-10") 
-                    : (settings.darkMode ? "hover:bg-[#252525]" : "hover:bg-gray-50")
+                    : isDayInPreceito(day)
+                      ? (settings.darkMode ? "bg-white/10 border border-white/5" : "bg-gray-100 border border-gray-100")
+                      : (settings.darkMode ? "hover:bg-[#252525]" : "hover:bg-gray-50")
                 )}
               >
                 <span className={cn(
-                  "text-xs font-bold", 
+                  "text-xs font-bold mb-0.5", 
                   !isSameDay(day, new Date()) && (settings.darkMode ? "text-gray-200" : "text-brand-navy")
                 )}>{format(day, 'd')}</span>
-                {dayEvents.length > 0 && !isSameDay(day, new Date()) && (
-                  <div className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
+                {dayEvents.length > 0 && (
+                  <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center px-1">
+                    {Array.from(new Set(dayEvents.map(e => e.category))).slice(0, 3).map((cat, i) => (
+                      <div 
+                        key={i} 
+                        className="w-1 h-1 rounded-full animate-pulse" 
+                        style={{ backgroundColor: getCategoryColor(cat) }}
+                      />
+                    ))}
+                    {new Set(dayEvents.map(e => e.category)).size > 3 && (
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                    )}
+                  </div>
                 )}
               </button>
             );
@@ -166,6 +267,29 @@ export default function CalendarScreen() {
           >
             <Plus className="w-3 h-3" /> Agendar
           </button>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+          {['Todos', ...settings.eventCategories].map(cat => (
+            <button
+              key={cat}
+              onClick={() => toggleCategory(cat)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2",
+                selectedCategories.includes(cat)
+                  ? (settings.darkMode ? "bg-brand-copper border-brand-copper text-white shadow-lg shadow-brand-copper/20" : "bg-brand-navy border-brand-navy text-white shadow-lg shadow-brand-navy/10")
+                  : (settings.darkMode ? "bg-white/5 border-white/10 text-gray-400 hover:border-white/20" : "bg-white border-gray-100 text-gray-500 hover:border-gray-200")
+              )}
+            >
+              {cat !== 'Todos' && (
+                <div 
+                  className="w-2 h-2 rounded-full" 
+                  style={{ backgroundColor: getCategoryColor(cat) }} 
+                />
+              )}
+              {cat}
+            </button>
+          ))}
         </div>
 
         <div className="relative mb-6">
@@ -207,7 +331,10 @@ export default function CalendarScreen() {
                   "inline-flex items-center gap-1.5 px-3 py-1 bg-brand-navy/5 rounded-full border border-brand-navy/10",
                   settings.darkMode && "bg-white/5 border-white/10"
                 )}>
-                   <div className="w-1.5 h-1.5 rounded-full bg-brand-red" />
+                   <div 
+                     className="w-1.5 h-1.5 rounded-full" 
+                     style={{ backgroundColor: getCategoryColor(event.category) }}
+                   />
                    <span className={cn("text-[9px] text-brand-navy font-black uppercase tracking-widest leading-none", settings.darkMode && "text-gray-200")}>
                     {event.category}
                    </span>
@@ -265,14 +392,20 @@ export default function CalendarScreen() {
               </div>
 
               <div className="space-y-3 mb-8">
-                {getEventsForDay(selectedDay).map(event => (
+                {getEventsForDay(selectedDay, true).map(event => (
                   <div key={event.id} className={cn(
                     "flex items-center justify-between p-4 rounded-2xl border border-gray-100",
                     settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50"
                   )}>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-sm truncate">{event.title}</h4>
-                      <span className="text-[10px] text-brand-copper font-black uppercase tracking-widest">{event.category}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full" 
+                          style={{ backgroundColor: getCategoryColor(event.category) }}
+                        />
+                        <span className="text-[10px] text-brand-copper font-black uppercase tracking-widest leading-none">{event.category}</span>
+                      </div>
                     </div>
                     <div className="flex gap-1">
                       <button 
@@ -285,7 +418,7 @@ export default function CalendarScreen() {
                         onClick={() => {
                           const updatedEvents = events.filter(e => e.id !== event.id);
                           setEvents(updatedEvents);
-                          if (updatedEvents.filter(e => isSameDay(new Date(e.date), selectedDay)).length === 0) {
+                          if (updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length === 0) {
                             setShowDayEventsModal(false);
                           }
                         }}
@@ -404,6 +537,93 @@ export default function CalendarScreen() {
                   >
                     Confirmar
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showDatePicker && (
+          <motion.div
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+            onClick={() => setShowDatePicker(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={cn(
+                "bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl relative overflow-hidden",
+                settings.darkMode && "bg-[#1A1A1A] text-white border border-white/10"
+              )}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="mb-6 flex justify-between items-center px-2">
+                <h3 className="text-xl font-bold">Selecionar Data</h3>
+                <button 
+                  onClick={() => setShowDatePicker(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-[10px] font-black uppercase text-brand-copper tracking-widest mb-3 px-2">Ano</p>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(year => (
+                    <button
+                      key={year}
+                      onClick={() => setCurrentDate(new Date(year, currentDate.getMonth(), 1))}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-sm font-bold transition-all snap-center",
+                        currentDate.getFullYear() === year
+                          ? "bg-brand-navy text-white shadow-lg shadow-brand-navy/20"
+                          : "bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400"
+                      )}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase text-brand-copper tracking-widest mb-3 px-2">Mês</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { full: 'Janeiro', short: 'Jan' },
+                    { full: 'Fevereiro', short: 'Fev' },
+                    { full: 'Março', short: 'Mar' },
+                    { full: 'Abril', short: 'Abr' },
+                    { full: 'Maio', short: 'Mai' },
+                    { full: 'Junho', short: 'Jun' },
+                    { full: 'Julho', short: 'Jul' },
+                    { full: 'Agosto', short: 'Ago' },
+                    { full: 'Setembro', short: 'Set' },
+                    { full: 'Outubro', short: 'Out' },
+                    { full: 'Novembro', short: 'Nov' },
+                    { full: 'Dezembro', short: 'Dez' }
+                  ].map((month, idx) => (
+                    <button
+                      key={month.short}
+                      onClick={() => {
+                        setCurrentDate(new Date(currentDate.getFullYear(), idx, 1));
+                        setShowDatePicker(false);
+                      }}
+                      className={cn(
+                        "py-3 rounded-xl text-sm font-bold transition-all",
+                        currentDate.getMonth() === idx
+                          ? "bg-brand-navy text-white shadow-lg shadow-brand-navy/20"
+                          : "bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400"
+                      )}
+                    >
+                      {month.short}
+                    </button>
+                  ))}
                 </div>
               </div>
             </motion.div>

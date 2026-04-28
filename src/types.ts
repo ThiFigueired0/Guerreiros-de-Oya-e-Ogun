@@ -11,6 +11,7 @@ export interface HerbBath {
   herbs: string;
   observations: string;
   isFavorite: boolean;
+  category?: string;
 }
 
 export interface Ponto {
@@ -34,6 +35,7 @@ export interface Note {
   id: string;
   title: string;
   content: string;
+  images?: string[]; // Array of base64 image strings
   lastEdited: number;
 }
 
@@ -41,9 +43,12 @@ export interface AppSettings {
   darkMode: boolean;
   eventCategories: string[];
   eventNames: string[];
+  bathCategories?: string[];
   pushNotifications: boolean;
   logoBase64?: string;
   tabIcons?: Record<string, string>;
+  primaryTabPaths?: string[];
+  secondaryTabPaths?: string[];
 }
 
 export interface Bicho {

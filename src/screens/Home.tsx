@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, Star, Calendar, Droplets, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
@@ -10,10 +11,12 @@ import { format, isAfter, isToday, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function HomeScreen() {
+  const navigate = useNavigate();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
+    bathCategories: ['Gerais', 'Orixás', 'Entidades'],
     pushNotifications: false
   });
 
@@ -26,6 +29,7 @@ export default function HomeScreen() {
   const favBaths = baths.filter(b => b.isFavorite);
   const favPontos = pontos.filter(p => p.isFavorite);
   const favBooks = books.filter(b => b.isFavorite);
+  const inProgressBooks = books.filter(b => b.readingStatus === 'in_progress');
 
   // Próximos eventos (hoje ou no futuro)
   const upcomingEvents = events
@@ -144,10 +148,11 @@ export default function HomeScreen() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
               {favBaths.map(bath => (
-                <div 
+                <button 
                   key={bath.id} 
+                  onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
                   className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95",
+                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 text-left",
                     settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
                   )}
                 >
@@ -155,8 +160,7 @@ export default function HomeScreen() {
                   <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     {bath.title}
                   </p>
-                  <p className="text-[9px] text-gray-400 truncate">{bath.herbs}</p>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -172,10 +176,11 @@ export default function HomeScreen() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
               {favPontos.map(ponto => (
-                <div 
+                <button 
                   key={ponto.id} 
+                  onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
                   className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95",
+                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 text-left",
                     settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
                   )}
                 >
@@ -184,7 +189,59 @@ export default function HomeScreen() {
                     {ponto.title}
                   </p>
                   <p className="text-[9px] text-gray-400 truncate">{ponto.entity || 'Ponto Cantado'}</p>
-                </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {inProgressBooks.length > 0 && (
+          <section>
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <BookOpen className="w-3 h-3 text-brand-copper fill-brand-copper" />
+              <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
+                Leituras em Andamento
+              </h3>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
+              {inProgressBooks.map(book => (
+                <button 
+                  key={book.id} 
+                  onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
+                  className={cn(
+                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 relative overflow-hidden text-left",
+                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
+                  )}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <BookOpen className="w-4 h-4 text-brand-copper" />
+                    {book.isFavorite && (
+                      <Star className="w-3.5 h-3.5 text-brand-copper fill-brand-copper" />
+                    )}
+                  </div>
+                  
+                  <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                    {book.name.replace('.pdf', '')}
+                  </p>
+                  
+                  <div className="mt-2">
+                    <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">
+                      {book.totalPages && book.totalPages > 0 
+                        ? `${Math.round(((book.lastPage || 0) / book.totalPages) * 100)}% concluído` 
+                        : 'Em andamento'}
+                    </p>
+                    
+                    {book.totalPages && book.totalPages > 0 && (
+                      <div className="h-0.5 w-full bg-gray-100 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(book.lastPage || 0) / book.totalPages * 100}%` }}
+                          className="h-full bg-brand-copper"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </button>
               ))}
             </div>
           </section>
@@ -200,10 +257,11 @@ export default function HomeScreen() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
               {favBooks.map(book => (
-                <div 
+                <button 
                   key={book.id} 
+                  onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
                   className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 relative overflow-hidden",
+                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 relative overflow-hidden text-left",
                     settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
                   )}
                 >
@@ -238,7 +296,7 @@ export default function HomeScreen() {
                       </div>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>

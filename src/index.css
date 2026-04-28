@@ -20,6 +20,10 @@ body {
 @theme {
   --color-brand-navy: #001F3F;
   --color-brand-copper: #CD7F32;
+  --color-brand-gold-light: #FFE082;
+  --color-brand-gold-medium: #D4AF37;
+  --color-brand-gold-dark: #B8860B;
+  --color-brand-brown: #3E2723;
   --color-brand-red: #B22222;
   --font-serif: "Playfair Display", serif;
 }

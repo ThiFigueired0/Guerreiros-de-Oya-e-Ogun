@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera,
-  Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone,
+  Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone, ArrowUp, ArrowDown, ArrowLeftRight, FileText,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,23 +14,78 @@ const AVAILABLE_ICONS: Record<string, any> = {
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 };
 
-const TAB_CONFIG = [
-  { path: '/home', label: 'Início' },
-  { path: '/calendar', label: 'Agenda' },
-  { path: '/herbs', label: 'Banhos' },
-  { path: '/trab', label: 'Trabalhos' },
-  { path: '/points', label: 'Pontos' },
-  { path: '/settings', label: 'Configurações' },
+const ALL_TABS = [
+  { path: '/home', label: 'Início', defaultIcon: Star },
+  { path: '/calendar', label: 'Agenda', defaultIcon: Calendar },
+  { path: '/herbs', label: 'Banhos', defaultIcon: Droplets },
+  { path: '/trab', label: 'Trabalhos', defaultIcon: Heart },
+  { path: '/points', label: 'Pontos', defaultIcon: Music },
+  { path: '/studies', label: 'Estudos', defaultIcon: GraduationCap },
+  { path: '/notes', label: 'Notas', defaultIcon: FileText },
+  { path: '/settings', label: 'Ajustes', defaultIcon: Settings },
 ];
+
+const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
+const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/settings'];
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
-    eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false,
-    tabIcons: {}
+    tabIcons: {},
+    primaryTabPaths: DEFAULT_PRIMARY,
+    secondaryTabPaths: DEFAULT_SECONDARY,
   });
+
+  const primaryTabs = settings.primaryTabPaths || DEFAULT_PRIMARY;
+  const secondaryTabs = settings.secondaryTabPaths || DEFAULT_SECONDARY;
+
+  const moveTab = (path: string, from: 'primary' | 'secondary', to: 'primary' | 'secondary') => {
+    if (path === '/home') return; // Cannot move home
+
+    let newPrimary = [...primaryTabs];
+    let newSecondary = [...secondaryTabs];
+
+    if (from === 'primary' && to === 'secondary') {
+      // Allow moving as long as home stays
+      if (newPrimary.length <= 1) return; 
+      
+      newPrimary = newPrimary.filter(p => p !== path);
+      newSecondary = [...newSecondary, path];
+    } else if (from === 'secondary' && to === 'primary') {
+      newSecondary = newSecondary.filter(s => s !== path);
+      newPrimary = [...newPrimary, path];
+    }
+
+    setSettings({
+      ...settings,
+      primaryTabPaths: newPrimary,
+      secondaryTabPaths: newSecondary
+    });
+  };
+
+  const reorderTab = (list: 'primary' | 'secondary', index: number, direction: 'up' | 'down') => {
+    const newList = list === 'primary' ? [...primaryTabs] : [...secondaryTabs];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+    // Boundary checks
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
+
+    // Home protection in primary list
+    if (list === 'primary') {
+      if (index === 0 || targetIndex === 0) return;
+    }
+
+    // Swap
+    [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+    
+    setSettings({
+      ...settings,
+      [list === 'primary' ? 'primaryTabPaths' : 'secondaryTabPaths']: newList
+    });
+  };
 
   const [newCat, setNewCat] = useState('');
   const [newName, setNewName] = useState('');
@@ -172,10 +227,121 @@ export default function SettingsScreen() {
           settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
         )}>
           <h3 className="text-[10px] font-black text-brand-copper uppercase mb-4 tracking-[0.2em] flex items-center gap-2">
-            <Smartphone className="w-3 h-3" /> Personalizar Navegação
+            <Smartphone className="w-3 h-3" /> Organizar Menu
+          </h3>
+          
+          <div className="space-y-6">
+            <div>
+              <p className="text-[9px] font-black uppercase text-gray-400 mb-3 tracking-widest">Barra Principal (Máx 4 sugerido)</p>
+              <div className="space-y-2">
+                {primaryTabs.map((path, idx) => {
+                  const tab = ALL_TABS.find(t => t.path === path);
+                  if (!tab) return null;
+                  const isHome = path === '/home';
+                  return (
+                    <div key={path} className={cn(
+                      "flex items-center gap-3 p-3 rounded-2xl border transition-colors",
+                      settings.darkMode ? "bg-black/20 border-gray-100/5" : "bg-gray-50 border-gray-100"
+                    )}>
+                      <div className="w-8 h-8 rounded-lg bg-brand-copper/10 flex items-center justify-center text-brand-copper">
+                        {settings.tabIcons?.[path] && AVAILABLE_ICONS[settings.tabIcons[path]] 
+                          ? React.createElement(AVAILABLE_ICONS[settings.tabIcons[path]], { className: "w-4 h-4" })
+                          : <tab.defaultIcon className="w-4 h-4" />
+                        }
+                      </div>
+                      <span className={cn("flex-1 text-xs font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
+                        {tab.label}
+                        {isHome && <span className="ml-2 text-[8px] opacity-40 uppercase font-black tracking-tight">(Fixo)</span>}
+                      </span>
+                      {!isHome && (
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => reorderTab('primary', idx, 'up')} 
+                            disabled={idx <= 1} 
+                            className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <button 
+                            onClick={() => reorderTab('primary', idx, 'down')} 
+                            disabled={idx === primaryTabs.length - 1} 
+                            className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                          <button 
+                            onClick={() => moveTab(path, 'primary', 'secondary')} 
+                            className="p-2 text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
+                            title="Mover para Mais"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[9px] font-black uppercase text-gray-400 mb-3 tracking-widest">Menu "Mais"</p>
+              <div className="space-y-2">
+                {secondaryTabs.map((path, idx) => {
+                  const tab = ALL_TABS.find(t => t.path === path);
+                  if (!tab) return null;
+                  return (
+                    <div key={path} className={cn(
+                      "flex items-center gap-3 p-3 rounded-2xl border transition-colors",
+                      settings.darkMode ? "bg-black/20 border-gray-100/5" : "bg-gray-50 border-gray-100"
+                    )}>
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/30 flex items-center justify-center text-gray-400">
+                        {settings.tabIcons?.[path] && AVAILABLE_ICONS[settings.tabIcons[path]] 
+                          ? React.createElement(AVAILABLE_ICONS[settings.tabIcons[path]], { className: "w-4 h-4" })
+                          : <tab.defaultIcon className="w-4 h-4" />
+                        }
+                      </div>
+                      <span className={cn("flex-1 text-xs font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{tab.label}</span>
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => reorderTab('secondary', idx, 'up')} 
+                          disabled={idx === 0} 
+                          className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => reorderTab('secondary', idx, 'down')} 
+                          disabled={idx === secondaryTabs.length - 1} 
+                          className="p-2 opacity-50 hover:opacity-100 disabled:opacity-10 transition-opacity"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                        <button 
+                          onClick={() => moveTab(path, 'secondary', 'primary')} 
+                          className="p-2 text-brand-copper hover:bg-brand-copper/10 rounded-lg transition-colors"
+                          title="Mover para Barra Principal"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={cn(
+          "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors duration-500",
+          settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+        )}>
+          <h3 className="text-[10px] font-black text-brand-copper uppercase mb-4 tracking-[0.2em] flex items-center gap-2">
+            <Smartphone className="w-3 h-3" /> Personalizar Ícones
           </h3>
           <div className="space-y-4">
-            {TAB_CONFIG.map((tab) => {
+            {ALL_TABS.map((tab) => {
               const currentIconName = settings.tabIcons?.[tab.path];
               const IconComp = currentIconName ? AVAILABLE_ICONS[currentIconName] : null;
 
