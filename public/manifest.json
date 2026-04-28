@@ -1,0 +1,22 @@
+{
+  "name": "Guerreiros de Oya e Ogun",
+  "short_name": "Guerreiros",
+  "description": "App para gestão de eventos, banhos de ervas, pontos cantados e anotações espirituais.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F9F9",
+  "theme_color": "#A0522D",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
