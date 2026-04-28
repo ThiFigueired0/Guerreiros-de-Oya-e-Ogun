@@ -5,7 +5,6 @@ import {
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 } from 'lucide-react';
-import { LOGO_URL } from './constants';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -281,10 +280,9 @@ function TopHeader() {
 
           <div className="w-32 h-32 rounded-full border-4 border-brand-copper bg-white shadow-[0_0_30px_rgba(184,134,11,0.3)] flex items-center justify-center overflow-hidden relative">
             <img 
-              src={settings.logoBase64 || LOGO_URL} 
-              alt="Logo Templo" 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
+              src="/logo.jpg" 
+              alt="Logo" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} 
             />
           </div>
         </div>
