@@ -76,10 +76,10 @@ import StudiesScreen from './screens/Studies';
 import { NotificationManager } from './components/NotificationManager';
 
 const ALL_TABS = [
-  { path: '/home', label: 'Início', defaultIcon: Star },
+  { path: '/home', label: 'Início', defaultIcon: Home },
   { path: '/calendar', label: 'Agenda', defaultIcon: Calendar },
-  { path: '/herbs', label: 'Banhos', defaultIcon: Droplets },
-  { path: '/trab', label: 'Trabalhos', defaultIcon: Heart },
+  { path: '/herbs', label: 'Banhos', defaultIcon: Leaf },
+  { path: '/trab', label: 'Trabalhos', defaultIcon: Anchor },
   { path: '/points', label: 'Pontos', defaultIcon: Music },
   { path: '/studies', label: 'Estudos', defaultIcon: GraduationCap },
   { path: '/notes', label: 'Notas', defaultIcon: FileText },

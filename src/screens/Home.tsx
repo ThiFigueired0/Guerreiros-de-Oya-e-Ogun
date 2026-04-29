@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Star, Calendar, Droplets, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
@@ -148,7 +148,7 @@ export default function HomeScreen() {
         {favBaths.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-4 px-2">
-              <Droplets className="w-3 h-3 text-brand-copper fill-brand-copper" />
+              <Leaf className="w-3 h-3 text-brand-copper fill-brand-copper" />
               <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
                 Banhos Favoritos
               </h3>
@@ -163,7 +163,7 @@ export default function HomeScreen() {
                     settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
                   )}
                 >
-                  <Droplets className="w-4 h-4 text-brand-copper mb-3" />
+                  <Leaf className="w-4 h-4 text-brand-copper mb-3" />
                   <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     {bath.title}
                   </p>
@@ -176,7 +176,7 @@ export default function HomeScreen() {
         {favPontos.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-4 px-2">
-              <Star className="w-3 h-3 text-brand-gold fill-brand-gold" />
+              <Music className="w-3 h-3 text-brand-red fill-brand-red" />
               <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
                 Pontos Favoritos
               </h3>
@@ -205,9 +205,9 @@ export default function HomeScreen() {
         {inProgressBooks.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-4 px-2">
-              <BookOpen className="w-3 h-3 text-brand-copper fill-brand-copper" />
+              <GraduationCap className="w-3 h-3 text-brand-copper fill-brand-copper" />
               <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Leituras em Andamento
+                Estudos em Andamento
               </h3>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
@@ -221,9 +221,9 @@ export default function HomeScreen() {
                   )}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <BookOpen className="w-4 h-4 text-brand-copper" />
+                    <GraduationCap className="w-4 h-4 text-brand-copper" />
                     {book.isFavorite && (
-                      <Star className="w-3.5 h-3.5 text-brand-copper fill-brand-copper" />
+                      <Heart className="w-3.5 h-3.5 text-brand-copper fill-brand-copper" />
                     )}
                   </div>
                   
@@ -257,9 +257,9 @@ export default function HomeScreen() {
         {favBooks.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-4 px-2">
-              <Star className="w-3 h-3 text-brand-copper fill-brand-copper" />
+              <GraduationCap className="w-3 h-3 text-brand-copper fill-brand-copper" />
               <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Livros Favoritos
+                Estudos Favoritos
               </h3>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
@@ -273,7 +273,7 @@ export default function HomeScreen() {
                   )}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <BookOpen className="w-4 h-4 text-brand-copper" />
+                    <GraduationCap className="w-4 h-4 text-brand-copper" />
                     {book.readingStatus === 'completed' && (
                       <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
                     )}

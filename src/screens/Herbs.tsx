@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf } from 'lucide-react';
+import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { HerbBath, AppSettings, ReadyBath } from '../types';
@@ -109,6 +109,86 @@ const INITIAL_BATHS: HerbBath[] = [
     herbs: 'Pinhão roxo',
     observations: '',
     isFavorite: false
+  },
+  {
+    id: 'exu',
+    title: 'Banho de Exu',
+    category: 'Entidades',
+    herbs: 'Mamona\nAmora\nAçoita cavalo\nFolha do fogo\ndesata nó\nPau tenente\nPeregum roxo',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'pombagira',
+    title: 'Banho de Pombagira',
+    category: 'Entidades',
+    herbs: 'Rosa vermelha\nCalêndula\nCanela\nCravo da Índia\nBrinco de princesa\nAmor agarradinho\nAmor perfeito',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'exu_mirim',
+    title: 'Banho de Exu Mirim',
+    category: 'Entidades',
+    herbs: 'Folha de laranjeira / Casca da laranja\nFolha de limão',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'malandros',
+    title: 'Banho de Malandros',
+    category: 'Entidades',
+    herbs: 'Alecrim\nTrevo de quarto folhas\nRosas vermelhas\nPimenta rosada\nCapim limão\nFolha de cana',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'baianos',
+    title: 'Banho de Baianos',
+    category: 'Entidades',
+    herbs: 'Folha de laranjeira\nErva cidreira\nCoentro\nFolha de coqueiro\nFolha de caju\nCasca de coco ralado\nÁgua de coco',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'ere',
+    title: 'Banho de Erê',
+    category: 'Entidades',
+    herbs: 'Levante\nVerbena\nRosas cor de rosa\nFuncho/erva doce\nAlecrim\nTrevo\nFolha de anil\nFolha de laranjeira\nAlfazema\nJasmim\nCalêndula',
+    observations: 'Também pode utilizar ervas de Oxum, pois na umbanda é Oxum quem trás os erês. Além disso, pode adicionar ao banho um pouco de guaraná',
+    isFavorite: false
+  },
+  {
+    id: 'caboclo',
+    title: 'Banho de Caboclo',
+    category: 'Entidades',
+    herbs: '',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'preto_velho',
+    title: 'Banho de Preto velho',
+    category: 'Entidades',
+    herbs: 'Guiné\nArruda\nAlecrim\nManjericão\nEspinheira santa\nLágrima de nossa senhora\nSálvia',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'marujo',
+    title: 'Banho de Marujo',
+    category: 'Entidades',
+    herbs: 'Levante\nCravo da Índia\nHortelã\nManjericão\nBoldo\nLosna\nCarqueja\nSalsão',
+    observations: '',
+    isFavorite: false
+  },
+  {
+    id: 'ciganos',
+    title: 'Banho de Ciganos',
+    category: 'Entidades',
+    herbs: 'Tomilho\nCalêndula\nCravo\nCanela\nArroz (grão)\nEucalipto\nFlor de girassol\nPau resposta\nAnis estrelado',
+    observations: '',
+    isFavorite: false
   }
 ];
 
@@ -139,22 +219,19 @@ export default function HerbsScreen() {
 
   const bathCategories = settings.bathCategories || ['Gerais', 'Orixás', 'Entidades'];
   
-  // Sync missing initial baths and update Orixá compositions
+  // Sync missing initial baths and update Orixá/Entidades compositions
   React.useEffect(() => {
     let hasChanged = false;
     
-    // 1. Update existing and remove unwanted Orixá baths
+    // 1. Update existing and remove unwanted Orixá/Entidades baths
     const filteredAndUpdatedBaths = baths.filter(current => {
       const initial = INITIAL_BATHS.find(i => i.id === current.id);
-      // If it's an Orixá bath but not in INITIAL_BATHS, remove it (as requested)
-      if (current.category === 'Orixás' && !initial) {
-        hasChanged = true;
-        return false;
-      }
+      // If it's a category we manage but not in INITIAL_BATHS, remove it (if it was one we pushed originally)
+      // For now, let's just focus on syncing existing ones.
       return true;
     }).map(current => {
       const initial = INITIAL_BATHS.find(i => i.id === current.id);
-      if (initial && initial.category === 'Orixás') {
+      if (initial && (initial.category === 'Orixás' || initial.category === 'Entidades')) {
         const isDifferent = current.herbs !== initial.herbs || current.title !== initial.title;
         if (isDifferent) {
           hasChanged = true;
@@ -474,6 +551,12 @@ export default function HerbsScreen() {
                       )}>
                         {bath.title}
                       </h4>
+                      {(!bath.herbs.trim() && !bath.observations.trim()) && (
+                        <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
+                          <AlertCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">Sem informações</span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex gap-2">
@@ -842,20 +925,36 @@ export default function HerbsScreen() {
 
               <div className="space-y-3">
                 {[
-                  { day: 'Segunda-feira', bath: 'Banho de descarrego' },
-                  { day: 'Terça-feira', bath: 'Banho de descarrego' },
-                  { day: 'Quarta-feira', bath: 'Banho de descarrego' },
-                  { day: 'Quinta-feira', bath: 'Banho de desenvolvimento' },
-                  { day: 'Sexta-feira', bath: 'Banho energizador' },
+                  { day: 'Segunda-feira', bath: 'Banho de descarrego', id: 'b1' },
+                  { day: 'Terça-feira', bath: 'Banho de descarrego', id: 'b1' },
+                  { day: 'Quarta-feira', bath: 'Banho de descarrego', id: 'b1' },
+                  { day: 'Quinta-feira', bath: 'Banho de desenvolvimento', id: 'b2' },
+                  { day: 'Sexta-feira', bath: 'Banho energizador', id: 'b4' },
                   { day: 'Sábado', bath: 'Banho da gira' },
                 ].map((item, idx) => (
-                  <div key={idx} className={cn(
-                    "flex items-center justify-between p-3 rounded-xl border border-gray-50 bg-gray-50/30",
-                    settings.darkMode && "border-gray-800 bg-white/5"
-                  )}>
-                    <span className={cn("text-[11px] font-black uppercase tracking-tight text-brand-navy/60", settings.darkMode && "text-gray-400")}>
-                      {item.day}
-                    </span>
+                  <div 
+                    key={idx} 
+                    onClick={() => {
+                      if (item.id) {
+                        const bath = baths.find(b => b.id === item.id);
+                        if (bath) {
+                          setSelectedBathForDetails(bath);
+                          setShowRoutineModal(false);
+                        }
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-xl border border-gray-50 bg-gray-50/30 transition-all",
+                      item.id && "cursor-pointer hover:border-brand-copper/30 active:scale-[0.98]",
+                      settings.darkMode && "border-gray-800 bg-white/5"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={cn("text-[11px] font-black uppercase tracking-tight text-brand-navy/60", settings.darkMode && "text-gray-400")}>
+                        {item.day}
+                      </span>
+                      {item.id && <Droplet className="w-3 h-3 text-brand-copper/40" />}
+                    </div>
                     <span className={cn("text-xs font-bold text-brand-copper", settings.darkMode && "text-brand-gold")}>
                       {item.bath}
                     </span>
