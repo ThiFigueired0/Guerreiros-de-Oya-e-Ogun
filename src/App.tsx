@@ -233,16 +233,64 @@ function Navigation() {
 
 function TempleLogo() {
   return (
-    <img 
-  src="/logo.jpg" 
-  alt="Logo Tenda" 
-  style={{ 
-    width: '100%', 
-    height: '100%', 
-    objectFit: 'cover', 
-    borderRadius: '50%' 
-  }} 
-/>
+    <svg viewBox="0 0 200 200" className="w-full h-full">
+      {/* Circle Background */}
+      <circle cx="100" cy="100" r="95" fill="white" />
+      
+      {/* Decorative Orbs around the edge - representing Orixá symbols */}
+      <g opacity="0.3">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+          <circle 
+            key={i}
+            cx={100 + 80 * Math.cos((angle * Math.PI) / 180)} 
+            cy={100 + 80 * Math.sin((angle * Math.PI) / 180)} 
+            r="4" 
+            fill="#B8860B" 
+          />
+        ))}
+      </g>
+
+      {/* Main Sword (Ogum) - Sharp grey sword */}
+      <path 
+        d="M60 170 L160 40 L175 30 L180 45 L170 155 L60 170" 
+        fill="#4A4A4A" 
+        stroke="#1A1A1A" 
+        strokeWidth="1.5"
+      />
+      <path 
+        d="M60 170 L170 35" 
+        stroke="white" 
+        strokeWidth="0.5" 
+        opacity="0.3" 
+      />
+      {/* Handle */}
+      <rect x="50" y="160" width="20" height="30" transform="rotate(-45 60 175)" fill="#1A1A1A" rx="2" />
+      <path d="M45 165 Q35 175 45 185" fill="none" stroke="#CC0000" strokeWidth="4" />
+
+      {/* Oya Figure - Silhouette with red/white details */}
+      <g transform="translate(60, 80) scale(0.6)">
+        {/* Sky/Wind elements around Oya */}
+        <path d="M20 20 Q50 0 80 20" fill="none" stroke="#CC0000" strokeWidth="2" opacity="0.5" />
+        
+        {/* Oya Figure Body */}
+        <circle cx="50" cy="30" r="10" fill="#1A1A1A" /> {/* Head */}
+        <path d="M30 65 Q50 40 70 65 L80 120 L20 120 Z" fill="#FFFFFF" stroke="#1A1A1A" strokeWidth="1" /> {/* Dress */}
+        <path d="M30 70 L70 70 L70 90 L30 90 Z" fill="#CC0000" opacity="0.8" /> {/* Red sash */}
+        
+        {/* Arms and smaller swords */}
+        <path d="M35 50 Q20 60 25 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
+        <path d="M65 50 Q80 60 75 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
+        <path d="M15 75 L35 85" stroke="#4A4A4A" strokeWidth="4" strokeLinecap="round" />
+      </g>
+
+      {/* Texts around or near the logo */}
+      <defs>
+        <path id="circlePath" d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0" />
+      </defs>
+      <text fill="#0A0F1F" fontSize="9" fontWeight="900" letterSpacing="1">
+        <textPath xlinkHref="#circlePath" startOffset="0%">TENDA DE UMBANDA • GUERREIROS DE OYA E PAI OGUM •</textPath>
+      </text>
+    </svg>
   );
 }
 
@@ -256,28 +304,116 @@ function TopHeader() {
 
   return (
     <div className={cn(
-      "bg-brand-navy border-b-4 border-brand-copper p-6 pb-4 shadow-xl flex flex-col items-center transition-colors duration-500",
-      settings.darkMode && "bg-black"
+      "relative overflow-hidden pt-12 pb-8 shadow-2xl flex flex-col items-center transition-all duration-500",
+      settings.darkMode 
+        ? "bg-gradient-to-b from-[#0A0A0A] to-black border-b border-white/5" 
+        : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14] border-b-2 border-brand-copper/30"
     )}>
+      {/* Texture Overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
+
+      {/* Decorative Animated Background Elements */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden">
+        {/* Floating Leaves across the banner */}
+        {[...Array(24)].map((_, i) => (
+          <motion.div
+            key={`leaf-${i}`}
+            initial={{ 
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              rotate: Math.random() * 360,
+              opacity: 0,
+              scale: 0.5 + Math.random() * 0.5
+            }}
+            animate={{ 
+              x: [0, Math.random() * 150 - 75, 0],
+              y: [0, Math.random() * 150 - 75, 0],
+              rotate: [0, 180, 360],
+              opacity: [0, Math.random() * 0.4 + 0.1, 0]
+            }}
+            transition={{ 
+              duration: 20 + Math.random() * 30, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: Math.random() * 20
+            }}
+            className="absolute"
+          >
+            <Leaf 
+              className="text-brand-copper" 
+              style={{ 
+                width: 8 + Math.random() * 16, 
+                height: 8 + Math.random() * 16,
+                filter: `blur(${Math.random() * 1.5}px)`
+              }} 
+            />
+          </motion.div>
+        ))}
+
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.3, 1],
+            opacity: [0.1, 0.25, 0.1],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 w-80 h-80 bg-brand-copper rounded-full blur-[100px]"
+        />
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.2, 0.1],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-red rounded-full blur-[80px]"
+        />
+      </div>
+
       {/* Simulation of Status Bar */}
-      <div className="absolute top-0 left-0 right-0 h-6 flex justify-between items-center px-6 opacity-40">
-        <span className="text-[9px] text-white font-medium">9:41</span>
-        <div className="flex gap-1">
-          <div className="w-2 h-2 rounded-full border border-white/30"></div>
-          <div className="w-2 h-2 rounded-full bg-white"></div>
+      <div className="absolute top-0 left-0 right-0 h-10 flex justify-between items-center px-6 z-10">
+        <span className="text-[10px] text-white/40 font-bold tracking-widest font-mono">9:41</span>
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-brand-copper shadow-[0_0_8px_rgba(205,127,50,0.6)]"></div>
+          <Settings className="w-3 h-3 text-white/30" />
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col items-center">
-        <div className="relative">
-          {/* Decorative rotating icons around the logo - matching the user's logo style */}
-          <div className="absolute -inset-4 pointer-events-none">
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Title Moved above the logo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col items-center mb-8"
+        >
+          <h2 className="text-brand-copper font-serif text-[13px] uppercase tracking-[0.6em] font-black text-center px-4 drop-shadow-xl">
+            Guerreiros de Oya e Ogun
+          </h2>
+          <motion.div 
+            animate={{ width: ['0%', '100%', '0%'] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-3" 
+          />
+        </motion.div>
+
+        {/* Floating Logo Container */}
+        <motion.div 
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className="relative"
+        >
+          {/* Outer Glowing Ring */}
+          <div className="absolute -inset-4 rounded-full bg-brand-copper/10 blur-xl animate-pulse" />
+          <div className="absolute -inset-1 rounded-full border border-brand-copper/20 ring-4 ring-brand-copper/5" />
+          
+          {/* Rotating decorative icons - Herb Leaves */}
+          <div className="absolute -inset-8 pointer-events-none">
             <motion.div 
               animate={{ rotate: 360 }}
-              transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
               className="w-full h-full relative"
             >
-              {[Flame, Anchor, Shield, Star, Heart, Zap].map((Icon, i) => (
+              {[1, 2, 3, 4, 5, 6].map((_, i) => (
                 <div 
                   key={i}
                   className="absolute"
@@ -287,18 +423,24 @@ function TopHeader() {
                     transform: `rotate(${i * 60}deg) translateY(-85px) rotate(-${i * 60}deg)`
                   }}
                 >
-                  <Icon className="w-3 h-3 text-brand-copper opacity-20" />
+                  <Leaf className="w-4 h-4 text-brand-copper/30 drop-shadow-[0_0_5px_rgba(184,134,11,0.2)]" />
                 </div>
               ))}
             </motion.div>
           </div>
 
-          <div className="w-32 h-32 rounded-full border-4 border-brand-copper bg-white shadow-[0_0_30px_rgba(184,134,11,0.3)] flex items-center justify-center p-0.5 overflow-hidden relative">
+          <div className={cn(
+            "w-40 h-40 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center p-1.5 overflow-hidden relative",
+            settings.darkMode && "bg-gray-950 border-brand-copper/20"
+          )}>
+            {/* Glossy Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
+            
             {settings.logoBase64 ? (
                <img 
                 src={settings.logoBase64} 
                 alt="Logo Templo" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain filter drop-shadow-md"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const parent = e.currentTarget.parentElement;
@@ -315,11 +457,7 @@ function TopHeader() {
               <TempleLogo />
             </div>
           </div>
-        </div>
-        
-        <h2 className="text-brand-copper font-serif text-[11px] uppercase tracking-[0.4em] mt-8 font-black text-center px-4">
-          Guerreiros de Oya e Ogun
-        </h2>
+        </motion.div>
       </div>
     </div>
   );
