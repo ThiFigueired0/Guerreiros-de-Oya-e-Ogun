@@ -296,6 +296,8 @@ export default function HerbsScreen() {
   const [herbSearch, setHerbSearch] = useState('');
   const [customHerbName, setCustomHerbName] = useState('');
   const [stockSearch, setStockSearch] = useState('');
+  const [showDeleteStockConfirm, setShowDeleteStockConfirm] = useState(false);
+  const [herbToDeleteId, setHerbToDeleteId] = useState<string | null>(null);
 
   // Handle openBathId from navigation state
   useEffect(() => {
@@ -389,7 +391,16 @@ export default function HerbsScreen() {
   };
 
   const removeHerbFromStock = (id: string) => {
-    setHerbStock(herbStock.filter(h => h.id !== id));
+    setHerbToDeleteId(id);
+    setShowDeleteStockConfirm(true);
+  };
+
+  const confirmDeleteHerbStock = () => {
+    if (herbToDeleteId) {
+      setHerbStock(herbStock.filter(h => h.id !== herbToDeleteId));
+      setHerbToDeleteId(null);
+      setShowDeleteStockConfirm(false);
+    }
   };
 
   const addHerbToStock = (name: string) => {
@@ -1563,6 +1574,16 @@ export default function HerbsScreen() {
         onConfirm={confirmDeleteBath}
         title="Excluir Banho"
         message="Deseja realmente excluir este banho permanentemente?"
+      />
+      <DeleteConfirmationModal
+        isOpen={showDeleteStockConfirm}
+        onClose={() => {
+          setShowDeleteStockConfirm(false);
+          setHerbToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteHerbStock}
+        title="Excluir Erva"
+        message="Deseja realmente remover esta erva do estoque?"
       />
     </motion.div>
   );

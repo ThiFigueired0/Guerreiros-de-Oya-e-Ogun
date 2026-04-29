@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings } from '../types';
 import { cn } from '../lib/utils';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 const AVAILABLE_ICONS: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -92,6 +93,10 @@ export default function SettingsScreen() {
   const [activeTabPicker, setActiveTabPicker] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'category' | 'name' } | null>(null);
+
   const toggleDarkMode = () => setSettings({ ...settings, darkMode: !settings.darkMode });
 
   const toggleNotifications = async () => {
@@ -152,7 +157,8 @@ export default function SettingsScreen() {
   };
 
   const removeCategory = (cat: string) => {
-    setSettings({...settings, eventCategories: settings.eventCategories.filter(c => c !== cat)});
+    setItemToDelete({ id: cat, type: 'category' });
+    setShowDeleteConfirm(true);
   };
 
   const addNameSuggestion = () => {
@@ -163,7 +169,21 @@ export default function SettingsScreen() {
   };
 
   const removeName = (name: string) => {
-    setSettings({...settings, eventNames: settings.eventNames.filter(n => n !== name)});
+    setItemToDelete({ id: name, type: 'name' });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+
+    if (itemToDelete.type === 'category') {
+      setSettings({...settings, eventCategories: settings.eventCategories.filter(c => c !== itemToDelete.id)});
+    } else {
+      setSettings({...settings, eventNames: settings.eventNames.filter(n => n !== itemToDelete.id)});
+    }
+
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
   };
 
   return (
@@ -525,6 +545,20 @@ export default function SettingsScreen() {
            <p className="text-[8px] text-gray-300 font-bold uppercase">Tecnologia & Fé • v1.2.1</p>
         </section>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={itemToDelete?.type === 'category' ? "Excluir Categoria" : "Excluir Sugestão"}
+        message={itemToDelete?.type === 'category' 
+          ? "Deseja realmente excluir esta categoria de evento?" 
+          : "Deseja realmente excluir esta sugestão de nome?"
+        }
+      />
     </motion.div>
   );
 }

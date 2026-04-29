@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function useStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
+export function useStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
@@ -11,12 +11,13 @@ export function useStorage<T>(key: string, initialValue: T): [T, (value: T) => v
     }
   });
 
-  const setValue = (value: T) => {
+  const setValue = (value: T | ((val: T) => T)) => {
     try {
-      setStoredValue(value);
-      window.localStorage.setItem(key, JSON.stringify(value));
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
       // Notifica outras instâncias do hook na mesma janela
-      window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key, value } }));
+      window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key, value: valueToStore } }));
     } catch (error) {
       console.error(error);
     }

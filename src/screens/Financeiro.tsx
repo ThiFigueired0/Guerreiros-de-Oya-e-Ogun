@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Filter, Calendar, DollarSign, CheckCircle2, AlertCircle, 
   Trash2, ArrowUpRight, TrendingDown, Clock, ChevronRight, X, Save,
-  CalendarDays, Wallet, CreditCard
+  CalendarDays, Wallet, CreditCard, Copy, Edit2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings, FinancialRecord } from '../types';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function Financeiro() {
   const [settings] = useStorage<AppSettings>('templo_settings', {
@@ -21,6 +22,18 @@ export default function Financeiro() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState<'mensalidade' | 'extra' | 'oga'>('mensalidade');
   const [showAddModal, setShowAddModal ] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [recordToDeleteId, setRecordToDeleteId] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
   
   // New Record State for Extra expenses
   const [newRecord, setNewRecord] = useState<Partial<FinancialRecord> & { installmentCount?: number }>({
@@ -64,9 +77,16 @@ export default function Financeiro() {
 
   // Update newRecord type when modal opens or tab changes
   React.useEffect(() => {
-    // Manual entries are always 'extra' as per user request
-    setNewRecord(prev => ({ ...prev, type: 'extra' }));
-  }, [activeTab, showAddModal]);
+    if (editingRecord) {
+      setNewRecord({
+        ...editingRecord,
+        installmentCount: editingRecord.installments?.total || 1
+      });
+    } else {
+      // Manual entries are always 'extra' as per user request
+      setNewRecord(prev => ({ ...prev, id: undefined, type: 'extra', description: '', amount: 0, status: 'pending', installmentCount: 1 }));
+    }
+  }, [activeTab, showAddModal, editingRecord]);
 
   const months = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
@@ -75,16 +95,28 @@ export default function Financeiro() {
 
   // Initialize current year mensalidades if they don't exist
   React.useEffect(() => {
-    // 1. Correct existing mensalidades that might have the wrong amount
+    // 1. Correct existing mensalidades that might have the wrong amount or wrong day
     const correctedRecords = records.map(r => {
-      if (r.type === 'mensalidade' && r.amount !== 110) {
-        return { ...r, amount: 110 };
+      if (r.type === 'mensalidade') {
+        let updated = false;
+        const newR = { ...r };
+        if (r.amount !== 110) {
+          newR.amount = 110;
+          updated = true;
+        }
+        if (r.dueDate.endsWith('-07')) {
+          newR.dueDate = r.dueDate.replace('-07', '-08');
+          updated = true;
+        }
+        return updated ? newR : r;
       }
       return r;
     });
 
     // Check if we need to update due to correction
-    const hasWrongAmount = records.some(r => r.type === 'mensalidade' && r.amount !== 110);
+    const hasWrongData = records.some(r => 
+      r.type === 'mensalidade' && (r.amount !== 110 || r.dueDate.endsWith('-07'))
+    );
     
     // 2. Add new mensalidades for the selected year if missing
     const hasYearMensalidades = records.some(r => 
@@ -103,7 +135,7 @@ export default function Financeiro() {
         category: 'Mensalidade'
       }));
       setRecords([...correctedRecords, ...newMensalidades]);
-    } else if (hasWrongAmount) {
+    } else if (hasWrongData) {
       setRecords(correctedRecords);
     }
   }, [selectedYear, records.length]); // Re-run if year changes or if records were cleared or if amount correction is needed
@@ -130,7 +162,7 @@ export default function Financeiro() {
   }, [records, selectedYear]);
 
   const toggleStatus = (id: string) => {
-    setRecords(records.map(r => {
+    setRecords(prev => prev.map(r => {
       if (r.id === id) {
         const isPaying = r.status === 'pending';
         return {
@@ -146,67 +178,76 @@ export default function Financeiro() {
   const handleAddRecord = () => {
     if (!newRecord.description || !newRecord.amount || !newRecord.dueDate) return;
     
-    const count = newRecord.type === 'extra' ? (newRecord.installmentCount || 1) : 1;
-    const masterId = Date.now().toString();
-    const newRecords: FinancialRecord[] = [];
-
-    if (count > 1 && customInstallments.length === count) {
-      // Use manually adjusted installments
-      customInstallments.forEach((inst, i) => {
-        newRecords.push({
-          id: `${masterId}-${i}`,
-          type: newRecord.type as 'mensalidade' | 'extra' | 'oga',
-          description: newRecord.description!,
-          amount: inst.amount,
-          dueDate: inst.dueDate,
-          status: 'pending',
-          category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
-          installments: {
-            current: i + 1,
-            total: count,
-            masterId: masterId
-          }
-        });
-      });
+    if (editingRecord) {
+      setRecords(prev => prev.map(r => r.id === editingRecord.id ? { 
+        ...r, 
+        description: newRecord.description!, 
+        amount: Number(newRecord.amount),
+        dueDate: newRecord.dueDate!
+      } : r));
     } else {
-      // One-off or simple splitting
-      const baseDate = new Date(newRecord.dueDate + 'T12:00:00');
-      for (let i = 0; i < count; i++) {
-        const dueDate = new Date(baseDate);
-        dueDate.setMonth(baseDate.getMonth() + i);
+      const count = newRecord.type === 'extra' ? (newRecord.installmentCount || 1) : 1;
+      const masterId = Date.now().toString();
+      const newRecordsList: FinancialRecord[] = [];
 
-        newRecords.push({
-          id: `${masterId}-${i}`,
-          type: newRecord.type as 'mensalidade' | 'extra' | 'oga',
-          description: newRecord.description!,
-          amount: Number(newRecord.amount) / count,
-          dueDate: dueDate.toISOString().split('T')[0],
-          status: 'pending',
-          category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
-          installments: count > 1 ? {
-            current: i + 1,
-            total: count,
-            masterId: masterId
-          } : undefined
+      if (count > 1 && customInstallments.length === count) {
+        // Use manually adjusted installments
+        customInstallments.forEach((inst, i) => {
+          newRecordsList.push({
+            id: `${masterId}-${i}`,
+            type: newRecord.type as 'mensalidade' | 'extra' | 'oga',
+            description: newRecord.description!,
+            amount: inst.amount,
+            dueDate: inst.dueDate,
+            status: 'pending',
+            category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
+            installments: {
+              current: i + 1,
+              total: count,
+              masterId: masterId
+            }
+          });
         });
+      } else {
+        // One-off or simple splitting
+        const baseDate = new Date(newRecord.dueDate + 'T12:00:00');
+        for (let i = 0; i < count; i++) {
+          const dueDate = new Date(baseDate);
+          dueDate.setMonth(baseDate.getMonth() + i);
+
+          newRecordsList.push({
+            id: `${masterId}-${i}`,
+            type: newRecord.type as 'mensalidade' | 'extra' | 'oga',
+            description: newRecord.description!,
+            amount: Number(newRecord.amount) / count,
+            dueDate: dueDate.toISOString().split('T')[0],
+            status: 'pending',
+            category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
+            installments: count > 1 ? {
+              current: i + 1,
+              total: count,
+              masterId: masterId
+            } : undefined
+          });
+        }
       }
+      setRecords(prev => [...prev, ...newRecordsList]);
     }
 
-    setRecords([...records, ...newRecords]);
     setShowAddModal(false);
-    setNewRecord({
-      type: 'extra',
-      description: '',
-      amount: 0,
-      dueDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      installmentCount: 1
-    });
+    setEditingRecord(null);
   };
 
   const deleteRecord = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este registro?')) {
-      setRecords(records.filter(r => r.id !== id));
+    setRecordToDeleteId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteRecord = () => {
+    if (recordToDeleteId) {
+      setRecords(prev => prev.filter(r => r.id !== recordToDeleteId));
+      setRecordToDeleteId(null);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -239,18 +280,19 @@ export default function Financeiro() {
               settings.darkMode ? "text-white" : "text-brand-navy"
             )}
           >
-            <option value={2025}>2025</option>
             <option value={2026}>2026</option>
             <option value={2027}>2027</option>
           </select>
           
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowAddModal(true)}
-            className="w-9 h-9 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20"
-          >
-            <Plus className="w-5 h-5" />
-          </motion.button>
+          {activeTab === 'extra' && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowAddModal(true)}
+              className="w-9 h-9 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20"
+            >
+              <Plus className="w-5 h-5" />
+            </motion.button>
+          )}
         </div>
       </div>
 
@@ -310,6 +352,37 @@ export default function Financeiro() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
+              {/* Account Info Card */}
+              <div className={cn(
+                "p-5 rounded-[32px] border transition-all relative overflow-hidden",
+                settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
+              )}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[7px] font-black text-gray-300 uppercase tracking-widest">Caixa</div>
+                  <div>
+                    <p className={cn("text-[9px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
+                    <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
+                  </div>
+                </div>
+                
+                <div className={cn(
+                  "p-3 rounded-2xl flex items-center justify-between gap-4 mb-3",
+                  settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+                )}>
+                  <div className="overflow-hidden">
+                    <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Chave PIX (CPF)</p>
+                    <p className={cn("text-base font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
+                  </div>
+                  <button 
+                    onClick={() => copyToClipboard('33464358810', 'caixa')}
+                    className="w-8 h-8 bg-brand-copper text-white rounded-lg flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
+                  >
+                    {copied === 'caixa' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[9px] text-gray-400 font-medium px-1">Conta exclusiva para o pagamento das mensalidades.</p>
+              </div>
+
               {/* Pendentes */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-1">
@@ -336,7 +409,7 @@ export default function Financeiro() {
                         </h3>
                         <div className="flex items-center gap-2">
                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                            Vence em {new Date(record.dueDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            Vence em {new Date(record.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </p>
                           <span className="w-1 h-1 rounded-full bg-gray-300" />
                           <p className={cn("text-[10px] font-black text-brand-copper")}>
@@ -429,6 +502,67 @@ export default function Financeiro() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-4"
             >
+              {/* Account Info Cards - Side by Side */}
+              <div className="grid grid-cols-2 gap-3 pb-2">
+                {/* Caixa Card */}
+                <div className={cn(
+                  "p-4 rounded-[32px] border transition-all relative overflow-hidden flex flex-col",
+                  settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[6px] font-black text-gray-300 uppercase tracking-widest">Caixa</div>
+                    <div>
+                      <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40", settings.darkMode ? "text-white" : "text-brand-navy")}>Caixa Econômica</p>
+                    </div>
+                  </div>
+                  
+                  <div className={cn(
+                    "p-2 rounded-xl flex items-center justify-between gap-2 mt-auto",
+                    settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+                  )}>
+                    <div className="overflow-hidden min-w-0">
+                      <p className="text-[7px] text-gray-500 font-bold uppercase tracking-widest leading-none mb-1">PIX (CPF)</p>
+                      <p className={cn("text-[11px] font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard('33464358810', 'caixa-extra')}
+                      className="w-6 h-6 bg-brand-copper text-white rounded-lg flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
+                    >
+                      {copied === 'caixa-extra' ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Nubank Card */}
+                <div className={cn(
+                  "p-4 rounded-[32px] border transition-all relative overflow-hidden flex flex-col",
+                  settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[6px] font-black text-gray-300 uppercase tracking-widest">Nubank</div>
+                    <div>
+                      <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank</p>
+                    </div>
+                  </div>
+                  
+                  <div className={cn(
+                    "p-2 rounded-xl flex items-center justify-between gap-2 mt-auto",
+                    settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+                  )}>
+                    <div className="overflow-hidden min-w-0">
+                      <p className="text-[7px] text-gray-500 font-bold uppercase tracking-widest leading-none mb-1">PIX (Cel)</p>
+                      <p className={cn("text-[11px] font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
+                    </div>
+                    <button 
+                      onClick={() => copyToClipboard('11982350614', 'nubank-extra')}
+                      className="w-6 h-6 bg-[#8A05BE] text-white rounded-lg flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-90 transition-all shrink-0"
+                    >
+                      {copied === 'nubank-extra' ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="px-1 flex justify-between items-center">
                 <h3 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
                   Gastos Extras
@@ -476,7 +610,7 @@ export default function Financeiro() {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                {new Date(record.dueDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                {new Date(record.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                               </p>
                               <span className="w-1 h-1 rounded-full bg-gray-300" />
                               <p className={cn("text-[10px] font-black", settings.darkMode ? "text-gray-300" : "text-brand-copper")}>
@@ -493,12 +627,23 @@ export default function Financeiro() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => deleteRecord(record.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingRecord(record);
+                              setShowAddModal(true);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-brand-navy dark:hover:text-white transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => deleteRecord(record.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => toggleStatus(record.id)}
@@ -581,7 +726,7 @@ export default function Financeiro() {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                {new Date(record.dueDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                {new Date(record.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                               </p>
                               <span className="w-1 h-1 rounded-full bg-gray-300" />
                               <p className={cn("text-[10px] font-black", settings.darkMode ? "text-gray-300" : "text-brand-copper")}>
@@ -598,6 +743,12 @@ export default function Financeiro() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => deleteRecord(record.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
                           onClick={() => toggleStatus(record.id)}
@@ -642,9 +793,15 @@ export default function Financeiro() {
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className={cn("text-xl font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  Novo Registro
+                  {editingRecord ? 'Editar Registro' : 'Novo Registro'}
                 </h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 rounded-full bg-gray-100 dark:bg-white/10">
+                <button 
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingRecord(null);
+                  }} 
+                  className="p-2 rounded-full bg-gray-100 dark:bg-white/10"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -804,13 +961,23 @@ export default function Financeiro() {
                   className="w-full bg-brand-navy text-white text-xs font-black uppercase tracking-[0.2em] py-5 rounded-3xl shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  Salvar Registro
+                  {editingRecord ? 'Salvar Alterações' : 'Salvar Registro'}
                 </button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setRecordToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteRecord}
+        title="Excluir Registro"
+        message="Deseja realmente excluir este registro financeiro?"
+      />
     </motion.div>
   );
 }
