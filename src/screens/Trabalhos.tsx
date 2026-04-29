@@ -20,14 +20,14 @@ export default function TrabalhosScreen() {
   const [bichos, setBichos] = useStorage<Bicho[]>('templo_bichos', [
     { id: '1', name: 'Carijó', purchaseCost: 65, serviceCost: 150 },
     { id: '2', name: 'Galo', purchaseCost: 210, serviceCost: 200 },
-    { id: '3', name: 'Preá', purchaseCost: 0, serviceCost: 250 },
+    { id: '3', name: 'Preá', purchaseCost: 90, serviceCost: 250 },
     { id: '4', name: 'Angola', purchaseCost: 0, serviceCost: 300 },
     { id: '5', name: 'Cabrito', purchaseCost: 0, serviceCost: 600 },
     { id: '6', name: 'Calçado', purchaseCost: 0, serviceCost: 850 },
     { id: '7', name: 'Perua', purchaseCost: 0, serviceCost: 300 },
     { id: '8', name: 'Pombo', purchaseCost: 40, serviceCost: 50 },
     { id: '9', name: 'Codorna', purchaseCost: 0, serviceCost: 20 },
-    { id: '10', name: 'Garnizé', purchaseCost: 90, serviceCost: 0 }
+    { id: '10', name: 'Garnizé', purchaseCost: 90, serviceCost: 200 }
   ]);
 
   const formatCurrency = (value: number) => {

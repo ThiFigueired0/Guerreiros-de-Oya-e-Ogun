@@ -42,6 +42,7 @@ export default function Financeiro() {
     amount: 0,
     dueDate: new Date().toISOString().split('T')[0],
     status: 'pending',
+    paymentAccount: 'Nubank',
     installmentCount: 1
   });
 
@@ -80,11 +81,21 @@ export default function Financeiro() {
     if (editingRecord) {
       setNewRecord({
         ...editingRecord,
+        paymentAccount: editingRecord.paymentAccount || 'Nubank',
         installmentCount: editingRecord.installments?.total || 1
       });
     } else {
       // Manual entries are always 'extra' as per user request
-      setNewRecord(prev => ({ ...prev, id: undefined, type: 'extra', description: '', amount: 0, status: 'pending', installmentCount: 1 }));
+      setNewRecord(prev => ({ 
+        ...prev, 
+        id: undefined, 
+        type: 'extra', 
+        description: '', 
+        amount: 0, 
+        status: 'pending', 
+        paymentAccount: 'Nubank',
+        installmentCount: 1 
+      }));
     }
   }, [activeTab, showAddModal, editingRecord]);
 
@@ -183,7 +194,8 @@ export default function Financeiro() {
         ...r, 
         description: newRecord.description!, 
         amount: Number(newRecord.amount),
-        dueDate: newRecord.dueDate!
+        dueDate: newRecord.dueDate!,
+        paymentAccount: newRecord.paymentAccount
       } : r));
     } else {
       const count = newRecord.type === 'extra' ? (newRecord.installmentCount || 1) : 1;
@@ -200,6 +212,7 @@ export default function Financeiro() {
             amount: inst.amount,
             dueDate: inst.dueDate,
             status: 'pending',
+            paymentAccount: newRecord.paymentAccount,
             category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
             installments: {
               current: i + 1,
@@ -222,6 +235,7 @@ export default function Financeiro() {
             amount: Number(newRecord.amount) / count,
             dueDate: dueDate.toISOString().split('T')[0],
             status: 'pending',
+            paymentAccount: newRecord.paymentAccount,
             category: newRecord.type === 'mensalidade' ? 'Mensalidade' : (newRecord.type === 'oga' ? 'Ogã' : 'Extra'),
             installments: count > 1 ? {
               current: i + 1,
@@ -606,6 +620,14 @@ export default function Financeiro() {
                                 {record.installments.current}/{record.installments.total}
                               </span>
                             )}
+                            {record.paymentAccount && (
+                              <span className={cn(
+                                "text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest shrink-0",
+                                record.paymentAccount === 'Nubank' ? "bg-[#8A05BE]/10 text-[#8A05BE]" : "bg-brand-navy/10 text-brand-navy"
+                              )}>
+                                {record.paymentAccount}
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
@@ -808,20 +830,20 @@ export default function Financeiro() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Tipo</label>
+                   <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Conta para Pagamento</label>
                   <div className="flex gap-2">
-                    {(['extra'] as const).map(type => (
+                    {(['Nubank', 'Caixa Econômica'] as const).map(account => (
                       <button
-                        key={type}
-                        onClick={() => setNewRecord({ ...newRecord, type: type as 'extra' | 'mensalidade' })}
+                        key={account}
+                        onClick={() => setNewRecord({ ...newRecord, paymentAccount: account })}
                         className={cn(
-                          "flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
-                          newRecord.type === type 
-                            ? "bg-brand-navy text-white shadow-xl" 
+                          "flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all",
+                          newRecord.paymentAccount === account 
+                            ? (account === 'Nubank' ? "bg-[#8A05BE] text-white shadow-xl" : "bg-brand-navy text-white shadow-xl")
                             : "bg-gray-100 dark:bg-white/5 text-gray-400"
                         )}
                       >
-                        {type === 'extra' ? 'Gasto Adicional' : 'Mensalidade'}
+                        {account}
                       </button>
                     ))}
                   </div>

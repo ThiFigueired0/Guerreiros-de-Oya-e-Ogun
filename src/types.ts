@@ -169,6 +169,7 @@ export interface FinancialRecord {
   status: 'pending' | 'paid';
   paymentDate?: string;
   category?: string;
+  paymentAccount?: 'Nubank' | 'Caixa Econômica';
   installments?: {
     current: number;
     total: number;
