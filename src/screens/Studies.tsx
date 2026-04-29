@@ -3,12 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
-  BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2
+  BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
+  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
-import { Greeting, StudyBook, AppSettings } from '../types';
+import { Greeting, StudyBook, AppSettings, StudyContent } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 // Set up PDF.js worker
@@ -131,8 +132,10 @@ export default function StudiesScreen() {
 
   const [books, setBooks, isBooksLoading] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [greetings, setGreetings] = useStorage<Greeting[]>('templo_greetings', INITIAL_GREETINGS);
+  const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', []);
 
   // UI state
+  const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents'>('library');
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['in_progress']);
   const [search, setSearch] = useState('');
   const [bookSearch, setBookSearch] = useState('');
@@ -150,6 +153,21 @@ export default function StudiesScreen() {
   const [showDeleteGreetingConfirm, setShowDeleteGreetingConfirm] = useState(false);
   const [bookToDeleteId, setBookToDeleteId] = useState<string | null>(null);
   const [greetingToDeleteId, setGreetingToDeleteId] = useState<string | null>(null);
+  
+  // New Content state
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [editingContent, setEditingContent] = useState<StudyContent | null>(null);
+  const [contentForm, setContentForm] = useState<Partial<StudyContent>>({
+    title: '',
+    category: 'Fundamento',
+    content: ''
+  });
+  const [selectedContent, setSelectedContent] = useState<StudyContent | null>(null);
+  const [contentSearch, setContentSearch] = useState('');
+  const [showDeleteContentConfirm, setShowDeleteContentConfirm] = useState(false);
+  const [contentToDeleteId, setContentToDeleteId] = useState<string | null>(null);
+
+  const CONTENT_CATEGORIES = ['Fundamento', 'Reza', 'Magia', 'Banho', 'Outros'];
   
   // New Greeting state
   const [newGreeting, setNewGreeting] = useState<Partial<Greeting>>({
@@ -364,6 +382,38 @@ export default function StudiesScreen() {
     setIsEditingName(false);
   };
 
+  const handleSaveContent = () => {
+    if (!contentForm.title || !contentForm.content) return;
+
+    const contentToSave: StudyContent = {
+      ...contentForm,
+      id: editingContent ? editingContent.id : Date.now().toString(),
+    } as StudyContent;
+
+    if (editingContent) {
+      setStudyContents(studyContents.map(c => c.id === editingContent.id ? contentToSave : c));
+    } else {
+      setStudyContents([contentToSave, ...studyContents]);
+    }
+
+    setShowContentModal(false);
+    setEditingContent(null);
+    setContentForm({ title: '', category: 'Fundamento', content: '' });
+  };
+
+  const deleteContent = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setContentToDeleteId(id);
+    setShowDeleteContentConfirm(true);
+  };
+
+  const confirmDeleteContent = () => {
+    if (contentToDeleteId) {
+      setStudyContents(studyContents.filter(c => c.id !== contentToDeleteId));
+      setContentToDeleteId(null);
+    }
+  };
+
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => 
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
@@ -377,6 +427,12 @@ export default function StudiesScreen() {
     if (!a.isFavorite && b.isFavorite) return 1;
     return b.uploadDate - a.uploadDate;
   });
+
+  const filteredStudyContents = studyContents.filter(c => 
+    c.title.toLowerCase().includes(contentSearch.toLowerCase()) ||
+    c.content.toLowerCase().includes(contentSearch.toLowerCase()) ||
+    c.category.toLowerCase().includes(contentSearch.toLowerCase())
+  );
 
   const getBooksByStatus = (status: StudyBook['readingStatus']) => {
     return filteredBooks.filter(b => b.readingStatus === status);
@@ -403,280 +459,451 @@ export default function StudiesScreen() {
       <header className="flex justify-between items-center mb-6">
         <div>
           <h1 className={cn("text-2xl font-black text-brand-navy", settings.darkMode && "text-white")}>Estudos</h1>
-          <p className="text-xs text-gray-400">PDFs e Saudações</p>
+          <p className="text-xs text-gray-400">PDFs, Saudações e Fundamentos</p>
         </div>
       </header>
 
-      {/* Books Section */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-4 px-2">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-brand-copper" />
-            <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Biblioteca Digital</h2>
-          </div>
-          <button 
-            onClick={() => setShowBookModal(true)}
-            className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+      {/* Submenu Tabs */}
+      <div className="flex gap-2 p-1.5 bg-gray-100/50 dark:bg-white/5 rounded-2xl mb-8 overflow-x-auto scrollbar-hide">
+        <button 
+          onClick={() => setActiveSubTab('library')}
+          className={cn(
+            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            activeSubTab === 'library' 
+              ? "bg-brand-navy text-white shadow-lg" 
+              : "text-gray-400 hover:text-brand-navy"
+          )}
+        >
+          <Book className="w-3.5 h-3.5" /> Biblioteca
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('greetings')}
+          className={cn(
+            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            activeSubTab === 'greetings' 
+              ? "bg-brand-navy text-white shadow-lg" 
+              : "text-gray-400 hover:text-brand-navy"
+          )}
+        >
+          <MessageSquare className="w-3.5 h-3.5" /> Saudações
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('contents')}
+          className={cn(
+            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            activeSubTab === 'contents' 
+              ? "bg-brand-navy text-white shadow-lg" 
+              : "text-gray-400 hover:text-brand-navy"
+          )}
+        >
+          <LayoutList className="w-3.5 h-3.5" /> Conteúdos
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeSubTab === 'library' && (
+          <motion.div
+            key="library"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
           >
-            Upload PDF
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            type="text"
-            placeholder="Buscar livros pelo título..."
-            value={bookSearch}
-            onChange={(e) => setBookSearch(e.target.value)}
-            className={cn(
-              "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
-            )}
-          />
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {bookCategories.map((cat) => {
-            const catBooks = getBooksByStatus(cat.id as any);
-            const isExpanded = expandedCategories.includes(cat.id) || bookSearch.length > 0;
-            
-            if (catBooks.length === 0 && bookSearch) return null;
-
-            return (
-              <div key={cat.id} className="flex flex-col gap-3">
-                <button 
-                  onClick={() => toggleCategory(cat.id)}
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-2xl transition-all active:scale-[0.98] border border-gray-50",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800 shadow-xl" : "bg-white shadow-sm"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <cat.icon className={cn("w-4 h-4", cat.color)} />
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
-                      {cat.label}
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400">({catBooks.length})</span>
-                  </div>
-                  <ChevronRight className={cn(
-                    "w-4 h-4 text-gray-400 transition-transform duration-300",
-                    isExpanded && "rotate-90"
-                  )} />
-                </button>
-
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex gap-4 overflow-x-auto pb-4 px-1 scrollbar-hide pt-1">
-                        {isBooksLoading ? (
-                          <div className="flex-shrink-0 w-full p-8 flex flex-col items-center justify-center gap-3">
-                            <div className="w-6 h-6 border-2 border-brand-copper border-t-transparent rounded-full animate-spin" />
-                            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Carregando...</p>
-                          </div>
-                        ) : catBooks.length === 0 ? (
-                          <div className={cn(
-                            "flex-shrink-0 w-full p-8 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-2",
-                            settings.darkMode && "border-gray-800"
-                          )}>
-                            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Vazio</p>
-                          </div>
-                        ) : (
-                          catBooks.map((book) => (
-                            <motion.div 
-                              key={book.id}
-                              whileTap={{ scale: 0.98 }}
-                              className={cn(
-                                "flex-shrink-0 w-40 bg-white p-4 rounded-3xl shadow-md border border-gray-100 flex flex-col gap-3 group relative",
-                                settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
-                              )}
-                            >
-                              <div 
-                                onClick={() => openBookDetails(book)}
-                                className="cursor-pointer"
-                              >
-                                <div className="w-full aspect-[3/4] bg-brand-navy/5 rounded-2xl flex items-center justify-center mb-3 relative overflow-hidden">
-                                  <FileText className="w-10 h-10 text-brand-copper/40" />
-                                  {book.isFavorite && (
-                                    <div className="absolute top-2 right-2 p-1 bg-white/80 rounded-full shadow-sm backdrop-blur-sm">
-                                      <Star className="w-3 h-3 text-brand-copper fill-brand-copper" />
-                                    </div>
-                                  )}
-                                  {book.readingStatus === 'completed' && (
-                                    <div className="absolute bottom-2 right-2 p-1 bg-green-500 rounded-full shadow-sm">
-                                      <CheckCircle2 className="w-2.5 h-2.5 text-white" />
-                                    </div>
-                                  )}
-                                  {book.readingStatus === 'in_progress' && (
-                                    <div className="absolute inset-x-0 bottom-0 pt-6 pb-2 px-2 bg-gradient-to-t from-black/60 to-transparent flex flex-col gap-1">
-                                      <div className="flex justify-between items-center px-1">
-                                        <span className="text-[7px] font-black text-white uppercase tracking-widest drop-shadow-sm">
-                                          Pág {book.lastPage || 0}/{book.totalPages || '?'}
-                                        </span>
-                                        {book.totalPages && book.totalPages > 0 && (
-                                          <span className="text-[7px] font-black text-white drop-shadow-sm">
-                                            {Math.round(((book.lastPage || 0) / book.totalPages) * 100)}%
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-[2px]">
-                                        <motion.div 
-                                          initial={{ width: 0 }}
-                                          animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
-                                          className="h-full bg-brand-copper"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                                <h3 className={cn("text-[11px] font-bold text-brand-navy line-clamp-2 leading-tight", settings.darkMode && "text-white")}>
-                                  {book.name.replace('.pdf', '')}
-                                </h3>
-                              </div>
-                            </motion.div>
-                          ))
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Greetings Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4 px-2">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-brand-copper" />
-            <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Saudações</h2>
-          </div>
-          <button 
-            onClick={() => {
-              setEditingGreeting(null);
-              setNewGreeting({ category: 'Orixás', entity: '', greeting: '', summary: '', imageUrl: '', beads: '', firma: '' });
-              setShowGreetingModal(true);
-            }}
-            className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full"
-          >
-            Adicionar
-          </button>
-        </div>
-
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            type="text"
-            placeholder="Buscar saudações..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
-            )}
-          />
-        </div>
-
-        {categories.map((cat) => {
-          const isExpanded = expandedCategories.includes(cat) || search.length > 0;
-          const catGreetings = filteredGreetings.filter(g => g.category === cat);
-          
-          if (catGreetings.length === 0 && search.length > 0) return null;
-
-          return (
-            <div key={cat} className="mb-4">
-              <button 
-                onClick={() => toggleCategory(cat)}
-                className={cn(
-                  "w-full flex items-center justify-between p-4 rounded-[24px] transition-all",
-                  isExpanded ? "bg-brand-copper/5 mb-3" : "bg-white shadow-sm border border-gray-100",
-                  settings.darkMode && !isExpanded && "bg-[#1A1A1A] border-gray-800 shadow-lg",
-                  settings.darkMode && isExpanded && "bg-brand-copper/10"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    cat === 'Orixás' ? 'bg-brand-copper' : cat === 'Entidades' ? 'bg-brand-red' : 'bg-brand-navy'
-                  )} />
-                  <h3 className={cn("font-black text-[11px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    {cat}
-                  </h3>
-                  <span className="text-[10px] font-bold text-gray-400">({catGreetings.length})</span>
+            {/* Books Section */}
+            <section className="mb-10">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-brand-copper" />
+                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Biblioteca Digital</h2>
                 </div>
-                <ChevronRight className={cn(
-                  "w-4 h-4 text-gray-400 transition-transform",
-                  isExpanded && "rotate-90"
-                )} />
-              </button>
-              
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden space-y-3 px-1"
-                  >
-                    {catGreetings.map((g) => (
-                      <div 
-                        key={g.id}
-                        onClick={() => {
-                          if (g.summary || g.imageUrl) {
-                            setSelectedGreeting(g);
-                          }
-                        }}
+                <button 
+                  onClick={() => setShowBookModal(true)}
+                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+                >
+                  Upload PDF
+                </button>
+              </div>
+
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar livros pelo título..."
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {bookCategories.map((cat) => {
+                  const catBooks = getBooksByStatus(cat.id as any);
+                  const isExpanded = expandedCategories.includes(cat.id) || bookSearch.length > 0;
+                  
+                  if (catBooks.length === 0 && bookSearch) return null;
+
+                  return (
+                    <div key={cat.id} className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => toggleCategory(cat.id)}
                         className={cn(
-                          "bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 flex items-center justify-between group cursor-pointer active:scale-[0.99] transition-transform",
-                          settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-lg"
+                          "flex items-center justify-between p-4 rounded-2xl transition-all active:scale-[0.98] border border-gray-50",
+                          settings.darkMode ? "bg-[#1A1A1A] border-gray-800 shadow-xl" : "bg-white shadow-sm"
                         )}
                       >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
-                          <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
+                        <div className="flex items-center gap-3">
+                          <cat.icon className={cn("w-4 h-4", cat.color)} />
+                          <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
+                            {cat.label}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-400">({catBooks.length})</span>
                         </div>
-                        <div className="flex gap-1 transition-opacity">
+                        <ChevronRight className={cn(
+                          "w-4 h-4 text-gray-400 transition-transform duration-300",
+                          isExpanded && "rotate-90"
+                        )} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex gap-4 overflow-x-auto pb-4 px-1 scrollbar-hide pt-1">
+                              {isBooksLoading ? (
+                                <div className="flex-shrink-0 w-full p-8 flex flex-col items-center justify-center gap-3">
+                                  <div className="w-6 h-6 border-2 border-brand-copper border-t-transparent rounded-full animate-spin" />
+                                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Carregando...</p>
+                                </div>
+                              ) : catBooks.length === 0 ? (
+                                <div className={cn(
+                                  "flex-shrink-0 w-full p-8 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-2",
+                                  settings.darkMode && "border-gray-800"
+                                )}>
+                                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Vazio</p>
+                                </div>
+                              ) : (
+                                catBooks.map((book) => (
+                                  <motion.div 
+                                    key={book.id}
+                                    whileTap={{ scale: 0.98 }}
+                                    className={cn(
+                                      "flex-shrink-0 w-40 bg-white p-4 rounded-3xl shadow-md border border-gray-100 flex flex-col gap-3 group relative",
+                                      settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                                    )}
+                                  >
+                                    <div 
+                                      onClick={() => openBookDetails(book)}
+                                      className="cursor-pointer"
+                                    >
+                                      <div className="w-full aspect-[3/4] bg-brand-navy/5 rounded-2xl flex items-center justify-center mb-3 relative overflow-hidden">
+                                        <FileText className="w-10 h-10 text-brand-copper/40" />
+                                        {book.isFavorite && (
+                                          <div className="absolute top-2 right-2 p-1 bg-white/80 rounded-full shadow-sm backdrop-blur-sm">
+                                            <Star className="w-3 h-3 text-brand-copper fill-brand-copper" />
+                                          </div>
+                                        )}
+                                        {book.readingStatus === 'completed' && (
+                                          <div className="absolute bottom-2 right-2 p-1 bg-green-500 rounded-full shadow-sm">
+                                            <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                                          </div>
+                                        )}
+                                        {book.readingStatus === 'in_progress' && (
+                                          <div className="absolute inset-x-0 bottom-0 pt-6 pb-2 px-2 bg-gradient-to-t from-black/60 to-transparent flex flex-col gap-1">
+                                            <div className="flex justify-between items-center px-1">
+                                              <span className="text-[7px] font-black text-white uppercase tracking-widest drop-shadow-sm">
+                                                Pág {book.lastPage || 0}/{book.totalPages || '?'}
+                                              </span>
+                                              {book.totalPages && book.totalPages > 0 && (
+                                                <span className="text-[7px] font-black text-white drop-shadow-sm">
+                                                  {Math.round(((book.lastPage || 0) / book.totalPages) * 100)}%
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-[2px]">
+                                              <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
+                                                className="h-full bg-brand-copper"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <h3 className={cn("text-[11px] font-bold text-brand-navy line-clamp-2 leading-tight", settings.darkMode && "text-white")}>
+                                        {book.name.replace('.pdf', '')}
+                                      </h3>
+                                    </div>
+                                  </motion.div>
+                                ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'greetings' && (
+          <motion.div
+            key="greetings"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+          >
+            {/* Greetings Section */}
+            <section>
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-brand-copper" />
+                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Saudações</h2>
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditingGreeting(null);
+                    setNewGreeting({ category: 'Orixás', entity: '', greeting: '', summary: '', imageUrl: '', beads: '', firma: '' });
+                    setShowGreetingModal(true);
+                  }}
+                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full"
+                >
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar saudações..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                  )}
+                />
+              </div>
+
+              {categories.map((cat) => {
+                const isExpanded = expandedCategories.includes(cat) || search.length > 0;
+                const catGreetings = filteredGreetings.filter(g => g.category === cat);
+                
+                if (catGreetings.length === 0 && search.length > 0) return null;
+
+                return (
+                  <div key={cat} className="mb-4">
+                    <button 
+                      onClick={() => toggleCategory(cat)}
+                      className={cn(
+                        "w-full flex items-center justify-between p-4 rounded-[24px] transition-all",
+                        isExpanded ? "bg-brand-copper/5 mb-3" : "bg-white shadow-sm border border-gray-100",
+                        settings.darkMode && !isExpanded && "bg-[#1A1A1A] border-gray-800 shadow-lg",
+                        settings.darkMode && isExpanded && "bg-brand-copper/10"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          cat === 'Orixás' ? 'bg-brand-copper' : cat === 'Entidades' ? 'bg-brand-red' : 'bg-brand-navy'
+                        )} />
+                        <h3 className={cn("font-black text-[11px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                          {cat}
+                        </h3>
+                        <span className="text-[10px] font-bold text-gray-400">({catGreetings.length})</span>
+                      </div>
+                      <ChevronRight className={cn(
+                        "w-4 h-4 text-gray-400 transition-transform",
+                        isExpanded && "rotate-90"
+                      )} />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden space-y-3 px-1"
+                        >
+                          {catGreetings.map((g) => (
+                            <div 
+                              key={g.id}
+                              onClick={() => {
+                                if (g.summary || g.imageUrl) {
+                                  setSelectedGreeting(g);
+                                }
+                              }}
+                              className={cn(
+                                "bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 flex items-center justify-between group cursor-pointer active:scale-[0.99] transition-transform",
+                                settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-lg"
+                              )}
+                            >
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
+                                <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
+                              </div>
+                              <div className="flex gap-1 transition-opacity">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditGreeting(g);
+                                  }}
+                                  className={cn(
+                                    "p-2 transition-colors",
+                                    settings.darkMode ? "text-gray-400 hover:text-brand-copper" : "text-gray-400 hover:text-brand-copper"
+                                  )}
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteGreeting(g.id);
+                                  }}
+                                  className={cn(
+                                    "p-2 transition-colors",
+                                    settings.darkMode ? "text-red-500/60 hover:text-red-500" : "text-red-400 hover:text-red-500"
+                                  )}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </section>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'contents' && (
+          <motion.div
+            key="contents"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+          >
+            {/* Study Contents Section */}
+            <section className="mb-10">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-brand-copper" />
+                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Conteúdos Relevantes</h2>
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditingContent(null);
+                    setContentForm({ title: '', category: 'Fundamento', content: '' });
+                    setShowContentModal(true);
+                  }}
+                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+                >
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar fundamentos, rezas, magias..."
+                  value={contentSearch}
+                  onChange={(e) => setContentSearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {filteredStudyContents.length === 0 ? (
+                  <div className={cn(
+                    "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
+                    settings.darkMode && "border-gray-800"
+                  )}>
+                    <ScrollText className="w-12 h-12 text-gray-200" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum conteúdo</p>
+                      <p className="text-[10px] text-gray-300 max-w-[200px]">Adicione fundamentos, rezas ou magias para consulta rápida.</p>
+                    </div>
+                  </div>
+                ) : (
+                  filteredStudyContents.map((content) => (
+                    <motion.div
+                      key={content.id}
+                      onClick={() => setSelectedContent(content)}
+                      className={cn(
+                        "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
+                        settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                      )}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1">
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit",
+                            content.category === 'Banho' ? 'bg-green-50 text-green-600' :
+                            content.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
+                            content.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
+                            'bg-brand-copper/10 text-brand-copper'
+                          )}>
+                            {content.category}
+                          </span>
+                          <h3 className={cn("text-sm font-black text-brand-navy mt-1", settings.darkMode && "text-white")}>
+                            {content.title}
+                          </h3>
+                        </div>
+                        <div className="flex gap-2">
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditGreeting(g);
+                              setEditingContent(content);
+                              setContentForm({ ...content });
+                              setShowContentModal(true);
                             }}
-                            className={cn(
-                              "p-2 transition-colors",
-                              settings.darkMode ? "text-gray-400 hover:text-brand-copper" : "text-gray-400 hover:text-brand-copper"
-                            )}
+                            className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>
                           <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteGreeting(g.id);
-                            }}
-                            className={cn(
-                              "p-2 transition-colors",
-                              settings.darkMode ? "text-red-500/60 hover:text-red-500" : "text-red-400 hover:text-red-500"
-                            )}
+                            onClick={(e) => deleteContent(content.id, e)}
+                            className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </motion.div>
+                      <p className={cn("text-[11px] text-gray-500 line-clamp-3 leading-relaxed", settings.darkMode && "text-gray-400")}>
+                        {content.content}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-brand-copper">
+                          <span className="text-[9px] font-black uppercase tracking-widest">Ler conteúdo</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
                 )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </section>
+              </div>
+            </section>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Orixa Details Modal */}
       <AnimatePresence>
@@ -1219,6 +1446,17 @@ export default function StudiesScreen() {
       </AnimatePresence>
 
       <DeleteConfirmationModal 
+        isOpen={showDeleteContentConfirm}
+        onClose={() => {
+          setShowDeleteContentConfirm(false);
+          setContentToDeleteId(null);
+        }}
+        onConfirm={confirmDeleteContent}
+        title="Excluir Conteúdo"
+        message="Deseja realmente excluir este conteúdo permanentemente?"
+      />
+
+      <DeleteConfirmationModal 
         isOpen={showDeleteBookConfirm}
         onClose={() => {
           setShowDeleteBookConfirm(false);
@@ -1239,6 +1477,151 @@ export default function StudiesScreen() {
         title="Excluir Saudação"
         message="Deseja realmente excluir esta saudação permanentemente?"
       />
+
+      {/* Study Content Details Modal */}
+      <AnimatePresence>
+        {selectedContent && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={cn(
+                "w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]",
+                settings.darkMode && "bg-[#1A1A1A]"
+              )}
+            >
+              <div className="p-8 pb-4 border-b border-gray-50 flex items-center justify-between">
+                <div>
+                  <span className={cn(
+                    "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg",
+                    selectedContent.category === 'Banho' ? 'bg-green-50 text-green-600' :
+                    selectedContent.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
+                    selectedContent.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
+                    'bg-brand-copper/10 text-brand-copper'
+                  )}>
+                    {selectedContent.category}
+                  </span>
+                  <h2 className={cn("text-xl font-black text-brand-navy mt-1", settings.darkMode && "text-white")}>
+                    {selectedContent.title}
+                  </h2>
+                </div>
+                <button 
+                  onClick={() => setSelectedContent(null)}
+                  className="p-2 bg-gray-50 dark:bg-white/5 rounded-full text-gray-400 hover:text-brand-navy"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                <div className={cn(
+                  "text-sm leading-relaxed text-gray-600 whitespace-pre-wrap font-medium",
+                  settings.darkMode && "text-gray-400"
+                )}>
+                  {selectedContent.content}
+                </div>
+              </div>
+              
+              <div className="p-8 pt-4">
+                <button 
+                  onClick={() => setSelectedContent(null)}
+                  className="w-full py-4 bg-brand-navy text-white rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all shadow-lg"
+                >
+                  Fechar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* New Study Content Modal */}
+      <AnimatePresence>
+        {showContentModal && (
+          <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-20">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={cn(
+                "w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl relative",
+                settings.darkMode && "bg-[#1A1A1A]"
+              )}
+            >
+              <button 
+                onClick={() => setShowContentModal(false)}
+                className="absolute top-8 right-8 text-gray-400"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <h2 className={cn("text-2xl font-black text-brand-navy mb-8", settings.darkMode && "text-white")}>
+                {editingContent ? 'Editar Conteúdo' : 'Novo Conteúdo'}
+              </h2>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Título</label>
+                  <input 
+                    type="text"
+                    value={contentForm.title}
+                    onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Ex: Rezado de Ogum"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Categoria</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CONTENT_CATEGORIES.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setContentForm({ ...contentForm, category: c })}
+                        className={cn(
+                          "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                          contentForm.category === c 
+                            ? "bg-brand-navy text-white border-brand-navy shadow-lg" 
+                            : "bg-white border-gray-100 text-gray-400 hover:border-brand-copper/30"
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Conteúdo</label>
+                  <textarea 
+                    value={contentForm.content}
+                    onChange={(e) => setContentForm({ ...contentForm, content: e.target.value })}
+                    rows={10}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-5 px-6 rounded-[32px] text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none leading-relaxed",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Escreva as rezas, fundamentos, ou procedimentos..."
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={handleSaveContent}
+                    className="w-full bg-brand-navy text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all text-xs"
+                  >
+                    Salvar Conteúdo
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

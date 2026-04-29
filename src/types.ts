@@ -121,3 +121,11 @@ export interface Greeting {
   beads?: string;
   firma?: string;
 }
+
+export interface StudyContent {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  isFavorite?: boolean;
+}
