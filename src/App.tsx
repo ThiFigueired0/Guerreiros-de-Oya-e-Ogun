@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { 
-  Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star,
+  Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star, Instagram,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 } from 'lucide-react';
@@ -313,42 +313,50 @@ function TopHeader() {
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
 
       {/* Decorative Animated Background Elements */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden">
-        {/* Floating Leaves across the banner */}
-        {[...Array(24)].map((_, i) => (
-          <motion.div
-            key={`leaf-${i}`}
-            initial={{ 
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              rotate: Math.random() * 360,
-              opacity: 0,
-              scale: 0.5 + Math.random() * 0.5
-            }}
-            animate={{ 
-              x: [0, Math.random() * 150 - 75, 0],
-              y: [0, Math.random() * 150 - 75, 0],
-              rotate: [0, 180, 360],
-              opacity: [0, Math.random() * 0.4 + 0.1, 0]
-            }}
-            transition={{ 
-              duration: 20 + Math.random() * 30, 
-              repeat: Infinity, 
-              ease: "easeInOut",
-              delay: Math.random() * 20
-            }}
-            className="absolute"
-          >
-            <Leaf 
-              className="text-brand-copper" 
-              style={{ 
-                width: 8 + Math.random() * 16, 
-                height: 8 + Math.random() * 16,
-                filter: `blur(${Math.random() * 1.5}px)`
-              }} 
-            />
-          </motion.div>
-        ))}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Floating Leaves across the entire banner - Higher visibility */}
+        {[...Array(60)].map((_, i) => {
+          const size = 10 + Math.random() * 20;
+          const duration = 15 + Math.random() * 30;
+          const delay = Math.random() * -20;
+          const opacity = 0.15 + Math.random() * 0.25;
+          const pathX = Math.random() * 200 - 100;
+          const pathY = Math.random() * 150 - 75;
+          
+          return (
+            <motion.div
+              key={`leaf-fixed-${i}`}
+              initial={{ 
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                rotate: Math.random() * 360,
+                opacity: 0,
+                scale: 0.5 + Math.random() * 0.5
+              }}
+              animate={{ 
+                x: [0, pathX, 0],
+                y: [0, pathY, 0],
+                rotate: [0, 180, 360],
+                opacity: [0, opacity, opacity, 0]
+              }}
+              transition={{ 
+                duration: duration, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: delay
+              }}
+              className="absolute z-0"
+            >
+              <Leaf 
+                className="text-brand-copper/60 fill-brand-copper/10" 
+                style={{ 
+                  width: size, 
+                  height: size,
+                }} 
+              />
+            </motion.div>
+          );
+        })}
 
         <motion.div 
           animate={{ 
@@ -368,16 +376,6 @@ function TopHeader() {
         />
       </div>
 
-      {/* Simulation of Status Bar */}
-      <div className="absolute top-0 left-0 right-0 h-10 flex justify-between items-center px-6 z-10">
-        <span className="text-[10px] text-white/40 font-bold tracking-widest font-mono">9:41</span>
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-brand-copper shadow-[0_0_8px_rgba(205,127,50,0.6)]"></div>
-          <Settings className="w-3 h-3 text-white/30" />
-        </div>
-      </div>
-
       <div className="relative z-10 flex flex-col items-center">
         {/* Title Moved above the logo */}
         <motion.div
@@ -386,7 +384,7 @@ function TopHeader() {
           transition={{ delay: 0.3 }}
           className="flex flex-col items-center mb-8"
         >
-          <h2 className="text-brand-copper font-serif text-[13px] uppercase tracking-[0.6em] font-black text-center px-4 drop-shadow-xl">
+          <h2 className="text-brand-copper font-serif text-[11px] sm:text-[13px] uppercase tracking-[0.4em] sm:tracking-[0.5em] font-black text-center px-2 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
             Guerreiros de Oya e Ogun
           </h2>
           <motion.div 
@@ -459,6 +457,46 @@ function TopHeader() {
           </div>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+function SocialButtons() {
+  const location = useLocation();
+  const [settings] = useStorage<AppSettings>('templo_settings', {
+    darkMode: false,
+    eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
+    eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
+    pushNotifications: false
+  });
+
+  if (location.pathname !== '/home') return null;
+
+  return (
+    <div className="w-full flex justify-center gap-3 px-8 -mt-4 relative z-30 pointer-events-none">
+      <motion.a
+        whileHover={{ scale: 1.05, y: -2 }}
+        whileTap={{ scale: 0.95 }}
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
+      >
+        <Instagram className="w-4 h-4" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Instagram</span>
+      </motion.a>
+      
+      <motion.a
+        whileHover={{ scale: 1.05, y: -2 }}
+        whileTap={{ scale: 0.95 }}
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
+      >
+        <Music className="w-4 h-4" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em]">TikTok</span>
+      </motion.a>
     </div>
   );
 }
@@ -580,24 +618,35 @@ export default function App() {
         )}>
           <Navigation />
           
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
             <TopHeader />
+            <SocialButtons />
             
-            <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 pb-48 px-4 scrollbar-hide">
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<HomeScreen />} />
-                  <Route path="/calendar" element={<CalendarScreen />} />
-                  <Route path="/herbs" element={<HerbsScreen />} />
-                  <Route path="/trab" element={<TrabalhosScreen />} />
-                  <Route path="/points" element={<PointsScreen />} />
-                  <Route path="/studies" element={<StudiesScreen />} />
-                  <Route path="/notes" element={<NotesScreen />} />
-                  <Route path="/settings" element={<SettingsScreen />} />
-                </Routes>
-              </AnimatePresence>
-            </main>
+            <Routes>
+              <Route path="/home" element={
+                <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
+                  <AnimatePresence mode="wait">
+                    <HomeScreen />
+                  </AnimatePresence>
+                </main>
+              } />
+              <Route path="*" element={
+                <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
+                  <AnimatePresence mode="wait">
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/home" replace />} />
+                      <Route path="/calendar" element={<CalendarScreen />} />
+                      <Route path="/herbs" element={<HerbsScreen />} />
+                      <Route path="/trab" element={<TrabalhosScreen />} />
+                      <Route path="/points" element={<PointsScreen />} />
+                      <Route path="/studies" element={<StudiesScreen />} />
+                      <Route path="/notes" element={<NotesScreen />} />
+                      <Route path="/settings" element={<SettingsScreen />} />
+                    </Routes>
+                  </AnimatePresence>
+                </main>
+              } />
+            </Routes>
           </div>
         </div>
       </div>
