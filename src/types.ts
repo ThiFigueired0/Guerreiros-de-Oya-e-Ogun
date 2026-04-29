@@ -43,9 +43,16 @@ export interface ReadyBath {
   id: string;
   title: string;
   quantity: number;
+  price: number;
   isFixed: boolean;
   category?: string;
   notes?: string;
+}
+
+export interface HerbStock {
+  id: string;
+  name: string;
+  inStock: boolean;
 }
 
 export interface AppSettings {
@@ -58,6 +65,7 @@ export interface AppSettings {
   tabIcons?: Record<string, string>;
   primaryTabPaths?: string[];
   secondaryTabPaths?: string[];
+  bathPackagePrice?: number;
 }
 
 export interface Bicho {
@@ -136,5 +144,12 @@ export interface StudyContent {
   title: string;
   category: string;
   content: string;
+  attachments?: {
+    name: string;
+    type: 'image' | 'pdf';
+    data: string; // base64
+  }[];
+  links?: string[];
   isFavorite?: boolean;
+  createdAt: number;
 }

@@ -121,53 +121,7 @@ const INITIAL_GREETINGS: Greeting[] = [
   },
 ];
 
-const INITIAL_STUDY_CONTENTS: StudyContent[] = [
-  {
-    id: 'c1',
-    title: 'Banho de descarrego',
-    category: 'Banho',
-    content: `*Ervas:*
-Alecrim, Arruda, Guiné, Manjericão, Espada de são Jorge, Fumo de corda, Casca de alho, Casca de cebola, Pinhão roxo, Folha do fogo, Aroeira, Jurema preta, Abre caminho, Quebra demanda, Para raio, Danda da costa, Assa peixe, Espinheira santa, Açoita cavalo, Erva do bicho, Buchinha do norte, Eucalipto, Folha de chorão, Picão preto, Desata nó
-
-*Observações / modo de preparo:* 
-Banho de descarrego é necessário antes de tomar qualquer outro banho, para que limpe o medium de energias baixas, negativas e assim permitindo que os banhos seguintes consigam trazer a energia, um exemplo; não consigo tomar um banho de oxalá e trazer tranquilidade caso a pessoa estiver carregada.`
-  },
-  {
-    id: 'c2',
-    title: 'Banho de desenvolvimento',
-    category: 'Banho',
-    content: `*Ervas:*
-Casca de Jurema Preta, Pau Resposta, Cipó Caboclo, Folha de Laranjeira, Folha de Pitangueira, Samambaia
-
-*Observações / modo de preparo:* 
-Todos esses elementos são para uma mistura específica assim como um resultado harmônico para sentirmos nossos espíritos e trazemos as nossas energias mais facilmente.
-
-*Como preparar esse banho?*
-Os 3 primeiros ingredientes que são paus e cascas precisão ser comprados em casa de umbanda pois não conseguimos achar eles facilmente, eles precisão ser ralados, não tem necessidade nenhuma ferver o pedaço inteiro que é praticamente desperdício e não se usufrui de todo seu benefício assim, e as últimas 3 ervas caso tenham secas pode se ferver, se só tiverem frescas podem ser quinadas normalmente.
-
-Caso ferverem as cascas já raladas e alguma das ervas que estiverem secas, e tiverem alguma dessas frescas já quinadas, vocês apenas fazem a fusão de ambos, que é misturar os fervidos com os quinados.`
-  },
-  {
-    id: 'c3',
-    title: 'Banho neutralizador',
-    category: 'Banho',
-    content: `*Ervas:*
-Folha de goiaba, Folha de manga, Pitanga, Jabuticaba, Arruda
-
-*Observações / modo de preparo:* 
-(Nenhuma observação informada)`
-  },
-  {
-    id: 'c4',
-    title: 'Banho energizador',
-    category: 'Banho',
-    content: `*Ervas:* 
-Alecrim, Louro, Capim limão, Erva doce, Camomila 
-
-*Observações / modo de preparo:*
-(Nenhuma observação informada)`
-  }
-];
+const INITIAL_STUDY_CONTENTS: StudyContent[] = [];
 
 export default function StudiesScreen() {
   const location = useLocation();
@@ -208,14 +162,52 @@ export default function StudiesScreen() {
   const [contentForm, setContentForm] = useState<Partial<StudyContent>>({
     title: '',
     category: 'Fundamento',
-    content: ''
+    content: '',
+    attachments: [],
+    links: []
   });
   const [selectedContent, setSelectedContent] = useState<StudyContent | null>(null);
   const [contentSearch, setContentSearch] = useState('');
   const [showDeleteContentConfirm, setShowDeleteContentConfirm] = useState(false);
   const [contentToDeleteId, setContentToDeleteId] = useState<string | null>(null);
 
-  const CONTENT_CATEGORIES = ['Fundamento', 'Reza', 'Magia', 'Banho', 'Outros'];
+  const [newLink, setNewLink] = useState('');
+  const addLink = () => {
+    if (newLink) {
+      setContentForm({ ...contentForm, links: [...(contentForm.links || []), newLink] });
+      setNewLink('');
+    }
+  };
+  const removeLink = (index: number) => {
+    setContentForm({ ...contentForm, links: contentForm.links?.filter((_, i) => i !== index) });
+  };
+
+  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      const type = file.type.includes('pdf') ? 'pdf' : 'image';
+      const newAttachment = {
+        name: file.name,
+        type: type as 'pdf' | 'image',
+        data: base64
+      };
+      setContentForm(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), newAttachment]
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeAttachment = (index: number) => {
+    setContentForm({ ...contentForm, attachments: contentForm.attachments?.filter((_, i) => i !== index) });
+  };
+
+  const CONTENT_CATEGORIES = ['Fundamento', 'Reza', 'Magia', 'Outros'];
   
   // New Greeting state
   const [newGreeting, setNewGreeting] = useState<Partial<Greeting>>({
@@ -436,6 +428,9 @@ export default function StudiesScreen() {
     const contentToSave: StudyContent = {
       ...contentForm,
       id: editingContent ? editingContent.id : Date.now().toString(),
+      createdAt: editingContent ? editingContent.createdAt : Date.now(),
+      attachments: contentForm.attachments || [],
+      links: contentForm.links || []
     } as StudyContent;
 
     if (editingContent) {
@@ -446,7 +441,7 @@ export default function StudiesScreen() {
 
     setShowContentModal(false);
     setEditingContent(null);
-    setContentForm({ title: '', category: 'Fundamento', content: '' });
+    setContentForm({ title: '', category: 'Fundamento', content: '', attachments: [], links: [] });
   };
 
   const deleteContent = (id: string, e: React.MouseEvent) => {
@@ -907,7 +902,6 @@ export default function StudiesScreen() {
                         <div className="flex flex-col gap-1">
                           <span className={cn(
                             "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit",
-                            content.category === 'Banho' ? 'bg-green-50 text-green-600' :
                             content.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
                             content.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
                             'bg-brand-copper/10 text-brand-copper'
@@ -938,12 +932,28 @@ export default function StudiesScreen() {
                           </button>
                         </div>
                       </div>
-                      <p className={cn("text-[11px] text-gray-500 line-clamp-3 leading-relaxed", settings.darkMode && "text-gray-400")}>
+                      <p className={cn("text-[11px] text-gray-500 line-clamp-2 leading-relaxed", settings.darkMode && "text-gray-400")}>
                         {content.content}
                       </p>
-                      <div className="mt-2 flex items-center justify-between">
+                      
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {content.attachments && content.attachments.length > 0 && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/10">
+                            <Upload className="w-2.5 h-2.5 text-brand-copper" />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{content.attachments.length} Anexos</span>
+                          </div>
+                        )}
+                        {content.links && content.links.length > 0 && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/10">
+                            <ExternalLink className="w-2.5 h-2.5 text-brand-copper" />
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{content.links.length} Links</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between border-t border-gray-50 dark:border-white/5 pt-3">
                         <div className="flex items-center gap-1.5 text-brand-copper">
-                          <span className="text-[9px] font-black uppercase tracking-widest">Ler conteúdo</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest">Ver detalhes</span>
                           <ChevronRight className="w-3 h-3" />
                         </div>
                       </div>
@@ -1546,7 +1556,6 @@ export default function StudiesScreen() {
                 <div>
                   <span className={cn(
                     "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg",
-                    selectedContent.category === 'Banho' ? 'bg-green-50 text-green-600' :
                     selectedContent.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
                     selectedContent.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
                     'bg-brand-copper/10 text-brand-copper'
@@ -1567,11 +1576,81 @@ export default function StudiesScreen() {
 
               <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
                 <div className={cn(
-                  "text-sm leading-relaxed text-gray-600 whitespace-pre-wrap font-medium",
+                  "text-sm leading-relaxed text-gray-600 whitespace-pre-wrap font-medium mb-8",
                   settings.darkMode && "text-gray-400"
                 )}>
                   {selectedContent.content}
                 </div>
+
+                {selectedContent.links && selectedContent.links.length > 0 && (
+                  <div className="mb-8">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-4">Links de Referência</h4>
+                    <div className="flex flex-col gap-3">
+                      {selectedContent.links.map((link, idx) => (
+                        <a 
+                          key={idx}
+                          href={link.startsWith('http') ? link : `https://${link}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "flex items-center gap-3 p-4 rounded-2xl bg-gray-50 group hover:bg-brand-copper/5 transition-all text-left",
+                            settings.darkMode && "bg-black/40"
+                          )}
+                        >
+                          <div className="p-2 bg-white dark:bg-white/10 rounded-xl">
+                            <ExternalLink className="w-4 h-4 text-brand-copper" />
+                          </div>
+                          <span className={cn("text-[11px] font-bold text-brand-navy truncate", settings.darkMode && "text-gray-300")}>
+                            {link}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedContent.attachments && selectedContent.attachments.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-4">Anexos</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {selectedContent.attachments.map((attach, idx) => (
+                        <button 
+                          key={idx}
+                          onClick={() => {
+                            if (attach.type === 'pdf') {
+                              const newWindow = window.open();
+                              if (newWindow) {
+                                newWindow.document.write(
+                                  `<iframe src="${attach.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
+                                );
+                              }
+                            } else {
+                              const newWindow = window.open();
+                              if (newWindow) {
+                                newWindow.document.write(`<img src="${attach.data}" style="max-width: 100%;" />`);
+                              }
+                            }
+                          }}
+                          className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 hover:bg-brand-copper/5 transition-all",
+                            settings.darkMode && "bg-black/40"
+                          )}
+                        >
+                          {attach.type === 'image' ? (
+                            <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
+                          ) : (
+                            <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
+                              <FileText className="w-8 h-8 text-brand-copper/40" />
+                            </div>
+                          )}
+                          <span className={cn("text-[10px] font-bold text-brand-navy truncate w-full px-1", settings.darkMode && "text-gray-400")}>
+                            {attach.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="p-8 pt-4">
@@ -1651,13 +1730,90 @@ export default function StudiesScreen() {
                   <textarea 
                     value={contentForm.content}
                     onChange={(e) => setContentForm({ ...contentForm, content: e.target.value })}
-                    rows={10}
+                    rows={8}
                     className={cn(
                       "w-full bg-gray-50 border-0 py-5 px-6 rounded-[32px] text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none leading-relaxed",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Escreva as rezas, fundamentos, ou procedimentos..."
                   />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Links (Opcional)</label>
+                    <div className="flex gap-2 mb-3">
+                      <input 
+                        type="text"
+                        value={newLink}
+                        onChange={(e) => setNewLink(e.target.value)}
+                        className={cn(
+                          "flex-1 bg-gray-50 border-0 py-3 px-4 rounded-xl text-xs font-bold outline-none",
+                          settings.darkMode && "bg-black text-white"
+                        )}
+                        placeholder="https://..."
+                        onKeyDown={(e) => e.key === 'Enter' && addLink()}
+                      />
+                      <button 
+                        onClick={addLink}
+                        className="p-3 bg-brand-copper text-white rounded-xl active:scale-95 transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {contentForm.links?.map((link, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-gray-50 dark:bg-black/40 px-3 py-1.5 rounded-lg group">
+                          <span className="text-[10px] font-bold text-gray-500 truncate max-w-[150px]">{link}</span>
+                          <button onClick={() => removeLink(idx)} className="text-gray-400 hover:text-red-500">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      {contentForm.attachments?.map((attach, idx) => (
+                        <div key={idx} className="relative group">
+                          <div className={cn(
+                            "flex flex-col items-center gap-1 p-3 rounded-2xl bg-gray-50",
+                            settings.darkMode && "bg-black/40"
+                          )}>
+                            {attach.type === 'image' ? (
+                              <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
+                            ) : (
+                              <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-brand-copper/40" />
+                              </div>
+                            )}
+                            <span className="text-[8px] font-bold text-gray-400 truncate w-full text-center">{attach.name}</span>
+                          </div>
+                          <button 
+                            onClick={() => removeAttachment(idx)}
+                            className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className={cn(
+                        "flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all",
+                        settings.darkMode && "border-gray-800 hover:bg-black/40"
+                      )}>
+                        <Upload className="w-6 h-6 text-gray-300" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
+                        <input 
+                          type="file" 
+                          accept="image/*,application/pdf" 
+                          className="hidden" 
+                          onChange={handleAttachmentUpload} 
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4">

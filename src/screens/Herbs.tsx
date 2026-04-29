@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle } from 'lucide-react';
+import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
-import { HerbBath, AppSettings, ReadyBath } from '../types';
+import { HerbBath, AppSettings, ReadyBath, HerbStock } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
+const SUGGESTED_HERBS = [
+  "Abre caminho", "Açoita cavalo", "Água de coco", "Alecrim", "Alfavaca", "Alfazema",
+  "Amor agarradinho", "Amor perfeito", "Amora", "Angico", "Anis estrelado", "Aroeira",
+  "Arroz (grão)", "Arruda", "Assa peixe", "Boldo", "Brinco de princesa", "Buchinha do norte",
+  "Cabelo de milho", "Calêndula", "Camomila", "Cana de brejo", "Canela", "Capim cidreira",
+  "Capim limão", "Carqueja", "Casca da laranja", "Casca de coco ralado", "Cavalinha",
+  "Cipó caboclo", "Coentro", "Colônia", "Comigo ninguém pode", "Cravo da Índia (ou Cravo)",
+  "Danda da costa", "Desata nó", "Erva cidreira", "Erva doce (ou Funcho)", "Espada de Santa Bárbara",
+  "Espada de São Jorge", "Espinheira santa", "Eucalipto", "Flor de girassol (ou Semente de girassol)",
+  "Folha Chapéu de couro", "Folha de abacateiro", "Folha de anil", "Folha de café", "Folha de caju",
+  "Folha de cana", "Folha de coqueiro", "Folha de fumo", "Folha de goiaba (ou Goiabeira)",
+  "Folha de Graviola", "Folha de groselha", "Folha de laranjeira", "Folha de limão", "Folha de louro",
+  "Folha de manga (ou Mangueira)", "Folha de milho", "Folha de pitanga (ou Pitanga)", "Folha de romã",
+  "Folha do fogo", "Guaco", "Guiné", "Hortelã", "Jasmim", "Jurema preta", "Lágrima de nossa senhora",
+  "Levante", "Lírio do brejo", "Losna", "Macaça", "Mamona", "Manjericão", "Melissa", "Para raio",
+  "Pata de vaca", "Pau resposta", "Pau tenente", "Peregum roxo", "Peregum verde", "Peregum vermelho",
+  "Picão preto", "Pimenta rosada", "Pinhão roxo", "Quebra demanda", "Rosas Brancas", "Rosas cor de rosa",
+  "Rosas vermelhas", "Salgueiro chorão", "Salsão", "Sálvia", "Samambaia", "Tomilho",
+  "Trevo (ou Trevo de quatro folhas)", "Verbena"
+];
+
 const INITIAL_READY_BATHS: ReadyBath[] = [
-  { id: 'r1', title: 'Banho de descarrego', quantity: 0, isFixed: true, category: 'Gerais' },
-  { id: 'r2', title: 'Banho de desenvolvimento', quantity: 0, isFixed: true, category: 'Gerais' },
-  { id: 'r3', title: 'Banho energizador', quantity: 0, isFixed: true, category: 'Gerais' },
+  { id: 'r1', title: 'Banho de descarrego', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
+  { id: 'r2', title: 'Banho de desenvolvimento', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
+  { id: 'r3', title: 'Banho energizador', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
 ];
 
 const INITIAL_BATHS: HerbBath[] = [
@@ -204,6 +225,7 @@ export default function HerbsScreen() {
 
   const [baths, setBaths] = useStorage<HerbBath[]>('templo_baths', INITIAL_BATHS);
   const [readyBaths, setReadyBaths] = useStorage<ReadyBath[]>('templo_ready_baths', INITIAL_READY_BATHS);
+  const [herbStock, setHerbStock] = useStorage<HerbStock[]>('templo_herb_stock', []);
   const [activeSubTab, setActiveSubTab] = useState<'composition' | 'ready' | 'herbs_list'>('composition');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
@@ -221,20 +243,13 @@ export default function HerbsScreen() {
   
   // Sync missing initial baths and update Orixá/Entidades compositions
   React.useEffect(() => {
-    let hasChanged = false;
-    
-    // 1. Update existing and remove unwanted Orixá/Entidades baths
-    const filteredAndUpdatedBaths = baths.filter(current => {
-      const initial = INITIAL_BATHS.find(i => i.id === current.id);
-      // If it's a category we manage but not in INITIAL_BATHS, remove it (if it was one we pushed originally)
-      // For now, let's just focus on syncing existing ones.
-      return true;
-    }).map(current => {
+    let bathsChanged = false;
+    const filteredAndUpdatedBaths = baths.filter(current => true).map(current => {
       const initial = INITIAL_BATHS.find(i => i.id === current.id);
       if (initial && (initial.category === 'Orixás' || initial.category === 'Entidades')) {
         const isDifferent = current.herbs !== initial.herbs || current.title !== initial.title;
         if (isDifferent) {
-          hasChanged = true;
+          bathsChanged = true;
           return { ...current, title: initial.title, herbs: initial.herbs, observations: initial.observations };
         }
       }
@@ -243,7 +258,7 @@ export default function HerbsScreen() {
 
     const missingBaths = INITIAL_BATHS.filter(initial => !baths.find(b => b.id === initial.id));
     
-    if (hasChanged || missingBaths.length > 0) {
+    if (bathsChanged || missingBaths.length > 0) {
       setBaths([...filteredAndUpdatedBaths, ...missingBaths]);
     }
   }, []);
@@ -275,6 +290,12 @@ export default function HerbsScreen() {
   const [showReadyModal, setShowReadyModal] = useState(false);
   const [editingReadyBath, setEditingReadyBath] = useState<ReadyBath | null>(null);
   const [readyForm, setReadyForm] = useState({ title: '', quantity: 1, category: 'Gerais', notes: '' });
+
+  // Herb Stock State
+  const [showHerbModal, setShowHerbModal] = useState(false);
+  const [herbSearch, setHerbSearch] = useState('');
+  const [customHerbName, setCustomHerbName] = useState('');
+  const [stockSearch, setStockSearch] = useState('');
 
   // Handle openBathId from navigation state
   useEffect(() => {
@@ -351,7 +372,7 @@ export default function HerbsScreen() {
       if (editingReadyBath) {
         setReadyBaths(readyBaths.map(r => r.id === editingReadyBath.id ? { ...r, title: readyForm.title, quantity: readyForm.quantity, category: readyForm.category, notes: readyForm.notes } : r));
       } else {
-        setReadyBaths([...readyBaths, { id: Date.now().toString(), title: readyForm.title, quantity: readyForm.quantity, category: readyForm.category, notes: readyForm.notes, isFixed: false }]);
+        setReadyBaths([...readyBaths, { id: Date.now().toString(), title: readyForm.title, quantity: readyForm.quantity, price: settings.bathPackagePrice || 17, category: readyForm.category, notes: readyForm.notes, isFixed: false }]);
       }
       setShowReadyModal(false);
       setEditingReadyBath(null);
@@ -361,6 +382,25 @@ export default function HerbsScreen() {
 
   const adjustReadyQuantity = (id: string, delta: number) => {
     setReadyBaths(readyBaths.map(r => r.id === id ? { ...r, quantity: Math.max(0, r.quantity + delta) } : r));
+  };
+
+  const toggleHerbInStock = (id: string) => {
+    setHerbStock(herbStock.map(h => h.id === id ? { ...h, inStock: !h.inStock } : h));
+  };
+
+  const removeHerbFromStock = (id: string) => {
+    setHerbStock(herbStock.filter(h => h.id !== id));
+  };
+
+  const addHerbToStock = (name: string) => {
+    if (herbStock.some(h => h.name.toLowerCase() === name.toLowerCase())) {
+      setShowHerbModal(false);
+      setCustomHerbName('');
+      return;
+    }
+    setHerbStock([...herbStock, { id: Date.now().toString(), name, inStock: true }]);
+    setShowHerbModal(false);
+    setCustomHerbName('');
   };
 
   const handleShare = async (bath: HerbBath) => {
@@ -611,7 +651,22 @@ export default function HerbsScreen() {
           <div className="flex items-center justify-between mb-2 px-2">
             <div>
               <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>Banhos Prontos</h2>
-              <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mt-1">Gestão de Estoque</p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Referência:</p>
+                <div className="flex items-center gap-1">
+                  <span className={cn("text-[11px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
+                  <input 
+                    type="number"
+                    value={settings.bathPackagePrice || 17}
+                    onChange={(e) => setSettings({ ...settings, bathPackagePrice: parseFloat(e.target.value) || 0 })}
+                    className={cn(
+                      "w-12 bg-transparent border-b border-brand-copper/30 focus:border-brand-copper outline-none text-[11px] font-bold text-center",
+                      settings.darkMode ? "text-brand-gold" : "text-brand-navy"
+                    )}
+                  />
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">/ cada</span>
+                </div>
+              </div>
             </div>
             <button 
               onClick={() => {
@@ -711,23 +766,25 @@ export default function HerbsScreen() {
                         {rb.title}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-y-2 gap-x-3">
                        <span className={cn(
                           "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest",
                           settings.darkMode ? "bg-white/5 text-gray-500" : "bg-gray-100 text-gray-400"
                         )}>
                           {rb.category || 'Gerais'}
                         </span>
-                      <Package className={cn("w-3 h-3 text-gray-400", rb.isFixed && rb.quantity === 0 && "text-red-400 ml-1")} />
-                      <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest text-gray-400",
-                        rb.isFixed && rb.quantity === 0 && "text-red-500"
-                      )}>
-                        {rb.quantity} {rb.quantity === 1 ? 'Pacotinho' : 'Pacotinhos'}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Package className={cn("w-3 h-3 text-gray-400", rb.isFixed && rb.quantity === 0 && "text-red-400")} />
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest text-gray-400",
+                          rb.isFixed && rb.quantity === 0 && "text-red-500"
+                        )}>
+                          {rb.quantity} {rb.quantity === 1 ? 'Pacotinho' : 'Pacotinhos'}
+                        </span>
+                      </div>
                       {rb.isFixed && (
                         <span className={cn(
-                          "ml-2 px-2 py-0.5 text-[8px] font-black uppercase rounded-full",
+                          "px-2 py-0.5 text-[8px] font-black uppercase rounded-full",
                           rb.quantity === 0 ? "bg-red-500/10 text-red-500" : "bg-brand-gold/10 text-brand-gold"
                         )}>
                           Fixo
@@ -786,14 +843,109 @@ export default function HerbsScreen() {
           )}
         </div>
       ) : (
-        <div className={cn(
-          "p-12 rounded-[40px] text-center border-2 border-dashed",
-          settings.darkMode ? "border-white/5" : "border-gray-50"
-        )}>
-          <div className="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Leaf className="w-8 h-8 text-brand-gold" />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between mb-2 px-2">
+            <div>
+              <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>Estoque de Ervas</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mt-1">Materiais em Casa</p>
+            </div>
+            <button 
+              onClick={() => setShowHerbModal(true)}
+              className={cn(
+                "w-12 h-12 bg-brand-navy text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-transform",
+                settings.darkMode && "bg-brand-copper"
+              )}
+            >
+              <Plus className="w-6 h-6" />
+            </button>
           </div>
-          <p className="text-gray-400 text-sm italic">Área de gestão de catálogo de ervas em desenvolvimento.</p>
+
+          <div className="relative mb-6">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Buscar no meu estoque..."
+              value={stockSearch}
+              onChange={(e) => setStockSearch(e.target.value)}
+              className={cn(
+                "w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none text-sm",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+              )}
+            />
+          </div>
+
+          <div className="grid gap-3">
+            {herbStock
+              .filter(h => h.name.toLowerCase().includes(stockSearch.toLowerCase()))
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((herb) => (
+                <motion.div
+                  layout
+                  key={herb.id}
+                  className={cn(
+                    "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition-all",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800",
+                    !herb.inStock && "opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => toggleHerbInStock(herb.id)}
+                      className={cn(
+                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all",
+                        herb.inStock 
+                          ? "bg-brand-copper border-brand-copper text-white" 
+                          : "border-gray-200 dark:border-gray-700"
+                      )}
+                    >
+                      {herb.inStock && <CheckCircle2 className="w-4 h-4" />}
+                    </button>
+                    <span className={cn(
+                      "font-bold text-sm",
+                      settings.darkMode ? "text-white" : "text-brand-navy",
+                      !herb.inStock && "line-through text-gray-400"
+                    )}>
+                      {herb.name}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md",
+                      herb.inStock 
+                        ? "bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400" 
+                        : "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                    )}>
+                      {herb.inStock ? 'Tenho' : 'Acabou'}
+                    </span>
+                    <button 
+                      onClick={() => removeHerbFromStock(herb.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+
+            {herbStock.length === 0 && (
+              <div className={cn(
+                "p-12 rounded-[40px] text-center border-2 border-dashed",
+                settings.darkMode ? "border-white/5" : "border-gray-50"
+              )}>
+                <div className="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Leaf className="w-8 h-8 text-brand-gold" />
+                </div>
+                <p className="text-gray-400 text-sm italic">O seu estoque está vazio.</p>
+                <button 
+                  onClick={() => setShowHerbModal(true)}
+                  className="mt-4 text-brand-copper font-bold text-sm underline"
+                >
+                  Adicionar primeira erva
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -836,29 +988,52 @@ export default function HerbsScreen() {
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                 <div>
-                   <p className="text-[10px] font-black uppercase text-brand-copper tracking-[0.2em] mb-4">Composição</p>
-                   <div className="space-y-2">
-                     {selectedBathForDetails.herbs.split('\n').filter(line => line.trim()).map((herb, idx) => (
-                       <motion.div 
-                        initial={{ x: -10, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: idx * 0.05 }}
-                        key={idx} 
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border",
-                          settings.darkMode 
-                            ? "bg-white/10 border-white/10" 
-                            : "bg-gray-50 border-gray-200"
-                        )}
-                       >
-                         <div className="w-1.5 h-1.5 rounded-full bg-brand-copper shrink-0" />
-                         <span className={cn(
-                           "text-sm font-bold",
-                           settings.darkMode ? "text-white" : "text-gray-900"
-                         )}>{herb}</span>
-                       </motion.div>
-                     ))}
-                   </div>
+                    <p className="text-[10px] font-black uppercase text-brand-copper tracking-[0.2em] mb-4">Composição</p>
+                    <div className="space-y-2 text-wrap break-words">
+                      {selectedBathForDetails.herbs.split('\n').filter(line => line.trim()).map((herb, idx) => {
+                        const normalized = herb.toLowerCase().trim();
+                        const found = herbStock.find(s => s.name.toLowerCase().trim() === normalized || 
+                          (s.name.includes('(') && s.name.toLowerCase().includes(normalized))
+                        );
+                        const status = found ? (found.inStock ? 'yes' : 'no') : 'none';
+
+                        return (
+                          <motion.div 
+                           initial={{ x: -10, opacity: 0 }}
+                           animate={{ x: 0, opacity: 1 }}
+                           transition={{ delay: idx * 0.05 }}
+                           key={idx} 
+                           className={cn(
+                             "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+                             status === 'yes' && (settings.darkMode ? "bg-green-500/10 border-green-500/30" : "bg-green-50 border-green-100"),
+                             status === 'no' && (settings.darkMode ? "bg-red-500/10 border-red-500/30" : "bg-red-50 border-red-100"),
+                             status === 'none' && (settings.darkMode ? "bg-white/10 border-white/10" : "bg-gray-50 border-gray-200")
+                           )}
+                          >
+                            <div className={cn(
+                              "w-1.5 h-1.5 rounded-full shrink-0",
+                              status === 'yes' ? "bg-green-500" : (status === 'no' ? "bg-red-500" : "bg-brand-copper/40")
+                            )} />
+                            <span className={cn(
+                              "text-sm font-bold flex-1",
+                              settings.darkMode ? "text-white" : "text-gray-900",
+                              status === 'no' && "opacity-60"
+                            )}>{herb}</span>
+                            
+                            {status !== 'none' && (
+                              <span className={cn(
+                                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded",
+                                status === 'yes' 
+                                  ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                  : "bg-red-500/20 text-red-600 dark:text-red-400"
+                              )}>
+                                {status === 'yes' ? 'Em Estoque' : 'Esgotado'}
+                              </span>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                 </div>
 
                 {selectedBathForDetails.observations && (
@@ -879,6 +1054,60 @@ export default function HerbsScreen() {
                     </div>
                   </div>
                 )}
+
+                {/* Status Summary Section */}
+                <div className="pt-4 border-t dark:border-white/10">
+                  <p className="text-[10px] font-black uppercase text-brand-navy dark:text-white/60 tracking-[0.2em] mb-4">Resumo do Inventário</p>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {(() => {
+                      const bathHerbs = selectedBathForDetails.herbs.split('\n').filter(line => line.trim());
+                      const available = bathHerbs.filter(herb => {
+                        const normalized = herb.toLowerCase().trim();
+                        const found = herbStock.find(s => s.name.toLowerCase().trim() === normalized || 
+                          (s.name.includes('(') && s.name.toLowerCase().includes(normalized))
+                        );
+                        return found && found.inStock;
+                      });
+                      
+                      const unavailable = bathHerbs.filter(herb => {
+                        const normalized = herb.toLowerCase().trim();
+                        const found = herbStock.find(s => s.name.toLowerCase().trim() === normalized || 
+                          (s.name.includes('(') && s.name.toLowerCase().includes(normalized))
+                        );
+                        return !found || !found.inStock;
+                      });
+
+                      return (
+                        <>
+                          {available.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                <span className="text-[10px] font-black uppercase text-green-600 dark:text-green-400">Tenho em casa ({available.length})</span>
+                              </div>
+                              <p className={cn("text-xs font-medium pl-3.5", settings.darkMode ? "text-white/60" : "text-brand-navy/60")}>
+                                {available.join(', ')}
+                              </p>
+                            </div>
+                          )}
+
+                          {unavailable.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                <span className="text-[10px] font-black uppercase text-red-600 dark:text-red-400">Não possuo / Providenciar ({unavailable.length})</span>
+                              </div>
+                              <p className={cn("text-xs font-medium pl-3.5 italic", settings.darkMode ? "text-white/60" : "text-brand-navy/60")}>
+                                {unavailable.join(', ')}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
 
               <div className={cn(
@@ -968,6 +1197,93 @@ export default function HerbsScreen() {
               >
                 Entendido
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showHerbModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[500] flex items-center justify-center p-4"
+            onClick={() => {
+              setShowHerbModal(false);
+              setHerbSearch('');
+              setCustomHerbName('');
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className={cn(
+                "bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl relative flex flex-col max-h-[80vh]",
+                settings.darkMode && "bg-[#1A1A1A] text-white border border-white/10"
+              )}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Adicionar Material</h3>
+                <button onClick={() => setShowHerbModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                <input
+                  placeholder="Pesquisar erva ou material..."
+                  value={herbSearch}
+                  onChange={(e) => setHerbSearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-gray-50 border-none rounded-xl p-3 pl-10 focus:ring-2 focus:ring-brand-copper outline-none text-sm",
+                    settings.darkMode && "bg-black/40 text-white"
+                  )}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto mb-4 space-y-1 custom-scrollbar">
+                {SUGGESTED_HERBS
+                  .filter(h => h.toLowerCase().includes(herbSearch.toLowerCase()))
+                  .map((herb) => {
+                    const isAdded = herbStock.some(s => s.name === herb);
+                    return (
+                      <button
+                        key={herb}
+                        onClick={() => !isAdded && addHerbToStock(herb)}
+                        className={cn(
+                          "w-full text-left p-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between",
+                          isAdded 
+                            ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-white/5" 
+                            : "hover:bg-brand-copper hover:text-white"
+                        )}
+                        disabled={isAdded}
+                      >
+                        <span>{herb}</span>
+                        {isAdded && <CheckCircle2 className="w-4 h-4" />}
+                      </button>
+                    );
+                  })}
+              </div>
+
+              <div className="pt-4 border-t dark:border-white/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-2">Outro material</p>
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Nome do material..."
+                    value={customHerbName}
+                    onChange={(e) => setCustomHerbName(e.target.value)}
+                    className={cn(
+                      "flex-1 bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-brand-copper outline-none text-sm",
+                      settings.darkMode && "bg-black/40 text-white"
+                    )}
+                    onKeyDown={(e) => e.key === 'Enter' && customHerbName && addHerbToStock(customHerbName)}
+                  />
+                  <button
+                    onClick={() => customHerbName && addHerbToStock(customHerbName)}
+                    className="bg-brand-navy text-white px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
