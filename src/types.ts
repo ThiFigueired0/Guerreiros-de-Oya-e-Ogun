@@ -39,6 +39,15 @@ export interface Note {
   lastEdited: number;
 }
 
+export interface ReadyBath {
+  id: string;
+  title: string;
+  quantity: number;
+  isFixed: boolean;
+  category?: string;
+  notes?: string;
+}
+
 export interface AppSettings {
   darkMode: boolean;
   eventCategories: string[];

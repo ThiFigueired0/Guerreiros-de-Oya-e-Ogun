@@ -304,10 +304,10 @@ function TopHeader() {
 
   return (
     <div className={cn(
-      "relative overflow-hidden pt-20 pb-10 shadow-2xl flex flex-col items-center transition-all duration-500",
+      "relative overflow-hidden pt-20 pb-16 shadow-2xl flex flex-col items-center transition-all duration-500",
       settings.darkMode 
-        ? "bg-gradient-to-b from-[#0A0A0A] to-black border-b border-white/5" 
-        : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14] border-b-2 border-brand-copper/30"
+        ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
+        : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
     )}>
       {/* Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
@@ -473,7 +473,7 @@ function SocialButtons() {
   if (location.pathname !== '/home') return null;
 
   return (
-    <div className="w-full flex justify-center gap-3 px-8 -mt-4 relative z-30 pointer-events-none">
+    <div className="w-full flex justify-center gap-3 px-8 -mt-10 relative z-30 pointer-events-none">
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}

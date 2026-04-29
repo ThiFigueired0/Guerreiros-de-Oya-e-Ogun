@@ -121,6 +121,54 @@ const INITIAL_GREETINGS: Greeting[] = [
   },
 ];
 
+const INITIAL_STUDY_CONTENTS: StudyContent[] = [
+  {
+    id: 'c1',
+    title: 'Banho de descarrego',
+    category: 'Banho',
+    content: `*Ervas:*
+Alecrim, Arruda, Guiné, Manjericão, Espada de são Jorge, Fumo de corda, Casca de alho, Casca de cebola, Pinhão roxo, Folha do fogo, Aroeira, Jurema preta, Abre caminho, Quebra demanda, Para raio, Danda da costa, Assa peixe, Espinheira santa, Açoita cavalo, Erva do bicho, Buchinha do norte, Eucalipto, Folha de chorão, Picão preto, Desata nó
+
+*Observações / modo de preparo:* 
+Banho de descarrego é necessário antes de tomar qualquer outro banho, para que limpe o medium de energias baixas, negativas e assim permitindo que os banhos seguintes consigam trazer a energia, um exemplo; não consigo tomar um banho de oxalá e trazer tranquilidade caso a pessoa estiver carregada.`
+  },
+  {
+    id: 'c2',
+    title: 'Banho de desenvolvimento',
+    category: 'Banho',
+    content: `*Ervas:*
+Casca de Jurema Preta, Pau Resposta, Cipó Caboclo, Folha de Laranjeira, Folha de Pitangueira, Samambaia
+
+*Observações / modo de preparo:* 
+Todos esses elementos são para uma mistura específica assim como um resultado harmônico para sentirmos nossos espíritos e trazemos as nossas energias mais facilmente.
+
+*Como preparar esse banho?*
+Os 3 primeiros ingredientes que são paus e cascas precisão ser comprados em casa de umbanda pois não conseguimos achar eles facilmente, eles precisão ser ralados, não tem necessidade nenhuma ferver o pedaço inteiro que é praticamente desperdício e não se usufrui de todo seu benefício assim, e as últimas 3 ervas caso tenham secas pode se ferver, se só tiverem frescas podem ser quinadas normalmente.
+
+Caso ferverem as cascas já raladas e alguma das ervas que estiverem secas, e tiverem alguma dessas frescas já quinadas, vocês apenas fazem a fusão de ambos, que é misturar os fervidos com os quinados.`
+  },
+  {
+    id: 'c3',
+    title: 'Banho neutralizador',
+    category: 'Banho',
+    content: `*Ervas:*
+Folha de goiaba, Folha de manga, Pitanga, Jabuticaba, Arruda
+
+*Observações / modo de preparo:* 
+(Nenhuma observação informada)`
+  },
+  {
+    id: 'c4',
+    title: 'Banho energizador',
+    category: 'Banho',
+    content: `*Ervas:* 
+Alecrim, Louro, Capim limão, Erva doce, Camomila 
+
+*Observações / modo de preparo:*
+(Nenhuma observação informada)`
+  }
+];
+
 export default function StudiesScreen() {
   const location = useLocation();
   const [settings] = useStorage<AppSettings>('templo_settings', {
@@ -132,7 +180,7 @@ export default function StudiesScreen() {
 
   const [books, setBooks, isBooksLoading] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [greetings, setGreetings] = useStorage<Greeting[]>('templo_greetings', INITIAL_GREETINGS);
-  const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', []);
+  const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', INITIAL_STUDY_CONTENTS);
 
   // UI state
   const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents'>('library');
