@@ -162,11 +162,16 @@ export interface StudyContent {
 
 export interface FinancialRecord {
   id: string;
-  type: 'mensalidade' | 'extra';
+  type: 'mensalidade' | 'extra' | 'oga';
   description: string;
   amount: number;
   dueDate: string;
   status: 'pending' | 'paid';
   paymentDate?: string;
   category?: string;
+  installments?: {
+    current: number;
+    total: number;
+    masterId: string;
+  };
 }
