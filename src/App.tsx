@@ -312,20 +312,6 @@ function TopHeader() {
       {/* Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
 
-      {/* Notification Icon */}
-      <div className="absolute top-6 right-6 z-20">
-        <motion.div 
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border border-brand-copper/20 cursor-pointer"
-        >
-          <div className="relative">
-            <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
-            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-red rounded-full border-2 border-white" />
-          </div>
-        </motion.div>
-      </div>
-
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Floating Leaves across the entire banner - Higher visibility */}
@@ -630,6 +616,20 @@ export default function App() {
           "w-full h-full sm:h-[812px] max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy transition-colors duration-500",
           settings.darkMode && "bg-[#121212] border-black"
         )}>
+          {/* Notification Icon - Global */}
+          <div className="absolute top-6 right-6 z-[60]">
+            <motion.div 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
+            >
+              <div className="relative">
+                <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-red rounded-full border-2 border-white" />
+              </div>
+            </motion.div>
+          </div>
+
           <Navigation />
           
     <div className="flex-1 flex flex-col h-full overflow-hidden">
