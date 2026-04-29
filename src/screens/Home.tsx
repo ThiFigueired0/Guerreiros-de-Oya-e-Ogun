@@ -101,44 +101,72 @@ export default function HomeScreen() {
         </div>
 
         <div className="space-y-4">
+          {/* Caixa Card */}
           <div className={cn(
-            "p-4 rounded-2xl border transition-all",
-            settings.darkMode ? "bg-black/20 border-gray-800" : "bg-gray-50 border-gray-100"
+            "p-5 rounded-[28px] border transition-all relative overflow-hidden",
+            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-gray-50/50 border-gray-100"
           )}>
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
-                <p className={cn("font-bold text-sm", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[8px] font-black text-gray-300 uppercase tracking-widest">Logo</div>
+                <div>
+                  <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
+                  <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={cn(
+              "p-4 rounded-2xl flex items-center justify-between gap-4 mb-4",
+              settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+            )}>
+              <div className="overflow-hidden">
+                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (CPF)</p>
+                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
               </div>
               <button 
                 onClick={() => copyToClipboard('33464358810', 'caixa')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="w-10 h-10 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
               >
-                {copied === 'caixa' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-brand-copper" />}
+                {copied === 'caixa' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-[11px] font-mono font-bold text-brand-copper">33464358810</p>
-            <p className="text-[9px] text-gray-400 mt-2 leading-tight">Utilize esta conta exclusivamente para o pagamento das mensalidades do templo.</p>
+            
+            <p className="text-[10px] text-gray-400 font-medium px-1">Utilize esta conta exclusivamente para o pagamento das mensalidades do templo.</p>
           </div>
 
+          {/* Nubank Card */}
           <div className={cn(
-            "p-4 rounded-2xl border transition-all",
-            settings.darkMode ? "bg-black/20 border-gray-800" : "bg-gray-50 border-gray-100"
+            "p-5 rounded-[28px] border transition-all relative overflow-hidden",
+            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-gray-50/50 border-gray-100"
           )}>
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos & Banhos</p>
-                <p className={cn("font-bold text-sm", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Nubank</p>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[8px] font-black text-gray-300 uppercase tracking-widest">Logo</div>
+                <div>
+                  <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos & Banhos</p>
+                  <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Nubank</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={cn(
+              "p-4 rounded-2xl flex items-center justify-between gap-4 mb-4",
+              settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+            )}>
+              <div className="overflow-hidden">
+                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (Celular)</p>
+                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
               </div>
               <button 
                 onClick={() => copyToClipboard('11982350614', 'nubank')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="w-10 h-10 bg-[#8A05BE] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-90 transition-all shrink-0"
               >
-                {copied === 'nubank' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-brand-copper" />}
+                {copied === 'nubank' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-[11px] font-mono font-bold text-brand-copper">11982350614</p>
-            <p className="text-[9px] text-gray-400 mt-2 leading-tight">Utilize esta conta para compra de banhos, materiais e outras necessidades gerais.</p>
+            
+            <p className="text-[10px] text-gray-400 font-medium px-1">Utilize esta conta para compra de banhos, materiais e outras necessidades gerais.</p>
           </div>
         </div>
       </section>

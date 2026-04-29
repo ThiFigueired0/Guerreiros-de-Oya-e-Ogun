@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { 
-  Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star, Instagram,
+  Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 } from 'lucide-react';
@@ -73,6 +73,7 @@ import SettingsScreen from './screens/Settings';
 import TrabalhosScreen from './screens/Trabalhos';
 import HomeScreen from './screens/Home';
 import StudiesScreen from './screens/Studies';
+import FinanceiroScreen from './screens/Financeiro';
 import { NotificationManager } from './components/NotificationManager';
 
 const ALL_TABS = [
@@ -83,11 +84,12 @@ const ALL_TABS = [
   { path: '/points', label: 'Pontos', defaultIcon: Music },
   { path: '/studies', label: 'Estudos', defaultIcon: GraduationCap },
   { path: '/notes', label: 'Notas', defaultIcon: FileText },
+  { path: '/finance', label: 'Financeiro', defaultIcon: Wallet },
   { path: '/settings', label: 'Ajustes', defaultIcon: Settings },
 ];
 
 const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
-const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/settings'];
+const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
 function Navigation() {
   const location = useLocation();
@@ -473,17 +475,25 @@ function SocialButtons() {
   if (location.pathname !== '/home') return null;
 
   return (
-    <div className="w-full flex justify-center gap-3 px-8 -mt-10 relative z-30 pointer-events-none">
+    <div className="w-full flex flex-row gap-3 px-8 -mt-6 mb-8 relative z-30 pointer-events-none">
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
         href="https://www.instagram.com/guerreirosdeoyaeogum/"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
+        className={cn(
+          "flex-1 p-3 rounded-[24px] bg-gradient-to-r from-brand-gold-light to-brand-gold-medium text-brand-navy shadow-xl shadow-brand-gold-medium/30 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
+          settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
+        )}
       >
-        <Instagram className="w-4 h-4" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Instagram</span>
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
+          {/* Placeholder for Instagram Logo */}
+        </div>
+        <div className="text-left relative z-10">
+          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">Instagram</h3>
+        </div>
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
       
       <motion.a
@@ -492,10 +502,18 @@ function SocialButtons() {
         href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
+        className={cn(
+          "flex-1 p-3 rounded-[24px] bg-gradient-to-r from-brand-gold-light to-brand-gold-medium text-brand-navy shadow-xl shadow-brand-gold-medium/30 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
+          settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
+        )}
       >
-        <Music className="w-4 h-4" />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em]">TikTok</span>
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
+          {/* Placeholder for TikTok Logo */}
+        </div>
+        <div className="text-left relative z-10">
+          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
+        </div>
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
     </div>
   );
@@ -563,6 +581,18 @@ export default function App() {
         ...settings,
         eventCategories: categories
       });
+    }
+
+    // Ensure /finance is in secondary tabs if not present anywhere
+    const allCurrentPaths = [...(settings.primaryTabPaths || DEFAULT_PRIMARY), ...(settings.secondaryTabPaths || DEFAULT_SECONDARY)];
+    if (!allCurrentPaths.includes('/finance')) {
+      const currentSecondary = settings.secondaryTabPaths || DEFAULT_SECONDARY;
+      if (!currentSecondary.includes('/finance')) {
+        setSettings({
+          ...settings,
+          secondaryTabPaths: [...currentSecondary, '/finance']
+        });
+      }
     }
 
     // 5. Calendar 2026 migration
@@ -655,6 +685,7 @@ export default function App() {
                       <Route path="/points" element={<PointsScreen />} />
                       <Route path="/studies" element={<StudiesScreen />} />
                       <Route path="/notes" element={<NotesScreen />} />
+                      <Route path="/finance" element={<FinanceiroScreen />} />
                       <Route path="/settings" element={<SettingsScreen />} />
                     </Routes>
                   </AnimatePresence>

@@ -122,6 +122,12 @@ export interface StudyBook {
   pdfBase64: string;
   uploadDate: number;
   notes?: string;
+  attachments?: {
+    name: string;
+    type: 'image' | 'pdf';
+    data: string; // base64
+  }[];
+  links?: string[];
   isFavorite?: boolean;
   readingStatus?: 'not_started' | 'in_progress' | 'completed';
   lastPage?: number;
@@ -152,4 +158,15 @@ export interface StudyContent {
   links?: string[];
   isFavorite?: boolean;
   createdAt: number;
+}
+
+export interface FinancialRecord {
+  id: string;
+  type: 'mensalidade' | 'extra';
+  description: string;
+  amount: number;
+  dueDate: string;
+  status: 'pending' | 'paid';
+  paymentDate?: string;
+  category?: string;
 }

@@ -145,6 +145,42 @@ export default function StudiesScreen() {
   const [selectedBookForAction, setSelectedBookForAction] = useState<StudyBook | null>(null);
   const [showBookNotesModal, setShowBookNotesModal] = useState(false);
   const [bookNotesDraft, setBookNotesDraft] = useState('');
+  const [bookLinksDraft, setBookLinksDraft] = useState<string[]>([]);
+  const [bookAttachmentsDraft, setBookAttachmentsDraft] = useState<{name: string, type: 'image' | 'pdf', data: string}[]>([]);
+  const [newBookLink, setNewBookLink] = useState('');
+  
+  const addBookLink = () => {
+    if (newBookLink) {
+      setBookLinksDraft([...bookLinksDraft, newBookLink]);
+      setNewBookLink('');
+    }
+  };
+  
+  const removeBookLink = (index: number) => {
+    setBookLinksDraft(bookLinksDraft.filter((_, i) => i !== index));
+  };
+
+  const handleBookAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      const type = file.type.includes('pdf') ? 'pdf' : 'image';
+      setBookAttachmentsDraft(prev => [...prev, {
+        name: file.name,
+        type: type as 'pdf' | 'image',
+        data: base64
+      }]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeBookAttachment = (index: number) => {
+    setBookAttachmentsDraft(bookAttachmentsDraft.filter((_, i) => i !== index));
+  };
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingNameVal, setEditingNameVal] = useState('');
   const [showGreetingModal, setShowGreetingModal] = useState(false);
@@ -357,7 +393,12 @@ export default function StudiesScreen() {
 
   const handleSaveBookNotes = () => {
     if (!selectedBookForAction) return;
-    setBooks(books.map(b => b.id === selectedBookForAction.id ? { ...b, notes: bookNotesDraft } : b));
+    setBooks(books.map(b => b.id === selectedBookForAction.id ? { 
+      ...b, 
+      notes: bookNotesDraft,
+      links: bookLinksDraft,
+      attachments: bookAttachmentsDraft
+    } : b));
     setShowBookNotesModal(false);
     setSelectedBookForAction(null);
   };
@@ -365,6 +406,8 @@ export default function StudiesScreen() {
   const openBookDetails = async (book: StudyBook) => {
     setSelectedBookForAction(book);
     setBookNotesDraft(book.notes || '');
+    setBookLinksDraft(book.links || []);
+    setBookAttachmentsDraft(book.attachments || []);
     setEditingNameVal(book.name.replace('.pdf', ''));
     setIsEditingName(false);
     
@@ -1435,9 +1478,60 @@ export default function StudiesScreen() {
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="text-[11px] font-bold uppercase tracking-widest text-brand-navy">Anotações</span>
-                    <span className="text-[9px] text-gray-400 font-medium">{selectedBookForAction.notes ? 'Editar observações' : 'Adicionar observações'}</span>
+                    <span className="text-[9px] text-gray-400 font-medium">{(selectedBookForAction.notes || (selectedBookForAction.links && selectedBookForAction.links.length > 0) || (selectedBookForAction.attachments && selectedBookForAction.attachments.length > 0)) ? 'Editar observações e anexos' : 'Adicionar observações e anexos'}</span>
                   </div>
                 </button>
+
+                {(selectedBookForAction.notes || (selectedBookForAction.links && selectedBookForAction.links.length > 0) || (selectedBookForAction.attachments && selectedBookForAction.attachments.length > 0)) && (
+                  <div className="bg-gray-50/50 rounded-3xl p-4 space-y-4">
+                    {selectedBookForAction.notes && (
+                      <p className={cn("text-[11px] text-gray-600 leading-relaxed italic", settings.darkMode && "text-gray-400")}>
+                        "{selectedBookForAction.notes}"
+                      </p>
+                    )}
+                    
+                    {selectedBookForAction.links && selectedBookForAction.links.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {selectedBookForAction.links.map((link, idx) => (
+                          <a 
+                            key={idx}
+                            href={link.startsWith('http') ? link : `https://${link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-brand-copper hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span className="text-[10px] font-bold truncate max-w-[200px]">{link}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedBookForAction.attachments && selectedBookForAction.attachments.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedBookForAction.attachments.map((attach, idx) => (
+                          <button 
+                            key={idx}
+                            onClick={() => {
+                              const newWindow = window.open();
+                              if (newWindow) {
+                                if (attach.type === 'pdf') {
+                                  newWindow.document.write(`<iframe src="${attach.data}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                } else {
+                                  newWindow.document.write(`<img src="${attach.data}" style="max-width: 100%;" />`);
+                                }
+                              }
+                            }}
+                            className="flex items-center gap-2 p-2 bg-white dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 group"
+                          >
+                            {attach.type === 'image' ? <Eye className="w-3 h-3 text-brand-copper" /> : <FileText className="w-3 h-3 text-brand-copper" />}
+                            <span className="text-[8px] font-bold text-brand-navy dark:text-gray-400 truncate">{attach.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <button 
                   onClick={() => {
@@ -1476,28 +1570,109 @@ export default function StudiesScreen() {
               >
                 <X className="w-5 h-5" />
               </button>
-
++
               <h2 className={cn("text-xl font-black text-brand-navy mb-2", settings.darkMode && "text-white")}>
                 Anotações
               </h2>
               <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-6">
                 Observações para {selectedBookForAction.name.replace('.pdf', '')}
               </p>
-
-              <textarea 
-                value={bookNotesDraft}
-                onChange={(e) => setBookNotesDraft(e.target.value)}
-                rows={8}
-                className={cn(
-                  "w-full bg-gray-50 border-0 p-6 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-brand-copper/20 transition-all outline-none resize-none",
-                  settings.darkMode && "bg-black text-white"
-                )}
-                placeholder="Escreva suas observações aqui..."
-              />
-
++
+              <div className="space-y-6">
+                <div>
+                  <textarea 
+                    value={bookNotesDraft}
+                    onChange={(e) => setBookNotesDraft(e.target.value)}
+                    rows={6}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 p-6 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-brand-copper/20 transition-all outline-none resize-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Escreva suas observações aqui..."
+                  />
+                </div>
++
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Links (Opcional)</label>
+                    <div className="flex gap-2 mb-3">
+                      <input 
+                        type="text"
+                        value={newBookLink}
+                        onChange={(e) => setNewBookLink(e.target.value)}
+                        className={cn(
+                          "flex-1 bg-gray-50 border-0 py-3 px-4 rounded-xl text-xs font-bold outline-none",
+                          settings.darkMode && "bg-black text-white"
+                        )}
+                        placeholder="https://..."
+                        onKeyDown={(e) => e.key === 'Enter' && addBookLink()}
+                      />
+                      <button 
+                        onClick={addBookLink}
+                        className="p-3 bg-brand-copper text-white rounded-xl active:scale-95 transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {bookLinksDraft.map((link, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-gray-50 dark:bg-black/40 px-3 py-1.5 rounded-lg group">
+                          <span className="text-[10px] font-bold text-gray-500 truncate max-w-[120px]">{link}</span>
+                          <button onClick={() => removeBookLink(idx)} className="text-gray-400 hover:text-red-500">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
++
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {bookAttachmentsDraft.map((attach, idx) => (
+                        <div key={idx} className="relative group">
+                          <div className={cn(
+                            "flex flex-col items-center gap-1 p-3 rounded-2xl bg-gray-50",
+                            settings.darkMode && "bg-black/40"
+                          )}>
+                            {attach.type === 'image' ? (
+                              <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
+                            ) : (
+                              <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-brand-copper/40" />
+                              </div>
+                            )}
+                            <span className="text-[8px] font-bold text-gray-400 truncate w-full text-center">{attach.name}</span>
+                          </div>
+                          <button 
+                            onClick={() => removeBookAttachment(idx)}
+                            className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className={cn(
+                        "flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all",
+                        settings.darkMode && "border-gray-800 hover:bg-black/40"
+                      )}>
+                        <Upload className="w-6 h-6 text-gray-300" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
+                        <input 
+                          type="file" 
+                          accept="image/*,application/pdf" 
+                          className="hidden" 
+                          onChange={handleBookAttachmentUpload} 
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
++
               <button 
                 onClick={handleSaveBookNotes}
-                className="w-full bg-brand-navy text-white text-[11px] font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl active:scale-95 transition-all mt-6"
+                className="w-full bg-brand-navy text-white text-[11px] font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl active:scale-95 transition-all mt-8"
               >
                 Salvar Anotações
               </button>
