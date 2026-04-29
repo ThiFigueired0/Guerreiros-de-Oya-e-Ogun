@@ -969,13 +969,13 @@ export default function StudiesScreen() {
       {/* Orixa Details Modal */}
       <AnimatePresence>
         {selectedGreeting && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[150] flex items-start justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className={cn(
-                "w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl relative",
+                "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] overflow-hidden shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1064,13 +1064,13 @@ export default function StudiesScreen() {
       {/* Book Upload Modal */}
       <AnimatePresence>
         {showBookModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[140] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl relative",
+                "w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1081,7 +1081,7 @@ export default function StudiesScreen() {
                 <X className="w-5 h-5" />
               </button>
 
-              <h2 className={cn("text-xl font-black text-brand-navy mb-2", settings.darkMode && "text-white")}>
+              <h2 className={cn("text-lg sm:text-xl font-black text-brand-navy mb-2", settings.darkMode && "text-white")}>
                 Adicionar Livro
               </h2>
               <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-6">Selecione um PDF para sua biblioteca</p>
@@ -1109,13 +1109,13 @@ export default function StudiesScreen() {
       {/* Greeting Modal */}
       <AnimatePresence>
         {showGreetingModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-20">
+          <div className="fixed inset-0 z-[140] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "w-full max-w-md bg-white rounded-[32px] p-8 shadow-2xl relative",
+                "w-full max-w-md bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1126,7 +1126,7 @@ export default function StudiesScreen() {
                 <X className="w-5 h-5" />
               </button>
 
-              <h2 className={cn("text-xl font-black text-brand-navy mb-8", settings.darkMode && "text-white")}>
+              <h2 className={cn("text-lg sm:text-xl font-black text-brand-navy mb-6 sm:mb-8", settings.darkMode && "text-white")}>
                 {editingGreeting ? 'Editar Saudação' : 'Nova Saudação'}
               </h2>
 
@@ -1257,13 +1257,13 @@ export default function StudiesScreen() {
       {/* Book Options Modal */}
       <AnimatePresence>
         {selectedBookForAction && !showBookNotesModal && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[140] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl relative",
+                "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1460,13 +1460,13 @@ export default function StudiesScreen() {
       {/* Book Notes Modal */}
       <AnimatePresence>
         {showBookNotesModal && selectedBookForAction && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[160] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl relative",
+                "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1542,13 +1542,13 @@ export default function StudiesScreen() {
       {/* Study Content Details Modal */}
       <AnimatePresence>
         {selectedContent && (
-          <div className="fixed inset-0 z-[130] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[150] flex items-start justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className={cn(
-                "w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]",
+                "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] overflow-hidden shadow-2xl relative flex flex-col my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
@@ -1669,24 +1669,24 @@ export default function StudiesScreen() {
       {/* New Study Content Modal */}
       <AnimatePresence>
         {showContentModal && (
-          <div className="fixed inset-0 z-[140] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-20">
+          <div className="fixed inset-0 z-[140] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl relative",
+                "w-full max-w-md bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
             >
               <button 
                 onClick={() => setShowContentModal(false)}
-                className="absolute top-8 right-8 text-gray-400"
+                className="absolute top-6 right-6 sm:top-8 sm:right-8 text-gray-400"
               >
                 <X className="w-6 h-6" />
               </button>
 
-              <h2 className={cn("text-2xl font-black text-brand-navy mb-8", settings.darkMode && "text-white")}>
+              <h2 className={cn("text-xl sm:text-2xl font-black text-brand-navy mb-6 sm:mb-8", settings.darkMode && "text-white")}>
                 {editingContent ? 'Editar Conteúdo' : 'Novo Conteúdo'}
               </h2>
 
