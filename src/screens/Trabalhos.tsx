@@ -375,7 +375,7 @@ export default function TrabalhosScreen() {
           settings.darkMode ? "text-white" : "text-brand-navy"
         )}>Trabalhos & Rituais</h2>
         
-        <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 p-1.5 rounded-3xl self-start inline-flex">
+        <div className="flex gap-1.5 p-1 bg-gray-100/50 dark:bg-white/5 rounded-2xl mb-8 border border-gray-100 dark:border-white/5">
           {[
             { id: 'cuts', label: 'Cortes', icon: DollarSign },
             { id: 'ebo', label: 'Ebó', icon: List },
@@ -385,14 +385,14 @@ export default function TrabalhosScreen() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 active:scale-95",
                 activeTab === tab.id 
-                  ? (settings.darkMode ? "bg-brand-copper text-white shadow-lg shadow-brand-copper/20" : "bg-brand-navy text-white shadow-lg shadow-brand-navy/10")
+                  ? (settings.darkMode ? "bg-brand-copper text-white shadow-md" : "bg-brand-navy text-white shadow-md")
                   : (settings.darkMode ? "text-gray-500 hover:text-gray-300" : "text-gray-400 hover:text-brand-navy")
               )}
             >
               <tab.icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
+              <span className="leading-none">{tab.label}</span>
             </button>
           ))}
         </div>

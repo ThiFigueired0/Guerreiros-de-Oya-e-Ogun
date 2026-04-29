@@ -464,39 +464,42 @@ export default function StudiesScreen() {
       </header>
 
       {/* Submenu Tabs */}
-      <div className="flex gap-2 p-1.5 bg-gray-100/50 dark:bg-white/5 rounded-2xl mb-8 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 p-1 bg-gray-100/50 dark:bg-white/5 rounded-2xl mb-8 border border-gray-100 dark:border-white/5">
         <button 
           onClick={() => setActiveSubTab('library')}
           className={cn(
-            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
             activeSubTab === 'library' 
-              ? "bg-brand-navy text-white shadow-lg" 
+              ? "bg-brand-navy text-white shadow-md" 
               : "text-gray-400 hover:text-brand-navy"
           )}
         >
-          <Book className="w-3.5 h-3.5" /> Biblioteca
+          <Book className="w-3.5 h-3.5" />
+          <span className="leading-none">Biblioteca</span>
         </button>
         <button 
           onClick={() => setActiveSubTab('greetings')}
           className={cn(
-            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
             activeSubTab === 'greetings' 
-              ? "bg-brand-navy text-white shadow-lg" 
+              ? "bg-brand-navy text-white shadow-md" 
               : "text-gray-400 hover:text-brand-navy"
           )}
         >
-          <MessageSquare className="w-3.5 h-3.5" /> Saudações
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span className="leading-none">Saudações</span>
         </button>
         <button 
           onClick={() => setActiveSubTab('contents')}
           className={cn(
-            "flex-1 whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
             activeSubTab === 'contents' 
-              ? "bg-brand-navy text-white shadow-lg" 
+              ? "bg-brand-navy text-white shadow-md" 
               : "text-gray-400 hover:text-brand-navy"
           )}
         >
-          <LayoutList className="w-3.5 h-3.5" /> Conteúdos
+          <LayoutList className="w-3.5 h-3.5" />
+          <span className="leading-none">Conteúdos</span>
         </button>
       </div>
 
