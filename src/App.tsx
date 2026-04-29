@@ -304,7 +304,7 @@ function TopHeader() {
 
   return (
     <div className={cn(
-      "relative overflow-hidden pt-12 pb-8 shadow-2xl flex flex-col items-center transition-all duration-500",
+      "relative overflow-hidden pt-20 pb-10 shadow-2xl flex flex-col items-center transition-all duration-500",
       settings.darkMode 
         ? "bg-gradient-to-b from-[#0A0A0A] to-black border-b border-white/5" 
         : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14] border-b-2 border-brand-copper/30"
