@@ -617,7 +617,7 @@ export default function App() {
           settings.darkMode && "bg-[#121212] border-black"
         )}>
           {/* Notification Icon - Global */}
-          <div className="absolute top-6 right-6 z-[60]">
+          <div className="absolute top-3 right-6 z-[60]">
             <motion.div 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
