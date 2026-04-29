@@ -36,6 +36,13 @@ export interface Note {
   title: string;
   content: string;
   images?: string[]; // Array of base64 image strings
+  attachments?: {
+    name: string;
+    type: 'image' | 'pdf';
+    data: string; // base64
+  }[];
+  links?: string[];
+  createdAt: number;
   lastEdited: number;
 }
 
