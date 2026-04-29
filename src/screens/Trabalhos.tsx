@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Edit2, X, Save, DollarSign, List, Info, Search, Calculator, PlusCircle, MinusCircle, History, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings, Bicho, SimulatorItem, SimulationRecord, OfferingEntity, Candle, Event } from '../types';
 import { format } from 'date-fns';
@@ -70,6 +71,9 @@ export default function TrabalhosScreen() {
   const [events] = useStorage<Event[]>('templo_events', []);
 
   const [activeTab, setActiveTab] = useState<'cuts' | 'ebo' | 'candles'>('cuts');
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'bicho' | 'history' | 'candle' | 'simulator' } | null>(null);
 
   const [offerings, setOfferings] = useStorage<OfferingEntity[]>('templo_offerings', [
     {
@@ -205,7 +209,25 @@ export default function TrabalhosScreen() {
   };
 
   const removeBicho = (id: string) => {
-    setBichos(bichos.filter(b => b.id !== id));
+    setItemToDelete({ id, type: 'bicho' });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+
+    if (itemToDelete.type === 'bicho') {
+      setBichos(bichos.filter(b => b.id !== itemToDelete.id));
+    } else if (itemToDelete.type === 'history') {
+      setSimulationHistory(simulationHistory.filter(r => r.id !== itemToDelete.id));
+    } else if (itemToDelete.type === 'candle') {
+      setCandles(candles.filter(c => c.id !== itemToDelete.id));
+    } else if (itemToDelete.type === 'simulator') {
+      setSimulatorItems(simulatorItems.filter(item => item.id !== itemToDelete.id));
+    }
+
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
   };
 
   const handleSaveCandle = () => {
@@ -246,7 +268,8 @@ export default function TrabalhosScreen() {
   };
 
   const removeFromSimulator = (id: string) => {
-    setSimulatorItems(simulatorItems.filter(item => item.id !== id));
+    setItemToDelete({ id, type: 'simulator' });
+    setShowDeleteConfirm(true);
   };
 
   const calculateSimulatorTotal = () => {
@@ -299,7 +322,8 @@ export default function TrabalhosScreen() {
 
   const deleteHistoryRecord = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSimulationHistory(simulationHistory.filter(r => r.id !== id));
+    setItemToDelete({ id, type: 'history' });
+    setShowDeleteConfirm(true);
   };
 
   const white7DayCandle = candles.find(c => c.color.toLowerCase() === 'branca' && c.type === '7 Dias');
@@ -907,7 +931,10 @@ export default function TrabalhosScreen() {
                     </button>
                     {!(candle.color.toLowerCase() === 'branca' && candle.type === '7 Dias') && (
                       <button 
-                        onClick={() => setCandles(candles.filter(c => c.id !== candle.id))}
+                        onClick={() => {
+                          setItemToDelete({ id: candle.id, type: 'candle' });
+                          setShowDeleteConfirm(true);
+                        }}
                         className="p-2 rounded-lg bg-white dark:bg-white/10 text-gray-400 hover:text-brand-red"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1743,6 +1770,27 @@ export default function TrabalhosScreen() {
           </div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmationModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={
+          itemToDelete?.type === 'bicho' ? "Excluir Bicho" :
+          itemToDelete?.type === 'history' ? "Excluir Simulação" :
+          itemToDelete?.type === 'simulator' ? "Remover do Simulador" :
+          "Excluir Vela"
+        }
+        message={
+          itemToDelete?.type === 'bicho' ? "Deseja realmente excluir este bicho dos registros?" :
+          itemToDelete?.type === 'history' ? "Deseja excluir permanentemente este registro de simulação?" :
+          itemToDelete?.type === 'simulator' ? "Deseja remover este bicho da sua simulação atual?" :
+          "Deseja excluir esta vela do seu estoque?"
+        }
+      />
     </motion.div>
   );
 }

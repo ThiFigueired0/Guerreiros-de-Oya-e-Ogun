@@ -312,6 +312,20 @@ function TopHeader() {
       {/* Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
 
+      {/* Notification Icon */}
+      <div className="absolute top-6 right-6 z-20">
+        <motion.div 
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border border-brand-copper/20 cursor-pointer"
+        >
+          <div className="relative">
+            <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-red rounded-full border-2 border-white" />
+          </div>
+        </motion.div>
+      </div>
+
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Floating Leaves across the entire banner - Higher visibility */}
@@ -477,7 +491,7 @@ function SocialButtons() {
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
-        href="#"
+        href="https://www.instagram.com/guerreirosdeoyaeogum/"
         target="_blank"
         rel="noopener noreferrer"
         className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
@@ -489,7 +503,7 @@ function SocialButtons() {
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
-        href="#"
+        href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
         target="_blank"
         rel="noopener noreferrer"
         className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-[#B8860B] via-[#DAA520] to-[#8B6508] text-white shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] border border-white/20 pointer-events-auto"
