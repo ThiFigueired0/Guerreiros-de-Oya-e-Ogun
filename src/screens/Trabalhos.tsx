@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Edit2, X, Save, DollarSign, List, Info, Search, Calculator, PlusCircle, MinusCircle, History, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Save, DollarSign, List, Info, Search, Calculator, PlusCircle, MinusCircle, History, ChevronRight, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings, Bicho, SimulatorItem, SimulationRecord, OfferingEntity, Candle, Event } from '../types';
@@ -35,6 +35,7 @@ export default function TrabalhosScreen() {
     return `R$${value.toFixed(2)}`;
   };
 
+  const [isManageMode, setIsManageMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
@@ -114,6 +115,9 @@ export default function TrabalhosScreen() {
       sections: [{ items: [] }]
     }
   ]);
+
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string>(offerings[0]?.id || '');
+  const selectedOfferingEntity = offerings.find(o => o.id === selectedOfferingId) || offerings[0];
 
   const [showOfferingModal, setShowOfferingModal] = useState(false);
   const [editingOfferingId, setEditingOfferingId] = useState<string | null>(null);
@@ -406,244 +410,334 @@ export default function TrabalhosScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
-            {/* Bloco Cortes */}
-            <section className={cn(
-              "rounded-[32px] overflow-hidden shadow-sm border transition-colors duration-500",
-              settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
-            )}>
-        <div className={cn(
-          "p-6 border-b",
-          settings.darkMode ? "border-gray-800" : "border-gray-50"
-        )}>
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-2 rounded-xl",
-              settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-navy/5 text-brand-navy"
-            )}>
-              <DollarSign className="w-4 h-4" />
-            </div>
-            <h3 className={cn("font-black text-sm uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-              Cortes
-            </h3>
-          </div>
-        </div>
-
-        {/* Bichos e Valores */}
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className={cn("text-[10px] font-black uppercase text-gray-400 tracking-widest")}>Bichos & Valores</h4>
-            <button 
-              onClick={() => setShowModal(true)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all active:scale-95",
-                settings.darkMode ? "bg-brand-copper text-white" : "bg-brand-navy text-white"
-              )}
-            >
-              <Plus className="w-2.5 h-2.5" /> Adicionar
-            </button>
-          </div>
-
-          <div className="mb-6 relative">
-            <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", settings.darkMode ? "text-white/20" : "text-gray-400")} />
-            <input 
-              type="text"
-              placeholder="Buscar bicho..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn(
-                "w-full pl-11 pr-4 py-3 rounded-2xl text-[10px] font-bold transition-all outline-none",
-                settings.darkMode ? "bg-black/20 border-gray-800 focus:bg-black/40 text-white" : "bg-gray-50 border-gray-100 focus:bg-white text-brand-navy"
-              )}
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-50 dark:border-gray-800/50">
-                  <th className="py-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter">Bicho</th>
-                  <th className="py-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter text-center">Compra</th>
-                  <th className="py-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter text-center">Mão</th>
-                  <th className="py-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter text-center">Total</th>
-                  <th className="py-2 text-[8px] font-black text-gray-400 uppercase tracking-tighter text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800/20">
-                {filteredBichos.map(bicho => (
-                  <tr key={bicho.id} className="group">
-                    <td className={cn("py-3 text-[10px] font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
-                      {bicho.name}
-                    </td>
-                    <td className={cn("py-3 text-[10px] text-center font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-                      {formatCurrency(bicho.purchaseCost)}
-                    </td>
-                    <td className={cn("py-3 text-[10px] text-center font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-                      {formatCurrency(bicho.serviceCost)}
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className={cn(
-                        "px-1.5 py-0.5 rounded-md text-[9px] font-black",
-                        settings.darkMode ? "bg-brand-copper/10 text-brand-copper" : "bg-brand-navy/5 text-brand-navy"
-                      )}>
-                        {formatCurrency(bicho.purchaseCost + bicho.serviceCost)}
+            <div className="space-y-12 pb-12">
+              {/* Bichos Section Card */}
+              <section className={cn(
+                "rounded-[40px] overflow-hidden shadow-sm border transition-colors duration-500",
+                settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+              )}>
+                <div className="p-6">
+                  {/* Quick Actions Header */}
+                  <div className="grid grid-cols-2 gap-3 mb-10">
+                    <button 
+                      onClick={() => {
+                        setSimulatorItems([]);
+                        setActiveSimulationId(null);
+                        setShowSimulator(true);
+                      }}
+                      className={cn(
+                        "p-5 rounded-[28px] flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.95] group relative overflow-hidden",
+                        settings.darkMode 
+                          ? "bg-brand-copper/10 border border-brand-copper/20" 
+                          : "bg-brand-navy border border-brand-navy text-white shadow-lg shadow-brand-navy/20"
+                      )}
+                    >
+                      <div className="p-2 rounded-xl bg-white/10">
+                        <Calculator className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-[10px] uppercase font-black tracking-widest text-center text-white">
+                        Simulador
                       </span>
-                    </td>
-                    <td className="py-3 text-right text-xs">
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => openEdit(bicho)} className="p-2 bg-gray-50 dark:bg-white/5 text-gray-500 active:text-brand-copper rounded-lg shadow-sm border border-gray-100 dark:border-white/5">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => removeBicho(bicho.id)} className="p-2 bg-red-50 text-brand-red active:bg-red-100 rounded-lg shadow-sm border border-red-100/50">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    </button>
+
+                    <button 
+                      onClick={() => setShowHistoryModal(true)}
+                      className={cn(
+                        "p-5 rounded-[28px] flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.95] group border",
+                        settings.darkMode 
+                          ? "bg-white/5 border-white/5 text-brand-copper" 
+                          : "bg-white border-gray-100 text-brand-navy shadow-sm"
+                      )}
+                    >
+                      <div className={cn("p-2 rounded-xl", settings.darkMode ? "bg-brand-copper/20" : "bg-brand-navy/5")}>
+                        <History className="w-5 h-5" />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-6">
-            <button 
-              onClick={() => {
-                setSimulatorItems([]);
-                setActiveSimulationId(null);
-                setShowSimulator(true);
-              }}
-              className={cn(
-                "p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] group",
-                settings.darkMode 
-                  ? "bg-brand-copper/10 border border-brand-copper/20" 
-                  : "bg-brand-navy/5 border border-brand-navy/10"
-              )}
-            >
-              <Calculator className={cn("w-4 h-4", settings.darkMode ? "text-brand-copper" : "text-brand-navy")} />
-              <span className={cn("text-[10px] uppercase font-black tracking-widest text-center", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                Simulador
-              </span>
-            </button>
-
-            <button 
-              onClick={() => setShowHistoryModal(true)}
-              className={cn(
-                "p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] group",
-                settings.darkMode 
-                  ? "bg-white/5 border border-white/5" 
-                  : "bg-gray-50 border-gray-100"
-              )}
-            >
-              <History className={cn("w-4 h-4", settings.darkMode ? "text-brand-copper" : "text-brand-navy")} />
-              <span className={cn("text-[10px] uppercase font-black tracking-widest text-center", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                Histórico
-              </span>
-            </button>
-          </div>
-
-          <div className={cn(
-            "mt-4 p-4 rounded-2xl flex items-center gap-3",
-            settings.darkMode ? "bg-white/5" : "bg-gray-50"
-          )}>
-            <Info className="w-4 h-4 text-brand-copper shrink-0" />
-            <p className="text-[9px] text-gray-400 font-medium leading-tight">
-              Os valores de "Mão" referem-se ao valor pago para a mãe Stela cortar cada bicho. O total é a soma de aquisição + mão.
-            </p>
-          </div>
-        </div>
-
-        {/* Oferendas */}
-        <div className={cn(
-          "p-2 border-t",
-          settings.darkMode ? "border-gray-800" : "border-gray-50"
-        )}>
-          <button 
-            onClick={() => setOfferingsExpanded(!offeringsExpanded)}
-            className={cn(
-              "w-full flex items-center justify-between p-4 rounded-[24px] transition-all active:scale-[0.98] group/header",
-              settings.darkMode 
-                ? "bg-brand-navy/40 border border-white/5 text-white/90 hover:bg-brand-navy/60" 
-                : "bg-brand-navy text-white shadow-lg shadow-brand-navy/10 hover:bg-brand-navy/90"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-              <h4 className="text-[10px] font-black uppercase tracking-widest">Oferendas / Guia de Materiais</h4>
-            </div>
-            <ChevronRight className={cn(
-              "w-4 h-4 transition-transform duration-300",
-              offeringsExpanded ? "rotate-90" : "rotate-0"
-            )} />
-          </button>
-          
-          <AnimatePresence>
-            {offeringsExpanded && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                className="overflow-hidden px-4 pb-6"
-              >
-                <div className="space-y-8">
-                  {offerings.map((entity) => (
-                    <div key={entity.id} className="relative group/offering">
+                      <span className="text-[10px] uppercase font-black tracking-widest text-center">
+                        Histórico
+                      </span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mb-8 px-1">
+                    <div className="flex flex-col">
+                      <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                        Bichos & Valores
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Gestão de custos de corte</p>
+                    </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setIsManageMode(!isManageMode)}
+                      className={cn(
+                        "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                        isManageMode 
+                          ? (settings.darkMode ? "bg-white/10 text-white" : "bg-gray-100 text-brand-navy")
+                          : (settings.darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-brand-navy")
+                      )}
+                    >
+                      {isManageMode ? 'Pronto' : 'Gerenciar'}
+                    </button>
+                    {!isManageMode && (
                       <button 
-                        onClick={() => openOfferingEdit(entity)}
-                        className="absolute -right-2 -top-2 p-2 rounded-xl bg-gray-50 dark:bg-white/5 text-brand-copper shadow-sm border border-gray-100 dark:border-white/5 active:scale-90"
+                        onClick={() => setShowModal(true)}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md",
+                          settings.darkMode ? "bg-brand-copper text-white shadow-brand-copper/20" : "bg-brand-navy text-white shadow-brand-navy/20"
+                        )}
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Plus className="w-3 h-3" /> Novo
                       </button>
+                    )}
+                  </div>
+                </div>
 
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className={cn("w-1.5 h-1.5 rounded-full", entity.color)} />
-                        <h5 className={cn("text-[11px] font-black uppercase tracking-wider", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
-                          {entity.name}
-                        </h5>
+                <div className="mb-8 relative">
+                  <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", settings.darkMode ? "text-white/20" : "text-gray-400")} />
+                  <input 
+                    type="text"
+                    placeholder="Filtrar por nome do bicho..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={cn(
+                      "w-full pl-11 pr-4 py-4 rounded-[20px] text-[11px] font-bold transition-all outline-none border",
+                      settings.darkMode 
+                        ? "bg-black/20 border-white/5 focus:bg-black/40 text-white focus:border-brand-copper/50" 
+                        : "bg-gray-50 border-gray-100 focus:bg-white text-brand-navy focus:border-brand-navy/30"
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {filteredBichos.map(bicho => (
+                    <div 
+                      key={bicho.id} 
+                      className={cn(
+                        "p-5 rounded-[32px] border group transition-all duration-300 relative",
+                        settings.darkMode 
+                          ? "bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10" 
+                          : "bg-gray-50/50 border-gray-100 hover:bg-white hover:shadow-xl hover:shadow-gray-200/50 hover:border-transparent"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex flex-col">
+                          <span className={cn("text-xs font-black uppercase tracking-wider", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                            {bicho.name}
+                          </span>
+                        </div>
+
+                        {isManageMode && (
+                          <div className="flex items-center gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); openEdit(bicho); }} className="p-2.5 bg-white dark:bg-white/10 text-gray-400 hover:text-brand-copper rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); removeBicho(bicho.id); }} className="p-2.5 bg-red-50 text-brand-red active:bg-red-100 rounded-xl shadow-sm border border-red-100/50 transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="space-y-4">
-                        {entity.sections.map((section: { title?: string; items: string[] }, sIdx: number) => (
-                          <div key={sIdx}>
-                            {section.title && (
-                              <p className={cn("text-[9px] font-black uppercase tracking-tighter mb-2", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
-                                {section.title}
-                              </p>
-                            )}
-                            {section.items.length > 0 ? (
-                              section.title?.toLowerCase().includes('frutas') ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {section.items.map((item: string, iIdx: number) => (
-                                    <span key={iIdx} className={cn("px-2 py-1 rounded-lg text-[9px] font-bold", settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-500")}>
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                                  {section.items.map((item: string, iIdx: number) => (
-                                    <div key={iIdx} className="flex items-center gap-2">
-                                      <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
-                                      <span className="text-[10px] font-medium text-gray-400">{item}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )
-                            ) : (
-                              <p className="text-[9px] text-gray-500 italic">Nenhum item cadastrado</p>
-                            )}
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className={cn("p-3 rounded-2xl flex flex-col items-center", settings.darkMode ? "bg-black/20" : "bg-white border border-gray-50")}>
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-1">Compra</span>
+                          <span className={cn("text-[10px] font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{formatCurrency(bicho.purchaseCost)}</span>
+                        </div>
+                        <div className={cn("p-3 rounded-2xl flex flex-col items-center", settings.darkMode ? "bg-black/20" : "bg-white border border-gray-50")}>
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter mb-1">Mão</span>
+                          <span className={cn("text-[10px] font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{formatCurrency(bicho.serviceCost)}</span>
+                        </div>
+                        <div className={cn("p-3 rounded-2xl flex flex-col items-center", settings.darkMode ? "bg-brand-copper/10" : "bg-brand-navy/5")}>
+                          <span className="text-[8px] font-black text-brand-copper uppercase tracking-tighter mb-1">Total</span>
+                          <span className={cn("text-[11px] font-black", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>{formatCurrency(bicho.purchaseCost + bicho.serviceCost)}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
+
+                  {filteredBichos.length === 0 && (
+                    <div className="py-12 flex flex-col items-center justify-center text-center opacity-40">
+                      <Search className="w-8 h-8 mb-4" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Nenhum bicho encontrado</p>
+                    </div>
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
-          </motion.div>
-        )}
+
+                <div className={cn(
+                  "mt-8 p-5 rounded-[28px] flex items-start gap-4",
+                  settings.darkMode ? "bg-white/5" : "bg-gray-50"
+                )}>
+                  <div className="p-2 rounded-xl bg-brand-copper/10 text-brand-copper shrink-0">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
+                    Os valores de <span className="font-bold text-gray-500">Mão</span> referem-se ao valor fixo pago para a realização ritualística do corte. O total é a soma do custo do animal + mão de obra.
+                  </p>
+                </div>
+
+                {/* Guia de Materiais nested within the same block */}
+                <div className={cn(
+                  "mt-12 pt-12 border-t",
+                  settings.darkMode ? "border-white/5" : "border-gray-100"
+                )}>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "p-2 rounded-xl",
+                            settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-navy/5 text-brand-navy"
+                          )}>
+                            <List className="w-4 h-4" />
+                          </div>
+                          <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                            Guia de Materiais
+                          </h3>
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Oferendas por entidade</p>
+                      </div>
+                    </div>
+
+                    {/* Entity Selector (Horizontal Tabs) */}
+                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1">
+                      {offerings.map((entity) => {
+                        const isSelected = selectedOfferingId === entity.id;
+                        return (
+                          <motion.button
+                            key={entity.id}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setSelectedOfferingId(entity.id)}
+                            className={cn(
+                              "shrink-0 px-4 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                              isSelected
+                                ? (settings.darkMode ? "bg-brand-copper border-brand-copper text-white shadow-lg shadow-brand-copper/20" : "bg-brand-navy border-brand-navy text-white shadow-lg shadow-brand-navy/20")
+                                : (settings.darkMode ? "bg-white/5 border-white/5 text-gray-400" : "bg-white border-gray-100 text-gray-500 shadow-sm")
+                            )}
+                          >
+                            <span className={cn("w-2 h-2 rounded-full", isSelected ? "bg-white" : entity.color)} />
+                            {entity.name}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Selected Entity Content */}
+                    <AnimatePresence mode="wait">
+                      {selectedOfferingEntity && (
+                        <motion.div
+                          key={selectedOfferingEntity.id}
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          className={cn(
+                            "p-6 rounded-[32px] border relative overflow-hidden",
+                            settings.darkMode ? "bg-black/40 border-white/5" : "bg-gray-50/50 border-gray-100"
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-brand-copper/10")}>
+                                 <div className={cn("w-3 h-3 rounded-full", selectedOfferingEntity.color)} />
+                              </div>
+                              <div>
+                                <h4 className={cn("text-xs font-black uppercase tracking-wider", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                                  {selectedOfferingEntity.name}
+                                </h4>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Itens Necessários</p>
+                              </div>
+                            </div>
+
+                            {isManageMode && (
+                              <button 
+                                onClick={() => openOfferingEdit(selectedOfferingEntity)}
+                                className="p-3 rounded-2xl bg-brand-copper/10 text-brand-copper active:scale-95 transition-all border border-brand-copper/20"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {selectedOfferingEntity.sections.map((section: any, sIdx: number) => {
+                              const isFrutas = section.title?.toLowerCase().includes('frutas');
+                              const isBebidas = section.title?.toLowerCase().includes('bebida');
+                              const isVelas = section.title?.toLowerCase().includes('vela');
+                              
+                              return (
+                                <div key={sIdx} className="space-y-4">
+                                  <div className="flex items-center gap-2 pb-2 border-b border-gray-50 dark:border-white/5">
+                                    <div className={cn(
+                                      "w-6 h-6 rounded-lg flex items-center justify-center text-[10px]",
+                                      settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-500"
+                                    )}>
+                                      {isFrutas ? "🍓" : isBebidas ? "🍷" : isVelas ? "🕯️" : "📦"}
+                                    </div>
+                                    <p className={cn("text-[10px] font-black uppercase tracking-[0.15em]", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                                      {section.title || "Geral"}
+                                    </p>
+                                  </div>
+
+                                  {section.items.length > 0 ? (
+                                    isFrutas ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {section.items.map((item: string, iIdx: number) => (
+                                          <span 
+                                            key={iIdx} 
+                                            className={cn(
+                                              "px-3 py-1.5 rounded-xl text-[10px] font-bold shadow-sm border",
+                                              settings.darkMode ? "bg-white/5 border-white/5 text-gray-300" : "bg-white border-gray-50 text-gray-600"
+                                            )}
+                                          >
+                                            {item}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="grid grid-cols-1 gap-2">
+                                        {section.items.map((item: string, iIdx: number) => (
+                                          <div 
+                                            key={iIdx} 
+                                            className={cn(
+                                              "group p-3 rounded-2xl flex items-center gap-3 border transition-colors",
+                                              settings.darkMode ? "bg-black/20 border-transparent text-gray-400" : "bg-gray-50 border-transparent text-gray-500"
+                                            )}
+                                          >
+                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-copper/30 group-hover:bg-brand-copper transition-colors" />
+                                            <span className="text-[10px] font-medium leading-tight">{item}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )
+                                  ) : (
+                                    <p className="text-[9px] text-gray-500 italic py-2">Nenhum item cadastrado</p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Info Panel nested */}
+                          <div className={cn(
+                            "mt-8 p-5 rounded-[24px] border-l-4 border-brand-copper flex items-center gap-4",
+                            settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100"
+                          )}>
+                            <div className="p-2 rounded-xl bg-brand-copper/10 text-brand-copper">
+                              <Info className="w-4 h-4" />
+                            </div>
+                            <p className="text-[10px] text-gray-400 font-medium leading-relaxed italic">
+                              Recorde que as oferendas são atos de axé. Mantenha os materiais frescos e as guias limpas.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </motion.div>
+      )}
 
         {activeTab === 'ebo' && (
           <motion.div
@@ -652,186 +746,196 @@ export default function TrabalhosScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            className="space-y-6 pb-20"
           >
-            {/* Bloco Ebó */}
+            {/* Financials Bento Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Service Cost Card */}
+              <section className={cn(
+                "rounded-[32px] overflow-hidden shadow-sm border p-6 flex flex-col justify-between relative",
+                settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+              )}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Custo</span>
+                    <h4 className={cn("text-[10px] font-black uppercase mt-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Mão de Obra</h4>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setEboForm({ serviceCost: eboConfig.serviceCost, materialsCost: eboConfig.materialsCost });
+                      setShowEboEditModal(true);
+                    }}
+                    className="p-2 rounded-xl bg-brand-copper/10 text-brand-copper active:scale-95 transition-all"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className={cn("text-2xl font-black tracking-tighter", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
+                      {formatCurrency(eboConfig.serviceCost)}
+                    </span>
+                  </div>
+                  <p className={cn("text-[8px] font-bold leading-relaxed", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                    Pago à <span className="text-brand-copper underline underline-offset-2">Mãe Stela</span>.
+                  </p>
+                </div>
+              </section>
+
+              {/* Material Cost Card */}
+              <section className={cn(
+                "rounded-[32px] overflow-hidden shadow-sm border p-6 transition-colors duration-500",
+                settings.darkMode ? "bg-brand-navy/20 border-white/5" : "bg-brand-navy border-brand-navy text-white text-center sm:text-left"
+              )}>
+                <div className="flex flex-col mb-4">
+                  <span className={cn("text-[8px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-white/60")}>Materiais</span>
+                  <h4 className="text-[10px] font-black uppercase mt-1 text-white">Aquisição</h4>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center sm:items-start">
+                    <span className="text-[8px] font-medium text-white/70 uppercase mb-1">Pela Casa:</span>
+                    <span className="text-2xl font-black text-white">{formatCurrency(eboConfig.materialsCost)}</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Observation Below */}
+            <div className={cn(
+              "p-5 rounded-[28px] border border-dashed transition-all",
+              settings.darkMode ? "bg-white/5 border-white/10" : "bg-brand-navy/5 border-brand-navy/10"
+            )}>
+              <div className="flex items-start gap-4">
+                <div className={cn(
+                  "p-2 rounded-xl",
+                  settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-navy/10 text-brand-navy"
+                )}>
+                  <Info className="w-4 h-4" />
+                </div>
+                <p className={cn(
+                  "text-[10px] font-medium leading-relaxed",
+                  settings.darkMode ? "text-gray-400" : "text-gray-600"
+                )}>
+                  Você pode adquirir os materiais por conta própria, desde que entregues com <span className="font-bold uppercase tracking-tighter text-brand-copper">antecedência</span> no templo para conferência e preparo.
+                </p>
+              </div>
+            </div>
+
+            {/* Header / Definition Card */}
             <section className={cn(
-              "rounded-[32px] overflow-hidden shadow-sm border transition-colors duration-500",
+              "rounded-[40px] overflow-hidden shadow-sm border transition-colors duration-500",
               settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
             )}>
-        <div className={cn(
-          "p-6 border-b",
-          settings.darkMode ? "border-gray-800" : "border-gray-50"
-        )}>
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-2 rounded-xl",
-              settings.darkMode ? "bg-brand-red/20 text-brand-red" : "bg-brand-red/5 text-brand-red"
-            )}>
-              <List className="w-4 h-4" />
-            </div>
-            <h3 className={cn("font-black text-sm uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-              Ebó
-            </h3>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div className={cn(
-            "p-5 rounded-3xl space-y-4",
-            settings.darkMode ? "bg-white/5" : "bg-gray-50"
-          )}>
-            <div className="flex items-start gap-3">
-              <Info className="w-4 h-4 text-brand-copper shrink-0 mt-0.5" />
-              <p className={cn(
-                "text-xs font-medium leading-relaxed",
-                settings.darkMode ? "text-gray-300" : "text-gray-600"
-              )}>
-                No Candomblé ebó é um ritual de oferenda e sacrifício, uma prática fundamental para equilibrar as energias e buscar a harmonia com os orixás e entidades espirituais. O ebó pode envolver oferendas de alimentos, objetos simbólicos e até animais, cada um com um significado específico dentro do contexto ritualístico.
-              </p>
-            </div>
-            
-            <div className="pl-7">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                <h4 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  Princípio de renovação
-                </h4>
-              </div>
-              <p className={cn(
-                "text-xs font-medium leading-relaxed",
-                settings.darkMode ? "text-gray-400" : "text-gray-500"
-              )}>
-                O ebó é uma prática de renovação espiritual, onde o indivíduo se reconecta com suas raízes ancestrais e com a força da natureza.
-              </p>
-            </div>
-          </div>
-
-          <div className={cn(
-            "p-5 rounded-3xl",
-            settings.darkMode ? "bg-brand-copper/10" : "bg-brand-navy/5"
-          )}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Custo do Trabalho</span>
-                <button 
-                  onClick={() => {
-                    setEboForm({ 
-                      serviceCost: eboConfig.serviceCost, 
-                      materialsCost: eboConfig.materialsCost 
-                    });
-                    setShowEboEditModal(true);
-                  }}
-                  className={cn(
-                    "p-1.5 rounded-lg shadow-sm border transition-all active:scale-95",
-                    settings.darkMode 
-                      ? "bg-white/10 text-brand-copper border-white/5" 
-                      : "bg-white text-brand-copper border-gray-100"
-                  )}
-                >
-                  <Edit2 className="w-2.5 h-2.5" />
-                </button>
-              </div>
-              <span className={cn("text-xl font-black", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                {formatCurrency(eboConfig.serviceCost)}
-              </span>
-            </div>
-            <p className={cn(
-              "text-[10px] font-medium leading-relaxed mb-3",
-              settings.darkMode ? "text-gray-400" : "text-gray-500"
-            )}>
-              Este valor deve ser pago diretamente à <span className="font-bold">mãe Stela</span> e não inclui a lista de materiais.
-            </p>
-            
-            <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-white/5">
-               <div className="flex items-start gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-brand-copper mt-1 shrink-0" />
-                 <p className={cn("text-[10px] font-medium", settings.darkMode ? "text-gray-300" : "text-gray-600")}>
-                   <span className="font-bold">Com materiais inclusos:</span> Aproximadamente <span className={cn("font-bold", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>{formatCurrency(eboConfig.serviceCost + eboConfig.materialsCost)}</span> (Custo de +{formatCurrency(eboConfig.materialsCost)} aprox. para aquisição pela casa).
-                 </p>
-               </div>
-               <div className="flex items-start gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-brand-copper mt-1 shrink-0" />
-                 <p className={cn("text-[10px] font-medium", settings.darkMode ? "text-gray-300" : "text-gray-600")}>
-                   A compra dos materiais pode ser feita por conta própria, desde que sejam entregues no templo com <span className="font-bold">antecedência</span>.
-                 </p>
-               </div>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-gray-50 dark:border-gray-800">
-            <button 
-              onClick={() => setEboExpanded(!eboExpanded)}
-              className={cn(
-                "w-full flex items-center justify-between p-4 rounded-[24px] transition-all active:scale-[0.98] group/ebo",
-                settings.darkMode 
-                  ? "bg-brand-navy/40 border border-white/5 text-white/90 hover:bg-brand-navy/60" 
-                  : "bg-brand-navy text-white shadow-lg shadow-brand-navy/10 hover:bg-brand-navy/90"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                <h4 className="text-[10px] font-black uppercase tracking-widest">Lista de materiais necessários</h4>
-              </div>
-              <ChevronRight className={cn(
-                "w-4 h-4 transition-transform duration-300",
-                eboExpanded ? "rotate-90" : "rotate-0"
-              )} />
-            </button>
-            
-            <AnimatePresence>
-              {eboExpanded && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                  animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
-                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                  className="overflow-hidden px-4 pb-4"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                    {[
-                      "500 gramas de feijão branco",
-                      "500 gramas de arroz",
-                      "500 milho de galinha",
-                      "500 feijão preto",
-                      "500 milho de canjica branca",
-                      "500 gramas farinha de milho amarela",
-                      "500 milho de pipoca",
-                      "500 gramas farinha de milho amarela",
-                      "500 gramas de farinha de mandioca",
-                      "1 pinga",
-                      "1 dendê",
-                      "1 mel",
-                      "7 charutos de ebó",
-                      "7 moedas em qualquer valor",
-                      "1 metro de morin branco",
-                      "1 metro de morin vermelho",
-                      "1 metro de morin preto",
-                      "1 metros de linha pequeno preto",
-                      "1 metros de linha pequeno branco",
-                      "1 metros de linha pequeno vermelho",
-                      "1 frango branco se for homem / se for mulher 1 franga",
-                      "7 qualidades de verduras ou legumes (os mesmo não poderiam ser comido durante 7 dias)",
-                      "7 ovos",
-                      "1 cartucho de pólvora"
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-3 group">
-                        <span className="w-1 h-1 rounded-full bg-brand-copper/40 group-hover:bg-brand-copper transition-colors" />
-                        <span className={cn(
-                          "text-[10px] font-medium transition-colors",
-                          settings.darkMode ? "text-gray-400 group-hover:text-gray-200" : "text-gray-600 group-hover:text-brand-navy"
-                        )}>
-                          {item}
-                        </span>
-                      </div>
-                    ))}
+              <div className="p-8 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-2xl flex items-center justify-center",
+                    settings.darkMode ? "bg-brand-red/20 text-brand-red" : "bg-brand-red/5 text-brand-red"
+                  )}>
+                    <Info className="w-5 h-5" />
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </section>
+                  <div>
+                    <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                      Fundamento do Ebó
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Orientações e Significados</p>
+                  </div>
+                </div>
+
+                <div className={cn(
+                  "p-6 rounded-[28px] relative overflow-hidden",
+                  settings.darkMode ? "bg-white/5" : "bg-gray-50"
+                )}>
+                  <p className={cn(
+                    "text-xs font-medium leading-relaxed mb-6 italic",
+                    settings.darkMode ? "text-gray-300" : "text-gray-600"
+                  )}>
+                    "O ebó é um ritual de oferenda e sacrifício, fundamental para equilibrar as energias e buscar harmonia com os orixás e entidades espirituais."
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-1 h-1 rounded-full bg-brand-copper mt-1.5 shrink-0" />
+                      <div className="flex-1">
+                        <h4 className={cn("text-[10px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                          Equilíbrio & Renovação
+                        </h4>
+                        <p className={cn("text-[11px] font-medium leading-relaxed", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                          Prática de reconexão com as raízes ancestrais e com a força vital da natureza.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Checklist Card */}
+            <section className={cn(
+              "rounded-[40px] overflow-hidden shadow-sm border p-8",
+              settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+            )}>
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-brand-copper/10 text-brand-copper">
+                      <List className="w-4 h-4" />
+                    </div>
+                    <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                      Lista de Materiais
+                    </h3>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Ebó Tradicional</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                {[
+                  { icon: "🌾", label: "Cereais & Grãos", items: ["500g Feijão Branco", "500g Arroz", "500g Milho de Galinha", "500g Feijão Preto", "500g Milho de Canjica Branca", "500g Milho Pipoca"] },
+                  { icon: "🥣", label: "Farinhas & Pós", items: ["1kg Farinha de Milho Amarela", "500g Farinha de Mandioca", "1 Cartucho de Pólvora"] },
+                  { icon: "🏺", label: "Líquidos & Itens", items: ["1 Pinga (Cachaça)", "1 Azeite de Dendê", "1 Mel", "7 Charutos de Ebó", "7 Moedas (Qualquer valor)"] },
+                  { icon: "🧣", label: "Mantos (Morim)", items: ["1m Morim Branco", "1m Morim Vermelho", "1m Morim Preto", "Linhas: Preta, Branca e Vermelha"] },
+                  { icon: "🥚", label: "Perecíveis", items: ["7 Ovos", "7 Qualidades de Verduras/Legumes", "1 Frango(a) Branco(a)"] }
+                ].map((group, gIdx) => (
+                  <div key={gIdx} className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-50 dark:border-white/5">
+                      <span className="text-sm">{group.icon}</span>
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                        {group.label}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                       {group.items.map((item, iIdx) => (
+                         <div key={iIdx} className="flex items-center gap-3">
+                            <div className="w-1 h-1 rounded-full bg-brand-copper/30" />
+                            <span className={cn("text-[11px] font-medium leading-tight", settings.darkMode ? "text-gray-500" : "text-gray-600")}>
+                              {item}
+                            </span>
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Warnings */}
+              <div className={cn(
+                "mt-12 p-6 rounded-[32px] flex items-center gap-4",
+                settings.darkMode ? "bg-white/5" : "bg-gray-50"
+              )}>
+                <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
+                  <Info className="w-5 h-5" />
+                </div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase leading-relaxed tracking-wider">
+                  <span className="text-orange-500">Nota:</span> Legumes/Verduras usados no Ebó <span className="text-brand-red">não podem ser ingeridos</span> pelo período de 7 dias após o ritual.
+                </p>
+              </div>
+            </section>
           </motion.div>
         )}
+
 
         {activeTab === 'candles' && (
           <motion.div
@@ -840,185 +944,226 @@ export default function TrabalhosScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            className="space-y-6 pb-20"
           >
-            {/* Gestor de Velas */}
-            <section className={cn(
-              "rounded-[32px] overflow-hidden shadow-sm border transition-colors duration-500 mb-6",
-              settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
-            )}>
-        <div className={cn(
-          "p-6 border-b flex items-center justify-between",
-          settings.darkMode ? "border-gray-800" : "border-gray-50"
-        )}>
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              "p-2 rounded-xl",
-              settings.darkMode ? "bg-amber-500/20 text-amber-500" : "bg-amber-50 text-amber-600"
-            )}>
-              <List className="w-4 h-4" />
-            </div>
-            <h3 className={cn("font-black text-sm uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-              Gestor de Velas
-            </h3>
-          </div>
-          <button 
-            onClick={() => {
-              setEditingCandle(null);
-              setCandleForm({ color: '', quantity: 0, type: 'Palito', observations: '' });
-              setShowCandleModal(true);
-            }}
-            className={cn(
-              "p-2 rounded-xl transition-all active:scale-95",
-              settings.darkMode ? "bg-brand-copper/10 text-brand-copper" : "bg-brand-navy text-white"
-            )}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
+            <div className="grid grid-cols-1 gap-6">
+              {/* Planning Card */}
+              <section className={cn(
+                "rounded-[40px] overflow-hidden shadow-sm border p-8 transition-all duration-500 relative",
+                settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+              )}>
+                {/* Background Decor */}
+                <div className="absolute -right-12 -top-12 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {candles.length > 0 ? candles.map((candle) => (
-              <div 
-                key={candle.id}
-                className={cn(
-                  "p-4 rounded-3xl border flex items-center justify-between group",
-                  settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100"
-                )}
-              >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mb-8">
                   <div className={cn(
-                    "w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner",
-                    candle.color.toLowerCase() === 'branca' ? "bg-white border border-gray-100" : 
-                    candle.color.toLowerCase() === 'preta' ? "bg-gray-900" :
-                    candle.color.toLowerCase() === 'vermelha' ? "bg-red-600" :
-                    candle.color.toLowerCase() === 'azul' ? "bg-blue-600" :
-                    candle.color.toLowerCase() === 'verde' ? "bg-green-600" :
-                    candle.color.toLowerCase() === 'amarela' ? "bg-yellow-400" :
-                    candle.color.toLowerCase() === 'rosa' ? "bg-pink-500" :
-                    candle.color.toLowerCase() === 'roxa' ? "bg-purple-600" :
-                    "bg-brand-copper"
+                    "w-12 h-12 rounded-2xl flex items-center justify-center",
+                    settings.darkMode ? "bg-amber-500/20 text-amber-500" : "bg-amber-50 text-amber-600"
                   )}>
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse" />
+                    <CalendarIcon className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className={cn("text-xs font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                      {candle.color}
-                    </p>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                      {candle.type}
-                    </p>
+                    <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                      Planejamento
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Velas Brancas (7 Dias)</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className={cn("text-sm font-black", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                      {candle.quantity}
-                    </p>
-                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">unid.</p>
+                <div className="flex items-end justify-between mb-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className={cn("text-5xl font-black tracking-tighter", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
+                      {sessionsCovered}
+                    </span>
+                    <span className="text-xs font-black uppercase text-gray-400 tracking-widest">Giras Cobertas</span>
                   </div>
-                  <div className="flex gap-1.5 transition-opacity">
-                    <button 
-                      onClick={() => {
-                        setEditingCandle(candle);
-                        setCandleForm(candle);
-                        setShowCandleModal(true);
-                      }}
-                      className="p-2 rounded-lg bg-white dark:bg-white/10 text-gray-400 hover:text-brand-copper"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    {!(candle.color.toLowerCase() === 'branca' && candle.type === '7 Dias') && (
-                      <button 
-                        onClick={() => {
-                          setItemToDelete({ id: candle.id, type: 'candle' });
-                          setShowDeleteConfirm(true);
-                        }}
-                        className="p-2 rounded-lg bg-white dark:bg-white/10 text-gray-400 hover:text-brand-red"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                  <div className={cn(
+                    "px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+                    sessionsCovered >= 4 ? "bg-emerald-500/10 text-emerald-500" : 
+                    sessionsCovered >= 2 ? "bg-amber-500/10 text-amber-500" : 
+                    "bg-red-500/10 text-red-500"
+                  )}>
+                    Status: {sessionsCovered >= 4 ? 'Seguro' : sessionsCovered >= 2 ? 'Alerta' : 'Crítico'}
+                  </div>
+                </div>
+
+                {/* Progress Mini Bar */}
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full mb-8 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((sessionsCovered / 8) * 100, 100)}%` }}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-1000",
+                      sessionsCovered >= 4 ? "bg-emerald-500" : sessionsCovered >= 2 ? "bg-amber-500" : "bg-red-500"
                     )}
-                  </div>
+                  />
                 </div>
-              </div>
-            )) : (
-              <div className="col-span-full py-12 flex flex-col items-center justify-center opacity-40">
-                <div className={cn("p-4 rounded-3xl mb-4", settings.darkMode ? "bg-white/5" : "bg-gray-50")}>
-                  <List className="w-8 h-8" />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest">Nenhuma vela cadastrada</p>
-              </div>
-            )}
-          </div>
-
-          {/* Planejamento de Consumo - Velas Brancas 7 Dias */}
-          <div className={cn(
-            "mt-8 p-6 rounded-[32px] border",
-            settings.darkMode ? "bg-brand-copper/5 border-brand-copper/10" : "bg-brand-navy/5 border-brand-navy/5"
-          )}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-brand-copper/10 text-brand-copper">
-                <CalendarIcon className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  Planejamento: Velas Brancas (7 Dias)
-                </h4>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Projeção por Gira de Desenvolvimento</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-              <div>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className={cn("text-3xl font-black", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                    {sessionsCovered}
-                  </span>
-                  <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Giras Cobertas</span>
-                </div>
-                <p className={cn("text-[11px] font-medium leading-relaxed", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-                  Considerando o uso de <span className="font-bold text-brand-copper">3 velas por gira</span> (aos sábados), seu estoque atual de <span className="font-bold text-brand-copper">{white7DayCandle?.quantity || 0}</span> velas brancas de 7 dias é suficiente para as próximas giras listadas.
+                
+                <p className={cn("text-[11px] font-medium leading-relaxed mb-6 px-1", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                  Considerando o uso de 3 velas/gira, seu estoque de <span className="font-bold text-brand-copper">{white7DayCandle?.quantity || 0}</span> unidades garante as próximas giras.
                 </p>
-              </div>
 
-              <div className="space-y-2">
-                {coveredSessions.length > 0 ? (
-                  coveredSessions.map((session, idx) => (
-                    <div 
-                      key={idx}
-                      className={cn(
-                        "flex items-center justify-between px-4 py-2.5 rounded-xl border",
-                        settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-gray-100 shadow-sm"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          <span className={cn("text-[10px] font-bold", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
+                {/* Restock Tip */}
+                {white7DayCandle && white7DayCandle.quantity > 0 && white7DayCandle.quantity % 3 !== 0 && (
+                  <div className={cn(
+                    "mb-8 p-4 rounded-[28px] border border-dashed flex items-center justify-between transition-all hover:scale-[1.02]",
+                    settings.darkMode ? "bg-brand-copper/5 border-brand-copper/20" : "bg-brand-navy/5 border-brand-navy/10"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-brand-copper text-brand-navy flex items-center justify-center shrink-0">
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      <p className={cn("text-[10px] font-bold uppercase tracking-tight leading-snug", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
+                        Dica: Com mais <span className="text-brand-copper font-black underline underline-offset-2">{3 - (white7DayCandle.quantity % 3)}</span> {3 - (white7DayCandle.quantity % 3) === 1 ? 'vela' : 'velas'}, você completa <span className="font-black">{Math.floor(white7DayCandle.quantity / 3) + 1}</span> giras e zera o estoque.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {coveredSessions.length > 0 ? (
+                    coveredSessions.slice(0, 3).map((session, idx) => (
+                      <div 
+                        key={idx}
+                        className={cn(
+                          "flex items-center justify-between p-3.5 rounded-2xl border transition-all hover:translate-x-1",
+                          settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-gray-100 shadow-sm"
+                        )}
+                      >
+                        <div className="flex flex-col">
+                          <span className={cn("text-[10px] font-black uppercase tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
                             {session.date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                           </span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase">{session.title}</span>
                         </div>
-                        <span className="text-[9px] font-medium text-gray-400 ml-4.5 mt-0.5">
-                          {session.title}
-                        </span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       </div>
-                      <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-2 py-1 bg-green-500/10 text-green-500 rounded-lg">OK</span>
+                    ))
+                  ) : (
+                    <div className="p-5 rounded-3xl border border-dashed border-red-500/20 text-center bg-red-500/5">
+                      <p className="text-[10px] font-black text-brand-red uppercase tracking-[0.15em]">Necessita Reposição Imediata</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-                    <p className="text-[10px] font-bold text-brand-red uppercase tracking-widest">Estoque Insuficiente</p>
+                  )}
+                  {coveredSessions.length > 3 && (
+                    <p className="text-[9px] text-gray-400 font-black uppercase text-center mt-4 tracking-widest">+ {coveredSessions.length - 3} Giras Adicionais</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+
+            {/* Inventory Management */}
+            <section className={cn(
+              "rounded-[40px] overflow-hidden shadow-sm border p-8",
+              settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+            )}>
+              <div className="flex items-center justify-between mb-10">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                      <List className="w-4 h-4" />
+                    </div>
+                    <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                      Estoque Atual
+                    </h3>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Gestão de Cores e Quantidades</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditingCandle(null);
+                    setCandleForm({ color: '', quantity: 0, type: 'Palito', observations: '' });
+                    setShowCandleModal(true);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-brand-navy/10",
+                    settings.darkMode ? "bg-brand-copper text-brand-navy" : "bg-brand-navy text-white"
+                  )}
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {candles.length > 0 ? candles.map((candle) => (
+                  <div 
+                    key={candle.id}
+                    className={cn(
+                      "p-5 rounded-[32px] border flex flex-col justify-between gap-4 transition-all hover:scale-[1.02]",
+                      settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-gray-100 shadow-sm"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-12 h-12 rounded-[22px] flex items-center justify-center shadow-inner relative overflow-hidden group/candle",
+                          candle.color.toLowerCase() === 'branca' ? "bg-white border border-gray-100" : 
+                          candle.color.toLowerCase() === 'preta' ? "bg-gray-900 border border-gray-800" :
+                          candle.color.toLowerCase() === 'vermelha' ? "bg-red-600" :
+                          candle.color.toLowerCase() === 'azul' ? "bg-blue-600" :
+                          candle.color.toLowerCase() === 'verde' ? "bg-green-600" :
+                          candle.color.toLowerCase() === 'amarela' ? "bg-yellow-400" :
+                          candle.color.toLowerCase() === 'rosa' ? "bg-pink-500" :
+                          candle.color.toLowerCase() === 'roxa' ? "bg-purple-600" :
+                          "bg-brand-copper"
+                        )}>
+                          <div className="w-1.5 h-4 rounded-full bg-white/20 blur-[2px] absolute top-2 rotate-12 opacity-50 transition-opacity group-hover/candle:opacity-100" />
+                        </div>
+                        <div>
+                          <p className={cn("text-xs font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                            {candle.color}
+                          </p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                            {candle.type}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={cn("text-2xl font-black tabular-nums", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
+                          {candle.quantity}
+                        </span>
+                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Unid.</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-50 dark:border-white/5">
+                      <button 
+                        onClick={() => {
+                          setEditingCandle(candle);
+                          setCandleForm(candle);
+                          setShowCandleModal(true);
+                        }}
+                        className="p-2.5 rounded-xl text-gray-400 hover:text-brand-copper hover:bg-brand-copper/10 transition-all active:scale-90"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      {!(candle.color.toLowerCase() === 'branca' && candle.type === '7 Dias') && (
+                        <button 
+                          onClick={() => {
+                             setItemToDelete({ id: candle.id, type: 'candle' });
+                             setShowDeleteConfirm(true);
+                           }}
+                           className="p-2.5 rounded-xl text-gray-400 hover:text-brand-red hover:bg-brand-red/10 transition-all active:scale-90"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                      )}
+                    </div>
+                  </div>
+                )) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center opacity-40">
+                    <div className={cn("p-8 rounded-[40px] mb-4", settings.darkMode ? "bg-white/5" : "bg-gray-50")}>
+                      <List className="w-10 h-10" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Nenhuma vela cadastrada</p>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </section>
           </motion.div>
         )}
+
       </AnimatePresence>
 
       {/* Modal Adicionar/Editar */}

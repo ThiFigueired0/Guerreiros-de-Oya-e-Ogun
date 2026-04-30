@@ -73,6 +73,8 @@ export interface AppSettings {
   primaryTabPaths?: string[];
   secondaryTabPaths?: string[];
   bathPackagePrice?: number;
+  currentCashOnHand?: number;
+  lastCashUpdate?: number;
 }
 
 export interface Bicho {

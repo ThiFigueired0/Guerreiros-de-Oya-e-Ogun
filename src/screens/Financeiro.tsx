@@ -3,28 +3,111 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Filter, Calendar, DollarSign, CheckCircle2, AlertCircle, 
   Trash2, ArrowUpRight, TrendingDown, Clock, ChevronRight, X, Save,
-  CalendarDays, Wallet, CreditCard, Copy, Edit2
+  CalendarDays, Wallet, CreditCard, Copy, Edit2, Banknote, History
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
-import { AppSettings, FinancialRecord } from '../types';
+import { AppSettings, FinancialRecord, Event } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function Financeiro() {
-  const [settings] = useStorage<AppSettings>('templo_settings', {
+  const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: [],
     eventNames: [],
-    pushNotifications: false
+    pushNotifications: false,
+    currentCashOnHand: 0,
+    lastCashUpdate: Date.now()
   });
 
   const [records, setRecords] = useStorage<FinancialRecord[]>('templo_finance', []);
+  const [events] = useStorage<Event[]>('templo_events', []);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'mensalidade' | 'extra' | 'oga'>('mensalidade');
+  const [activeTab, setActiveTab ] = useState<'mensalidade' | 'extra' | 'oga'>('mensalidade');
   const [showAddModal, setShowAddModal ] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   
+  const [selectedCycleIdx, setSelectedCycleIdx] = useState(0);
+
+  // Ogã Projection Logic
+  const ogaCycles = useMemo(() => {
+    const today = new Date();
+    const cycles = [];
+    
+    // Início do ciclo atual: dia 10 do mês passado se hoje < 10, senão dia 10 deste mês
+    let currentStart = new Date(today.getFullYear(), today.getMonth(), 10);
+    if (today.getDate() < 10) {
+      currentStart.setMonth(currentStart.getMonth() - 1);
+    }
+    
+    // Gerar os próximos 12 ciclos de 10 a 10 (mais meses para planejamento)
+    for (let i = 0; i < 12; i++) {
+      const start = new Date(currentStart.getFullYear(), currentStart.getMonth() + i, 10);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 10);
+      
+      const cycleGiras = events.filter(e => {
+        if (e.category !== 'Desenvolvimento') return false;
+        const [year, month, day] = e.date.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day, 12, 0, 0);
+        return eventDate >= start && eventDate < end;
+      }).sort((a, b) => a.date.localeCompare(b.date));
+
+      cycles.push({
+        start,
+        end,
+        giras: cycleGiras,
+        count: cycleGiras.length,
+        totalAmount: cycleGiras.length * 16,
+        isCurrent: i === 0
+      });
+    }
+    
+    return cycles;
+  }, [events]);
+
+  const displayedCycle = useMemo(() => ogaCycles[selectedCycleIdx] || ogaCycles[0], [ogaCycles, selectedCycleIdx]);
+  const currentOgaCycle = useMemo(() => ogaCycles[0], [ogaCycles]);
+
+  const { pendingInCurrentCycle } = useMemo(() => {
+    if (!currentOgaCycle) return { pendingInCurrentCycle: 0 };
+    
+    const now = new Date();
+    const futureGiras = currentOgaCycle.giras.filter(g => {
+      const [year, month, day] = g.date.split('-').map(Number);
+      const eventEnd = new Date(year, month - 1, day, 23, 59, 59);
+      return eventEnd > now;
+    });
+    
+    return { pendingInCurrentCycle: futureGiras.length * 16 };
+  }, [currentOgaCycle]);
+
+  const walletDeficit = Math.max(0, pendingInCurrentCycle - (settings.currentCashOnHand || 0));
+
+  // Automatic Abatement Logic
+  React.useEffect(() => {
+    if (!settings.lastCashUpdate || !events.length) return;
+
+    const lastUpdate = new Date(settings.lastCashUpdate);
+    const now = new Date();
+    
+    // Find giras that happened between lastUpdate and now (specifically after 23:59 of their day)
+    const passedGirasSinceUpdate = events.filter(e => {
+      if (e.category !== 'Desenvolvimento') return false;
+      const eventEnd = new Date(e.date + 'T23:59:59');
+      return eventEnd > lastUpdate && eventEnd < now;
+    });
+
+    if (passedGirasSinceUpdate.length > 0) {
+      const deduction = passedGirasSinceUpdate.length * 16;
+      setSettings(prev => ({
+        ...prev,
+        currentCashOnHand: Math.max(0, (prev.currentCashOnHand || 0) - deduction),
+        lastCashUpdate: now.getTime()
+      }));
+    }
+  }, [events, settings.lastCashUpdate, setSettings]);
+
   // Delete confirmation state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [recordToDeleteId, setRecordToDeleteId] = useState<string | null>(null);
@@ -692,102 +775,204 @@ export default function Financeiro() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-4"
+              className="space-y-6"
             >
-              <div className={cn(
-                "p-6 rounded-[32px] border transition-all text-center relative overflow-hidden",
-                settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-navy/5 border-gray-100"
-              )}>
-                <div className="relative z-10">
-                  <div className="w-12 h-12 bg-brand-navy rounded-2xl flex items-center justify-center text-white mx-auto mb-3 shadow-lg shadow-brand-navy/20">
-                    <DollarSign className="w-6 h-6" />
-                  </div>
-                  <h3 className={cn("text-sm font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    Pagamento de Curimba
-                  </h3>
-                  <p className="text-[10px] text-gray-500 font-medium max-w-[200px] mx-auto mt-1">
-                    Controle específico para os Ogãs responsáveis pela curimba do Templo.
-                  </p>
-                </div>
-                <div className="absolute -bottom-4 -right-4 opacity-5 rotate-12">
-                  <DollarSign className="w-24 h-24 text-brand-navy" />
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                {ogaRecords.length === 0 ? (
-                  <div className="p-12 border-2 border-dashed border-gray-100 dark:border-white/5 rounded-[32px] flex flex-col items-center justify-center opacity-30 text-center">
-                    <p className="text-[10px] font-black uppercase tracking-widest leading-tight italic">
-                      Aguardando registros<br/>específicos do sistema
-                    </p>
-                  </div>
-                ) : (
-                  ogaRecords.map((record) => (
-                    <motion.div
-                      layout
-                      key={record.id}
-                      className={cn(
-                        "p-4 rounded-[28px] border transition-all flex items-center justify-between group",
-                        record.status === 'paid' 
-                          ? (settings.darkMode ? "bg-green-500/5 border-green-500/20" : "bg-green-50 border-green-100") 
-                          : (settings.darkMode ? "bg-black/40 border-gray-800" : "bg-white border-gray-100 shadow-sm")
-                      )}
-                    >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                          record.status === 'paid' ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-white/5 text-gray-400"
-                        )}>
-                          {record.status === 'paid' ? <CheckCircle2 className="w-5 h-5" /> : <DollarSign className="w-5 h-5" />}
+              {/* Dashboard de Status - Ogã */}
+              <div className="space-y-4">
+                <div className={cn(
+                  "p-6 rounded-[32px] border transition-all relative overflow-hidden",
+                  settings.darkMode ? "bg-brand-navy/20 border-brand-navy/30" : "bg-brand-navy border-brand-navy text-white shadow-xl shadow-brand-navy/20"
+                )}>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                          <Wallet className="w-6 h-6 text-white" />
                         </div>
-                        
-                        <div className="min-w-0">
-                          <h3 className={cn("text-xs font-black tracking-tight truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                            {record.description}
-                          </h3>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                {new Date(record.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                              </p>
-                              <span className="w-1 h-1 rounded-full bg-gray-300" />
-                              <p className={cn("text-[10px] font-black", settings.darkMode ? "text-gray-300" : "text-brand-copper")}>
-                                R$ {record.amount.toFixed(2)}
-                              </p>
-                            </div>
-                            {record.paymentDate && (
-                              <p className="text-[8px] font-bold text-green-500 uppercase mt-0.5">
-                                Pago em {new Date(record.paymentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                              </p>
-                            )}
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 leading-none mb-1">Saldo na Carteira</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white/40">R$</span>
+                            <input
+                              type="number"
+                              value={settings.currentCashOnHand || 0}
+                              onChange={(e) => setSettings({ 
+                                ...settings, 
+                                currentCashOnHand: Number(e.target.value),
+                                lastCashUpdate: Date.now()
+                              })}
+                              className="w-24 bg-transparent text-3xl font-black text-white border-none focus:ring-0 p-0 placeholder-white/20"
+                              placeholder="0"
+                            />
                           </div>
                         </div>
                       </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 leading-none mb-1">Pendente no Ciclo</p>
+                        <p className="text-2xl font-black text-white">R$ {pendingInCurrentCycle.toFixed(2)}</p>
+                        {currentOgaCycle && (
+                          <p className="text-[8px] font-bold text-white/40 uppercase mt-1">
+                            {currentOgaCycle.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} — {currentOgaCycle.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => deleteRecord(record.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => toggleStatus(record.id)}
+                    {walletDeficit > 0 ? (
+                      <div className="bg-brand-copper/20 border border-brand-copper/30 rounded-2xl p-4 flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-brand-copper shrink-0" />
+                        <div>
+                          <p className="text-[11px] font-black uppercase text-brand-copper leading-none mb-1">Atenção: Necessário Saque</p>
+                          <p className="text-[10px] font-medium text-white/80 leading-tight">
+                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toFixed(2)}</span> em espécie para cobrir as giras até o dia 10.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] font-black uppercase text-green-400 leading-none mb-1">Tudo em Ordem</p>
+                          <p className="text-[10px] font-medium text-white/80 leading-tight">
+                            Seu saldo atual cobre todas as giras de desenvolvimento programadas para este ciclo.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute -bottom-8 -right-8 opacity-10 rotate-12">
+                    <Banknote className="w-40 h-40" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Linha do Tempo e Planejamento */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                   <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-brand-navy/30 dark:text-white/30" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy/40 dark:text-white/40">Cronograma de Ciclos</h3>
+                  </div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase italic">Toque para ver detalhes</p>
+                </div>
+                
+                <div className="space-y-3">
+                  {ogaCycles.map((cycle, idx) => {
+                    const isSelected = selectedCycleIdx === idx;
+                    const isCurrent = cycle.isCurrent;
+                    const monthName = cycle.start.toLocaleDateString('pt-BR', { month: 'short' });
+                    const nextMonthName = cycle.end.toLocaleDateString('pt-BR', { month: 'short' });
+                    
+                    return (
+                      <div key={idx} className="group">
+                        <motion.button 
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedCycleIdx(isSelected ? -1 : idx)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] transition-all",
-                            record.status === 'paid'
-                              ? "bg-green-500 text-white"
-                              : "bg-brand-navy text-white"
+                            "w-full p-4 rounded-[28px] border transition-all text-left flex items-center gap-4",
+                            isSelected
+                              ? (settings.darkMode ? "bg-brand-navy/40 border-brand-navy ring-1 ring-brand-navy/30" : "bg-brand-navy/5 border-brand-navy/20")
+                              : (settings.darkMode ? "bg-black/40 border-gray-800" : "bg-white border-gray-100 shadow-sm")
                           )}
                         >
-                          {record.status === 'paid' ? 'Pago' : 'Pagar'}
+                          <div className={cn(
+                            "w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 border transition-colors",
+                            isSelected 
+                              ? "bg-brand-navy text-white border-brand-navy/20" 
+                              : settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100"
+                          )}>
+                            <p className={cn("text-[9px] font-black uppercase leading-none", isSelected ? "text-white" : "text-brand-navy")}>10</p>
+                            <p className={cn("text-[10px] font-black uppercase leading-none mt-1", isSelected ? "text-white" : "text-brand-copper")}>{monthName}</p>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-1">
+                              <h4 className={cn("text-xs font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                                Ciclo {monthName} — {nextMonthName}
+                              </h4>
+                              {isCurrent && (
+                                <span className="text-[7px] font-black uppercase bg-brand-copper/10 text-brand-copper px-2 py-0.5 rounded-full ring-1 ring-brand-copper/20">Atual</span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <p className={cn("text-[11px] font-black", settings.darkMode ? "text-white/60" : "text-brand-navy/60")}>
+                                R$ {cycle.totalAmount.toFixed(2)}
+                              </p>
+                              <span className="w-1 h-1 rounded-full bg-gray-300" />
+                              <p className="text-[9px] font-bold uppercase text-gray-400">
+                                {cycle.count} Giras de Desenv.
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <ChevronRight className={cn("w-4 h-4 transition-transform duration-300", isSelected ? "rotate-90 text-brand-copper" : "text-gray-300")} />
                         </motion.button>
+
+                        <AnimatePresence>
+                          {isSelected && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden bg-brand-navy/5 dark:bg-white/5 rounded-b-[28px] mx-2 -mt-4 pt-6 pb-4 px-2 space-y-2 border-x border-b border-gray-100 dark:border-gray-800"
+                            >
+                              <div className="space-y-1.5">
+                                {cycle.giras.map((gira) => {
+                                  const [year, month, day] = gira.date.split('-').map(Number);
+                                  const giraEndTime = new Date(year, month - 1, day, 23, 59, 59);
+                                  const hasPassed = giraEndTime < new Date();
+
+                                  return (
+                                    <div
+                                      key={gira.id}
+                                      className={cn(
+                                        "p-3 rounded-2xl flex items-center justify-between border transition-all",
+                                        hasPassed
+                                          ? (settings.darkMode ? "bg-green-500/5 border-green-500/10 opacity-40" : "bg-green-50/50 border-green-100 opacity-60")
+                                          : (settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-gray-100 shadow-sm")
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                          "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
+                                          hasPassed ? "bg-green-500 text-white" : "bg-white dark:bg-white/5 text-gray-400"
+                                        )}>
+                                          {hasPassed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <CalendarDays className="w-3.5 h-3.5" />}
+                                        </div>
+                                        <div>
+                                          <h4 className={cn("text-[10px] font-black leading-none mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                                            {gira.title}
+                                          </h4>
+                                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                                            {new Date(gira.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className={cn("text-[10px] font-black", hasPassed ? "text-green-600" : "text-brand-copper/80")}>
+                                          R$ 16,00
+                                        </p>
+                                        {hasPassed && <span className="text-[7px] font-black uppercase text-green-500 block leading-none">Concluído</span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {cycle.giras.length === 0 && (
+                                  <div className="p-8 text-center opacity-30">
+                                    <p className="text-[9px] font-black uppercase tracking-widest italic">Nenhuma gira para este ciclo</p>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    </motion.div>
-                  ))
-                )}
+                    );
+                  })}
+                </div>
               </div>
+
             </motion.section>
           )}
         </AnimatePresence>
