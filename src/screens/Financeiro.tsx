@@ -100,22 +100,35 @@ export default function Financeiro() {
     const cash = settings.currentCashOnHand || 0;
     const now = new Date();
     
-    // Get all future giras from all cycles
-    const allFutureGiras = ogaCycles.flatMap(c => c.giras).filter(g => {
+    // 1. Current Cycle Status
+    const futureGirasInCurrent = ogaCycles[0].giras.filter(g => {
+      const [year, month, day] = g.date.split('-').map(Number);
+      const eventEnd = new Date(year, month - 1, day, 23, 59, 59);
+      return eventEnd > now;
+    });
+    
+    const costRemainingInCurrent = futureGirasInCurrent.length * 16;
+    const coversCurrent = cash >= costRemainingInCurrent;
+    const deficitInCurrent = Math.max(0, costRemainingInCurrent - cash);
+    const surplusAfterCurrent = Math.max(0, cash - costRemainingInCurrent);
+    
+    // 2. Future Cycles Coverage
+    // Get all future giras EXCLUDING those from the current cycle (which we already accounted for)
+    const nextCyclesGiras = ogaCycles.slice(1).flatMap(c => c.giras).filter(g => {
       const [year, month, day] = g.date.split('-').map(Number);
       const eventEnd = new Date(year, month - 1, day, 23, 59, 59);
       return eventEnd > now;
     }).sort((a, b) => a.date.localeCompare(b.date));
 
-    let remainingCash = cash;
-    let coveredCount = 0;
-    let lastCoveredDate = null;
-    let coveredGiras: any[] = [];
+    let remainingSurplus = surplusAfterCurrent;
+    let extraCoveredCount = 0;
+    let lastCoveredDate = futureGirasInCurrent.length > 0 ? futureGirasInCurrent[futureGirasInCurrent.length - 1].date : null;
+    let coveredGiras: any[] = [...futureGirasInCurrent];
 
-    for (const gira of allFutureGiras) {
-      if (remainingCash >= 16) {
-        remainingCash -= 16;
-        coveredCount++;
+    for (const gira of nextCyclesGiras) {
+      if (remainingSurplus >= 16) {
+        remainingSurplus -= 16;
+        extraCoveredCount++;
         lastCoveredDate = gira.date;
         coveredGiras.push(gira);
       } else {
@@ -124,34 +137,20 @@ export default function Financeiro() {
     }
 
     return {
-      coveredCount,
+      costRemainingInCurrent,
+      coversCurrent,
+      deficitInCurrent,
+      surplusAfterCurrent,
+      extraCoveredCount,
+      totalCoveredCount: (coversCurrent ? futureGirasInCurrent.length : Math.floor(cash / 16)) + extraCoveredCount,
       lastCoveredDate,
-      isFullyCoveredInCycle: coveredCount >= ogaCycles[0].giras.filter(g => {
-        const [year, month, day] = g.date.split('-').map(Number);
-        return new Date(year, month - 1, day, 23, 59, 59) > now;
-      }).length,
-      totalFutureGiras: allFutureGiras.length,
+      isFullyCoveredAcrossCycles: extraCoveredCount > 0,
       coveredGiras
     };
   }, [ogaCycles, settings.currentCashOnHand]);
 
   const displayedCycle = useMemo(() => ogaCycles[selectedCycleIdx] || ogaCycles[0], [ogaCycles, selectedCycleIdx]);
   const currentOgaCycle = useMemo(() => ogaCycles[0], [ogaCycles]);
-
-  const { pendingInCurrentCycle } = useMemo(() => {
-    if (!currentOgaCycle) return { pendingInCurrentCycle: 0 };
-    
-    const now = new Date();
-    const futureGiras = currentOgaCycle.giras.filter(g => {
-      const [year, month, day] = g.date.split('-').map(Number);
-      const eventEnd = new Date(year, month - 1, day, 23, 59, 59);
-      return eventEnd > now;
-    });
-    
-    return { pendingInCurrentCycle: futureGiras.length * 16 };
-  }, [currentOgaCycle]);
-
-  const walletDeficit = Math.max(0, pendingInCurrentCycle - (settings.currentCashOnHand || 0));
 
   // Automatic Abatement Logic
   React.useEffect(() => {
@@ -971,14 +970,14 @@ export default function Financeiro() {
                               }}
                               onFocus={(e) => e.target.select()}
                               className="w-24 bg-transparent text-3xl font-black text-white border-none focus:ring-0 p-0 placeholder-white/20"
-                              placeholder="0"
+                              placeholder="0,00"
                             />
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 leading-none mb-1">Pendente no Ciclo</p>
-                        <p className="text-2xl font-black text-white">R$ {pendingInCurrentCycle.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 leading-none mb-1">Obrigatório no Ciclo</p>
+                        <p className="text-2xl font-black text-white">R$ {ogaCoverage.costRemainingInCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         {currentOgaCycle && (
                           <p className="text-[8px] font-bold text-white/40 uppercase mt-1">
                             {currentOgaCycle.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} — {currentOgaCycle.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
@@ -987,16 +986,13 @@ export default function Financeiro() {
                       </div>
                     </div>
 
-                    {walletDeficit > 0 ? (
+                    {!ogaCoverage.coversCurrent ? (
                       <div className="bg-brand-copper/20 border border-brand-copper/30 rounded-2xl p-4 flex items-center gap-3">
                         <AlertCircle className="w-5 h-5 text-brand-copper shrink-0" />
                         <div>
                           <p className="text-[11px] font-black uppercase text-brand-copper leading-none mb-1">Atenção: Necessário Saque</p>
                           <p className="text-[10px] font-medium text-white/80 leading-tight">
-                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir o ciclo.
-                            {ogaCoverage.coveredCount > 0 && (
-                              <span className="block mt-1 opacity-70">Saldo cobre apenas até {new Date(ogaCoverage.lastCoveredDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}.</span>
-                            )}
+                            Este saldo não encerra o ciclo. Faltam <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {ogaCoverage.deficitInCurrent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir as giras restantes.
                           </p>
                         </div>
                       </div>
@@ -1004,13 +1000,18 @@ export default function Financeiro() {
                       <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
                         <div className="flex-1">
-                          <p className="text-[11px] font-black uppercase text-green-400 leading-none mb-1">Tudo em Ordem</p>
+                          <p className="text-[11px] font-black uppercase text-green-400 leading-none mb-1">Ciclo Garantido!</p>
                           <p className="text-[10px] font-medium text-white/80 leading-tight">
-                            Status: <span className="text-green-400 font-bold">Coberto até {ogaCoverage.lastCoveredDate ? new Date(ogaCoverage.lastCoveredDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'o fim do ciclo'}</span>.
+                            Saldo suficiente para encerrar o ciclo atual.
+                            {ogaCoverage.extraCoveredCount > 0 && (
+                              <span className="block mt-1">
+                                <span className="text-green-400 font-bold italic">Bônus:</span> Além disso, o valor garante +{ogaCoverage.extraCoveredCount} {ogaCoverage.extraCoveredCount === 1 ? 'gira' : 'giras'} do{ogaCoverage.extraCoveredCount === 1 ? '' : 's'} próximo{ogaCoverage.extraCoveredCount === 1 ? '' : 's'} ciclo{ogaCoverage.extraCoveredCount === 1 ? '' : 's'}.
+                              </span>
+                            )}
                           </p>
-                          {ogaCoverage.coveredCount > 0 && (
-                            <p className="text-[8px] text-white/40 font-bold uppercase mt-1">
-                              Garante as próximas {ogaCoverage.coveredCount} giras sem novos saques.
+                          {ogaCoverage.lastCoveredDate && (
+                            <p className="text-[8px] text-white/40 font-bold uppercase mt-2">
+                              Cobertura garantida até {new Date(ogaCoverage.lastCoveredDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </p>
                           )}
                         </div>
@@ -1128,7 +1129,7 @@ export default function Financeiro() {
                                       </div>
                                       <div className="text-right">
                                         <p className={cn("text-[10px] font-black", hasPassed ? "text-green-600" : "text-brand-copper/80")}>
-                                          R$ 16,00
+                                          R$ {(16).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </p>
                                         {hasPassed && <span className="text-[7px] font-black uppercase text-green-500 block leading-none">Concluído</span>}
                                       </div>
