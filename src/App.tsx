@@ -339,7 +339,7 @@ const TopHeader = React.memo(function TopHeader() {
 
   return (
     <div className={cn(
-      "relative overflow-hidden pt-20 pb-16 shadow-2xl flex flex-col items-center transition-all duration-500",
+      "relative overflow-hidden pt-20 pb-16 shadow-2xl flex flex-col items-center",
       settings.darkMode 
         ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
         : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
@@ -455,7 +455,7 @@ const TopHeader = React.memo(function TopHeader() {
 
           <div className={cn(
             "w-40 h-40 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center p-1.5 overflow-hidden relative",
-            settings.darkMode && "bg-gray-950 border-brand-copper/20"
+            settings.darkMode ? "bg-gray-950 border-brand-copper/20" : "bg-white"
           )}>
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
@@ -767,8 +767,8 @@ export default function App() {
         <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
 
         <div className={cn(
-          "w-full h-full sm:h-[812px] max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy transition-colors duration-500",
-          settings.darkMode && "bg-[#121212] border-black"
+          "w-full h-full sm:h-[812px] max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
+          settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
           {/* Notification Icon - Global */}
           <div className="absolute top-3 right-6 z-[60]">
@@ -792,17 +792,21 @@ export default function App() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/60 backdrop-blur-sm"
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50"
                 onClick={() => setShowNotifications(false)}
               >
                 <motion.div
-                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  initial={{ scale: 0.95, opacity: 0, y: 10 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
-                    "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative",
-                    settings.darkMode ? "bg-[#1A1A1A] text-white" : "bg-white text-brand-navy"
+                    "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative border",
+                    settings.darkMode 
+                      ? "bg-[#1A1A1A] text-white border-white/5" 
+                      : "bg-white text-brand-navy border-gray-100"
                   )}
                 >
                   {/* Header */}
