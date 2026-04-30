@@ -220,7 +220,8 @@ export default function HerbsScreen() {
     eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     bathCategories: ['Gerais', 'Orixás', 'Entidades'],
-    pushNotifications: false
+    pushNotifications: false,
+    bathPackagePrice: 17
   });
 
   const [baths, setBaths] = useStorage<HerbBath[]>('templo_baths', INITIAL_BATHS);
@@ -737,9 +738,14 @@ export default function HerbsScreen() {
                 <div className="flex items-center gap-1">
                   <span className={cn("text-[11px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
                   <input 
-                    type="number"
-                    value={settings.bathPackagePrice || 17}
-                    onChange={(e) => setSettings({ ...settings, bathPackagePrice: parseFloat(e.target.value) || 0 })}
+                    type="text"
+                    inputMode="decimal"
+                    value={settings.bathPackagePrice ? settings.bathPackagePrice.toString().replace('.', ',') : ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                      setSettings({ ...settings, bathPackagePrice: val === '' ? 0 : parseFloat(val) });
+                    }}
+                    onFocus={(e) => e.target.select()}
                     className={cn(
                       "w-12 bg-transparent border-b border-brand-copper/30 focus:border-brand-copper outline-none text-[11px] font-bold text-center",
                       settings.darkMode ? "text-brand-gold" : "text-brand-navy"

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Filter, Calendar, DollarSign, CheckCircle2, AlertCircle, 
-  Trash2, ArrowUpRight, TrendingDown, Clock, ChevronRight, X, Save,
+  Trash2, ArrowUpRight, TrendingDown, Clock, ChevronRight, ChevronDown, X, Save,
   CalendarDays, Wallet, CreditCard, Copy, Edit2, Banknote, History
 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -17,7 +17,8 @@ export default function Financeiro() {
     eventNames: [],
     pushNotifications: false,
     currentCashOnHand: 0,
-    lastCashUpdate: Date.now()
+    lastCashUpdate: Date.now(),
+    bathPackagePrice: 17
   });
 
   const [records, setRecords] = useStorage<FinancialRecord[]>('templo_finance', []);
@@ -29,6 +30,7 @@ export default function Financeiro() {
   const [copied, setCopied] = useState<string | null>(null);
   
   const [selectedCycleIdx, setSelectedCycleIdx] = useState(0);
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   // Ogã Projection Logic
   const ogaCycles = useMemo(() => {
@@ -129,7 +131,9 @@ export default function Financeiro() {
     installmentCount: 1
   });
 
-  const [customInstallments, setCustomInstallments] = useState<{ amount: number; dueDate: string }[]>([]);
+  const [amountStr, setAmountStr] = useState('');
+
+  const [customInstallments, setCustomInstallments] = useState<{ amount: number; amountStr: string; dueDate: string }[]>([]);
 
   // Update installments when count or total changes
   React.useEffect(() => {
@@ -141,8 +145,10 @@ export default function Financeiro() {
       const parts = Array.from({ length: count }).map((_, i) => {
         const dueDate = new Date(baseDate);
         dueDate.setMonth(baseDate.getMonth() + i);
+        const amt = Number((totalAmount / count).toFixed(2));
         return {
-          amount: Number((totalAmount / count).toFixed(2)),
+          amount: amt,
+          amountStr: amt.toString(),
           dueDate: dueDate.toISOString().split('T')[0]
         };
       });
@@ -150,7 +156,9 @@ export default function Financeiro() {
       // Adjust last part for rounding errors
       const sum = parts.reduce((acc, curr) => acc + curr.amount, 0);
       if (sum !== totalAmount) {
-        parts[parts.length - 1].amount = Number((parts[parts.length - 1].amount + (totalAmount - sum)).toFixed(2));
+        const lastAmt = Number((parts[parts.length - 1].amount + (totalAmount - sum)).toFixed(2));
+        parts[parts.length - 1].amount = lastAmt;
+        parts[parts.length - 1].amountStr = lastAmt.toString();
       }
 
       setCustomInstallments(parts);
@@ -167,6 +175,7 @@ export default function Financeiro() {
         paymentAccount: editingRecord.paymentAccount || 'Nubank',
         installmentCount: editingRecord.installments?.total || 1
       });
+      setAmountStr(editingRecord.amount.toString());
     } else {
       // Manual entries are always 'extra' as per user request
       setNewRecord(prev => ({ 
@@ -179,6 +188,7 @@ export default function Financeiro() {
         paymentAccount: 'Nubank',
         installmentCount: 1 
       }));
+      setAmountStr('');
     }
   }, [activeTab, showAddModal, editingRecord]);
 
@@ -364,22 +374,66 @@ export default function Financeiro() {
             <h2 className={cn("text-lg font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
               Financeiro {selectedYear}
             </h2>
-            <p className="text-[10px] font-bold text-brand-copper uppercase tracking-widest">Controle Mensal</p>
+            <p className="text-[10px] font-bold text-brand-copper uppercase tracking-widest">Controle Mensalidade</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <select 
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className={cn(
-              "p-2 rounded-xl text-xs font-black bg-transparent border-0 ring-1 ring-gray-200 dark:ring-white/10 outline-none",
-              settings.darkMode ? "text-white" : "text-brand-navy"
-            )}
-          >
-            <option value={2026}>2026</option>
-            <option value={2027}>2027</option>
-          </select>
+          <div className="relative">
+            <button 
+              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all",
+                settings.darkMode 
+                  ? "bg-white/5 text-white border border-white/10" 
+                  : "bg-white text-brand-navy border border-gray-100 shadow-sm"
+              )}
+            >
+              <span>{selectedYear}</span>
+              <ChevronDown className={cn("w-4 h-4 transition-transform duration-300", isYearDropdownOpen && "rotate-180")} />
+            </button>
+            
+            <AnimatePresence>
+              {isYearDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setIsYearDropdownOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className={cn(
+                      "absolute top-full right-0 mt-2 w-32 py-2 rounded-2xl shadow-2xl z-20 border overflow-hidden",
+                      settings.darkMode 
+                        ? "bg-[#1A1A1A] border-white/10" 
+                        : "bg-white border-gray-100"
+                    )}
+                  >
+                    {[2026, 2027].map(year => (
+                      <button
+                        key={year}
+                        onClick={() => {
+                          setSelectedYear(year);
+                          setIsYearDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-3 text-left text-xs font-black transition-colors flex items-center justify-between",
+                          selectedYear === year
+                            ? (settings.darkMode ? "text-brand-gold bg-white/5" : "text-brand-copper bg-brand-copper/5")
+                            : (settings.darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-brand-navy")
+                        )}
+                      >
+                        <span>{year}</span>
+                        {selectedYear === year && <CheckCircle2 className="w-3 h-3" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
           
           {activeTab === 'extra' && (
             <motion.button
@@ -409,7 +463,7 @@ export default function Financeiro() {
             {tab === 'mensalidade' && <Calendar className="w-3.5 h-3.5 mb-0.5" />}
             {tab === 'extra' && <Plus className="w-3.5 h-3.5 mb-0.5" />}
             {tab === 'oga' && <DollarSign className="w-3.5 h-3.5 mb-0.5" />}
-            {tab === 'mensalidade' ? 'Mensal' : tab === 'extra' ? 'Gastos Adicionais' : 'Ogã'}
+            {tab === 'mensalidade' ? 'Mensalidade' : tab === 'extra' ? 'Gastos Adicionais' : 'Ogã'}
           </button>
         ))}
       </div>
@@ -510,7 +564,7 @@ export default function Financeiro() {
                           </p>
                           <span className="w-1 h-1 rounded-full bg-gray-300" />
                           <p className={cn("text-[10px] font-black text-brand-copper")}>
-                            R$ {record.amount.toFixed(2)}
+                            R$ {record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
                         </div>
                       </div>
@@ -561,7 +615,7 @@ export default function Financeiro() {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
                             <p className={cn("text-[10px] font-black text-green-600/70")}>
-                              R$ {record.amount.toFixed(2)}
+                              R$ {record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                             {record.paymentDate && (
                               <>
@@ -719,7 +773,7 @@ export default function Financeiro() {
                               </p>
                               <span className="w-1 h-1 rounded-full bg-gray-300" />
                               <p className={cn("text-[10px] font-black", settings.darkMode ? "text-gray-300" : "text-brand-copper")}>
-                                R$ {record.amount.toFixed(2)}
+                                R$ {record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </p>
                             </div>
                             {record.paymentDate && (
@@ -794,13 +848,18 @@ export default function Financeiro() {
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white/40">R$</span>
                             <input
-                              type="number"
-                              value={settings.currentCashOnHand || 0}
-                              onChange={(e) => setSettings({ 
-                                ...settings, 
-                                currentCashOnHand: Number(e.target.value),
-                                lastCashUpdate: Date.now()
-                              })}
+                              type="text"
+                              inputMode="decimal"
+                              value={settings.currentCashOnHand ? settings.currentCashOnHand.toString().replace('.', ',') : ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                                setSettings({ 
+                                  ...settings, 
+                                  currentCashOnHand: val === '' ? 0 : Number(val),
+                                  lastCashUpdate: Date.now()
+                                });
+                              }}
+                              onFocus={(e) => e.target.select()}
                               className="w-24 bg-transparent text-3xl font-black text-white border-none focus:ring-0 p-0 placeholder-white/20"
                               placeholder="0"
                             />
@@ -809,7 +868,7 @@ export default function Financeiro() {
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 leading-none mb-1">Pendente no Ciclo</p>
-                        <p className="text-2xl font-black text-white">R$ {pendingInCurrentCycle.toFixed(2)}</p>
+                        <p className="text-2xl font-black text-white">R$ {pendingInCurrentCycle.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                         {currentOgaCycle && (
                           <p className="text-[8px] font-bold text-white/40 uppercase mt-1">
                             {currentOgaCycle.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} — {currentOgaCycle.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
@@ -824,7 +883,7 @@ export default function Financeiro() {
                         <div>
                           <p className="text-[11px] font-black uppercase text-brand-copper leading-none mb-1">Atenção: Necessário Saque</p>
                           <p className="text-[10px] font-medium text-white/80 leading-tight">
-                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toFixed(2)}</span> em espécie para cobrir as giras até o dia 10.
+                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> em espécie para cobrir as giras até o dia 10.
                           </p>
                         </div>
                       </div>
@@ -897,7 +956,7 @@ export default function Financeiro() {
                             
                             <div className="flex items-center gap-3">
                               <p className={cn("text-[11px] font-black", settings.darkMode ? "text-white/60" : "text-brand-navy/60")}>
-                                R$ {cycle.totalAmount.toFixed(2)}
+                                R$ {cycle.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </p>
                               <span className="w-1 h-1 rounded-full bg-gray-300" />
                               <p className="text-[9px] font-bold uppercase text-gray-400">
@@ -1056,16 +1115,18 @@ export default function Financeiro() {
                       <input 
                         type="text"
                         inputMode="decimal"
-                        value={newRecord.amount || ''}
+                        value={amountStr.replace('.', ',')}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, '');
+                          const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                          setAmountStr(val);
                           setNewRecord({ ...newRecord, amount: val === '' ? 0 : Number(val) });
                         }}
+                        onFocus={(e) => e.target.select()}
                         className={cn(
                           "w-full bg-gray-50 dark:bg-black/40 border-0 p-4 pl-10 rounded-2xl text-sm font-black focus:ring-2 focus:ring-brand-copper/20 outline-none",
                           settings.darkMode && "text-white"
                         )}
-                        placeholder="0.00"
+                        placeholder="0,00"
                       />
                     </div>
                   </div>
@@ -1106,7 +1167,7 @@ export default function Financeiro() {
                       </div>
                       {(newRecord.installmentCount || 1) > 1 && (
                         <p className="text-[9px] font-bold text-gray-400 mt-2 ml-1">
-                          Distribuição inicial: <span className="text-brand-copper">R$ {((Number(newRecord.amount) || 0) / (newRecord.installmentCount || 1)).toFixed(2)}</span> p/ parcela.
+                          Distribuição inicial: <span className="text-brand-copper">R$ {((Number(newRecord.amount) || 0) / (newRecord.installmentCount || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> p/ parcela.
                         </p>
                       )}
                     </div>
@@ -1122,7 +1183,7 @@ export default function Financeiro() {
                               ? "bg-green-100 text-green-600"
                               : "bg-red-100 text-red-600"
                           )}>
-                            Soma: R$ {customInstallments.reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}
+                            Soma: R$ {customInstallments.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                         <div className="max-h-[160px] overflow-y-auto pr-2 space-y-2 scrollbar-hide">
@@ -1134,13 +1195,17 @@ export default function Financeiro() {
                               <div className="relative flex-1">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-gray-400">R$</span>
                                 <input 
-                                  type="number"
-                                  value={inst.amount}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={inst.amountStr.replace('.', ',')}
                                   onChange={(e) => {
                                     const newInsts = [...customInstallments];
-                                    newInsts[idx].amount = Number(e.target.value);
+                                    const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                                    newInsts[idx].amountStr = val;
+                                    newInsts[idx].amount = val === '' ? 0 : Number(val);
                                     setCustomInstallments(newInsts);
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   className="w-full bg-white dark:bg-white/5 border-0 p-2 pl-7 rounded-xl text-[11px] font-black focus:ring-1 focus:ring-brand-copper outline-none dark:text-white"
                                 />
                               </div>
