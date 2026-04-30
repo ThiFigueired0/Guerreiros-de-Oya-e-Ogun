@@ -24,11 +24,30 @@ interface PDFReaderProps {
 export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, title, totalPages: initialTotalPages }: PDFReaderProps) {
   const [numPages, setNumPages] = useState<number>(initialTotalPages || 0);
   const [pageNumber, setPageNumber] = useState<number>(Math.max(1, initialPage));
-  const [scale, setScale] = useState(1.0);
+  const [scale, setScale] = useState<number | null>(null); // null means auto-fit
   const [loading, setLoading] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+  const [containerHeight, setContainerHeight] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLElement>(null);
   const [inputPage, setInputPage] = useState(String(initialPage));
+
+  useEffect(() => {
+    if (!viewerRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        // Leave some padding for best fit
+        setContainerWidth(entry.contentRect.width - 48);
+        setContainerHeight(entry.contentRect.height - 48);
+      }
+    });
+
+    observer.observe(viewerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setInputPage(String(pageNumber));
@@ -48,7 +67,7 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
   };
 
   const handleZoom = (delta: number) => {
-    setScale(prev => Math.min(Math.max(0.5, prev + delta), 3.0));
+    setScale(prev => Math.min(Math.max(0.5, (prev || 1.0) + delta), 3.0));
   };
 
   const handleManualPageChange = (e: React.FormEvent) => {
@@ -71,14 +90,40 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
     }
   };
 
+  const handlePanEnd = (_e: any, info: any) => {
+    const threshold = 50;
+    const velocity = info.velocity.y;
+    const offset = info.offset.y;
+
+    if (Math.abs(offset) > threshold || Math.abs(velocity) > 500) {
+      if (offset < 0) {
+        // Swiped up -> user wants to go back? 
+        // User said: "deslizar para baixo -> próxima, deslizar para cima -> anterior"
+        // In gesture terms: 
+        // Swipe Down (offset > 0) -> Next
+        // Swipe Up (offset < 0) -> Previous
+        changePage(-1);
+      } else {
+        changePage(1);
+      }
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       ref={containerRef}
+      onPanEnd={handlePanEnd}
+      onWheel={(e) => {
+        // Simple wheel-to-page navigation
+        if (Math.abs(e.deltaY) > 50) {
+          changePage(e.deltaY > 0 ? 1 : -1);
+        }
+      }}
       className={cn(
-        "fixed inset-0 z-[60] bg-black/95 flex flex-col backdrop-blur-md",
+        "fixed inset-0 z-[150] bg-black/95 flex flex-col backdrop-blur-md touch-none",
         isFullScreen ? "p-0" : ""
       )}
     >
@@ -102,9 +147,15 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
         </div>
 
         <div className="flex items-center gap-1 sm:gap-3">
+          <button 
+            onClick={() => setScale(null)} 
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-all"
+          >
+            Ajustar
+          </button>
           <div className="hidden sm:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
             <button onClick={() => handleZoom(-0.1)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ZoomOut className="w-4 h-4" /></button>
-            <span className="text-[10px] font-black text-white/40 w-10 text-center">{Math.round(scale * 100)}%</span>
+            <span className="text-[10px] font-black text-white/40 w-10 text-center">{Math.round((scale || 1) * 100)}%</span>
             <button onClick={() => handleZoom(0.1)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all"><ZoomIn className="w-4 h-4" /></button>
           </div>
           
@@ -119,13 +170,16 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
       </header>
 
       {/* Main Viewport */}
-      <main className="flex-1 overflow-auto bg-[#1a1a1a] flex flex-col items-center custom-scrollbar scroll-smooth relative">
-        <div className="py-8 sm:py-12 p-4">
+      <main 
+        ref={viewerRef}
+        className="flex-1 overflow-hidden bg-[#1a1a1a] flex flex-col items-center justify-center relative"
+      >
+        <div className="flex items-center justify-center w-full h-full p-4">
           <Document
             file={pdfUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={
-              <div className="flex flex-col items-center justify-center gap-4 py-20">
+              <div className="flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-10 h-10 text-brand-copper animate-spin" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Preparando páginas...</p>
               </div>
@@ -137,13 +191,17 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
             }
           >
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
+              key={pageNumber}
+              initial={{ scale: 0.98, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
               className="shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-white rounded-sm overflow-hidden"
             >
               <Page 
                 pageNumber={pageNumber} 
-                scale={scale} 
+                scale={scale || undefined}
+                width={!scale ? containerWidth : undefined}
+                height={!scale ? containerHeight : undefined}
                 renderAnnotationLayer={true}
                 renderTextLayer={true}
                 loading={null}
@@ -152,6 +210,7 @@ export function PDFReader({ pdfUrl, initialPage = 1, onPageChange, onClose, titl
           </Document>
         </div>
       </main>
+
 
       {/* Footer / Controls */}
       <footer className="h-20 shrink-0 bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-center gap-6 px-4">

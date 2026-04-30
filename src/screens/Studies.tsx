@@ -725,7 +725,7 @@ export default function StudiesScreen() {
                     <motion.div 
                       key={book.id}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => openBook(book)}
+                      onClick={() => openBookDetails(book)}
                       className={cn(
                         "flex-shrink-0 w-[280px] p-4 rounded-[32px] border border-gray-100 shadow-lg flex items-center gap-4 cursor-pointer relative overflow-hidden group",
                         settings.darkMode ? "bg-gradient-to-br from-[#1A1A1A] to-[#111] border-gray-800" : "bg-gradient-to-br from-white to-gray-50"
@@ -863,7 +863,7 @@ export default function StudiesScreen() {
                                   <motion.div 
                                     key={book.id}
                                     whileTap={{ scale: 0.96 }}
-                                    onClick={() => openBook(book)}
+                                    onClick={() => openBookDetails(book)}
                                     className={cn(
                                       "bg-white p-3 rounded-[28px] shadow-sm border border-gray-100 flex flex-col gap-3 group relative cursor-pointer active:shadow-md transition-all",
                                       settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
@@ -882,17 +882,6 @@ export default function StudiesScreen() {
                                           <FileText className="w-10 h-10 text-white/20 group-hover:scale-110 transition-transform duration-500" />
                                         </>
                                       )}
-                                      
-                                      {/* Info Button for settings */}
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openBookDetails(book);
-                                        }}
-                                        className="absolute top-2 right-2 p-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all shadow-sm"
-                                      >
-                                        <Settings className="w-3.5 h-3.5" />
-                                      </button>
                                       
                                       {book.isFavorite && (
                                         <div className="absolute top-2 right-2 p-1.5 bg-brand-red rounded-full shadow-lg">
