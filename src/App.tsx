@@ -313,13 +313,29 @@ function TempleLogo() {
   );
 }
 
-function TopHeader() {
+const TopHeader = React.memo(function TopHeader() {
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false
   });
+
+  const leaves = React.useMemo(() => {
+    return [...Array(60)].map((_, i) => ({
+      id: i,
+      size: 10 + Math.random() * 20,
+      duration: 15 + Math.random() * 30,
+      delay: Math.random() * -20,
+      opacity: 0.15 + Math.random() * 0.25,
+      pathX: Math.random() * 200 - 100,
+      pathY: Math.random() * 150 - 75,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      rotate: Math.random() * 360,
+      scale: 0.5 + Math.random() * 0.5
+    }));
+  }, []);
 
   return (
     <div className={cn(
@@ -334,48 +350,39 @@ function TopHeader() {
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Floating Leaves across the entire banner - Higher visibility */}
-        {[...Array(60)].map((_, i) => {
-          const size = 10 + Math.random() * 20;
-          const duration = 15 + Math.random() * 30;
-          const delay = Math.random() * -20;
-          const opacity = 0.15 + Math.random() * 0.25;
-          const pathX = Math.random() * 200 - 100;
-          const pathY = Math.random() * 150 - 75;
-          
-          return (
-            <motion.div
-              key={`leaf-fixed-${i}`}
-              initial={{ 
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                rotate: Math.random() * 360,
-                opacity: 0,
-                scale: 0.5 + Math.random() * 0.5
-              }}
-              animate={{ 
-                x: [0, pathX, 0],
-                y: [0, pathY, 0],
-                rotate: [0, 180, 360],
-                opacity: [0, opacity, opacity, 0]
-              }}
-              transition={{ 
-                duration: duration, 
-                repeat: Infinity, 
-                ease: "easeInOut",
-                delay: delay
-              }}
-              className="absolute z-0"
-            >
-              <Leaf 
-                className="text-brand-copper/60 fill-brand-copper/10" 
-                style={{ 
-                  width: size, 
-                  height: size,
-                }} 
-              />
-            </motion.div>
-          );
-        })}
+        {leaves.map((leaf) => (
+          <motion.div
+            key={`leaf-fixed-${leaf.id}`}
+            initial={{ 
+              left: leaf.left,
+              top: leaf.top,
+              rotate: leaf.rotate,
+              opacity: 0,
+              scale: leaf.scale
+            }}
+            animate={{ 
+              x: [0, leaf.pathX, 0],
+              y: [0, leaf.pathY, 0],
+              rotate: [0, 180, 360],
+              opacity: [0, leaf.opacity, leaf.opacity, 0]
+            }}
+            transition={{ 
+              duration: leaf.duration, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: leaf.delay
+            }}
+            className="absolute z-0"
+          >
+            <Leaf 
+              className="text-brand-copper/60 fill-brand-copper/10" 
+              style={{ 
+                width: leaf.size, 
+                height: leaf.size,
+              }} 
+            />
+          </motion.div>
+        ))}
 
         <motion.div 
           animate={{ 
@@ -478,7 +485,7 @@ function TopHeader() {
       </div>
     </div>
   );
-}
+});
 
 function SocialButtons() {
   const location = useLocation();
