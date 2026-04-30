@@ -776,12 +776,12 @@ export default function App() {
                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
                   onClick={(e) => e.stopPropagation()}
                   className={cn(
-                    "w-full max-w-lg aspect-[4/5] sm:aspect-square flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative",
+                    "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative",
                     settings.darkMode ? "bg-[#1A1A1A] text-white" : "bg-white text-brand-navy"
                   )}
                 >
                   {/* Header */}
-                  <div className="p-8 flex items-center justify-between border-b dark:border-white/5">
+                  <div className="p-8 flex items-center justify-between border-b dark:border-white/5 shrink-0">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center">
                         <Bell className="w-6 h-6 text-brand-gold" />
@@ -806,13 +806,6 @@ export default function App() {
                     </div>
                     <h3 className="text-lg font-black tracking-tight mb-2">Tudo limpo por aqui!</h3>
                     <p className="text-xs font-bold opacity-40 uppercase tracking-widest max-w-[200px]">Sem notificações no momento</p>
-                  </div>
-
-                  {/* Footer Tip */}
-                  <div className="p-6 bg-gray-50 dark:bg-white/5 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30 leading-relaxed">
-                      Avisos de estoque e financeiro <br /> aparecerão aqui automaticamente
-                    </p>
                   </div>
                 </motion.div>
               </motion.div>
