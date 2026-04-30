@@ -91,19 +91,6 @@ const ALL_TABS = [
 const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
 const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
-function LocationWatcher({ onLocationChange }: { onLocationChange: () => void }) {
-  const location = useLocation();
-  const prevPath = React.useRef(location.pathname);
-
-  React.useEffect(() => {
-    if (location.pathname !== prevPath.current) {
-      onLocationChange();
-      prevPath.current = location.pathname;
-    }
-  }, [location.pathname, onLocationChange]);
-  return null;
-}
-
 function Navigation() {
   const location = useLocation();
   const [showMore, setShowMore] = React.useState(false);
@@ -543,6 +530,88 @@ function SocialButtons() {
   );
 }
 
+function NotificationCenter({ darkMode }: { darkMode: boolean }) {
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const location = useLocation();
+
+  // Close notifications on route change
+  React.useEffect(() => {
+    setShowNotifications(false);
+  }, [location.pathname]);
+
+  return (
+    <>
+      <div className="absolute top-3 right-6 z-[60]">
+        <motion.div 
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowNotifications(true)}
+          className="w-10 h-10 rounded-full bg-white/95 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
+        >
+          <div className="relative">
+            <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
+          </div>
+        </motion.div>
+      </div>
+
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50"
+            onClick={() => setShowNotifications(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative border",
+                darkMode 
+                  ? "bg-[#1A1A1A] text-white border-white/5" 
+                  : "bg-white text-brand-navy border-gray-100"
+              )}
+            >
+              {/* Header */}
+              <div className="p-8 flex items-center justify-between border-b dark:border-white/5 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-brand-gold" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight">Notificações</h2>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Central de avisos</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowNotifications(false)}
+                  className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-90 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                <div className="w-24 h-24 rounded-[32px] bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
+                  <Bell className="w-10 h-10 opacity-20" />
+                </div>
+                <h3 className="text-lg font-black tracking-tight mb-2">Tudo limpo por aqui!</h3>
+                <p className="text-xs font-bold opacity-40 uppercase tracking-widest max-w-[200px]">Sem notificações no momento</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 export default function App() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -560,7 +629,6 @@ export default function App() {
   ]);
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
-  const [showNotifications, setShowNotifications] = React.useState(false);
 
   // Migration logic to ensure categories and 2026 calendar are updated
   React.useEffect(() => {
@@ -756,10 +824,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <LocationWatcher onLocationChange={() => setShowNotifications(false)} />
       <NotificationManager />
       <div className={cn(
-        "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans transition-colors duration-500",
+        "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
         settings.darkMode && "bg-black"
       )}>
         {/* Outer Glow Effects (Desktop/Tablet feel) */}
@@ -771,74 +838,7 @@ export default function App() {
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
           {/* Notification Icon - Global */}
-          <div className="absolute top-3 right-6 z-[60]">
-            <motion.div 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowNotifications(true)}
-              className="w-10 h-10 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
-            >
-              <div className="relative">
-                <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Notifications Modal */}
-          <AnimatePresence>
-            {showNotifications && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50"
-                onClick={() => setShowNotifications(false)}
-              >
-                <motion.div
-                  initial={{ scale: 0.95, opacity: 0, y: 10 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  onClick={(e) => e.stopPropagation()}
-                  className={cn(
-                    "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative border",
-                    settings.darkMode 
-                      ? "bg-[#1A1A1A] text-white border-white/5" 
-                      : "bg-white text-brand-navy border-gray-100"
-                  )}
-                >
-                  {/* Header */}
-                  <div className="p-8 flex items-center justify-between border-b dark:border-white/5 shrink-0">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center">
-                        <Bell className="w-6 h-6 text-brand-gold" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black tracking-tight">Notificações</h2>
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Central de avisos</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setShowNotifications(false)}
-                      className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-90 transition-all"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                    <div className="w-24 h-24 rounded-[32px] bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                      <Bell className="w-10 h-10 opacity-20" />
-                    </div>
-                    <h3 className="text-lg font-black tracking-tight mb-2">Tudo limpo por aqui!</h3>
-                    <p className="text-xs font-bold opacity-40 uppercase tracking-widest max-w-[200px]">Sem notificações no momento</p>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <NotificationCenter darkMode={settings.darkMode} />
 
           <Navigation />
           
