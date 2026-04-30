@@ -730,84 +730,143 @@ export default function HerbsScreen() {
         </>
       ) : activeSubTab === 'ready' ? (
         <div className="space-y-6">
-          <div className="flex items-center justify-between gap-4 mb-4 px-2">
-            <div className="flex flex-col overflow-hidden">
-              <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight truncate", settings.darkMode && "text-white")}>Banhos Prontos</h2>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper shrink-0">Custo de Compra:</p>
-                <div className="flex items-center gap-1">
-                  <span className={cn("text-[11px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
-                  <input 
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.bathPackagePrice ? settings.bathPackagePrice.toString().replace('.', ',') : ''}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
-                      setSettings({ ...settings, bathPackagePrice: val === '' ? 0 : parseFloat(val) });
-                    }}
-                    onFocus={(e) => e.target.select()}
-                    className={cn(
-                      "w-12 bg-transparent border-b border-brand-copper/30 focus:border-brand-copper outline-none text-[11px] font-bold text-center",
-                      settings.darkMode ? "text-brand-gold" : "text-brand-navy"
-                    )}
-                  />
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest shrink-0">/ cada</span>
+          <div className="px-2 mb-6 space-y-6">
+            {/* Main Header with Title and Cost/Add Button Group */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className={cn("text-2xl sm:text-3xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>
+                Banhos Prontos
+              </h2>
+              
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                {/* Compact Unit Cost In Header */}
+                <div className={cn(
+                  "flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-all",
+                  settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100 shadow-sm"
+                )}>
+                  <div className="hidden xs:flex w-7 h-7 rounded-lg bg-brand-copper/10 dark:bg-brand-gold/10 items-center justify-center shrink-0">
+                    <Droplet className="w-3.5 h-3.5 text-brand-copper dark:text-brand-gold" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Custo Unitário</span>
+                    <div className="flex items-center gap-1">
+                      <span className={cn("text-[10px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
+                      <input 
+                        type="text"
+                        inputMode="decimal"
+                        value={settings.bathPackagePrice ? settings.bathPackagePrice.toString().replace('.', ',') : ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                          setSettings({ ...settings, bathPackagePrice: val === '' ? 0 : parseFloat(val) });
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn(
+                          "w-14 sm:w-16 bg-transparent border-b border-brand-copper/20 focus:border-brand-copper outline-none text-xs sm:text-sm font-black transition-all",
+                          settings.darkMode ? "text-white" : "text-brand-navy"
+                        )}
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                <button 
+                  onClick={() => {
+                    setEditingReadyBath(null);
+                    setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
+                    setShowReadyModal(true);
+                  }}
+                  className={cn(
+                    "w-12 h-12 bg-brand-navy text-white rounded-[18px] shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
+                    settings.darkMode && "bg-brand-gold text-brand-navy"
+                  )}
+                >
+                  <Plus className="w-6 h-6 stroke-[3px]" />
+                </button>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3 shrink-0">
+
+            {/* Replenishment Summary */}
+            {(() => {
+              const needsReplenishment = readyBaths.filter(rb => rb.isFixed && rb.quantity === 0);
+              if (needsReplenishment.length === 0) return null;
+              
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "p-4 rounded-2xl border transition-all duration-500",
+                    settings.darkMode 
+                      ? "bg-red-500/10 border-red-500/20" 
+                      : "bg-red-50/50 border-red-100 shadow-sm"
+                  )}
+                >
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-500 shadow-lg shadow-red-500/30 flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-6 sm:w-7 h-6 sm:h-7 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className={cn("text-[10px] sm:text-[12px] font-black uppercase tracking-[0.2em] mb-3 sm:mb-4 truncate", settings.darkMode ? "text-red-400" : "text-red-600")}>
+                        Reposição Necessária
+                      </h4>
+                      
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        {needsReplenishment.map(rb => (
+                          <div 
+                            key={rb.id}
+                            className={cn(
+                              "px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[9px] sm:text-[11px] font-black tracking-tight border flex items-center gap-2 whitespace-nowrap",
+                              settings.darkMode ? "bg-black/30 border-red-500/20 text-red-400" : "bg-white border-red-100 text-red-500 shadow-md shadow-red-500/5 hover:scale-105 transition-transform"
+                            )}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40 shrink-0" />
+                            <span className="truncate">{rb.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()}
+          </div>
+
+          {/* Search and Filters with Manage Button */}
+          <div className="space-y-4 px-2">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar banho..."
+                  value={readySearch}
+                  onChange={(e) => setReadySearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none text-sm transition-all",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                  )}
+                />
+              </div>
+
               <button 
                 onClick={() => setIsManaging(!isManaging)}
                 className={cn(
-                  "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                  "px-5 rounded-2xl transition-all border flex items-center justify-center gap-3 shrink-0 active:scale-95",
                   isManaging 
-                    ? "bg-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
-                    : (settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-brand-navy")
+                    ? "bg-brand-gold border-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
+                    : (settings.darkMode ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-white border-gray-100 text-brand-navy shadow-sm hover:bg-gray-50")
                 )}
+                title={isManaging ? "Concluir" : "Gerenciar"}
               >
                 {isManaging ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Finalizar</span>
-                  </>
+                  <CheckCircle2 className="w-5 h-5" />
                 ) : (
-                  <>
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span>Gerenciar</span>
-                  </>
+                  <Pencil className="w-5 h-5" />
                 )}
+                <span className="hidden xs:inline text-[11px] font-black uppercase tracking-[0.15em] leading-none">
+                  {isManaging ? "Concluir" : "Gerenciar"}
+                </span>
               </button>
-              <button 
-                onClick={() => {
-                  setEditingReadyBath(null);
-                  setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
-                  setShowReadyModal(true);
-                }}
-                className={cn(
-                  "w-12 h-12 bg-brand-navy text-white rounded-[20px] shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
-                  settings.darkMode && "bg-brand-copper"
-                )}
-              >
-                <Plus className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="space-y-4 px-2">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar banho..."
-                value={readySearch}
-                onChange={(e) => setReadySearch(e.target.value)}
-                className={cn(
-                  "w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none text-sm",
-                  settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
-                )}
-              />
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -902,30 +961,36 @@ export default function HerbsScreen() {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-center gap-3 min-w-[120px]">
-                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-white/5 p-2 rounded-[24px] border border-gray-100 dark:border-white/10 shadow-inner">
+                  <div className="flex flex-col items-center gap-2 shrink-0">
+                    <div className={cn(
+                      "flex items-center gap-2 p-1.5 rounded-[24px] transition-all duration-300",
+                      settings.darkMode ? "bg-black/60 border border-white/10 shadow-inner" : "bg-gray-100/80 border border-gray-200/50 shadow-inner"
+                    )}>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           adjustReadyQuantity(rb.id, -1);
                         }}
                         className={cn(
-                          "w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/15 shadow-sm active:scale-85 transition-all",
-                          rb.quantity === 0 && "opacity-20 cursor-not-allowed"
+                          "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md active:scale-90",
+                          settings.darkMode 
+                            ? "bg-[#252525] text-brand-gold border border-white/10 hover:bg-[#303030]" 
+                            : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50 hover:shadow-lg shadow-gray-200/30",
+                          rb.quantity === 0 && "opacity-30 cursor-not-allowed"
                         )}
                         disabled={rb.quantity === 0}
                       >
-                        <Minus className="w-5 h-5" />
+                        <Minus className="w-4 h-4 stroke-[4px]" />
                       </button>
                       
-                      <div className="min-w-[20px] text-center">
+                      <div className="min-w-[32px] text-center">
                         <motion.span 
                           key={rb.quantity}
-                          initial={{ y: -5, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
                           className={cn(
-                            "text-lg font-black",
-                            rb.quantity === 0 ? "text-red-500" : (settings.darkMode ? "text-white" : "text-brand-navy")
+                            "text-base font-black tabular-nums",
+                            rb.quantity === 0 ? "text-gray-400" : (settings.darkMode ? "text-brand-gold" : "text-brand-navy")
                           )}
                         >
                           {rb.quantity}
@@ -937,12 +1002,17 @@ export default function HerbsScreen() {
                           e.stopPropagation();
                           adjustReadyQuantity(rb.id, 1);
                         }}
-                        className="w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/15 shadow-sm active:scale-85 transition-all"
+                        className={cn(
+                          "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md active:scale-90",
+                          settings.darkMode 
+                            ? "bg-[#252525] text-brand-gold border border-white/10 hover:bg-[#303030]" 
+                            : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50 hover:shadow-lg shadow-gray-200/30"
+                        )}
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4 stroke-[4px]" />
                       </button>
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Em Estoque</span>
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400/80">Em Estoque</span>
                   </div>
                 </div>
 
