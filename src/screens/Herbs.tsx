@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { HerbBath, AppSettings, ReadyBath, HerbStock } from '../types';
@@ -228,6 +228,12 @@ export default function HerbsScreen() {
   const [herbStock, setHerbStock] = useStorage<HerbStock[]>('templo_herb_stock', []);
   const [activeSubTab, setActiveSubTab] = useState<'composition' | 'ready' | 'herbs_list'>('composition');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isManaging, setIsManaging] = useState(false);
+  
+  // Reset management mode when tab or category changes
+  useEffect(() => {
+    setIsManaging(false);
+  }, [activeSubTab, selectedCategory]);
   
   // Initialize bathCategories if they don't exist
   React.useEffect(() => {
@@ -499,159 +505,223 @@ export default function HerbsScreen() {
 
       {activeSubTab === 'composition' ? (
         <>
-          <div className="flex items-center gap-3 mb-6 px-2">
-            {selectedCategory && (
+          <div className="flex items-center justify-between gap-4 mb-8 px-2">
+            <div className="flex items-center gap-3 overflow-hidden">
+              {selectedCategory && (
+                <button 
+                  onClick={() => setSelectedCategory(null)}
+                  className={cn(
+                    "p-2.5 rounded-2xl border transition-all active:scale-90 shrink-0",
+                    settings.darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-100 text-brand-navy shadow-sm"
+                  )}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+              <div className="flex flex-col overflow-hidden">
+                <h2 className={cn(
+                  "text-2xl font-black text-brand-navy tracking-tight truncate",
+                  settings.darkMode && "text-white"
+                )}>
+                  {selectedCategory ? selectedCategory : "Banhos"}
+                </h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-copper mt-1">Catequese de Ervas</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {selectedCategory && (
+                <button 
+                  onClick={() => setIsManaging(!isManaging)}
+                  className={cn(
+                    "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    isManaging 
+                      ? "bg-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
+                      : (settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-brand-navy")
+                  )}
+                >
+                  {isManaging ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Finalizar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span>Gerenciar</span>
+                    </>
+                  )}
+                </button>
+              )}
               <button 
-                onClick={() => setSelectedCategory(null)}
+                onClick={() => setShowModal(true)} 
                 className={cn(
-                  "p-2 rounded-xl border transition-colors",
-                  settings.darkMode ? "bg-white/5 border-white/10 text-white" : "bg-white border-gray-100 text-brand-navy"
+                  "w-12 h-12 bg-brand-navy text-white rounded-[20px] shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
+                  settings.darkMode && "bg-brand-copper"
                 )}
               >
-                <ChevronLeft className="w-5 h-5" />
+                <Plus className="w-6 h-6" />
               </button>
-            )}
-            <h2 className={cn(
-              "text-xl font-bold text-brand-navy tracking-tight flex-1",
-              settings.darkMode && "text-white"
-            )}>
-              {selectedCategory ? selectedCategory : "Banhos de Ervas"}
-            </h2>
-            <button onClick={() => setShowModal(true)} className={cn(
-              "p-3 bg-brand-navy text-white rounded-2xl shadow-lg",
-              settings.darkMode && "bg-brand-copper"
-            )}>
-              <Plus className="w-5 h-5" />
-            </button>
+            </div>
           </div>
 
-          <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
+          <div className="relative mb-8 px-1">
+            <div className={cn(
+              "absolute left-5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl",
+              settings.darkMode ? "bg-white/5" : "bg-gray-50"
+            )}>
+              <Search className="text-gray-400 w-4 h-4" />
+            </div>
             <input
               type="text"
               placeholder="Buscar banho ou ervas..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={cn(
-                "w-full bg-white border border-gray-100 rounded-2xl p-4 pl-12 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none text-sm",
-                settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                "w-full bg-white border-none rounded-[28px] py-5 pl-14 pr-6 shadow-xl shadow-gray-200/40 focus:ring-2 focus:ring-brand-copper/30 outline-none text-sm transition-all",
+                settings.darkMode && "bg-[#1A1A1A] shadow-none border border-white/5 text-white focus:ring-white/10"
               )}
             />
           </div>
 
           {!selectedCategory && !search ? (
-            <div className="grid grid-cols-1 gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                {bathCategories.map((cat) => {
-                  const count = baths.filter(b => b.category === cat || (!b.category && cat === 'Gerais')).length;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={cn(
-                        "p-6 rounded-[32px] text-left border relative overflow-hidden transition-all active:scale-95 group",
-                        settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                      )}
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-brand-copper/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <Folder className="w-5 h-5 text-brand-copper fill-brand-copper" />
-                      </div>
-                      <h3 className={cn("font-bold text-sm", settings.darkMode ? "text-white" : "text-brand-navy")}>{cat}</h3>
-                      <p className="text-[10px] text-gray-400 mt-1 font-black uppercase tracking-wider">{count} {count === 1 ? 'Banho' : 'Banhos'}</p>
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setShowCategoryModal(true)}
-                  className={cn(
-                    "p-6 rounded-[32px] text-left border border-dashed flex flex-col items-center justify-center gap-2 transition-all active:scale-95",
-                    settings.darkMode ? "border-gray-800 bg-white/5" : "border-gray-200 bg-gray-50"
-                  )}
-                >
-                  <PlusCircle className="w-6 h-6 text-gray-300" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nova Pasta</span>
-                </button>
-              </div>
+            <div className="grid grid-cols-2 gap-5 px-1">
+              {bathCategories.map((cat) => {
+                const count = baths.filter(b => b.category === cat || (!b.category && cat === 'Gerais')).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={cn(
+                      "p-6 rounded-[40px] text-left border-none relative overflow-hidden transition-all active:scale-95 group shadow-xl shadow-gray-200/30",
+                      settings.darkMode ? "bg-[#1A1A1A] shadow-none border border-white/5" : "bg-white"
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-[20px] bg-brand-copper/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                      <Folder className="w-6 h-6 text-brand-copper fill-brand-copper/20" />
+                    </div>
+                    <h3 className={cn("font-black text-sm tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{cat}</h3>
+                    <p className="text-[10px] text-gray-400 mt-1.5 font-black uppercase tracking-widest">{count} {count === 1 ? 'Banho' : 'Banhos'}</p>
+                    
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <ChevronLeft className="w-10 h-10 rotate-180" />
+                    </div>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className={cn(
+                  "p-6 rounded-[40px] text-left border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all active:scale-95",
+                  settings.darkMode ? "border-white/10 bg-white/5" : "border-gray-200 bg-gray-50/50"
+                )}
+              >
+                <PlusCircle className="w-8 h-8 text-gray-300" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Nova Pasta</span>
+              </button>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-6 px-1">
               {filteredBaths.length > 0 ? (
                 filteredBaths.map(bath => (
                   <motion.div 
                     layout
                     key={bath.id} 
                     className={cn(
-                      "bg-white p-6 rounded-[32px] shadow-sm relative overflow-hidden border border-gray-100 transition-colors duration-500",
-                      bath.isFavorite && "border-brand-copper/30 bg-white",
-                      settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
-                      settings.darkMode && bath.isFavorite && "border-brand-copper/50 bg-[#1A1A1A]"
+                      "bg-white p-7 rounded-[40px] shadow-xl shadow-gray-200/40 relative overflow-hidden border-none transition-all duration-500",
+                      bath.isFavorite && (settings.darkMode ? "bg-brand-copper/5 shadow-brand-copper/5" : "bg-brand-copper/5 shadow-brand-copper/5"),
+                      settings.darkMode && "bg-[#1A1A1A] shadow-none border border-white/5",
                     )}
                   >
-                    <div className="flex justify-end items-start mb-2">
-                       <button onClick={() => toggleFavorite(bath.id)}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1 pr-4" onClick={() => setSelectedBathForDetails(bath)}>
+                        <h4 className={cn(
+                          "font-black text-brand-navy text-xl leading-tight hover:text-brand-copper cursor-pointer transition-colors", 
+                          settings.darkMode && "text-white dark:hover:text-brand-gold"
+                        )}>
+                          {bath.title}
+                        </h4>
+                        
+                        {/* Preview of Herbs */}
+                        <div className="mt-3 flex flex-wrap gap-1.5 line-clamp-1 pointer-events-none">
+                          {bath.herbs.split('\n').slice(0, 3).map((herb, idx) => (
+                            herb.trim() && (
+                              <span key={idx} className="text-[8px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-0.5 rounded-md border border-gray-100 dark:border-white/5">
+                                {herb.trim()}
+                              </span>
+                            )
+                          ))}
+                          {bath.herbs.split('\n').length > 3 && (
+                            <span className="text-[8px] font-black text-brand-copper uppercase tracking-widest pt-0.5">
+                              + {bath.herbs.split('\n').length - 3} Ervas
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => toggleFavorite(bath.id)}
+                        className={cn(
+                          "p-4 rounded-3xl transition-all active:scale-90",
+                          bath.isFavorite 
+                            ? (settings.darkMode ? "bg-brand-copper/20" : "bg-brand-copper/10") 
+                            : (settings.darkMode ? "bg-white/5" : "bg-gray-50")
+                        )}
+                      >
                         <Heart className={cn("w-6 h-6 transition-all", bath.isFavorite ? "fill-brand-red text-brand-red" : (settings.darkMode ? "text-gray-700" : "text-gray-200"))} />
                       </button>
                     </div>
-                    <div 
-                      className="cursor-pointer group/content mb-6" 
-                      onClick={() => setSelectedBathForDetails(bath)}
-                    >
-                      <h4 className={cn(
-                        "font-bold text-brand-navy text-lg leading-tight group-hover/content:text-brand-copper transition-colors", 
-                        settings.darkMode && "text-white dark:group-hover/content:text-brand-gold"
-                      )}>
-                        {bath.title}
-                      </h4>
-                      {(!bath.herbs.trim() && !bath.observations.trim()) && (
-                        <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
-                          <AlertCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">Sem informações</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2">
+
+                    <div className="flex gap-2.5 mt-2">
                       <button 
                         onClick={() => handleShare(bath)}
-                        className="flex-[2] flex items-center justify-center gap-2 text-white bg-brand-red px-4 py-3 rounded-xl text-xs font-bold shadow-md shadow-brand-red/10 active:scale-95 transition-transform"
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2.5 text-white bg-brand-navy px-6 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-navy/20 active:scale-95 transition-all",
+                          isManaging && "bg-gray-400 shadow-none opacity-50"
+                        )}
+                        disabled={isManaging}
                       >
                         <Share2 className="w-4 h-4" /> Compartilhar
                       </button>
-                      <button 
-                        onClick={() => openEditModal(bath)}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform border",
-                          settings.darkMode 
-                            ? "bg-gray-800 text-gray-200 border-gray-700" 
-                            : "bg-gray-100 text-brand-navy border-gray-200"
-                        )}
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        onClick={() => deleteBath(bath.id)}
-                        className={cn(
-                          "p-3 transition-colors rounded-xl",
-                          settings.darkMode ? "bg-red-500/10 text-red-400 hover:text-red-300" : "bg-red-50 text-red-500 hover:bg-red-100"
-                        )}
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      
+                      {isManaging && (
+                        <>
+                          <button 
+                            onClick={() => openEditModal(bath)}
+                            className={cn(
+                              "p-4 rounded-[20px] transition-all active:scale-95 border bg-white dark:bg-white/5",
+                              settings.darkMode 
+                                ? "text-white border-white/10" 
+                                : "text-brand-navy border-gray-100 shadow-sm"
+                            )}
+                            title="Editar"
+                          >
+                            <Pencil className="w-5 h-5 text-brand-copper" />
+                          </button>
+                          <button 
+                            onClick={() => deleteBath(bath.id)}
+                            className={cn(
+                              "p-4 rounded-[20px] active:scale-95 transition-all",
+                              settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500 shadow-sm"
+                            )}
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </>
+                      )}
                     </div>
-                    {bath.isFavorite && (
-                      <div className="absolute top-4 right-4 -z-10 opacity-5">
-                        <Heart className="w-24 h-24 fill-brand-red" />
-                      </div>
-                    )}
                   </motion.div>
                 ))
               ) : (
                 <div className={cn(
-                  "p-12 rounded-[40px] text-center border-2 border-dashed",
-                  settings.darkMode ? "border-white/5" : "border-gray-50"
+                  "p-16 rounded-[48px] text-center border-4 border-dashed",
+                  settings.darkMode ? "border-white/5" : "border-gray-50 bg-white"
                 )}>
-                  <p className="text-gray-400 text-sm italic">Nenhum banho nesta pasta.</p>
+                  <div className="w-16 h-16 rounded-3xl bg-gray-50 dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
+                    <Search className="w-8 h-8 text-gray-200" />
+                  </div>
+                  <p className="text-gray-400 text-sm font-black uppercase tracking-widest italic">Nenhum banho encontrado</p>
                 </div>
               )}
             </div>
@@ -659,11 +729,11 @@ export default function HerbsScreen() {
         </>
       ) : activeSubTab === 'ready' ? (
         <div className="space-y-6">
-          <div className="flex items-center justify-between mb-2 px-2">
-            <div>
-              <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>Banhos Prontos</h2>
+          <div className="flex items-center justify-between gap-4 mb-4 px-2">
+            <div className="flex flex-col overflow-hidden">
+              <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight truncate", settings.darkMode && "text-white")}>Banhos Prontos</h2>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Referência:</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper shrink-0">Referência:</p>
                 <div className="flex items-center gap-1">
                   <span className={cn("text-[11px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
                   <input 
@@ -675,23 +745,47 @@ export default function HerbsScreen() {
                       settings.darkMode ? "text-brand-gold" : "text-brand-navy"
                     )}
                   />
-                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">/ cada</span>
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest shrink-0">/ cada</span>
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => {
-                setEditingReadyBath(null);
-                setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
-                setShowReadyModal(true);
-              }}
-              className={cn(
-                "w-12 h-12 bg-brand-navy text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-transform",
-                settings.darkMode && "bg-brand-copper"
-              )}
-            >
-              <Plus className="w-6 h-6" />
-            </button>
+            
+            <div className="flex items-center gap-3 shrink-0">
+              <button 
+                onClick={() => setIsManaging(!isManaging)}
+                className={cn(
+                  "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                  isManaging 
+                    ? "bg-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
+                    : (settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-brand-navy")
+                )}
+              >
+                {isManaging ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Finalizar</span>
+                  </>
+                ) : (
+                  <>
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Gerenciar</span>
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => {
+                  setEditingReadyBath(null);
+                  setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
+                  setShowReadyModal(true);
+                }}
+                className={cn(
+                  "w-12 h-12 bg-brand-navy text-white rounded-[20px] shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
+                  settings.darkMode && "bg-brand-copper"
+                )}
+              >
+                <Plus className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Search and Filters */}
@@ -746,24 +840,23 @@ export default function HerbsScreen() {
                 layout
                 key={rb.id}
                 className={cn(
-                  "bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 flex flex-col gap-4 group transition-all",
-                  settings.darkMode && "bg-[#1A1A1A] border-gray-800",
-                  rb.isFixed && rb.quantity === 0 && (settings.darkMode ? "border-red-500/40 bg-red-500/5 shadow-none" : "border-red-200 bg-red-50/50 shadow-red-100 shadow-lg")
+                  "bg-white p-6 rounded-[40px] shadow-xl shadow-gray-200/40 border-none flex flex-col gap-5 group transition-all",
+                  settings.darkMode && "bg-[#1A1A1A] shadow-none border border-white/5",
+                  rb.isFixed && rb.quantity === 0 && (settings.darkMode ? "border-red-500/40 bg-red-500/5 shadow-none" : "border-red-100 bg-red-50/30 shadow-none")
                 )}
               >
-                {/* Specific Alert Badge for Out of Stock Fixed Baths */}
                 {rb.isFixed && rb.quantity === 0 && (
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-red-500 flex items-center justify-center gap-2 p-2 rounded-2xl shadow-lg shadow-red-500/20"
+                    className="bg-red-500 flex items-center justify-center gap-2 p-3 rounded-2xl shadow-xl shadow-red-500/30"
                   >
-                    <Package className="w-3.5 h-3.5 text-white" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white">REPOSIÇÃO NECESSÁRIA: {rb.title}</span>
+                    <Package className="w-4 h-4 text-white" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">REPOSIÇÃO NECESSÁRIA</span>
                   </motion.div>
                 )}
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-6">
                   <div 
                     className="flex-1 cursor-pointer"
                     onClick={() => {
@@ -772,74 +865,134 @@ export default function HerbsScreen() {
                       setShowReadyModal(true);
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className={cn("font-bold text-brand-navy group-hover:text-brand-copper transition-colors", settings.darkMode && "text-white")}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className={cn("font-black text-brand-navy text-xl leading-tight group-hover:text-brand-copper transition-colors", settings.darkMode && "text-white")}>
                         {rb.title}
                       </h4>
                     </div>
-                    <div className="flex flex-wrap items-center gap-y-2 gap-x-3">
-                       <span className={cn(
-                          "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest",
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={cn(
+                          "px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest",
                           settings.darkMode ? "bg-white/5 text-gray-500" : "bg-gray-100 text-gray-400"
                         )}>
                           {rb.category || 'Gerais'}
                         </span>
-                      <div className="flex items-center gap-1.5">
-                        <Package className={cn("w-3 h-3 text-gray-400", rb.isFixed && rb.quantity === 0 && "text-red-400")} />
-                        <span className={cn(
-                          "text-[10px] font-black uppercase tracking-widest text-gray-400",
-                          rb.isFixed && rb.quantity === 0 && "text-red-500"
-                        )}>
-                          {rb.quantity} {rb.quantity === 1 ? 'Pacotinho' : 'Pacotinhos'}
-                        </span>
-                      </div>
                       {rb.isFixed && (
-                        <span className={cn(
-                          "px-2 py-0.5 text-[8px] font-black uppercase rounded-full",
+                        <div className={cn(
+                          "flex items-center gap-1.5 px-3 py-1 rounded-xl",
                           rb.quantity === 0 ? "bg-red-500/10 text-red-500" : "bg-brand-gold/10 text-brand-gold"
                         )}>
-                          Fixo
-                        </span>
+                          <div className={cn("w-1.5 h-1.5 rounded-full", rb.quantity === 0 ? "bg-red-500" : "bg-brand-gold")} />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Produto Fixo</span>
+                        </div>
                       )}
                     </div>
                     {rb.notes && (
-                      <p className="text-[10px] text-gray-400 mt-2 line-clamp-1 italic">
-                        {rb.notes}
-                      </p>
+                      <div className="mt-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                        <p className="text-[10px] text-gray-400 leading-relaxed italic">
+                          {rb.notes}
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => {
-                        setEditingReadyBath(rb);
-                        setReadyForm({ title: rb.title, quantity: rb.quantity, category: rb.category || 'Gerais', notes: rb.notes || '' });
-                        setShowReadyModal(true);
-                      }}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                        settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-brand-navy"
-                      )}
-                    >
-                      Editar
-                    </button>
-                    {!rb.isFixed && (
+                  <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-white/5 p-2 rounded-[24px] border border-gray-100 dark:border-white/10 shadow-inner">
                       <button 
-                        onClick={() => {
-                          setDeletingId(rb.id);
-                          setIsDeletingReady(true);
-                          setShowDeleteConfirm(true);
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          adjustReadyQuantity(rb.id, -1);
                         }}
                         className={cn(
-                          "p-3 rounded-xl active:scale-90 transition-all",
-                          settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500"
+                          "w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/10 shadow-sm active:scale-85 transition-all",
+                          rb.quantity === 0 && "opacity-20 cursor-not-allowed"
                         )}
+                        disabled={rb.quantity === 0}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <span className="text-xl font-black">-</span>
                       </button>
-                    )}
+                      
+                      <div className="min-w-[20px] text-center">
+                        <motion.span 
+                          key={rb.quantity}
+                          initial={{ y: -5, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          className={cn(
+                            "text-lg font-black",
+                            rb.quantity === 0 ? "text-red-500" : (settings.darkMode ? "text-white" : "text-brand-navy")
+                          )}
+                        >
+                          {rb.quantity}
+                        </motion.span>
+                      </div>
+
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          adjustReadyQuantity(rb.id, 1);
+                        }}
+                        className="w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/10 shadow-sm active:scale-85 transition-all"
+                      >
+                        <span className="text-xl font-black">+</span >
+                      </button>
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Em Estoque</span>
                   </div>
                 </div>
+
+                  <div className="flex items-center justify-between pt-4 mt-1 border-t border-gray-50 dark:border-white/5">
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center",
+                        rb.quantity > 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                      )}>
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest",
+                        rb.quantity > 0 ? "text-green-500" : "text-red-500"
+                      )}>
+                        {rb.quantity > 0 ? 'Disponível para venda' : 'Fora de estoque'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {isManaging && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setEditingReadyBath(rb);
+                              setReadyForm({ title: rb.title, quantity: rb.quantity, category: rb.category || 'Gerais', notes: rb.notes || '' });
+                              setShowReadyModal(true);
+                            }}
+                            className={cn(
+                              "p-3 rounded-2xl transition-all active:scale-95 border",
+                              settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white border-white/10" : "bg-gray-50 text-gray-400 hover:text-brand-navy shadow-sm border-gray-100"
+                            )}
+                            title="Editar"
+                          >
+                            <Pencil className="w-5 h-5 text-brand-copper" />
+                          </button>
+                          {!rb.isFixed && (
+                            <button 
+                              onClick={() => {
+                                setDeletingId(rb.id);
+                                setIsDeletingReady(true);
+                                setShowDeleteConfirm(true);
+                              }}
+                              className={cn(
+                                "p-3 rounded-2xl active:scale-95 transition-all",
+                                settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500 shadow-sm"
+                              )}
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
               </motion.div>
             ))}
           </div>
@@ -1585,6 +1738,39 @@ export default function HerbsScreen() {
         title="Excluir Erva"
         message="Deseja realmente remover esta erva do estoque?"
       />
+      {/* Management Mode Overlay Banner */}
+      <AnimatePresence>
+        {isManaging && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-6 left-4 right-4 z-50 pointer-events-none"
+          >
+            <div className={cn(
+              "max-w-md mx-auto p-4 rounded-[32px] shadow-2xl flex items-center justify-between pointer-events-auto border backdrop-blur-md",
+              settings.darkMode ? "bg-brand-navy/90 border-white/10" : "bg-white/90 border-gray-100"
+            )}>
+              <div className="flex items-center gap-3 pl-2">
+                <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 flex items-center justify-center">
+                  <Sliders className="w-5 h-5 text-brand-gold" />
+                </div>
+                <div>
+                  <p className={cn("text-[10px] font-black uppercase tracking-widest leading-none", settings.darkMode ? "text-white" : "text-brand-navy")}>Modo de Gerenciamento</p>
+                  <p className="text-[8px] font-medium text-gray-400 mt-1 uppercase tracking-widest">Edite ou exclua itens da lista</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsManaging(false)}
+                className="bg-brand-gold text-brand-navy px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-gold/20 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Finalizar</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

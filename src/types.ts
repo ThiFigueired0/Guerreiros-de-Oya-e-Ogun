@@ -3,6 +3,8 @@ export interface Event {
   title: string;
   category: string;
   date: string;
+  reminder?: string;
+  type?: 'event' | 'reminder';
 }
 
 export interface HerbBath {
