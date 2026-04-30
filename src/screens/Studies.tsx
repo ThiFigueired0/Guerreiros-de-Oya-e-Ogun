@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
   BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
-  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History
+  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History, Settings
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { Greeting, StudyBook, AppSettings, StudyContent } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { PDFReader } from '../components/PDFReader';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -151,6 +152,7 @@ export default function StudiesScreen() {
   const [bookLinksDraft, setBookLinksDraft] = useState<string[]>([]);
   const [bookAttachmentsDraft, setBookAttachmentsDraft] = useState<{name: string, type: 'image' | 'pdf', data: string}[]>([]);
   const [newBookLink, setNewBookLink] = useState('');
+  const [viewingBook, setViewingBook] = useState<StudyBook | null>(null);
   
   const addBookLink = () => {
     if (newBookLink) {
@@ -360,14 +362,8 @@ export default function StudiesScreen() {
   };
 
   const openBook = (book: StudyBook) => {
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(
-        `<iframe src="${book.pdfBase64}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
-      );
-    } else {
-      alert('Por favor, habilite popups para abrir o livro.');
-    }
+    setViewingBook(book);
+    setSelectedBookForAction(null); // Close modal if open
   };
 
   // Greeting CRUD
@@ -483,6 +479,16 @@ export default function StudiesScreen() {
   const updateBookStatus = (id: string, status: StudyBook['readingStatus'], lastPage?: number) => {
     const lastRead = Date.now();
     setBooks(books.map(b => b.id === id ? { ...b, readingStatus: status, lastPage: lastPage ?? b.lastPage, lastRead } : b));
+    
+    if (viewingBook && viewingBook.id === id) {
+      setViewingBook({
+        ...viewingBook,
+        readingStatus: status,
+        lastPage: lastPage ?? viewingBook.lastPage,
+        lastRead
+      });
+    }
+
     if (selectedBookForAction && selectedBookForAction.id === id) {
       setSelectedBookForAction({ 
         ...selectedBookForAction, 
@@ -642,6 +648,21 @@ export default function StudiesScreen() {
       </div>
 
       <AnimatePresence mode="wait">
+        {viewingBook && (
+          <PDFReader
+            key={viewingBook.id}
+            title={viewingBook.name.replace('.pdf', '')}
+            pdfUrl={viewingBook.pdfBase64}
+            initialPage={viewingBook.lastPage || 1}
+            totalPages={viewingBook.totalPages}
+            onClose={() => setViewingBook(null)}
+            onPageChange={(page) => {
+              const status = (viewingBook.totalPages && page >= viewingBook.totalPages) ? 'completed' : 'in_progress';
+              updateBookStatus(viewingBook.id, status, page);
+            }}
+          />
+        )}
+
         {activeSubTab === 'library' && (
           <motion.div
             key="library"
@@ -704,7 +725,7 @@ export default function StudiesScreen() {
                     <motion.div 
                       key={book.id}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => openBookDetails(book)}
+                      onClick={() => openBook(book)}
                       className={cn(
                         "flex-shrink-0 w-[280px] p-4 rounded-[32px] border border-gray-100 shadow-lg flex items-center gap-4 cursor-pointer relative overflow-hidden group",
                         settings.darkMode ? "bg-gradient-to-br from-[#1A1A1A] to-[#111] border-gray-800" : "bg-gradient-to-br from-white to-gray-50"
@@ -842,7 +863,7 @@ export default function StudiesScreen() {
                                   <motion.div 
                                     key={book.id}
                                     whileTap={{ scale: 0.96 }}
-                                    onClick={() => openBookDetails(book)}
+                                    onClick={() => openBook(book)}
                                     className={cn(
                                       "bg-white p-3 rounded-[28px] shadow-sm border border-gray-100 flex flex-col gap-3 group relative cursor-pointer active:shadow-md transition-all",
                                       settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
@@ -861,6 +882,17 @@ export default function StudiesScreen() {
                                           <FileText className="w-10 h-10 text-white/20 group-hover:scale-110 transition-transform duration-500" />
                                         </>
                                       )}
+                                      
+                                      {/* Info Button for settings */}
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openBookDetails(book);
+                                        }}
+                                        className="absolute top-2 right-2 p-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                      >
+                                        <Settings className="w-3.5 h-3.5" />
+                                      </button>
                                       
                                       {book.isFavorite && (
                                         <div className="absolute top-2 right-2 p-1.5 bg-brand-red rounded-full shadow-lg">
