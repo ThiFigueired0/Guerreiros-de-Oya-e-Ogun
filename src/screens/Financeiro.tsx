@@ -72,9 +72,16 @@ export default function Financeiro() {
             saturday.setDate(iter.getDate() + 2);
             const satDateStr = saturday.toISOString().split('T')[0];
             
-            // Following Saturday must be Gira or Festa
+            // Following Saturday must be Gira or Festa or "Gira Aberta"
             const saturdayEvent = events.find(e => 
-              e.date === satDateStr && (e.category === 'Gira' || e.category === 'Festa')
+              e.date === satDateStr && (
+                e.category === 'Gira' || 
+                e.category === 'Festa' || 
+                e.category === 'Gira Aberta' ||
+                e.title?.toLowerCase().includes('gira aberta') ||
+                e.title?.toLowerCase().includes('festa') ||
+                e.title?.toLowerCase().includes('gira de')
+              )
             );
 
             if (saturdayEvent) {
@@ -189,7 +196,14 @@ export default function Financeiro() {
             saturday.setDate(iter.getDate() + 2);
             const satDateStr = saturday.toISOString().split('T')[0];
             const hasSaturdayEvent = events.some(e => 
-              e.date === satDateStr && (e.category === 'Gira' || e.category === 'Festa')
+              e.date === satDateStr && (
+                e.category === 'Gira' || 
+                e.category === 'Festa' || 
+                e.category === 'Gira Aberta' ||
+                e.title?.toLowerCase().includes('gira aberta') ||
+                e.title?.toLowerCase().includes('festa') ||
+                e.title?.toLowerCase().includes('gira de')
+              )
             );
             
             if (hasSaturdayEvent) {
