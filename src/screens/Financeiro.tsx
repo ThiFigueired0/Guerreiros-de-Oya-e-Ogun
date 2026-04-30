@@ -48,12 +48,40 @@ export default function Financeiro() {
       const start = new Date(currentStart.getFullYear(), currentStart.getMonth() + i, 10);
       const end = new Date(start.getFullYear(), start.getMonth() + 1, 10);
       
-      const cycleGiras = events.filter(e => {
-        if (e.category !== 'Desenvolvimento') return false;
+      const cycleEvents = events.filter(e => {
+        if (e.category !== 'Desenvolvimento' && e.category !== 'Gira') return false;
         const [year, month, day] = e.date.split('-').map(Number);
         const eventDate = new Date(year, month - 1, day, 12, 0, 0);
         return eventDate >= start && eventDate < end;
-      }).sort((a, b) => a.date.localeCompare(b.date));
+      });
+
+      // Get all Saturdays in this cycle
+      const cycleGiras: any[] = [];
+      let iter = new Date(start);
+      iter.setHours(0, 0, 0, 0);
+      
+      while (iter < end) {
+        if (iter.getDay() === 6) { // Saturday
+          const dateStr = iter.toISOString().split('T')[0];
+          const existingEvent = cycleEvents.find(e => e.date === dateStr);
+          cycleGiras.push(existingEvent || {
+            id: `sat-${dateStr}`,
+            title: 'Gira Aberta',
+            date: dateStr,
+            category: 'Desenvolvimento'
+          });
+        }
+        iter.setDate(iter.getDate() + 1);
+      }
+
+      // Add other explicit development events not on Saturdays
+      cycleEvents.forEach(e => {
+        if (!cycleGiras.find(g => g.date === e.date)) {
+          cycleGiras.push(e);
+        }
+      });
+
+      cycleGiras.sort((a, b) => a.date.localeCompare(b.date));
 
       cycles.push({
         start,
@@ -67,6 +95,45 @@ export default function Financeiro() {
     
     return cycles;
   }, [events]);
+
+  const ogaCoverage = useMemo(() => {
+    const cash = settings.currentCashOnHand || 0;
+    const now = new Date();
+    
+    // Get all future giras from all cycles
+    const allFutureGiras = ogaCycles.flatMap(c => c.giras).filter(g => {
+      const [year, month, day] = g.date.split('-').map(Number);
+      const eventEnd = new Date(year, month - 1, day, 23, 59, 59);
+      return eventEnd > now;
+    }).sort((a, b) => a.date.localeCompare(b.date));
+
+    let remainingCash = cash;
+    let coveredCount = 0;
+    let lastCoveredDate = null;
+    let coveredGiras: any[] = [];
+
+    for (const gira of allFutureGiras) {
+      if (remainingCash >= 16) {
+        remainingCash -= 16;
+        coveredCount++;
+        lastCoveredDate = gira.date;
+        coveredGiras.push(gira);
+      } else {
+        break;
+      }
+    }
+
+    return {
+      coveredCount,
+      lastCoveredDate,
+      isFullyCoveredInCycle: coveredCount >= ogaCycles[0].giras.filter(g => {
+        const [year, month, day] = g.date.split('-').map(Number);
+        return new Date(year, month - 1, day, 23, 59, 59) > now;
+      }).length,
+      totalFutureGiras: allFutureGiras.length,
+      coveredGiras
+    };
+  }, [ogaCycles, settings.currentCashOnHand]);
 
   const displayedCycle = useMemo(() => ogaCycles[selectedCycleIdx] || ogaCycles[0], [ogaCycles, selectedCycleIdx]);
   const currentOgaCycle = useMemo(() => ogaCycles[0], [ogaCycles]);
@@ -88,23 +155,55 @@ export default function Financeiro() {
 
   // Automatic Abatement Logic
   React.useEffect(() => {
-    if (!settings.lastCashUpdate || !events.length) return;
+    if (!settings.lastCashUpdate) return;
 
     const lastUpdate = new Date(settings.lastCashUpdate);
     const now = new Date();
     
-    // Find giras that happened between lastUpdate and now (specifically after 23:59 of their day)
-    const passedGirasSinceUpdate = events.filter(e => {
-      if (e.category !== 'Desenvolvimento') return false;
-      const eventEnd = new Date(e.date + 'T23:59:59');
-      return eventEnd > lastUpdate && eventEnd < now;
-    });
+    // We only process if at least one full day has passed to avoid constant updates
+    if (now.getTime() - lastUpdate.getTime() < 60 * 60 * 1000) return;
 
-    if (passedGirasSinceUpdate.length > 0) {
-      const deduction = passedGirasSinceUpdate.length * 16;
+    let passedGirasCount = 0;
+    let iter = new Date(lastUpdate);
+    // Start checking from the day after last update
+    iter.setDate(iter.getDate() + 1);
+    iter.setHours(0, 0, 0, 0);
+
+    while (iter < now) {
+      const dayEnd = new Date(iter);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      if (now > dayEnd) {
+        const dateStr = iter.toISOString().split('T')[0];
+        
+        // 1. Check if it's a Saturday (Default Gira)
+        if (iter.getDay() === 6) {
+          passedGirasCount++;
+        } else {
+          // 2. Check if there was an explicit event on this (non-Saturday) day
+          const hasEvent = events.some(e => 
+            e.date === dateStr && (e.category === 'Desenvolvimento' || e.category === 'Gira')
+          );
+          if (hasEvent) {
+            passedGirasCount++;
+          }
+        }
+      }
+      iter.setDate(iter.getDate() + 1);
+    }
+    
+    if (passedGirasCount > 0) {
+      const deduction = passedGirasCount * 16;
       setSettings(prev => ({
         ...prev,
         currentCashOnHand: Math.max(0, (prev.currentCashOnHand || 0) - deduction),
+        lastCashUpdate: now.getTime()
+      }));
+    } else {
+      // Even if no giras passed, update lastCashUpdate to now
+      // to move the window forward but only if a significant time passed
+      setSettings(prev => ({
+        ...prev,
         lastCashUpdate: now.getTime()
       }));
     }
@@ -132,6 +231,15 @@ export default function Financeiro() {
   });
 
   const [amountStr, setAmountStr] = useState('');
+  const [cashStr, setCashStr] = useState(settings.currentCashOnHand ? settings.currentCashOnHand.toString().replace('.', ',') : '');
+
+  // Keep cashStr in sync with settings.currentCashOnHand
+  React.useEffect(() => {
+    const currentNum = Number(cashStr.replace(',', '.'));
+    if (settings.currentCashOnHand !== currentNum) {
+      setCashStr(settings.currentCashOnHand ? settings.currentCashOnHand.toString().replace('.', ',') : '');
+    }
+  }, [settings.currentCashOnHand]);
 
   const [customInstallments, setCustomInstallments] = useState<{ amount: number; amountStr: string; dueDate: string }[]>([]);
 
@@ -850,12 +958,14 @@ export default function Financeiro() {
                             <input
                               type="text"
                               inputMode="decimal"
-                              value={settings.currentCashOnHand ? settings.currentCashOnHand.toString().replace('.', ',') : ''}
+                              value={cashStr}
                               onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9,]/g, '').replace(',', '.');
+                                const val = e.target.value.replace(/[^0-9,]/g, '');
+                                setCashStr(val);
+                                const numericVal = val.replace(',', '.');
                                 setSettings({ 
                                   ...settings, 
-                                  currentCashOnHand: val === '' ? 0 : Number(val),
+                                  currentCashOnHand: val === '' ? 0 : Number(numericVal),
                                   lastCashUpdate: Date.now()
                                 });
                               }}
@@ -883,18 +993,26 @@ export default function Financeiro() {
                         <div>
                           <p className="text-[11px] font-black uppercase text-brand-copper leading-none mb-1">Atenção: Necessário Saque</p>
                           <p className="text-[10px] font-medium text-white/80 leading-tight">
-                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> em espécie para cobrir as giras até o dia 10.
+                            Você precisa de mais <span className="font-bold underline decoration-brand-copper/50 underline-offset-2">R$ {walletDeficit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> para cobrir o ciclo.
+                            {ogaCoverage.coveredCount > 0 && (
+                              <span className="block mt-1 opacity-70">Saldo cobre apenas até {new Date(ogaCoverage.lastCoveredDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}.</span>
+                            )}
                           </p>
                         </div>
                       </div>
                     ) : (
                       <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-[11px] font-black uppercase text-green-400 leading-none mb-1">Tudo em Ordem</p>
                           <p className="text-[10px] font-medium text-white/80 leading-tight">
-                            Seu saldo atual cobre todas as giras de desenvolvimento programadas para este ciclo.
+                            Status: <span className="text-green-400 font-bold">Coberto até {ogaCoverage.lastCoveredDate ? new Date(ogaCoverage.lastCoveredDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'o fim do ciclo'}</span>.
                           </p>
+                          {ogaCoverage.coveredCount > 0 && (
+                            <p className="text-[8px] text-white/40 font-bold uppercase mt-1">
+                              Garante as próximas {ogaCoverage.coveredCount} giras sem novos saques.
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}

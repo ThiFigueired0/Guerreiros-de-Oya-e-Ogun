@@ -32,7 +32,7 @@ export default function TrabalhosScreen() {
 
   const formatCurrency = (value: number) => {
     if (value === 0) return '-';
-    return `R$${value.toFixed(2)}`;
+    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
   const [isManageMode, setIsManageMode] = useState(false);
