@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { HerbBath, AppSettings, ReadyBath, HerbStock } from '../types';
@@ -305,6 +305,13 @@ export default function HerbsScreen() {
   const [stockSearch, setStockSearch] = useState('');
   const [showDeleteStockConfirm, setShowDeleteStockConfirm] = useState(false);
   const [herbToDeleteId, setHerbToDeleteId] = useState<string | null>(null);
+  const [copiedPix, setCopiedPix] = useState(false);
+
+  const handleCopyPix = () => {
+    navigator.clipboard.writeText('11982350614');
+    setCopiedPix(true);
+    setTimeout(() => setCopiedPix(false), 2000);
+  };
 
   // Handle openBathId from navigation state
   useEffect(() => {
@@ -730,21 +737,47 @@ export default function HerbsScreen() {
         </>
       ) : activeSubTab === 'ready' ? (
         <div className="space-y-6">
-          <div className="px-2 mb-6 space-y-6">
-            {/* Main Header with Title and Cost/Add Button Group */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className={cn("text-2xl sm:text-3xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>
+          <div className="px-2 mb-8 space-y-8">
+            {/* Main Header with Title and Dashboard Cards */}
+            <div className="flex flex-col gap-6">
+              <h2 className={cn("text-3xl sm:text-4xl font-black text-brand-navy tracking-tight", settings.darkMode && "text-white")}>
                 Banhos Prontos
               </h2>
               
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <div className="flex flex-wrap items-stretch gap-3">
+                {/* Nubank Card */}
+                <div className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all flex-1 min-w-[200px]",
+                  settings.darkMode ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-100 shadow-sm"
+                )}>
+                  <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/30">
+                    <span className="text-[10px] font-black text-white">Nu</span>
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">Chave PIX Nubank</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-xs font-black truncate", settings.darkMode ? "text-white" : "text-purple-900")}>11982350614</span>
+                      <button 
+                        onClick={handleCopyPix}
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all active:scale-95 shrink-0",
+                          copiedPix ? "bg-green-500 text-white" : "bg-purple-600/10 text-purple-600 hover:bg-purple-600 hover:text-white"
+                        )}
+                        title="Copiar PIX"
+                      >
+                        {copiedPix ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Compact Unit Cost In Header */}
                 <div className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-all",
+                  "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all flex-1 min-w-[140px]",
                   settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100 shadow-sm"
                 )}>
-                  <div className="hidden xs:flex w-7 h-7 rounded-lg bg-brand-copper/10 dark:bg-brand-gold/10 items-center justify-center shrink-0">
-                    <Droplet className="w-3.5 h-3.5 text-brand-copper dark:text-brand-gold" />
+                  <div className="w-9 h-9 rounded-xl bg-brand-copper/10 dark:bg-brand-gold/10 flex items-center justify-center shrink-0">
+                    <Droplet className="w-4 h-4 text-brand-copper dark:text-brand-gold" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Custo Unitário</span>
@@ -760,7 +793,7 @@ export default function HerbsScreen() {
                         }}
                         onFocus={(e) => e.target.select()}
                         className={cn(
-                          "w-14 sm:w-16 bg-transparent border-b border-brand-copper/20 focus:border-brand-copper outline-none text-xs sm:text-sm font-black transition-all",
+                          "w-16 bg-transparent border-b border-brand-copper/20 focus:border-brand-copper outline-none text-sm font-black transition-all",
                           settings.darkMode ? "text-white" : "text-brand-navy"
                         )}
                         placeholder="0,00"
@@ -768,20 +801,6 @@ export default function HerbsScreen() {
                     </div>
                   </div>
                 </div>
-
-                <button 
-                  onClick={() => {
-                    setEditingReadyBath(null);
-                    setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
-                    setShowReadyModal(true);
-                  }}
-                  className={cn(
-                    "w-12 h-12 bg-brand-navy text-white rounded-[18px] shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
-                    settings.darkMode && "bg-brand-gold text-brand-navy"
-                  )}
-                >
-                  <Plus className="w-6 h-6 stroke-[3px]" />
-                </button>
               </div>
             </div>
 
@@ -831,7 +850,7 @@ export default function HerbsScreen() {
             })()}
           </div>
 
-          {/* Search and Filters with Manage Button */}
+          {/* Search and Filters with Manage and Add Buttons */}
           <div className="space-y-4 px-2">
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -848,25 +867,39 @@ export default function HerbsScreen() {
                 />
               </div>
 
-              <button 
-                onClick={() => setIsManaging(!isManaging)}
-                className={cn(
-                  "px-5 rounded-2xl transition-all border flex items-center justify-center gap-3 shrink-0 active:scale-95",
-                  isManaging 
-                    ? "bg-brand-gold border-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
-                    : (settings.darkMode ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-white border-gray-100 text-brand-navy shadow-sm hover:bg-gray-50")
-                )}
-                title={isManaging ? "Concluir" : "Gerenciar"}
-              >
-                {isManaging ? (
-                  <CheckCircle2 className="w-5 h-5" />
-                ) : (
-                  <Pencil className="w-5 h-5" />
-                )}
-                <span className="hidden xs:inline text-[11px] font-black uppercase tracking-[0.15em] leading-none">
-                  {isManaging ? "Concluir" : "Gerenciar"}
-                </span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsManaging(!isManaging)}
+                  className={cn(
+                    "w-12 sm:w-14 h-12 sm:h-14 rounded-2xl transition-all border flex items-center justify-center shrink-0 active:scale-95",
+                    isManaging 
+                      ? "bg-brand-gold border-brand-gold text-brand-navy shadow-lg shadow-brand-gold/20" 
+                      : (settings.darkMode ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-white border-gray-100 text-brand-navy shadow-sm hover:bg-gray-50")
+                  )}
+                  title={isManaging ? "Concluir" : "Gerenciar"}
+                >
+                  {isManaging ? (
+                    <CheckCircle2 className="w-6 h-6" />
+                  ) : (
+                    <Pencil className="w-6 h-6" />
+                  )}
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setEditingReadyBath(null);
+                    setReadyForm({ title: '', quantity: 1, category: selectedReadyCategory || 'Gerais', notes: '' });
+                    setShowReadyModal(true);
+                  }}
+                  className={cn(
+                    "w-12 sm:w-14 h-12 sm:h-14 bg-brand-navy text-white rounded-2xl shadow-xl flex items-center justify-center active:scale-95 transition-all shrink-0",
+                    settings.darkMode && "bg-brand-gold text-brand-navy"
+                  )}
+                  title="Adicionar Banho"
+                >
+                  <Plus className="w-6 h-6 stroke-[3px]" />
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

@@ -1003,6 +1003,16 @@ export default function TrabalhosScreen() {
                   Considerando o uso de 3 velas/gira, seu estoque de <span className="font-bold text-brand-copper">{white7DayCandle?.quantity || 0}</span> unidades garante as próximas giras.
                 </p>
 
+                <div className={cn(
+                  "mb-6 p-4 rounded-[28px] border border-dashed flex items-start gap-3",
+                  settings.darkMode ? "bg-amber-500/5 border-amber-500/20" : "bg-amber-50 border-amber-200"
+                )}>
+                  <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase leading-relaxed">
+                    O sistema abate automaticamente <span className="font-black">-3 unidades</span> após as 23h59 de cada Gira de Desenvolvimento.
+                  </p>
+                </div>
+
                 {/* Restock Tip */}
                 {white7DayCandle && white7DayCandle.quantity > 0 && white7DayCandle.quantity % 3 !== 0 && (
                   <div className={cn(
@@ -1126,6 +1136,18 @@ export default function TrabalhosScreen() {
                         <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Unid.</span>
                       </div>
                     </div>
+
+                    {candle.color.toLowerCase() === 'branca' && candle.type === '7 Dias' && (
+                      <div className={cn(
+                        "p-3 rounded-2xl flex items-start gap-3",
+                        settings.darkMode ? "bg-amber-500/10 border border-amber-500/20" : "bg-amber-50 border border-amber-100"
+                      )}>
+                        <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <p className="text-[8px] font-bold text-amber-700 dark:text-amber-400 uppercase leading-relaxed">
+                          O sistema abate automaticamente <span className="font-black text-amber-800 dark:text-amber-300">-3 unidades</span> após as 23h59 de cada Gira de Desenvolvimento.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-50 dark:border-white/5">
                       <button 

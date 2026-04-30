@@ -13,7 +13,7 @@ const ICON_MAP: Record<string, any> = {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event } from './types';
+import { AppSettings, Event, Candle } from './types';
 
 const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Festa de Marias', category: 'Festa', date: '2026-01-24' },
@@ -529,9 +529,87 @@ export default function App() {
 
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
   const [bichos, setBichos] = useStorage<any[]>('templo_bichos', []);
+  const [candles, setCandles] = useStorage<Candle[]>('templo_candles', [
+    { id: '1', color: 'Branca', quantity: 10, type: '7 Dias' },
+    { id: '2', color: 'Vermelha', quantity: 5, type: 'Palito' },
+    { id: '3', color: 'Preta', quantity: 12, type: 'Palito' }
+  ]);
+  const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
+  const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
 
   // Migration logic to ensure categories and 2026 calendar are updated
   React.useEffect(() => {
+    // 0. Automated deductions (Candles and Ogã)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const activeEvents = events.length > 0 ? events : [];
+    
+    // 0.1 Candle deduction logic for "Desenvolvimento" sessions
+    const candleEventsToProcess = activeEvents.filter(e => {
+      const isDevSession = e.category === 'Desenvolvimento' || 
+                          (e.category === 'Gira aberta' && e.title.toLowerCase().includes('desenvolvimento'));
+      if (!isDevSession) return false;
+
+      const eventDate = new Date(e.date + 'T12:00:00');
+      eventDate.setHours(0, 0, 0, 0);
+
+      const hasPassed = eventDate < today;
+      return hasPassed && !processedCandleEvents.includes(e.id);
+    });
+
+    if (candleEventsToProcess.length > 0) {
+      setCandles(prev => prev.map(c => {
+        if (c.color.toLowerCase() === 'branca' && c.type === '7 Dias') {
+          return { ...c, quantity: Math.max(0, c.quantity - (candleEventsToProcess.length * 3)) };
+        }
+        return c;
+      }));
+      setProcessedCandleEvents(prev => [...prev, ...candleEventsToProcess.map(e => e.id)]);
+    }
+
+    // 0.2 Ogã deduction logic (R$16,00 per session)
+    // Rule: Thursday Development followed by Saturday Gira/Festa
+    const ogaEventsToProcess = activeEvents.filter(e => {
+      const isDevSession = e.category === 'Desenvolvimento' || 
+                          (e.category === 'Gira aberta' && e.title.toLowerCase().includes('desenvolvimento'));
+      if (!isDevSession) return false;
+
+      // Check if it's a Thursday
+      const eventDate = new Date(e.date + 'T12:00:00');
+      if (eventDate.getDay() !== 4) return false; // Not a Thursday
+
+      // Check for Following Saturday Event
+      const saturday = new Date(eventDate);
+      saturday.setDate(eventDate.getDate() + 2);
+      const satDateStr = saturday.toISOString().split('T')[0];
+      const hasSaturdayEvent = activeEvents.some(se => 
+        se.date === satDateStr && (
+          se.category === 'Gira' || 
+          se.category === 'Festa' || 
+          se.category === 'Gira Aberta' ||
+          se.title?.toLowerCase().includes('gira aberta') ||
+          se.title?.toLowerCase().includes('festa') ||
+          se.title?.toLowerCase().includes('gira de')
+        )
+      );
+
+      if (!hasSaturdayEvent) return false;
+
+      eventDate.setHours(0, 0, 0, 0);
+      const hasPassed = eventDate < today;
+      return hasPassed && !processedOgaEvents.includes(e.id);
+    });
+
+    if (ogaEventsToProcess.length > 0) {
+      setSettings(prev => ({
+        ...prev,
+        currentCashOnHand: Math.max(0, (prev.currentCashOnHand || 0) - (ogaEventsToProcess.length * 16)),
+        lastCashUpdate: today.getTime()
+      }));
+      setProcessedOgaEvents(prev => [...prev, ...ogaEventsToProcess.map(e => e.id)]);
+    }
+
     // Bicho migration: if user only has 1 bicho (the old default), update to new list
     if (bichos.length === 1 && bichos[0].name === 'Carijó' && bichos[0].purchaseCost === 65) {
       setBichos([

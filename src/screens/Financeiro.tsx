@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Filter, Calendar, DollarSign, CheckCircle2, AlertCircle, 
   Trash2, ArrowUpRight, TrendingDown, Clock, ChevronRight, ChevronDown, X, Save,
-  CalendarDays, Wallet, CreditCard, Copy, Edit2, Banknote, History
+  CalendarDays, Wallet, CreditCard, Copy, Edit2, Banknote, History, Info
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
@@ -166,71 +166,6 @@ export default function Financeiro() {
 
   const displayedCycle = useMemo(() => ogaCycles[selectedCycleIdx] || ogaCycles[0], [ogaCycles, selectedCycleIdx]);
   const currentOgaCycle = useMemo(() => ogaCycles[0], [ogaCycles]);
-
-  // Automatic Abatement Logic
-  React.useEffect(() => {
-    if (!settings.lastCashUpdate) return;
-
-    const lastUpdate = new Date(settings.lastCashUpdate);
-    const now = new Date();
-    
-    // We only process if at least one full day has passed to avoid constant updates
-    if (now.getTime() - lastUpdate.getTime() < 60 * 60 * 1000) return;
-
-    let passedGirasCount = 0;
-    let iter = new Date(lastUpdate);
-    iter.setDate(iter.getDate() + 1);
-    iter.setHours(12, 0, 0, 0);
-
-    while (iter < now) {
-      if (iter.getDay() === 4) { // Thursday
-        const dateStr = iter.toISOString().split('T')[0];
-        const dayEnd = new Date(iter);
-        dayEnd.setHours(23, 59, 59, 999);
-        
-        if (now > dayEnd) {
-          // Rule: Thursday Development followed by Saturday Gira/Festa
-          const hasDevelopment = events.some(e => e.date === dateStr && e.category === 'Desenvolvimento');
-          if (hasDevelopment) {
-            const saturday = new Date(iter);
-            saturday.setDate(iter.getDate() + 2);
-            const satDateStr = saturday.toISOString().split('T')[0];
-            const hasSaturdayEvent = events.some(e => 
-              e.date === satDateStr && (
-                e.category === 'Gira' || 
-                e.category === 'Festa' || 
-                e.category === 'Gira Aberta' ||
-                e.title?.toLowerCase().includes('gira aberta') ||
-                e.title?.toLowerCase().includes('festa') ||
-                e.title?.toLowerCase().includes('gira de')
-              )
-            );
-            
-            if (hasSaturdayEvent) {
-              passedGirasCount++;
-            }
-          }
-        }
-      }
-      iter.setDate(iter.getDate() + 1);
-    }
-    
-    if (passedGirasCount > 0) {
-      const deduction = passedGirasCount * 16;
-      setSettings(prev => ({
-        ...prev,
-        currentCashOnHand: Math.max(0, (prev.currentCashOnHand || 0) - deduction),
-        lastCashUpdate: now.getTime()
-      }));
-    } else {
-      // Even if no giras passed, update lastCashUpdate to now
-      // to move the window forward but only if a significant time passed
-      setSettings(prev => ({
-        ...prev,
-        lastCashUpdate: now.getTime()
-      }));
-    }
-  }, [events, settings.lastCashUpdate, setSettings]);
 
   // Delete confirmation state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1011,7 +946,7 @@ export default function Financeiro() {
                     </div>
 
                     {!ogaCoverage.coversCurrent ? (
-                      <div className="bg-brand-copper/20 border border-brand-copper/30 rounded-2xl p-4 flex items-center gap-3">
+                      <div className="bg-brand-copper/20 border border-brand-copper/30 rounded-2xl p-4 flex items-center gap-3 mb-3">
                         <AlertCircle className="w-5 h-5 text-brand-copper shrink-0" />
                         <div>
                           <p className="text-[11px] font-black uppercase text-brand-copper leading-none mb-1">Atenção: Necessário Saque</p>
@@ -1021,7 +956,7 @@ export default function Financeiro() {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-3">
+                      <div className="bg-white/10 rounded-2xl p-4 flex items-center gap-3 mb-3">
                         <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
                         <div className="flex-1">
                           <p className="text-[11px] font-black uppercase text-green-400 leading-none mb-1">Ciclo Garantido!</p>
@@ -1041,6 +976,19 @@ export default function Financeiro() {
                         </div>
                       </div>
                     )}
+
+                    {/* Automatic Abatement Instruction */}
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-start gap-3">
+                      <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-500 leading-tight">
+                          Sistema de Abate Automático
+                        </p>
+                        <p className="text-[8px] font-bold text-white/60 uppercase leading-relaxed mt-1">
+                          O sistema desconta automaticamente <span className="text-amber-500 font-black">R$ 16,00</span> após as <span className="text-white font-black">23h59</span> de cada data de pagamento, mantendo o saldo em mãos sempre atualizado.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <div className="absolute -bottom-8 -right-8 opacity-10 rotate-12">
                     <Banknote className="w-40 h-40" />
@@ -1049,6 +997,30 @@ export default function Financeiro() {
               </div>
 
               {/* Linha do Tempo e Planejamento */}
+              <div className={cn(
+                "p-4 rounded-[28px] border transition-all relative overflow-hidden flex flex-col gap-4",
+                settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#8A05BE] text-white shadow-lg shadow-[#8A05BE]/20 flex items-center justify-center shrink-0">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-[#8A05BE] mb-0.5 opacity-60">Pagamento Ogã</p>
+                    <p className={cn("text-xs font-black tracking-tight truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank (Celular)</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white dark:bg-white/5 p-2 rounded-xl border border-gray-100 dark:border-white/5">
+                    <p className={cn("text-xs font-mono font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
+                    <button 
+                      onClick={() => copyToClipboard('11982350614', 'oga-nubank')}
+                      className="w-7 h-7 bg-[#8A05BE] text-white rounded-lg flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0"
+                    >
+                      {copied === 'oga-nubank' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                    <div className="flex items-center gap-2">
