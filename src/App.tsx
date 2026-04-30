@@ -91,6 +91,19 @@ const ALL_TABS = [
 const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
 const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
+function LocationWatcher({ onLocationChange }: { onLocationChange: () => void }) {
+  const location = useLocation();
+  const prevPath = React.useRef(location.pathname);
+
+  React.useEffect(() => {
+    if (location.pathname !== prevPath.current) {
+      onLocationChange();
+      prevPath.current = location.pathname;
+    }
+  }, [location.pathname, onLocationChange]);
+  return null;
+}
+
 function Navigation() {
   const location = useLocation();
   const [showMore, setShowMore] = React.useState(false);
@@ -128,7 +141,9 @@ function Navigation() {
               <Link
                 key={tab.path}
                 to={tab.path}
-                onClick={() => setShowMore(false)}
+                onClick={() => {
+                  setShowMore(false);
+                }}
                 className={cn(
                   "flex flex-col items-center justify-center min-w-[64px] py-1 transition-all duration-300 relative",
                   isActive ? (settings.darkMode ? "text-brand-copper" : "text-brand-navy") : "text-gray-400"
@@ -212,7 +227,9 @@ function Navigation() {
                   <Link
                     key={tab.path}
                     to={tab.path}
-                    onClick={() => setShowMore(false)}
+                    onClick={() => {
+                      setShowMore(false);
+                    }}
                     className={cn(
                       "flex items-center gap-4 p-4 rounded-xl transition-all active:scale-[0.98]",
                       isActive 
@@ -732,6 +749,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <LocationWatcher onLocationChange={() => setShowNotifications(false)} />
       <NotificationManager />
       <div className={cn(
         "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans transition-colors duration-500",
