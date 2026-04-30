@@ -49,46 +49,54 @@ export default function Financeiro() {
       const end = new Date(start.getFullYear(), start.getMonth() + 1, 10);
       
       const cycleEvents = events.filter(e => {
-        if (e.category !== 'Desenvolvimento' && e.category !== 'Gira') return false;
         const [year, month, day] = e.date.split('-').map(Number);
         const eventDate = new Date(year, month - 1, day, 12, 0, 0);
         return eventDate >= start && eventDate < end;
       });
 
-      // Get all Saturdays in this cycle
-      const cycleGiras: any[] = [];
+      // Filter all Thursdays in the range
+      const ogaPayments: any[] = [];
       let iter = new Date(start);
-      iter.setHours(0, 0, 0, 0);
+      iter.setHours(12, 0, 0, 0);
       
       while (iter < end) {
-        if (iter.getDay() === 6) { // Saturday
+        if (iter.getDay() === 4) { // Thursday
           const dateStr = iter.toISOString().split('T')[0];
-          const existingEvent = cycleEvents.find(e => e.date === dateStr);
-          cycleGiras.push(existingEvent || {
-            id: `sat-${dateStr}`,
-            title: 'Gira Aberta',
-            date: dateStr,
-            category: 'Desenvolvimento'
-          });
+          
+          // Check if this is a Development Gira
+          const hasDevelopment = events.some(e => e.date === dateStr && e.category === 'Desenvolvimento');
+          
+          if (hasDevelopment) {
+            // Check following Saturday
+            const saturday = new Date(iter);
+            saturday.setDate(iter.getDate() + 2);
+            const satDateStr = saturday.toISOString().split('T')[0];
+            
+            // Following Saturday must be Gira or Festa
+            const saturdayEvent = events.find(e => 
+              e.date === satDateStr && (e.category === 'Gira' || e.category === 'Festa')
+            );
+
+            if (saturdayEvent) {
+              ogaPayments.push({
+                id: `oga-${dateStr}`,
+                title: saturdayEvent.title || 'Festa/Gira', // Reference the Saturday event name
+                date: dateStr, // The payment/event is recorded on Thursday
+                category: 'Ogã',
+                saturdayRef: saturdayEvent.title
+              });
+            }
+          }
         }
         iter.setDate(iter.getDate() + 1);
       }
 
-      // Add other explicit development events not on Saturdays
-      cycleEvents.forEach(e => {
-        if (!cycleGiras.find(g => g.date === e.date)) {
-          cycleGiras.push(e);
-        }
-      });
-
-      cycleGiras.sort((a, b) => a.date.localeCompare(b.date));
-
       cycles.push({
         start,
         end,
-        giras: cycleGiras,
-        count: cycleGiras.length,
-        totalAmount: cycleGiras.length * 16,
+        giras: ogaPayments,
+        count: ogaPayments.length,
+        totalAmount: ogaPayments.length * 16,
         isCurrent: i === 0
       });
     }
@@ -164,27 +172,29 @@ export default function Financeiro() {
 
     let passedGirasCount = 0;
     let iter = new Date(lastUpdate);
-    // Start checking from the day after last update
     iter.setDate(iter.getDate() + 1);
-    iter.setHours(0, 0, 0, 0);
+    iter.setHours(12, 0, 0, 0);
 
     while (iter < now) {
-      const dayEnd = new Date(iter);
-      dayEnd.setHours(23, 59, 59, 999);
-      
-      if (now > dayEnd) {
+      if (iter.getDay() === 4) { // Thursday
         const dateStr = iter.toISOString().split('T')[0];
+        const dayEnd = new Date(iter);
+        dayEnd.setHours(23, 59, 59, 999);
         
-        // 1. Check if it's a Saturday (Default Gira)
-        if (iter.getDay() === 6) {
-          passedGirasCount++;
-        } else {
-          // 2. Check if there was an explicit event on this (non-Saturday) day
-          const hasEvent = events.some(e => 
-            e.date === dateStr && (e.category === 'Desenvolvimento' || e.category === 'Gira')
-          );
-          if (hasEvent) {
-            passedGirasCount++;
+        if (now > dayEnd) {
+          // Rule: Thursday Development followed by Saturday Gira/Festa
+          const hasDevelopment = events.some(e => e.date === dateStr && e.category === 'Desenvolvimento');
+          if (hasDevelopment) {
+            const saturday = new Date(iter);
+            saturday.setDate(iter.getDate() + 2);
+            const satDateStr = saturday.toISOString().split('T')[0];
+            const hasSaturdayEvent = events.some(e => 
+              e.date === satDateStr && (e.category === 'Gira' || e.category === 'Festa')
+            );
+            
+            if (hasSaturdayEvent) {
+              passedGirasCount++;
+            }
           }
         }
       }
@@ -1119,12 +1129,17 @@ export default function Financeiro() {
                                           {hasPassed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <CalendarDays className="w-3.5 h-3.5" />}
                                         </div>
                                         <div>
-                                          <h4 className={cn("text-[10px] font-black leading-none mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                                          <h4 className={cn("text-[10px] font-black leading-none mb-1.5", settings.darkMode ? "text-white" : "text-brand-navy")}>
                                             {gira.title}
                                           </h4>
-                                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none">
-                                            {new Date(gira.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                                          </p>
+                                          <div className="space-y-0.5">
+                                            <p className="text-[7px] font-black text-brand-copper/60 uppercase tracking-[0.05em] leading-none">
+                                              Pagamento do Ogã:
+                                            </p>
+                                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                                              {new Date(gira.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                            </p>
+                                          </div>
                                         </div>
                                       </div>
                                       <div className="text-right">
