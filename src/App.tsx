@@ -780,7 +780,6 @@ export default function App() {
             >
               <div className="relative">
                 <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
-                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-red rounded-full border-2 border-white" />
               </div>
             </motion.div>
           </div>
