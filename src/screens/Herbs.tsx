@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { HerbBath, AppSettings, ReadyBath, HerbStock } from '../types';
@@ -734,7 +734,7 @@ export default function HerbsScreen() {
             <div className="flex flex-col overflow-hidden">
               <h2 className={cn("text-2xl font-black text-brand-navy tracking-tight truncate", settings.darkMode && "text-white")}>Banhos Prontos</h2>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper shrink-0">Referência:</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-copper shrink-0">Custo de Compra:</p>
                 <div className="flex items-center gap-1">
                   <span className={cn("text-[11px] font-bold", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>R$</span>
                   <input 
@@ -910,12 +910,12 @@ export default function HerbsScreen() {
                           adjustReadyQuantity(rb.id, -1);
                         }}
                         className={cn(
-                          "w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/10 shadow-sm active:scale-85 transition-all",
+                          "w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/15 shadow-sm active:scale-85 transition-all",
                           rb.quantity === 0 && "opacity-20 cursor-not-allowed"
                         )}
                         disabled={rb.quantity === 0}
                       >
-                        <span className="text-xl font-black">-</span>
+                        <Minus className="w-5 h-5" />
                       </button>
                       
                       <div className="min-w-[20px] text-center">
@@ -937,9 +937,9 @@ export default function HerbsScreen() {
                           e.stopPropagation();
                           adjustReadyQuantity(rb.id, 1);
                         }}
-                        className="w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/10 shadow-sm active:scale-85 transition-all"
+                        className="w-10 h-10 rounded-[18px] flex items-center justify-center text-brand-navy dark:text-white bg-white dark:bg-white/15 shadow-sm active:scale-85 transition-all"
                       >
-                        <span className="text-xl font-black">+</span >
+                        <Plus className="w-5 h-5" />
                       </button>
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-[0.3em] text-gray-400">Em Estoque</span>
@@ -958,7 +958,7 @@ export default function HerbsScreen() {
                         "text-[10px] font-black uppercase tracking-widest",
                         rb.quantity > 0 ? "text-green-500" : "text-red-500"
                       )}>
-                        {rb.quantity > 0 ? 'Disponível para venda' : 'Fora de estoque'}
+                        {rb.quantity > 0 ? 'Disponível' : 'Esgotado'}
                       </span>
                     </div>
 

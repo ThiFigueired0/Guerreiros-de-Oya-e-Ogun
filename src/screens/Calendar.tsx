@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { Event, AppSettings } from '../types';
@@ -40,6 +40,10 @@ export default function CalendarScreen() {
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
+
+  const [showCategorySelect, setShowCategorySelect] = useState(false);
+  const [showNameSelect, setShowNameSelect] = useState(false);
+  const [nameSearch, setNameSearch] = useState('');
 
   const parseEventDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -144,6 +148,8 @@ export default function CalendarScreen() {
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setShowCategorySelect(false);
+    setShowNameSelect(false);
     setNewEvent({ 
       type: 'event',
       title: '', 
@@ -713,53 +719,146 @@ export default function CalendarScreen() {
                   </>
                 ) : (
                   <>
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Nome do Evento</label>
-                      <input
-                        list="event-suggestions"
-                        value={newEvent.title}
-                        onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
-                        placeholder="Ex: Gira de Pretos Velhos"
-                        className={cn(
-                          "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all",
-                          settings.darkMode && "bg-black/40 text-white"
-                        )}
-                      />
-                      <datalist id="event-suggestions">
-                        {settings.eventNames.map(name => <option key={name} value={name} />)}
-                      </datalist>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Categoria</label>
                         <div className="relative">
-                          <select
-                            value={newEvent.category}
-                            onChange={(e) => setNewEvent({...newEvent, category: e.target.value})}
-                            className={cn(
-                              "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all appearance-none cursor-pointer",
-                              settings.darkMode && "bg-black/40 text-white"
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Nome do Evento</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={newEvent.title}
+                              onChange={(e) => {
+                                setNewEvent({...newEvent, title: e.target.value});
+                                if (!showNameSelect) setShowNameSelect(true);
+                              }}
+                              onFocus={() => setShowNameSelect(true)}
+                              placeholder="Ex: Gira de Pretos Velhos"
+                              className={cn(
+                                "w-full bg-gray-50 border-none rounded-[24px] p-5 pr-12 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all",
+                                settings.darkMode && "bg-black/40 text-white"
+                              )}
+                            />
+                            <button 
+                              onClick={() => setShowNameSelect(!showNameSelect)}
+                              className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400"
+                            >
+                              <ChevronDown className={cn("w-4 h-4 transition-transform", showNameSelect && "rotate-180")} />
+                            </button>
+                          </div>
+
+                          <AnimatePresence>
+                            {showNameSelect && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowNameSelect(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  className={cn(
+                                    "absolute left-0 right-0 top-full mt-2 bg-white rounded-[24px] shadow-2xl z-20 border border-gray-100 p-2 max-h-[220px] overflow-y-auto scrollbar-hide",
+                                    settings.darkMode && "bg-[#252525] border-white/5"
+                                  )}
+                                >
+                                  {settings.eventNames
+                                    .filter(name => name.toLowerCase().includes(newEvent.title?.toLowerCase() || ''))
+                                    .map(name => (
+                                      <button
+                                        key={name}
+                                        onClick={() => {
+                                          setNewEvent({...newEvent, title: name});
+                                          setShowNameSelect(false);
+                                        }}
+                                        className={cn(
+                                          "w-full text-left p-4 rounded-xl text-xs font-bold transition-colors hover:bg-gray-50 flex items-center justify-between",
+                                          settings.darkMode && "hover:bg-white/5 text-white"
+                                        )}
+                                      >
+                                        {name}
+                                        {newEvent.title === name && <Star className="w-3 h-3 text-brand-copper fill-current" />}
+                                      </button>
+                                    ))}
+                                  {settings.eventNames.filter(name => name.toLowerCase().includes(newEvent.title?.toLowerCase() || '')).length === 0 && (
+                                    <div className="p-4 text-center">
+                                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
+                                        Nome personalizado
+                                      </p>
+                                    </div>
+                                  )}
+                                </motion.div>
+                              </>
                             )}
-                          >
-                            {Array.from(new Set(['Lembrete', ...settings.eventCategories])).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                          </select>
-                          <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </AnimatePresence>
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Data</label>
-                        <input
-                          type="date"
-                          value={newEvent.date}
-                          onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
-                          className={cn(
-                            "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all cursor-pointer",
-                            settings.darkMode && "bg-black/40 text-white"
-                          )}
-                        />
-                      </div>
-                    </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="relative">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Categoria</label>
+                            <button
+                              onClick={() => setShowCategorySelect(!showCategorySelect)}
+                              className={cn(
+                                "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all flex items-center justify-between",
+                                settings.darkMode && "bg-black/40 text-white"
+                              )}
+                            >
+                              <div className="flex items-center gap-2.5 truncate">
+                                <div 
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: getCategoryColor(newEvent.category || '') }}
+                                />
+                                <span className="truncate">{newEvent.category}</span>
+                              </div>
+                              <ChevronDown className={cn("w-4 h-4 text-gray-400 transition-transform", showCategorySelect && "rotate-180")} />
+                            </button>
+
+                            <AnimatePresence>
+                              {showCategorySelect && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={() => setShowCategorySelect(false)} />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className={cn(
+                                      "absolute left-0 right-0 top-full mt-2 bg-white rounded-[24px] shadow-2xl z-20 border border-gray-100 p-2 max-h-[220px] overflow-y-auto scrollbar-hide",
+                                      settings.darkMode && "bg-[#252525] border-white/5"
+                                    )}
+                                  >
+                                    {Array.from(new Set(['Lembrete', ...settings.eventCategories])).map(cat => (
+                                      <button
+                                        key={cat}
+                                        onClick={() => {
+                                          setNewEvent({...newEvent, category: cat});
+                                          setShowCategorySelect(false);
+                                        }}
+                                        className={cn(
+                                          "w-full text-left p-4 rounded-xl text-xs font-bold transition-colors hover:bg-gray-50 flex items-center gap-3",
+                                          settings.darkMode && "hover:bg-white/5 text-white",
+                                          newEvent.category === cat && (settings.darkMode ? "bg-white/5" : "bg-gray-50")
+                                        )}
+                                      >
+                                        <div 
+                                          className="w-2.5 h-2.5 rounded-full ring-2 ring-white/50 shadow-sm" 
+                                          style={{ backgroundColor: getCategoryColor(cat) }}
+                                        />
+                                        {cat}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Data</label>
+                            <input
+                              type="date"
+                              value={newEvent.date}
+                              onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+                              className={cn(
+                                "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all cursor-pointer",
+                                settings.darkMode && "bg-black/40 text-white"
+                              )}
+                            />
+                          </div>
+                        </div>
 
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Lembrete (Opcional)</label>
