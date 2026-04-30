@@ -143,6 +143,9 @@ export interface StudyBook {
   readingStatus?: 'not_started' | 'in_progress' | 'completed';
   lastPage?: number;
   totalPages?: number;
+  lastRead?: number;
+  coverImage?: string;
+  coverColor?: string;
 }
 
 export interface Greeting {

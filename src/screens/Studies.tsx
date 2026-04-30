@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
   BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
-  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark
+  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
@@ -142,6 +142,9 @@ export default function StudiesScreen() {
   const [search, setSearch] = useState('');
   const [bookSearch, setBookSearch] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
+  const [bookCoverDraft, setBookCoverDraft] = useState<string | null>(null);
+  const [bookColorDraft, setBookColorDraft] = useState<string>('#b8860b'); // Default copper
+  const [bookPdfDraft, setBookPdfDraft] = useState<{name: string, data: string, totalPages: number} | null>(null);
   const [selectedBookForAction, setSelectedBookForAction] = useState<StudyBook | null>(null);
   const [showBookNotesModal, setShowBookNotesModal] = useState(false);
   const [bookNotesDraft, setBookNotesDraft] = useState('');
@@ -267,8 +270,50 @@ export default function StudiesScreen() {
     }
   }, [location.state, books]);
 
+  const COVER_COLORS = [
+    { name: 'Cobre', value: '#b8860b' },
+    { name: 'Branco', value: '#ffffff' },
+    { name: 'Marinho', value: '#001c38' },
+    { name: 'Vermelho', value: '#8b0000' },
+    { name: 'Verde', value: '#006400' },
+    { name: 'Roxo', value: '#4b0082' },
+    { name: 'Preto', value: '#0a0a0a' },
+  ];
+
+  const handleBookCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setBookCoverDraft(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveNewBook = () => {
+    if (!bookPdfDraft) return;
+
+    const newBook: StudyBook = {
+      id: Date.now().toString(),
+      name: bookPdfDraft.name,
+      pdfBase64: bookPdfDraft.data,
+      uploadDate: Date.now(),
+      isFavorite: false,
+      readingStatus: 'not_started',
+      totalPages: bookPdfDraft.totalPages,
+      coverImage: bookCoverDraft || undefined,
+      coverColor: bookColorDraft
+    };
+
+    setBooks([newBook, ...books]);
+    setShowBookModal(false);
+    setBookPdfDraft(null);
+    setBookCoverDraft(null);
+    setBookColorDraft('#b8860b');
+  };
+
   // PDF Upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfPreview = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -289,22 +334,15 @@ export default function StudiesScreen() {
         const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
         const pdf = await loadingTask.promise;
         totalPages = pdf.numPages;
-        console.log('PDF loaded successfully, total pages:', totalPages);
       } catch (error) {
         console.error('Error counting PDF pages:', error);
       }
 
-      const newBook: StudyBook = {
-        id: Date.now().toString(),
+      setBookPdfDraft({
         name: file.name,
-        pdfBase64: base64,
-        uploadDate: Date.now(),
-        isFavorite: false,
-        readingStatus: 'not_started',
+        data: base64,
         totalPages
-      };
-      setBooks([newBook, ...books]);
-      setShowBookModal(false);
+      });
     };
     reader.readAsArrayBuffer(file);
   };
@@ -443,12 +481,14 @@ export default function StudiesScreen() {
   };
 
   const updateBookStatus = (id: string, status: StudyBook['readingStatus'], lastPage?: number) => {
-    setBooks(books.map(b => b.id === id ? { ...b, readingStatus: status, lastPage: lastPage ?? b.lastPage } : b));
+    const lastRead = Date.now();
+    setBooks(books.map(b => b.id === id ? { ...b, readingStatus: status, lastPage: lastPage ?? b.lastPage, lastRead } : b));
     if (selectedBookForAction && selectedBookForAction.id === id) {
       setSelectedBookForAction({ 
         ...selectedBookForAction, 
         readingStatus: status, 
-        lastPage: lastPage ?? selectedBookForAction.lastPage 
+        lastPage: lastPage ?? selectedBookForAction.lastPage,
+        lastRead
       });
     }
   };
@@ -525,9 +565,8 @@ export default function StudiesScreen() {
   };
 
   const bookCategories = [
-    { id: 'in_progress', label: 'Em Andamento', icon: BookOpen, color: 'text-brand-copper' },
-    { id: 'not_started', label: 'Não Iniciados', icon: FileText, color: 'text-gray-400' },
-    { id: 'completed', label: 'Concluídos', icon: CheckCircle2, color: 'text-green-500' }
+    { id: 'not_started', label: 'Bibliotecas / Pendentes', icon: FileText, color: 'text-gray-400' },
+    { id: 'completed', label: 'Livros Lidos', icon: CheckCircle2, color: 'text-green-500' }
   ];
 
   const categories = ['Gira', 'Entidades', 'Orixás'];
@@ -535,6 +574,19 @@ export default function StudiesScreen() {
     g.entity.toLowerCase().includes(search.toLowerCase()) || 
     g.greeting.toLowerCase().includes(search.toLowerCase())
   );
+
+  const libraryStats = {
+    total: books.length,
+    inProgress: books.filter(b => b.readingStatus === 'in_progress').length,
+    pending: books.filter(b => b.readingStatus === 'not_started').length,
+    completed: books.filter(b => b.readingStatus === 'completed').length
+  };
+
+  const inProgressBooks = books
+    .filter(b => b.readingStatus === 'in_progress')
+    .sort((a, b) => (b.lastRead || (b.uploadDate)) - (a.lastRead || (a.uploadDate)));
+
+  const lastReadBook = inProgressBooks[0];
 
   return (
     <motion.div 
@@ -596,61 +648,175 @@ export default function StudiesScreen() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
+            className="space-y-8"
           >
-            {/* Books Section */}
-            <section className="mb-10">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-brand-copper" />
-                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Biblioteca Digital</h2>
+            {/* Library Header & Stats */}
+            <div className="px-1">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-brand-navy/5 flex items-center justify-center">
+                    <Book className="w-5 h-5 text-brand-navy" />
+                  </div>
+                  <div>
+                    <h2 className={cn("text-lg font-black text-brand-navy", settings.darkMode && "text-white")}>Minha Estante</h2>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Organização de leituras</p>
+                  </div>
                 </div>
                 <button 
                   onClick={() => setShowBookModal(true)}
-                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+                  className="flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-xl shadow-lg shadow-brand-navy/20 active:scale-95 transition-all text-xs font-black uppercase tracking-widest"
                 >
-                  Upload PDF
+                  <Plus className="w-4 h-4" />
+                  <span>Novo</span>
                 </button>
               </div>
 
-              <div className="relative mb-6">
+              <div className="grid grid-cols-4 gap-2 mb-8">
+                {[
+                  { label: 'Total', value: libraryStats.total, color: 'bg-brand-navy' },
+                  { label: 'Lendo', value: libraryStats.inProgress, color: 'bg-brand-copper' },
+                  { label: 'Pendente', value: libraryStats.pending, color: 'bg-gray-400' },
+                  { label: 'Lido', value: libraryStats.completed, color: 'bg-green-500' }
+                ].map((stat, i) => (
+                  <div key={i} className={cn(
+                    "p-2 rounded-xl flex flex-col items-center gap-1 border border-gray-100",
+                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white"
+                  )}>
+                    <span className="text-[7px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">{stat.label}</span>
+                    <span className={cn("text-sm font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>{stat.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Featured Section: Continue Reading */}
+            {inProgressBooks.length > 0 && (
+              <section className="px-1 overflow-visible">
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="w-4 h-4 text-brand-copper" />
+                  <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
+                    Continuar de onde parou
+                  </h3>
+                </div>
+                
+                <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide px-1">
+                  {inProgressBooks.map((book) => (
+                    <motion.div 
+                      key={book.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => openBookDetails(book)}
+                      className={cn(
+                        "flex-shrink-0 w-[280px] p-4 rounded-[32px] border border-gray-100 shadow-lg flex items-center gap-4 cursor-pointer relative overflow-hidden group",
+                        settings.darkMode ? "bg-gradient-to-br from-[#1A1A1A] to-[#111] border-gray-800" : "bg-gradient-to-br from-white to-gray-50"
+                      )}
+                    >
+                      {/* Visual Background Decoration */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-copper/5 rounded-full blur-2xl -mr-8 -mt-8" />
+                      
+                      <div 
+                        className="w-16 h-24 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden shrink-0"
+                        style={{ backgroundColor: !book.coverImage ? (book.coverColor || '#b8860b') : 'transparent' }}
+                      >
+                        {book.coverImage ? (
+                          <img src={book.coverImage} className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <div className="absolute inset-y-0 left-0 w-2 bg-black/10 border-r border-black/5" />
+                            <FileText className="w-6 h-6 text-white/20" />
+                          </>
+                        )}
+                        <div className="absolute bottom-1 right-1 p-0.5 bg-brand-gold rounded-full shadow-sm">
+                          <BookOpen className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+
+                      <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
+                        <h4 className={cn("text-[11px] font-black leading-tight truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                          {book.name.replace('.pdf', '')}
+                        </h4>
+                        
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center px-0.5">
+                            <span className="text-[7px] font-black text-brand-copper uppercase tracking-widest">
+                              {book.lastPage || 0}/{book.totalPages || '?'}
+                            </span>
+                            {book.totalPages && book.totalPages > 0 && (
+                              <span className="text-[7px] font-black opacity-40">
+                                {Math.round(((book.lastPage || 0) / book.totalPages) * 100)}%
+                              </span>
+                            )}
+                          </div>
+                          <div className="h-1 bg-gray-100 dark:bg-black/40 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
+                              className="h-full bg-brand-copper rounded-full"
+                            />
+                          </div>
+                        </div>
+
+                        <span className="flex items-center gap-1 mt-0.5 text-[8px] font-black uppercase tracking-widest text-brand-copper">
+                          Continuar <ChevronRight className="w-2.5 h-2.5" />
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Books List Section */}
+            <section className="px-1">
+              <div className="relative mb-8">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input 
                   type="text"
-                  placeholder="Buscar livros pelo título..."
+                  placeholder="Pesquisar na minha estante..."
                   value={bookSearch}
                   onChange={(e) => setBookSearch(e.target.value)}
                   className={cn(
-                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
+                    "w-full bg-white border border-gray-100 py-4 pl-12 pr-4 rounded-2xl text-xs font-bold transition-all shadow-sm focus:outline-none focus:ring-4 focus:ring-brand-copper/10",
                     settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
                   )}
                 />
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="space-y-6">
                 {bookCategories.map((cat) => {
                   const catBooks = getBooksByStatus(cat.id as any);
                   const isExpanded = expandedCategories.includes(cat.id) || bookSearch.length > 0;
                   
                   if (catBooks.length === 0 && bookSearch) return null;
+                  
+                  // Hide empty categories unless they have results in search
+                  if (catBooks.length === 0 && !bookSearch) return null;
 
                   return (
-                    <div key={cat.id} className="flex flex-col gap-3">
+                    <div key={cat.id} className={cn(
+                      "flex flex-col gap-4",
+                      cat.id === 'completed' && "pt-6 border-t dark:border-white/5"
+                    )}>
                       <button 
                         onClick={() => toggleCategory(cat.id)}
-                        className={cn(
-                          "flex items-center justify-between p-4 rounded-2xl transition-all active:scale-[0.98] border border-gray-50",
-                          settings.darkMode ? "bg-[#1A1A1A] border-gray-800 shadow-xl" : "bg-white shadow-sm"
-                        )}
+                        className="flex items-center justify-between px-2"
                       >
-                        <div className="flex items-center gap-3">
-                          <cat.icon className={cn("w-4 h-4", cat.color)} />
-                          <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full shadow-sm", 
+                            cat.color.replace('text-', 'bg-'),
+                            cat.id === 'completed' && "bg-green-500"
+                          )} />
+                          <h4 className={cn(
+                            "text-[10px] font-black uppercase tracking-[0.2em]", 
+                            settings.darkMode ? "text-gray-400" : "text-brand-navy/60",
+                            cat.id === 'completed' && "text-green-600/60 dark:text-green-500/60"
+                          )}>
                             {cat.label}
-                          </span>
-                          <span className="text-[10px] font-bold text-gray-400">({catBooks.length})</span>
+                          </h4>
+                          <span className="text-[9px] font-bold opacity-30">({catBooks.length})</span>
                         </div>
                         <ChevronRight className={cn(
-                          "w-4 h-4 text-gray-400 transition-transform duration-300",
+                          "w-4 h-4 text-gray-300 transition-transform duration-300",
                           isExpanded && "rotate-90"
                         )} />
                       </button>
@@ -663,75 +829,86 @@ export default function StudiesScreen() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="flex gap-4 overflow-x-auto pb-4 px-1 scrollbar-hide pt-1">
-                              {isBooksLoading ? (
-                                <div className="flex-shrink-0 w-full p-8 flex flex-col items-center justify-center gap-3">
-                                  <div className="w-6 h-6 border-2 border-brand-copper border-t-transparent rounded-full animate-spin" />
-                                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Carregando...</p>
-                                </div>
-                              ) : catBooks.length === 0 ? (
-                                <div className={cn(
-                                  "flex-shrink-0 w-full p-8 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-2",
-                                  settings.darkMode && "border-gray-800"
-                                )}>
-                                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Vazio</p>
-                                </div>
-                              ) : (
-                                catBooks.map((book) => (
+                            {catBooks.length === 0 ? (
+                              <div className={cn(
+                                "mx-1 p-10 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-2",
+                                settings.darkMode && "border-gray-800"
+                              )}>
+                                <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">Nenhum livro</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-4 pb-4 px-1">
+                                {catBooks.map((book) => (
                                   <motion.div 
                                     key={book.id}
-                                    whileTap={{ scale: 0.98 }}
+                                    whileTap={{ scale: 0.96 }}
+                                    onClick={() => openBookDetails(book)}
                                     className={cn(
-                                      "flex-shrink-0 w-40 bg-white p-4 rounded-3xl shadow-md border border-gray-100 flex flex-col gap-3 group relative",
-                                      settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                                      "bg-white p-3 rounded-[28px] shadow-sm border border-gray-100 flex flex-col gap-3 group relative cursor-pointer active:shadow-md transition-all",
+                                      settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
+                                      book.readingStatus === 'completed' && "opacity-75 grayscale-[0.3]"
                                     )}
                                   >
                                     <div 
-                                      onClick={() => openBookDetails(book)}
-                                      className="cursor-pointer"
+                                      className="w-full aspect-[3/4.2] rounded-2xl flex items-center justify-center relative overflow-hidden group-hover:scale-[1.02] transition-transform duration-500 shadow-sm"
+                                      style={{ backgroundColor: !book.coverImage ? (book.coverColor || '#b8860b') : 'transparent' }}
                                     >
-                                      <div className="w-full aspect-[3/4] bg-brand-navy/5 rounded-2xl flex items-center justify-center mb-3 relative overflow-hidden">
-                                        <FileText className="w-10 h-10 text-brand-copper/40" />
-                                        {book.isFavorite && (
-                                          <div className="absolute top-2 right-2 p-1 bg-white/80 rounded-full shadow-sm backdrop-blur-sm">
-                                            <Star className="w-3 h-3 text-brand-copper fill-brand-copper" />
+                                      {book.coverImage ? (
+                                        <img src={book.coverImage} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <>
+                                          <div className="absolute inset-y-0 left-0 w-2 bg-black/10 border-r border-black/5" />
+                                          <FileText className="w-10 h-10 text-white/20 group-hover:scale-110 transition-transform duration-500" />
+                                        </>
+                                      )}
+                                      
+                                      {book.isFavorite && (
+                                        <div className="absolute top-2 right-2 p-1.5 bg-brand-red rounded-full shadow-lg">
+                                          <Star className="w-2.5 h-2.5 text-white fill-white" />
+                                        </div>
+                                      )}
+                                      
+                                      {book.readingStatus === 'completed' && (
+                                        <div className="absolute top-2 left-2 p-1 bg-green-500 rounded-full shadow-lg">
+                                          <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                                        </div>
+                                      )}
+
+                                      {book.readingStatus === 'in_progress' && (
+                                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex flex-col pt-6">
+                                          <div className="flex justify-between items-center mb-1 px-0.5">
+                                            <span className="text-[7px] font-black text-white uppercase tracking-widest drop-shadow-sm">
+                                              {Math.round(((book.lastPage || 0) / (book.totalPages || 1)) * 100)}%
+                                            </span>
                                           </div>
-                                        )}
-                                        {book.readingStatus === 'completed' && (
-                                          <div className="absolute bottom-2 right-2 p-1 bg-green-500 rounded-full shadow-sm">
-                                            <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                                          <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-[2px]">
+                                            <motion.div 
+                                              initial={{ width: 0 }}
+                                              animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
+                                              className="h-full bg-brand-copper"
+                                            />
                                           </div>
-                                        )}
-                                        {book.readingStatus === 'in_progress' && (
-                                          <div className="absolute inset-x-0 bottom-0 pt-6 pb-2 px-2 bg-gradient-to-t from-black/60 to-transparent flex flex-col gap-1">
-                                            <div className="flex justify-between items-center px-1">
-                                              <span className="text-[7px] font-black text-white uppercase tracking-widest drop-shadow-sm">
-                                                Pág {book.lastPage || 0}/{book.totalPages || '?'}
-                                              </span>
-                                              {book.totalPages && book.totalPages > 0 && (
-                                                <span className="text-[7px] font-black text-white drop-shadow-sm">
-                                                  {Math.round(((book.lastPage || 0) / book.totalPages) * 100)}%
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div className="h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-[2px]">
-                                              <motion.div 
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
-                                                className="h-full bg-brand-copper"
-                                              />
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <h3 className={cn("text-[11px] font-bold text-brand-navy line-clamp-2 leading-tight", settings.darkMode && "text-white")}>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="px-1 pb-1">
+                                      <h3 className={cn(
+                                        "text-[10px] font-black text-brand-navy line-clamp-2 leading-[1.3] group-hover:text-brand-copper transition-colors", 
+                                        settings.darkMode && "text-white group-hover:text-brand-copper"
+                                      )}>
                                         {book.name.replace('.pdf', '')}
                                       </h3>
+                                      <div className="flex items-center gap-1.5 mt-1.5">
+                                        <span className="text-[8px] font-bold text-gray-400 capitalize">
+                                          {book.uploadDate ? new Date(book.uploadDate).toLocaleDateString() : ''}
+                                        </span>
+                                      </div>
                                     </div>
                                   </motion.div>
-                                ))
-                              )}
-                            </div>
+                                ))}
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1118,7 +1295,11 @@ export default function StudiesScreen() {
               )}
             >
               <button 
-                onClick={() => setShowBookModal(false)}
+                onClick={() => {
+                  setShowBookModal(false);
+                  setBookPdfDraft(null);
+                  setBookCoverDraft(null);
+                }}
                 className="absolute top-6 right-6 text-gray-400"
               >
                 <X className="w-5 h-5" />
@@ -1127,22 +1308,100 @@ export default function StudiesScreen() {
               <h2 className={cn("text-lg sm:text-xl font-black text-brand-navy mb-2", settings.darkMode && "text-white")}>
                 Adicionar Livro
               </h2>
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-6">Selecione um PDF para sua biblioteca</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-6">Personalize sua biblioteca digital</p>
 
-              <div className="space-y-4">
-                <label className={cn(
-                  "flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/50 cursor-pointer hover:bg-brand-copper/5 hover:border-brand-copper/30 transition-all group",
-                  settings.darkMode && "bg-black/50 border-gray-800"
-                )}>
-                  <Upload className="w-8 h-8 text-brand-copper/40 group-hover:scale-110 transition-transform mb-3" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy/60">Selecionar arquivo</span>
-                  <input 
-                    type="file" 
-                    accept="application/pdf"
-                    onChange={handleFileUpload}
-                    className="hidden" 
-                  />
-                </label>
+              <div className="space-y-6">
+                {/* PDF Selection */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Arquivo PDF</label>
+                  {!bookPdfDraft ? (
+                    <label className={cn(
+                      "flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/50 cursor-pointer hover:bg-brand-copper/5 hover:border-brand-copper/30 transition-all group",
+                      settings.darkMode && "bg-black/50 border-gray-800"
+                    )}>
+                      <Upload className="w-6 h-6 text-brand-copper/40 group-hover:scale-110 transition-transform mb-3" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/60">Escolher PDF</span>
+                      <input 
+                        type="file" 
+                        accept="application/pdf"
+                        onChange={handlePdfPreview}
+                        className="hidden" 
+                      />
+                    </label>
+                  ) : (
+                    <div className={cn(
+                      "p-4 rounded-2xl bg-brand-navy/5 flex items-center justify-between border border-brand-navy/10",
+                      settings.darkMode && "bg-brand-navy/20"
+                    )}>
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <FileText className="w-5 h-5 text-brand-copper flex-shrink-0" />
+                        <span className={cn("text-xs font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{bookPdfDraft.name}</span>
+                      </div>
+                      <button onClick={() => setBookPdfDraft(null)} className="text-brand-red p-1">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cover Customization */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Capa do Livro</label>
+                  
+                  <div className="flex gap-4">
+                    {/* Cover Preview / Image Upload */}
+                    <label className={cn(
+                      "w-20 h-28 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all shrink-0 relative overflow-hidden shadow-inner",
+                      settings.darkMode && "border-gray-800 hover:bg-black/40"
+                    )} style={{ backgroundColor: !bookCoverDraft ? bookColorDraft : 'transparent' }}>
+                      {bookCoverDraft ? (
+                        <img src={bookCoverDraft} className="w-full h-full object-cover" />
+                      ) : (
+                        <>
+                          <div className="absolute inset-y-0 left-0 w-2 bg-black/10 border-r border-black/5" />
+                          <Upload className={cn("w-5 h-5 mb-1", bookColorDraft === '#ffffff' ? "text-brand-navy" : "text-white")} />
+                          <span className={cn("text-[7px] font-black uppercase tracking-widest text-center px-1", bookColorDraft === '#ffffff' ? "text-brand-navy" : "text-white")}>Imagem</span>
+                        </>
+                      )}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleBookCoverUpload} />
+                    </label>
+
+                    {/* Color Picker */}
+                    <div className="flex-1">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Cor ou Tema</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {COVER_COLORS.map(color => (
+                          <button
+                            key={color.value}
+                            onClick={() => {
+                              setBookColorDraft(color.value);
+                              setBookCoverDraft(null); 
+                            }}
+                            className={cn(
+                              "w-6 h-6 rounded-full border-2 transition-all",
+                              bookColorDraft === color.value ? "border-brand-copper scale-110 shadow-md" : "border-transparent"
+                            )}
+                            style={{ backgroundColor: color.value }}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  disabled={!bookPdfDraft}
+                  onClick={saveNewBook}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all",
+                    bookPdfDraft 
+                      ? "bg-brand-navy text-white active:scale-95" 
+                      : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                  )}
+                >
+                  Adicionar à Estante
+                </button>
               </div>
             </motion.div>
           </div>
@@ -1318,8 +1577,39 @@ export default function StudiesScreen() {
               </button>
 
               <div className="flex flex-col items-center gap-4 mb-8 text-center pt-2">
-                <div className="w-16 h-16 bg-brand-copper/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-8 h-8 text-brand-copper" />
+                <div 
+                  className="w-20 h-28 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg relative overflow-hidden"
+                  style={{ backgroundColor: !selectedBookForAction.coverImage ? (selectedBookForAction.coverColor || '#b8860b') : 'transparent' }}
+                >
+                  {selectedBookForAction.coverImage ? (
+                    <img src={selectedBookForAction.coverImage} className="w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-y-0 left-0 w-2 bg-black/10 border-r border-black/5" />
+                      <FileText className="w-8 h-8 text-white/20" />
+                    </>
+                  )}
+                  {/* Change cover button overlay */}
+                  <label className="absolute inset-0 bg-black/0 hover:bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-all cursor-pointer">
+                    <Edit2 className="w-5 h-5 text-white" />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const base64 = ev.target?.result as string;
+                            setBooks(books.map(b => b.id === selectedBookForAction.id ? { ...b, coverImage: base64 } : b));
+                            setSelectedBookForAction({ ...selectedBookForAction, coverImage: base64 });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }} 
+                    />
+                  </label>
                 </div>
                 <div className="w-full">
                   {isEditingName ? (
@@ -1361,6 +1651,24 @@ export default function StudiesScreen() {
                   )}
                   <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">Opções do Livro</p>
                 </div>
+              </div>
+
+              {/* Quick Color Picker for existing book */}
+              <div className="flex justify-center gap-2 mb-6">
+                {COVER_COLORS.slice(0, 5).map(color => (
+                  <button
+                    key={color.value}
+                    onClick={() => {
+                      setBooks(books.map(b => b.id === selectedBookForAction.id ? { ...b, coverColor: color.value, coverImage: undefined } : b));
+                      setSelectedBookForAction({ ...selectedBookForAction, coverColor: color.value, coverImage: undefined });
+                    }}
+                    className={cn(
+                      "w-5 h-5 rounded-full border-2 transition-all",
+                      selectedBookForAction.coverColor === color.value ? "border-brand-copper scale-110" : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color.value }}
+                  />
+                ))}
               </div>
 
               <div className="grid gap-3">
