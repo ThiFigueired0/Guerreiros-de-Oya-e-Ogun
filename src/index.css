@@ -46,6 +46,23 @@ body {
   box-shadow: 0 0 20px rgba(205, 127, 50, 0.2);
 }
 
+@keyframes leafFloatGlobal {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+.leaf-floating {
+  position: absolute;
+  pointer-events: none;
+  animation: leafFloatGlobal var(--duration, 20s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  left: var(--left, 50%);
+  width: var(--size, 20px);
+  height: var(--size, 20px);
+}
+
 .react-pdf__Page__textContent:not(.no-select) {
   user-select: text !important;
   -webkit-user-select: text !important;

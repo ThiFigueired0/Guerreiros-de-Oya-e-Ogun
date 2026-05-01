@@ -910,18 +910,12 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
 
 function LoadingOverlay({ show, logo }: { show: boolean, logo?: string | null }) {
   const leaves = React.useMemo(() => {
-    return [...Array(40)].map((_, i) => ({
+    return [...Array(30)].map((_, i) => ({
       id: i,
-      size: 10 + Math.random() * 20,
-      duration: 15 + Math.random() * 30,
+      size: 15 + Math.random() * 25,
+      duration: 10 + Math.random() * 20,
       delay: Math.random() * -20,
-      opacity: 0.15 + Math.random() * 0.25,
-      pathX: Math.random() * 200 - 100,
-      pathY: Math.random() * 150 - 75,
       left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      rotate: Math.random() * 360,
-      scale: 0.5 + Math.random() * 0.5
     }));
   }, []);
 
@@ -931,80 +925,57 @@ function LoadingOverlay({ show, logo }: { show: boolean, logo?: string | null })
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
-          className="fixed inset-0 z-[200] bg-brand-navy flex flex-col items-center justify-center overflow-hidden"
+          transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
+          className="fixed inset-0 z-[500] bg-brand-navy flex flex-col items-center justify-center overflow-hidden"
           style={{ backgroundColor: '#001F3F' }}
         >
           {/* Animated Background */}
           <div className="absolute inset-0 pointer-events-none">
             {leaves.map((leaf) => (
-              <motion.div
+              <div
                 key={`leaf-loading-${leaf.id}`}
-                initial={{ 
-                  left: leaf.left,
-                  top: leaf.top,
-                  rotate: leaf.rotate,
-                  opacity: 0,
-                  scale: leaf.scale
-                }}
-                animate={{ 
-                  x: [0, leaf.pathX, 0],
-                  y: [0, leaf.pathY, 0],
-                  rotate: [0, 180, 360],
-                  opacity: [0, leaf.opacity, leaf.opacity, 0]
-                }}
-                transition={{ 
-                  duration: leaf.duration, 
-                  repeat: Infinity, 
-                  ease: "easeInOut",
-                  delay: leaf.delay
-                }}
-                className="absolute z-0"
+                className="leaf-floating"
+                style={{
+                  '--left': leaf.left,
+                  '--duration': `${leaf.duration}s`,
+                  '--delay': `${leaf.delay}s`,
+                  '--size': `${leaf.size}px`,
+                  top: '100%'
+                } as React.CSSProperties}
               >
-                <Leaf 
-                  className="text-brand-copper/40 fill-brand-copper/10" 
-                  style={{ 
-                    width: leaf.size, 
-                    height: leaf.size,
-                  }} 
-                />
-              </motion.div>
+                <Leaf className="text-brand-copper/30 fill-brand-copper/10 w-full h-full" />
+              </div>
             ))}
             
             <motion.div 
               animate={{ 
-                scale: [1, 1.3, 1],
-                opacity: [0.1, 0.2, 0.1],
+                scale: [1, 1.2, 1],
+                opacity: [0.1, 0.15, 0.1],
               }}
-              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-copper rounded-full blur-[120px]"
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-copper rounded-full blur-[150px]"
             />
           </div>
 
           {/* Logo Container */}
           <div className="relative z-10 flex flex-col items-center">
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ 
-                type: "spring",
-                damping: 20,
-                stiffness: 100,
-                delay: 0.2
-              }}
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
               className="relative"
             >
               {/* Pulse Glow */}
               <motion.div 
                 animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.2, 0.5, 0.2]
+                  scale: [1, 1.1, 1],
+                  opacity: [0.3, 0.6, 0.3]
                 }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -inset-8 bg-brand-copper rounded-full blur-2xl"
+                className="absolute -inset-10 bg-brand-copper rounded-full blur-3xl"
               />
 
-              <div className="w-48 h-48 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 overflow-hidden relative">
+              <div className="w-48 h-48 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-center p-2 overflow-hidden relative">
                 {logo ? (
                   <img 
                     src={logo} 
@@ -1031,14 +1002,22 @@ function LoadingOverlay({ show, logo }: { show: boolean, logo?: string | null })
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="mt-8 text-center"
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="mt-10 text-center"
             >
-              <h1 className="text-brand-gold font-serif text-lg tracking-[0.4em] font-black uppercase drop-shadow-lg">
+              <h1 className="text-brand-gold font-serif text-2xl tracking-[0.5em] font-black uppercase drop-shadow-lg">
                 Guerreiros
               </h1>
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mt-2">
-                Carregando fundamentos...
+              <div className="w-12 h-1 bg-brand-copper/30 mx-auto mt-4 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-full h-full bg-brand-gold"
+                />
+              </div>
+              <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em] mt-4">
+                Fundamentos • Tradição • Axé
               </p>
             </motion.div>
           </div>
@@ -1068,11 +1047,11 @@ export default function App() {
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
   const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isInitializing, setIsInitializing] = React.useState(true);
 
   React.useEffect(() => {
-    // Artificial delay to show splash screen, but could be tied to actual data readiness
-    const timer = setTimeout(() => setIsLoading(false), 2500);
+    // Artificial delay for startup initialization (4 seconds)
+    const timer = setTimeout(() => setIsInitializing(false), 4000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -1428,7 +1407,7 @@ export default function App() {
   return (
     <UndoContext.Provider value={{ queueDelete }}>
       <BrowserRouter>
-      <LoadingOverlay show={isLoading} logo={settings.logoBase64} />
+      <LoadingOverlay show={isInitializing} logo={settings.logoBase64} />
       <NotificationManager />
       <div className={cn(
         "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
