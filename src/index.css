@@ -46,9 +46,15 @@ body {
   box-shadow: 0 0 20px rgba(205, 127, 50, 0.2);
 }
 
-.react-pdf__Page__textContent {
+.react-pdf__Page__textContent:not(.no-select) {
   user-select: text !important;
   -webkit-user-select: text !important;
+}
+
+.no-select, .no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
 }
 
 .react-pdf__Page__textContent ::selection {
@@ -58,4 +64,32 @@ body {
 
 .react-pdf__Page__annotations {
   pointer-events: none !important;
+}
+
+.spoken-word-highlight {
+  background-color: rgba(255, 255, 0, 0.4) !important;
+  border-radius: 4px !important;
+}
+
+
+.custom-pdf-outline ul {
+  list-style: none;
+  padding-left: 1rem;
+  margin: 0;
+}
+.custom-pdf-outline > ul {
+  padding-left: 0;
+}
+.custom-pdf-outline li {
+  margin: 0.5rem 0;
+}
+.custom-pdf-outline a {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: block;
+}
+.custom-pdf-outline a:hover {
+  opacity: 0.7;
+  color: #CD7F32; /* copper */
 }

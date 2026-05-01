@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Document, Page, Outline, pdfjs } from "react-pdf";
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,6 +26,13 @@ import {
   BookmarkPlus,
   Layers,
   MoreVertical,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  LayoutGrid,
+  Play,
+  Pause,
+  Square
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -85,6 +92,7 @@ export function PDFReader({
   }, [pageNumber]);
 
   const [scale, setScale] = useState<number | null>(null); // null means auto-fit
+  const [pdfPageWidth, setPdfPageWidth] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -93,14 +101,13 @@ export function PDFReader({
   const viewerRef = useRef<HTMLElement>(null);
   const wheelTimeout = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const pinchStateRef = useRef<{ initialDist: number; initialScale: number } | null>(null);
   const [inputPage, setInputPage] = useState(String(initialPage));
 
   // Improvements State
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<
-    "search" | "bookmarks" | "notes" | null
+    "search" | "bookmarks" | "notes" | "outline" | "thumbnails" | null
   >(null);
   const [notes, setNotes] = useState("");
   const [bookmarkedPages, setBookmarkedPages] = useState<number[]>([]);
@@ -109,6 +116,304 @@ export function PDFReader({
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [pageDirection, setPageDirection] = useState(1);
+
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const parsedPdfRef = useRef<any>(null);
+  
+  const textRenderer = useCallback(
+    ({ str }: { str: string }) => {
+      if (!searchText || !searchResults.includes(pageNumber) || !str) return str;
+      const escapedSearchText = searchText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(${escapedSearchText})`, "gi");
+      return str.replace(
+        regex,
+        '<mark style="background-color: rgba(184, 134, 11, 0.4); color: transparent; border-radius: 4px;">$1</mark>'
+      );
+    },
+    [searchText, searchResults, pageNumber]
+  );
+
+  interface SpanInfo {
+    span: HTMLElement;
+    start: number;
+    end: number;
+    originalHTML: string;
+    originalText: string;
+  }
+
+  const [hasOutline, setHasOutline] = useState<boolean | null>(null);
+
+  const speechStateRef = useRef({
+    speaking: false,
+    chunks: [] as { text: string; offset: number }[],
+    chunkIndex: 0,
+    spanData: [] as SpanInfo[],
+    lastHighlightedSpans: [] as SpanInfo[],
+    simulationInterval: null as any,
+    receivedRealBoundary: false,
+  });
+
+  const stopSpeech = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    const state = speechStateRef.current;
+    if (state.simulationInterval) {
+      clearTimeout(state.simulationInterval);
+      state.simulationInterval = null;
+    }
+    state.lastHighlightedSpans.forEach((s) => {
+      if (s.span) {
+        s.span.innerHTML = s.originalHTML;
+      }
+    });
+    state.speaking = false;
+    state.chunks = [];
+    state.chunkIndex = 0;
+    state.spanData = [];
+    state.lastHighlightedSpans = [];
+    state.receivedRealBoundary = false;
+    setIsSpeaking(false);
+    setIsPaused(false);
+  };
+
+  const pauseSpeech = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const resumeSpeech = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  };
+
+  useEffect(() => {
+    stopSpeech();
+    // Cache voices early
+    window.speechSynthesis.getVoices();
+  }, [pageNumber]);
+
+  useEffect(() => {
+    const handleVoicesChanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    return () => {
+      stopSpeech();
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+    };
+  }, []);
+
+  const speakNextChunk = () => {
+    const state = speechStateRef.current;
+    if (!state.speaking || state.chunkIndex >= state.chunks.length) {
+      stopSpeech();
+      return;
+    }
+
+    const chunk = state.chunks[state.chunkIndex];
+    const utterance = new SpeechSynthesisUtterance(chunk.text);
+    utterance.lang = "pt-BR";
+    utterance.rate = 1.0;
+    utterance.volume = 1;
+
+    // Try to find a good Portuguese voice
+    const voices = window.speechSynthesis.getVoices();
+    let ptVoice = voices.find(v => v.lang === "pt-BR" && v.localService);
+    if (!ptVoice) ptVoice = voices.find(v => v.lang.startsWith("pt-BR"));
+    if (!ptVoice) ptVoice = voices.find(v => v.lang.startsWith("pt"));
+    
+    if (ptVoice) {
+      utterance.voice = ptVoice;
+    }
+
+    utterance.onend = () => {
+      const state = speechStateRef.current;
+      if (state.speaking) {
+        state.chunkIndex++;
+        setTimeout(speakNextChunk, 50);
+      }
+    };
+
+    utterance.onerror = (e) => {
+      console.error("Speech chunk error", e);
+      if (speechStateRef.current.speaking) {
+        stopSpeech();
+      }
+    };
+
+    const stateRef = speechStateRef.current;
+    if (stateRef.simulationInterval) {
+      clearTimeout(stateRef.simulationInterval);
+      stateRef.simulationInterval = null;
+    }
+    stateRef.receivedRealBoundary = false;
+
+    // Remove previous highlights
+    stateRef.lastHighlightedSpans.forEach((spanInfo) => {
+      if (spanInfo.span) {
+        spanInfo.span.innerHTML = spanInfo.originalHTML;
+      }
+    });
+    stateRef.lastHighlightedSpans = [];
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleSpeech = async () => {
+    if (!("speechSynthesis" in window)) {
+      alert("Seu navegador não suporta leitura em voz alta.");
+      return;
+    }
+
+    if (isSpeaking || speechStateRef.current.speaking) {
+      stopSpeech();
+      return;
+    }
+
+    setIsSpeaking(true);
+    speechStateRef.current.speaking = true;
+
+    // First try DOM extraction for instant text
+    let text = "";
+    let spanData: SpanInfo[] = [];
+    const textLayer = viewerRef.current?.querySelector(".react-pdf__Page__textContent") || document.querySelector(".react-pdf__Page__textContent");
+    
+    if (textLayer) {
+      const spans = textLayer.querySelectorAll("span");
+      if (spans.length > 0) {
+        let currentOffset = 0;
+        Array.from(spans).forEach((span) => {
+          const sText = span.textContent || "";
+          if (sText) {
+            spanData.push({
+              span: span as HTMLElement,
+              start: currentOffset,
+              end: currentOffset + sText.length,
+              originalHTML: span.innerHTML,
+              originalText: sText,
+            });
+            // Try to preserve some semantic structure if the span text doesn't end with punctuation
+            const separator = sText.endsWith("-") ? "" : " ";
+            text += sText + separator;
+            currentOffset += sText.length + separator.length;
+          }
+        });
+        // De-hyphenate: remove hyphens at the end of lines/spans that were likely for wrapping
+        // This regex looks for words split by a hyphen and whitespace/newline
+        text = text.replace(/(\w+)-\s+(\w+)/g, "$1$2");
+        text = text.replace(/\s+$/, "");
+      } else {
+        // @ts-expect-error InnerText may not exist in some types
+        text = textLayer.innerText || textLayer.textContent || "";
+        text = text.replace(/(\w+)-\n\s*(\w+)/g, "$1$2");
+      }
+    }
+
+    // If DOM extraction failed, use the cached pdf object
+    if (!text && parsedPdfRef.current) {
+      // Sync unlock required for Safari/iOS
+      const initUtterance = new SpeechSynthesisUtterance("Carregando leitura");
+      initUtterance.volume = 0.5;
+      initUtterance.lang = "pt-BR";
+      window.speechSynthesis.speak(initUtterance);
+
+      try {
+        const page = await parsedPdfRef.current.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        text = textContent.items
+          .map((item: any) => ("str" in item ? item.str : ""))
+          .join(" ");
+        // Apply same de-hyphenation to static extraction if needed
+        text = text.replace(/(\w+)-\s+(\w+)/g, "$1$2");
+      } catch (err) {
+        console.error("Error reading pdf text for speech", err);
+        stopSpeech();
+        return;
+      }
+    }
+
+    if (!text || text.trim() === "") {
+      stopSpeech();
+      return;
+    }
+
+    if (!speechStateRef.current.speaking) return; // user cancelled while loading
+
+    // Chunk text by sentence boundaries (periods, exclamation, question marks)
+    // We group multiple sentences into larger chunks to let the native engine handle pauses naturally.
+    const chunks = text.match(/[^.!?\n]+([.!?\n]|$)/g) || [text];
+    const finalChunks: { text: string; offset: number }[] = [];
+    let searchStartIndex = 0;
+
+    chunks.forEach((chunk) => {
+      let chunkStart = text.indexOf(chunk, searchStartIndex);
+      if (chunkStart === -1) chunkStart = searchStartIndex;
+
+      // Use a larger chunk size (1000) for better natural prosody
+      if (chunk.length <= 1000) {
+        const str = chunk.trim();
+        if (str) {
+          const strOffset = text.indexOf(str, chunkStart);
+          finalChunks.push({
+            text: str,
+            offset: strOffset !== -1 ? strOffset : chunkStart,
+          });
+        }
+        searchStartIndex = chunkStart + chunk.length;
+      } else {
+        // split by other punctuation or spaces if still too long (fall back for very long paragraphs)
+        const subChunks = chunk.match(/[^,;:-]+[,;:-]*/g) || [chunk];
+        let currentString = "";
+        let currentSubOffset = chunkStart;
+        
+        subChunks.forEach((sub) => {
+          if ((currentString + sub).length > 1000) {
+            if (currentString.trim()) {
+              const str = currentString.trim();
+              const strOffset = text.indexOf(str, currentSubOffset);
+              finalChunks.push({
+                text: str,
+                offset: strOffset !== -1 ? strOffset : currentSubOffset,
+              });
+              currentSubOffset += currentString.length;
+            }
+            currentString = sub;
+          } else {
+            currentString += sub;
+          }
+        });
+        if (currentString.trim()) {
+          const str = currentString.trim();
+          const strOffset = text.indexOf(str, currentSubOffset);
+          finalChunks.push({
+            text: str,
+            offset: strOffset !== -1 ? strOffset : currentSubOffset,
+          });
+          searchStartIndex = strOffset + str.length;
+        }
+      }
+    });
+
+    if (finalChunks.length === 0) {
+      stopSpeech();
+      return;
+    }
+
+    speechStateRef.current.chunks = finalChunks;
+    speechStateRef.current.chunkIndex = 0;
+    speechStateRef.current.spanData = spanData;
+
+    // Replace any currently playing utterance (like "Carregando")
+    window.speechSynthesis.cancel();
+
+    speakNextChunk();
+  };
 
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [selectionRects, setSelectionRects] = useState<DOMRect[] | null>(null);
@@ -123,14 +428,143 @@ export function PDFReader({
     string | null
   >(null);
 
+  const [isPainting, setIsPainting] = useState(false);
+  const paintHighlightIdRef = useRef<string | null>(null);
+  const textItemsBoundsRef = useRef<{ rect: DOMRect; text: string }[]>([]);
+
+  const findSnappedRect = (clientX: number, clientY: number, pageRect: DOMRect): HighlightRect | null => {
+    // We want to find the text line at this Y coordinate
+    // and set the X/width to roughly where the user is touching if we want a precise brush
+    // or just the whole line if the user touches a word.
+    
+    // For "brush" feel, we can just highlight the word/segment under the finger, but snapping Y is crucial.
+    const relativeX = ((clientX - pageRect.left) / pageRect.width) * 100;
+    const relativeY = ((clientY - pageRect.top) / pageRect.height) * 100;
+
+    // Find text items on the same horizontal plane (with some tolerance)
+    const candidates = textItemsBoundsRef.current.filter(item => {
+      const itemTop = ((item.rect.top - pageRect.top) / pageRect.height) * 100;
+      const itemBottom = ((item.rect.bottom - pageRect.top) / pageRect.height) * 100;
+      return relativeY >= itemTop - 0.5 && relativeY <= itemBottom + 0.5;
+    });
+
+    if (candidates.length === 0) {
+      // If no exact text item, maybe we just return a small block at the finger position
+      // but the user wants "align correctly to the lines"
+      return null;
+    }
+
+    // Find the item closest to X
+    const item = candidates.find(c => {
+      const itemLeft = ((c.rect.left - pageRect.left) / pageRect.width) * 100;
+      const itemRight = ((c.rect.right - pageRect.left) / pageRect.width) * 100;
+      return relativeX >= itemLeft - 1 && relativeX <= itemRight + 1;
+    });
+
+    if (!item) return null;
+
+    return {
+      x: ((item.rect.left - pageRect.left) / pageRect.width) * 100,
+      y: ((item.rect.top - pageRect.top) / pageRect.height) * 100,
+      width: (item.rect.width / pageRect.width) * 100,
+      height: (item.rect.height / pageRect.height) * 100,
+    };
+  };
+
+  const updateTextItemBounds = useCallback(() => {
+    const textLayer = viewerRef.current?.querySelector(".react-pdf__Page__textContent");
+    if (textLayer) {
+      const spans = textLayer.querySelectorAll("span");
+      textItemsBoundsRef.current = Array.from(spans).map(span => ({
+        rect: span.getBoundingClientRect(),
+        text: span.textContent || ""
+      }));
+    }
+  }, []);
+
+  const startPainting = (e: React.TouchEvent) => {
+    if (!activeHighlightColor) return;
+    
+    const touch = e.touches[0];
+    const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
+    if (!pageNode) return;
+
+    const pageRect = pageNode.getBoundingClientRect();
+    const x = touch.clientX;
+    const y = touch.clientY;
+
+    if (x < pageRect.left || x > pageRect.right || y < pageRect.top || y > pageRect.bottom) return;
+
+    setIsPainting(true);
+    const id = Math.random().toString(36).substring(2, 9);
+    paintHighlightIdRef.current = id;
+
+    // Find the nearest text line/item to snap
+    const snappedRect = findSnappedRect(x, y, pageRect);
+    if (!snappedRect) return;
+
+    setHighlights((prev) => [
+      ...prev,
+      {
+        id,
+        page: pageNumberRef.current,
+        color: activeHighlightColor,
+        rects: [snappedRect],
+      },
+    ]);
+  };
+
+  const handlePaintMove = (e: React.TouchEvent) => {
+    if (!isPainting || !paintHighlightIdRef.current || !activeHighlightColor) return;
+
+    const touch = e.touches[0];
+    const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
+    if (!pageNode) return;
+
+    const pageRect = pageNode.getBoundingClientRect();
+    const x = touch.clientX;
+    const y = touch.clientY;
+
+    const snappedRect = findSnappedRect(x, y, pageRect);
+    if (!snappedRect) return;
+
+    setHighlights((prev) => {
+      const hIdx = prev.findIndex((h) => h.id === paintHighlightIdRef.current);
+      if (hIdx === -1) return prev;
+
+      const currentHighlight = prev[hIdx];
+      // Check if this rect is already in the highlight
+      const exists = currentHighlight.rects.some(
+        (r) => 
+          Math.abs(r.y - snappedRect.y) < 0.1 && 
+          Math.abs(r.x - snappedRect.x) < 0.1 &&
+          Math.abs(r.width - snappedRect.width) < 0.1
+      );
+
+      if (exists) return prev;
+
+      const newHighlights = [...prev];
+      newHighlights[hIdx] = {
+        ...currentHighlight,
+        rects: [...currentHighlight.rects, snappedRect],
+      };
+      return newHighlights;
+    });
+  };
+
+  const effectiveScale = scale ?? (pdfPageWidth && containerWidth ? containerWidth / pdfPageWidth : 1);
+
   const handleTopBarColorClick = (color: string) => {
     if (activeHighlightColor === color) {
       setActiveHighlightColor(null);
+      setIsPainting(false);
     } else {
       setActiveHighlightColor(color);
-      if (selectionRects && selectionRects.length > 0) {
-        addHighlight(color, selectionRects);
-      }
+      // When a color is selected, we clear any active selection to avoid confusion
+      window.getSelection()?.removeAllRanges();
+      setSelectionRects(null);
+      setActiveSelectionPercentRects(null);
+      setSelectionPopupPos(null);
     }
   };
 
@@ -247,6 +681,8 @@ export function PDFReader({
         // Leave some padding for best fit
         setContainerWidth(entry.contentRect.width - 48);
         setContainerHeight(entry.contentRect.height - 48);
+        // Update text bounds when container size changes
+        setTimeout(updateTextItemBounds, 500);
       }
     });
 
@@ -256,69 +692,21 @@ export function PDFReader({
     };
   }, [isFocusMode, activeSidebarTab]);
 
-  const scaleRef = useRef(scale);
-  useEffect(() => {
-    scaleRef.current = scale;
-  }, [scale]);
-
-  useEffect(() => {
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        pinchStateRef.current = {
-          initialDist: dist,
-          initialScale: scaleRef.current || 1,
-        };
-      } else {
-        pinchStateRef.current = null;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && pinchStateRef.current) {
-        e.preventDefault();
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const ratio = dist / pinchStateRef.current.initialDist;
-        const newScale = Math.min(Math.max(0.5, pinchStateRef.current.initialScale * ratio), 3);
-        setScale(newScale);
-      }
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) {
-        pinchStateRef.current = null;
-      }
-    };
-
-    viewer.addEventListener("touchstart", handleTouchStart, { passive: false });
-    viewer.addEventListener("touchmove", handleTouchMove, { passive: false });
-    viewer.addEventListener("touchend", handleTouchEnd);
-    viewer.addEventListener("touchcancel", handleTouchEnd);
-
-    return () => {
-      viewer.removeEventListener("touchstart", handleTouchStart);
-      viewer.removeEventListener("touchmove", handleTouchMove);
-      viewer.removeEventListener("touchend", handleTouchEnd);
-      viewer.removeEventListener("touchcancel", handleTouchEnd);
-    };
-  }, []);
-
   useEffect(() => {
     setInputPage(String(pageNumber));
     onPageChange(pageNumber);
-  }, [pageNumber]);
+    const timer = setTimeout(updateTextItemBounds, 500);
+    return () => clearTimeout(timer);
+  }, [pageNumber, updateTextItemBounds, onPageChange]);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
+  useEffect(() => {
+    const timer = setTimeout(updateTextItemBounds, 500);
+    return () => clearTimeout(timer);
+  }, [scale, updateTextItemBounds]);
+
+  function onDocumentLoadSuccess(pdf: any) {
+    setNumPages(pdf.numPages);
+    parsedPdfRef.current = pdf;
     setLoading(false);
   }
 
@@ -419,7 +807,11 @@ export function PDFReader({
   };
 
   const handleZoom = (delta: number) => {
-    setScale((prev) => Math.min(Math.max(0.5, (prev || 1.0) + delta), 3.0));
+    setScale((prev) => {
+      const base = prev ?? effectiveScale;
+      const newScale = Math.round((base + delta) * 10) / 10;
+      return Math.min(Math.max(0.1, newScale), 5.0);
+    });
   };
 
   const handleManualPageChange = (e: React.FormEvent) => {
@@ -443,45 +835,64 @@ export function PDFReader({
     }
   };
 
-  const handlePanEnd = (_e: any, info: any) => {
-    const threshold = 50;
-    const velocityY = info.velocity.y;
-    const offsetY = info.offset.y;
-    const velocityX = info.velocity.x;
-    const offsetX = info.offset.x;
+  const [touchStartPos, setTouchStartPos] = useState<{x: number, y: number, time: number} | null>(null);
+
+  const handleTouchStartRaw = (e: React.TouchEvent) => {
+    if (activeHighlightColor) {
+      // Prevent default to avoid scrolling while painting
+      // Note: passive: false is required in the actual listener, but onTouchStart prop is usually passive by default
+      startPainting(e);
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      setTouchStartPos({
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now()
+      });
+    } else {
+      setTouchStartPos(null);
+    }
+  };
+
+  const handleTouchEndRaw = (e: React.TouchEvent) => {
+    if (isPainting) {
+      setIsPainting(false);
+      paintHighlightIdRef.current = null;
+      return;
+    }
+
+    if (!touchStartPos) return;
+
+    const touchEndPos = {
+      x: e.changedTouches[0].clientX,
+      y: e.changedTouches[0].clientY,
+      time: Date.now()
+    };
+    
+    const deltaX = touchEndPos.x - touchStartPos.x;
+    const deltaY = touchEndPos.y - touchStartPos.y;
+    const deltaTime = touchEndPos.time - touchStartPos.time;
+    
+    setTouchStartPos(null);
+
+    const baseScale = scale ?? effectiveScale;
+    if (baseScale > effectiveScale + 0.05) {
+      return; // Zoomed in, do not hijack swipe
+    }
 
     const canScrollX = viewerRef.current
-      ? viewerRef.current.scrollWidth > viewerRef.current.clientWidth
-      : false;
-    const canScrollY = viewerRef.current
-      ? viewerRef.current.scrollHeight > viewerRef.current.clientHeight
+      ? viewerRef.current.scrollWidth > viewerRef.current.clientWidth + 2
       : false;
 
-    if (Math.abs(offsetX) > Math.abs(offsetY)) {
-      if (
-        !canScrollX &&
-        (Math.abs(offsetX) > threshold || Math.abs(velocityX) > 500)
-      ) {
-        if (offsetX < 0) {
-          // Swipe left -> Next Page
-          changePage(1);
-        } else {
-          // Swipe right -> Prev Page
-          changePage(-1);
-        }
-      }
-    } else {
-      if (
-        !canScrollY &&
-        (Math.abs(offsetY) > threshold || Math.abs(velocityY) > 500)
-      ) {
-        if (offsetY < 0) {
-          // Swipe up -> Next Page
-          changePage(1);
-        } else {
-          // Swipe down -> Prev Page
-          changePage(-1);
-        }
+    if (canScrollX) return; // if document can scroll horizontally naturally, do not swipe
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50 && deltaTime < 500) {
+      if (deltaX < 0) {
+        changePage(1); // Swipe left -> Next Page
+      } else {
+        changePage(-1); // Swipe right -> Prev Page
       }
     }
   };
@@ -502,7 +913,8 @@ export function PDFReader({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       ref={containerRef}
-      onPanEnd={handlePanEnd}
+      onTouchStart={handleTouchStartRaw}
+      onTouchEnd={handleTouchEndRaw}
       onWheel={(e) => {
         // Prevent default scrolling to handle custom gesture if needed?
         // No, let's just make sure we only change page if we aren't zooming.
@@ -558,6 +970,13 @@ export function PDFReader({
             )}
             style={{ backdropFilter: 'blur(20px)' }}
           >
+            {/* Reading Progress Bar */}
+            <div className="absolute top-0 left-0 w-full h-[3px] bg-brand-navy/5 z-50">
+              <div 
+                className="h-full bg-brand-copper transition-all duration-300"
+                style={{ width: `${(pageNumber / (numPages || 1)) * 100}%` }}
+              />
+            </div>
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
               <button
                 onClick={onClose}
@@ -626,6 +1045,49 @@ export function PDFReader({
                 isMoreOptionsOpen ? "absolute md:relative top-[75px] md:top-auto right-4 md:right-auto flex flex-col md:flex-row p-2 md:p-0 rounded-2xl border md:border-none shadow-xl md:shadow-none z-50 animate-in fade-in zoom-in-95 md:animate-none" : "hidden md:flex",
                 settings.darkMode ? "bg-[#0A192F] md:bg-transparent border-white/10" : "bg-white md:bg-transparent border-brand-navy/10"
               )}>
+                <button
+                  onClick={toggleSpeech}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
+                    isSpeaking
+                      ? "text-brand-copper bg-brand-copper/10 animate-pulse"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title={isSpeaking ? "Parar leitura" : "Ler em voz alta"}
+                >
+                  {isSpeaking ? <VolumeX className="w-5 h-5 mx-auto md:mx-0" /> : <Volume2 className="w-5 h-5 mx-auto md:mx-0" />}
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveSidebarTab(activeSidebarTab === "outline" ? null : "outline");
+                    if (window.innerWidth < 1024) setIsMoreOptionsOpen(false);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
+                    activeSidebarTab === "outline"
+                      ? "text-brand-copper bg-brand-copper/10"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Índice / Sumário"
+                >
+                  <List className="w-5 h-5 mx-auto md:mx-0" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveSidebarTab(activeSidebarTab === "thumbnails" ? null : "thumbnails");
+                    if (window.innerWidth < 1024) setIsMoreOptionsOpen(false);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
+                    activeSidebarTab === "thumbnails"
+                      ? "text-brand-copper bg-brand-copper/10"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Miniaturas da página"
+                >
+                  <LayoutGrid className="w-5 h-5 mx-auto md:mx-0" />
+                </button>
+
                 <button
                   onClick={toggleBookmark}
                   className={cn(
@@ -747,21 +1209,72 @@ export function PDFReader({
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div 
+        className="flex-1 flex overflow-hidden relative"
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {/* Floating Mini Player for Speech */}
+        <AnimatePresence>
+          {isSpeaking && (
+            <motion.div
+              initial={{ y: 100, opacity: 0, x: "-50%" }}
+              animate={{ y: 0, opacity: 1, x: "-50%" }}
+              exit={{ y: 100, opacity: 0, x: "-50%" }}
+              className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center gap-6 min-w-[300px]"
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Lendo agora</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={isPaused ? { height: 4 } : { height: [4, 12, 4] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                        className="w-1 bg-brand-copper rounded-full"
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-white truncate max-w-[140px]">Página {pageNumber}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 ml-auto">
+                <button
+                  onClick={isPaused ? resumeSpeech : pauseSpeech}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+                >
+                  {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
+                </button>
+                <button
+                  onClick={stopSpeech}
+                  className="w-10 h-10 rounded-full bg-brand-copper hover:bg-brand-copper-dark flex items-center justify-center transition-colors text-white shadow-lg"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Main Viewport */}
         <main
           ref={viewerRef}
           className={cn(
-            "flex-1 overflow-auto flex flex-col items-center justify-center relative transition-all duration-300",
+            "flex-1 overflow-auto relative transition-all duration-300",
             !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
             "bg-[#0A192F]",
+            activeHighlightColor && "no-select cursor-crosshair touch-none"
           )}
+          onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
           onClick={() => {
+            if (activeHighlightColor) return;
             if (window.getSelection()?.toString().trim().length) return;
             setIsFocusMode(!isFocusMode);
           }}
         >
-          <div className="flex items-center justify-center min-w-full min-h-full p-4">
+          <div className="w-max min-w-full h-max min-h-full p-4 flex items-center justify-center">
+            <div className="w-fit">
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -823,28 +1336,17 @@ export function PDFReader({
                       scale={scale || undefined}
                       width={!scale ? containerWidth : undefined}
                       height={!scale ? containerHeight : undefined}
+                      onLoadSuccess={(page) => {
+                        if (page.originalWidth) {
+                          setPdfPageWidth(page.originalWidth);
+                        }
+                        // Small delay to ensure text layer is rendered
+                        setTimeout(updateTextItemBounds, 500);
+                      }}
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
-                      customTextRenderer={({ str }) => {
-                        if (
-                          !searchText ||
-                          !searchResults.includes(pageNumber) ||
-                          !str
-                        )
-                          return str;
-                        const escapedSearchText = searchText.replace(
-                          /[.*+?^${}()|[\]\\]/g,
-                          "\\$&",
-                        );
-                        const regex = new RegExp(
-                          `(${escapedSearchText})`,
-                          "gi",
-                        );
-                        return str.replace(
-                          regex,
-                          '<mark style="background-color: rgba(184, 134, 11, 0.4); color: transparent; border-radius: 4px;">$1</mark>',
-                        );
-                      }}
+                      customTextRenderer={textRenderer}
+                      className={activeHighlightColor ? "no-select" : ""}
                       loading={null}
                     />
                     {highlights
@@ -956,6 +1458,7 @@ export function PDFReader({
                 </AnimatePresence>
               </div>
             </Document>
+            </div>
           </div>
         </main>
 
@@ -1033,7 +1536,11 @@ export function PDFReader({
                       ? "Notas Rápidas"
                       : activeSidebarTab === "search"
                         ? "Busca"
-                        : "Marcadores"}
+                        : activeSidebarTab === "outline"
+                          ? "Índice / Sumário"
+                          : activeSidebarTab === "thumbnails"
+                            ? "Miniaturas"
+                            : "Marcadores"}
                   </h3>
                   <button
                     onClick={() => setActiveSidebarTab(null)}
@@ -1053,6 +1560,65 @@ export function PDFReader({
                       settings.darkMode ? "bg-white/5 text-white placeholder:text-white/20 border border-white/10 focus:bg-white/10" : "bg-brand-navy/5 text-brand-navy placeholder:text-brand-navy/40 border border-brand-navy/10 focus:bg-brand-navy/10",
                     )}
                   />
+                )}
+
+                {activeSidebarTab === "outline" && (
+                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pointer-events-auto">
+                    <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando sumário...</div>}>
+                      <Outline 
+                        onItemClick={({ pageNumber }) => {
+                          if (pageNumber) handlePageSelect(typeof pageNumber === 'string' ? parseInt(pageNumber, 10) : pageNumber);
+                        }}
+                        onLoadSuccess={(outline) => {
+                          setHasOutline(outline && outline.length > 0);
+                        }}
+                        onLoadError={() => setHasOutline(false)}
+                        className={cn(
+                          "custom-pdf-outline text-sm overflow-hidden",
+                          settings.darkMode ? "text-white/80" : "text-brand-navy/80"
+                        )}
+                      />
+                      {hasOutline === false && (
+                        <div className="text-center py-8 px-4">
+                          <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                          <p className="text-xs opacity-50 font-bold">Este PDF não possui um sumário interno configurado.</p>
+                        </div>
+                      )}
+                    </Document>
+                  </div>
+                )}
+
+                {activeSidebarTab === "thumbnails" && (
+                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pointer-events-auto">
+                    <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando miniaturas...</div>}>
+                      <div className="grid grid-cols-3 gap-2 pb-4">
+                        {Array.from({ length: numPages || 0 }).map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handlePageSelect(i + 1)}
+                            className={cn(
+                              "relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all flex flex-col items-center justify-center bg-white",
+                              pageNumber === i + 1 
+                                ? "border-brand-copper shadow-lg scale-[1.02] z-10" 
+                                : settings.darkMode ? "border-white/10 hover:border-white/30" : "border-brand-navy/10 hover:border-brand-navy/30"
+                            )}
+                          >
+                            <div className="w-full h-full flex items-center justify-center overflow-hidden pointer-events-none bg-white">
+                              <Page 
+                                pageNumber={i + 1} 
+                                width={100} 
+                                renderTextLayer={false} 
+                                renderAnnotationLayer={false}
+                              />
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] py-1 text-center font-medium backdrop-blur-sm">
+                              {i + 1}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </Document>
+                  </div>
                 )}
 
                 {activeSidebarTab === "search" && (
@@ -1284,14 +1850,22 @@ export function PDFReader({
                 >
                   <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
-                <span className={cn("text-[10px] sm:text-[11px] font-black w-8 sm:w-10 text-center cursor-pointer", settings.darkMode ? "text-white" : "text-brand-navy")} onClick={() => setScale(null)} title="Ajustar à Tela">
-                  {Math.round((scale || 1) * 100)}%
+                <span className={cn("text-[10px] sm:text-[11px] font-black w-7 sm:w-9 text-center", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                  {Math.round(effectiveScale * 100)}%
                 </span>
                 <button
                   onClick={() => handleZoom(0.1)}
                   className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/20" : "hover:text-brand-navy hover:bg-brand-navy/10")}
                 >
                   <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <div className={cn("w-px h-4 mx-1", settings.darkMode ? "bg-white/20" : "bg-brand-navy/20")} />
+                <button
+                  onClick={() => setScale(null)}
+                  title="Redefinir Zoom"
+                  className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/20" : "hover:text-brand-navy hover:bg-brand-navy/10")}
+                >
+                  <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </motion.footer>
