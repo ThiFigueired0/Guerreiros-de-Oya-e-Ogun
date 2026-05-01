@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
   Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History, Settings
@@ -10,12 +9,46 @@ import {
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
+import { get, set, del } from 'idb-keyval';
+import { useUndo } from '../hooks/useUndo';
 import { Greeting, StudyBook, AppSettings, StudyContent } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { PDFReader } from '../components/PDFReader';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+// IndexedDB PDF Storage Helpers
+const PDF_STORE_PREFIX = 'templo_pdf_';
+
+async function savePdfBinary(id: string, data: Blob | ArrayBuffer) {
+  try {
+    await set(`${PDF_STORE_PREFIX}${id}`, data);
+  } catch (error) {
+    console.error('Failed to save PDF to IDB:', error);
+    throw error;
+  }
+}
+
+async function getPdfBinary(id: string): Promise<Blob | null> {
+  try {
+    const data = await get(`${PDF_STORE_PREFIX}${id}`);
+    if (!data) return null;
+    if (data instanceof Blob) return data;
+    return new Blob([data], { type: 'application/pdf' });
+  } catch (error) {
+    console.error('Failed to get PDF from IDB:', error);
+    return null;
+  }
+}
+
+async function deletePdfBinary(id: string) {
+  try {
+    await del(`${PDF_STORE_PREFIX}${id}`);
+  } catch (error) {
+    console.error('Failed to delete PDF from IDB:', error);
+  }
+}
 
 const INITIAL_GREETINGS: Greeting[] = [
   // Gira
@@ -146,8 +179,8 @@ export default function StudiesScreen() {
   const [showBookModal, setShowBookModal] = useState(false);
   const [bookCoverDraft, setBookCoverDraft] = useState<string | null>(null);
   const [bookColorDraft, setBookColorDraft] = useState<string>('#b8860b'); // Default copper
-  const [bookPdfDraft, setBookPdfDraft] = useState<{name: string, data: string, totalPages: number, aiSummary?: string} | null>(null);
-  const [isGeneratingBookSummary, setIsGeneratingBookSummary] = useState<string | false>(false);
+  const [bookPdfDraft, setBookPdfDraft] = useState<{name: string, tempId: string | null, totalPages: number} | null>(null);
+  const [isProcessingBook, setIsProcessingBook] = useState<string | false>(false);
   const [selectedBookForAction, setSelectedBookForAction] = useState<StudyBook | null>(null);
   const [showBookNotesModal, setShowBookNotesModal] = useState(false);
   const [bookNotesDraft, setBookNotesDraft] = useState('');
@@ -155,7 +188,10 @@ export default function StudiesScreen() {
   const [bookAttachmentsDraft, setBookAttachmentsDraft] = useState<{name: string, type: 'image' | 'pdf', data: string}[]>([]);
   const [newBookLink, setNewBookLink] = useState('');
   const [viewingBook, setViewingBook] = useState<StudyBook | null>(null);
+  const [viewingUrl, setViewingUrl] = useState<string | null>(null);
   
+  const { queueDelete } = useUndo();
+
   const addBookLink = () => {
     if (newBookLink) {
       setBookLinksDraft([...bookLinksDraft, newBookLink]);
@@ -194,11 +230,6 @@ export default function StudiesScreen() {
   const [editingGreeting, setEditingGreeting] = useState<Greeting | null>(null);
   const [selectedGreeting, setSelectedGreeting] = useState<Greeting | null>(null);
   
-  const [showDeleteBookConfirm, setShowDeleteBookConfirm] = useState(false);
-  const [showDeleteGreetingConfirm, setShowDeleteGreetingConfirm] = useState(false);
-  const [bookToDeleteId, setBookToDeleteId] = useState<string | null>(null);
-  const [greetingToDeleteId, setGreetingToDeleteId] = useState<string | null>(null);
-  
   // New Content state
   const [showContentModal, setShowContentModal] = useState(false);
   const [editingContent, setEditingContent] = useState<StudyContent | null>(null);
@@ -211,8 +242,6 @@ export default function StudiesScreen() {
   });
   const [selectedContent, setSelectedContent] = useState<StudyContent | null>(null);
   const [contentSearch, setContentSearch] = useState('');
-  const [showDeleteContentConfirm, setShowDeleteContentConfirm] = useState(false);
-  const [contentToDeleteId, setContentToDeleteId] = useState<string | null>(null);
 
   const [newLink, setNewLink] = useState('');
   const addLink = () => {
@@ -294,32 +323,49 @@ export default function StudiesScreen() {
     reader.readAsDataURL(file);
   };
 
-  const saveNewBook = () => {
-    if (!bookPdfDraft) return;
+  const saveNewBook = async () => {
+    if (!bookPdfDraft || !bookPdfDraft.tempId) return;
 
-    const newBook: StudyBook = {
-      id: Date.now().toString(),
-      name: bookPdfDraft.name,
-      pdfBase64: bookPdfDraft.data,
-      uploadDate: Date.now(),
-      isFavorite: false,
-      readingStatus: 'not_started',
-      totalPages: bookPdfDraft.totalPages,
-      coverImage: bookCoverDraft || undefined,
-      coverColor: bookColorDraft,
-      aiSummary: bookPdfDraft.aiSummary
-    };
+    setIsProcessingBook("Salvando livro...");
+    const bookId = Date.now().toString();
 
-    setBooks([newBook, ...books]);
-    setShowBookModal(false);
-    setBookPdfDraft(null);
-    setBookCoverDraft(null);
-    setBookColorDraft('#b8860b');
+    try {
+      // Get the binary from temp storage
+      const blob = await getPdfBinary(bookPdfDraft.tempId);
+      if (!blob) throw new Error("Documento temporário não encontrado.");
+
+      // Save binary to definitive key
+      await savePdfBinary(bookId, blob);
+      
+      // Delete temporary entry
+      await deletePdfBinary(bookPdfDraft.tempId);
+
+      const newBook: StudyBook = {
+        id: bookId,
+        name: bookPdfDraft.name,
+        uploadDate: Date.now(),
+        isFavorite: false,
+        readingStatus: 'not_started',
+        totalPages: bookPdfDraft.totalPages,
+        coverImage: bookCoverDraft || undefined,
+        coverColor: bookColorDraft
+      };
+
+      setBooks([newBook, ...books]);
+      setShowBookModal(false);
+      setBookPdfDraft(null);
+      setBookCoverDraft(null);
+      setBookColorDraft('#b8860b');
+    } catch (error) {
+      console.error("Error saving book:", error);
+      alert("Erro ao salvar o livro. Tente novamente.");
+    } finally {
+      setIsProcessingBook(false);
+    }
   };
 
   // PDF Upload
   const handlePdfPreview = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Prevent default to avoid any potential form submission reload
     e.preventDefault();
     
     const file = e.target.files?.[0];
@@ -330,121 +376,125 @@ export default function StudiesScreen() {
       return;
     }
 
-    setIsGeneratingBookSummary("Lendo documento...");
+    setIsProcessingBook("Processando documento...");
 
     try {
-      // Small delay to allow UI to update
-      await new Promise(r => setTimeout(r, 50));
+      const tempId = `temp_${Date.now()}`;
+      await savePdfBinary(tempId, file);
       
-      // Step 1: Read basic PDF info (pages)
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const loadingTask = pdfjsLib.getDocument(uint8Array);
+      const url = URL.createObjectURL(file);
+      const loadingTask = pdfjsLib.getDocument(url);
       const pdf = await loadingTask.promise;
       const totalPages = pdf.numPages;
       await pdf.destroy();
+      URL.revokeObjectURL(url);
       
-      setIsGeneratingBookSummary("Preparando para salvar...");
-      await new Promise(r => setTimeout(r, 50));
-
-      // Step 2: Read base64 for storage
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const base64 = await base64Promise;
-
-      // Just set the draft, don't generate summary automatically to avoid reloads/crashes
       setBookPdfDraft({
         name: file.name,
-        data: base64,
+        tempId: tempId,
         totalPages
       });
     } catch(err) {
        console.error("Error on handlePdfPreview:", err);
-       alert("Ocorreu um erro ao processar o arquivo. Verifique se o arquivo não é muito grande.");
+       alert("Ocorreu um erro ao processar o arquivo.");
     } finally {
-      setIsGeneratingBookSummary(false);
-      // Clean input so it can be re-selected
+      setIsProcessingBook(false);
       e.target.value = '';
     }
   };
 
-  const generateSummaryForDraft = async () => {
-    if (!bookPdfDraft) return;
-    
-    setIsGeneratingBookSummary("Extraindo texto...");
-    try {
-      // Small delay to allow UI to update
-      await new Promise(r => setTimeout(r, 50));
-      
-      const response = await fetch(bookPdfDraft.data);
-      const arrayBuffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const loadingTask = pdfjsLib.getDocument(uint8Array);
-      const pdf = await loadingTask.promise;
-      
-      let extractedText = '';
-      const pagesToScan = Math.min(pdf.numPages, 8);
-      
-      for (let i = 1; i <= pagesToScan; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        extractedText += textContent.items.map((item: any) => (item as any).str).join(' ') + ' ';
-        page.cleanup();
-      }
-      await pdf.destroy();
+  const cancelBookUpload = async () => {
+    if (bookPdfDraft?.tempId) {
+      await deletePdfBinary(bookPdfDraft.tempId);
+    }
+    setBookPdfDraft(null);
+    setBookCoverDraft(null);
+    setShowBookModal(false);
+  };
 
-      if (extractedText) {
-        setIsGeneratingBookSummary("Gerando resumo com IA...");
-        await new Promise(r => setTimeout(r, 50));
-        
+  const deleteBook = (book: StudyBook) => {
+    queueDelete({
+      id: book.id,
+      label: book.name.replace('.pdf', ''),
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setBooks((prev: StudyBook[]) => prev.filter(b => b.id !== book.id));
+        deletePdfBinary(book.id);
+      }
+    });
+  };
+
+  const openBook = async (book: StudyBook) => {
+    setIsProcessingBook("Abrindo...");
+    try {
+      const blob = await getPdfBinary(book.id);
+      let url = '';
+      
+      if (blob) {
+        url = URL.createObjectURL(blob);
+      } else if (book.pdfBase64) {
+        // Fallback for legacy data not yet migrated or if IDB failed
+        url = book.pdfBase64;
+      } else {
+        alert("Arquivo não encontrado no armazenamento local.");
+        setIsProcessingBook(false);
+        return;
+      }
+
+      setViewingUrl(url);
+      setViewingBook(book);
+    } catch (error) {
+      console.error("Error opening book:", error);
+      alert("Erro ao abrir o arquivo.");
+    } finally {
+      setIsProcessingBook(false);
+    }
+  };
+
+  const closeBook = () => {
+    if (viewingUrl && viewingUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(viewingUrl);
+    }
+    setViewingUrl(null);
+    setViewingBook(null);
+  };
+
+  // Migration from Base64 to IDB Blobs
+  useEffect(() => {
+    const migrate = async () => {
+      const legacyBooks = books.filter(b => b.pdfBase64);
+      if (legacyBooks.length === 0) return;
+
+      const updatedBooks = [...books];
+      let changed = false;
+
+      for (const book of legacyBooks) {
         try {
-          const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || '';
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-          const prompt = `Faça um mini resumo (MÁXIMO DE 2 PARÁGRAFOS CURTOS) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
+          if (!book.pdfBase64) continue;
           
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          const text = response.text();
+          const response = await fetch(book.pdfBase64);
+          const blob = await response.blob();
+          await savePdfBinary(book.id, blob);
           
-          if (text) {
-            setBookPdfDraft({
-              ...bookPdfDraft,
-              aiSummary: text.trim()
-            });
+          const index = updatedBooks.findIndex(b => b.id === book.id);
+          if (index !== -1) {
+            updatedBooks[index] = { ...updatedBooks[index], pdfBase64: undefined };
+            changed = true;
           }
         } catch (error) {
-          console.error("Erro ao gerar resumo da IA:", error);
-          // Don't alert here, just fail gracefully so the book can still be saved
+          console.error(`Migration failed for book ${book.id}:`, error);
         }
       }
-    } catch (error) {
-      console.error("Error extracting text for summary:", error);
-    } finally {
-      setIsGeneratingBookSummary(false);
+
+      if (changed) {
+        setBooks(updatedBooks);
+      }
+    };
+
+    if (!isBooksLoading && books.length > 0) {
+      migrate();
     }
-  };
-
-  const deleteBook = (id: string) => {
-    setBookToDeleteId(id);
-    setShowDeleteBookConfirm(true);
-  };
-
-  const confirmDeleteBook = () => {
-    if (bookToDeleteId) {
-      setBooks(books.filter(b => b.id !== bookToDeleteId));
-      setBookToDeleteId(null);
-    }
-  };
-
-  const openBook = (book: StudyBook) => {
-    setViewingBook(book);
-    setSelectedBookForAction(null); // Close modal if open
-  };
+  }, [isBooksLoading, books.length]); // Use length as proxy for items to migrate
 
   // Greeting CRUD
   const handleSaveGreeting = () => {
@@ -466,16 +516,15 @@ export default function StudiesScreen() {
     setNewGreeting({ category: 'Orixás', entity: '', greeting: '', summary: '', imageUrl: '', beads: '', firma: '' });
   };
 
-  const deleteGreeting = (id: string) => {
-    setGreetingToDeleteId(id);
-    setShowDeleteGreetingConfirm(true);
-  };
-
-  const confirmDeleteGreeting = () => {
-    if (greetingToDeleteId) {
-      setGreetings(greetings.filter(g => g.id !== greetingToDeleteId));
-      setGreetingToDeleteId(null);
-    }
+  const deleteGreeting = (g: Greeting) => {
+    queueDelete({
+      id: g.id,
+      label: g.entity,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setGreetings((prev: Greeting[]) => prev.filter(item => item.id !== g.id));
+      }
+    });
   };
 
   const startEditGreeting = (g: Greeting) => {
@@ -528,21 +577,20 @@ export default function StudiesScreen() {
     // If total pages is missing, try to calculate it now
     if (!book.totalPages || book.totalPages === 0) {
       try {
-        const binaryString = atob(book.pdfBase64.split(',')[1]);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const loadingTask = pdfjsLib.getDocument(bytes);
+        const blob = await getPdfBinary(book.id);
+        if (!blob) return;
+
+        const url = URL.createObjectURL(blob);
+        const loadingTask = pdfjsLib.getDocument(url);
         const pdf = await loadingTask.promise;
         const totalPages = pdf.numPages;
+        await pdf.destroy();
+        URL.revokeObjectURL(url);
         
         // Update both state and local selection
         const updatedBook = { ...book, totalPages };
         setBooks(books.map(b => b.id === book.id ? updatedBook : b));
         setSelectedBookForAction(updatedBook);
-        console.log('Total pages recovered:', totalPages);
       } catch (error) {
         console.error('Failed to recover total pages:', error);
       }
@@ -579,52 +627,7 @@ export default function StudiesScreen() {
     }
   };
 
-  const handleGenerateSummaryForExistingBook = async (book: StudyBook) => {
-    setIsGeneratingBookSummary("Lendo PDF");
-    try {
-      await new Promise(r => setTimeout(r, 50));
-      const response = await fetch(book.pdfBase64);
-      const arrayBuffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const loadingTask = pdfjsLib.getDocument(uint8Array);
-      const pdf = await loadingTask.promise;
-      
-      setIsGeneratingBookSummary("Lendo páginas");
-      let extractedText = '';
-      const pagesToScan = Math.min(pdf.numPages, 8);
-      for (let i = 1; i <= pagesToScan; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        extractedText += textContent.items.map((item: any) => item.str).join(' ') + ' ';
-        page.cleanup();
-      }
-      await pdf.destroy();
 
-      if (extractedText) {
-        setIsGeneratingBookSummary("Analisando com IA");
-        await new Promise(r => setTimeout(r, 50));
-        const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || '';
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `Faça um mini resumo (MÁXIMO DE 2 PARÁGRAFOS CURTOS) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
-        
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-        
-        if (text) {
-          const updatedBook = { ...book, aiSummary: text.trim() };
-          setBooks(books.map(b => b.id === book.id ? updatedBook : b));
-          setSelectedBookForAction(updatedBook);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to generate summary:', error);
-      alert(`Erro ao gerar resumo: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsGeneratingBookSummary(false);
-    }
-  };
 
   const handleUpdateBookName = () => {
     if (!selectedBookForAction || !editingNameVal.trim()) return;
@@ -660,17 +663,16 @@ export default function StudiesScreen() {
     setContentForm({ title: '', category: 'Fundamento', content: '', attachments: [], links: [] });
   };
 
-  const deleteContent = (id: string, e: React.MouseEvent) => {
+  const deleteContent = (item: StudyContent, e: React.MouseEvent) => {
     e.stopPropagation();
-    setContentToDeleteId(id);
-    setShowDeleteContentConfirm(true);
-  };
-
-  const confirmDeleteContent = () => {
-    if (contentToDeleteId) {
-      setStudyContents(studyContents.filter(c => c.id !== contentToDeleteId));
-      setContentToDeleteId(null);
-    }
+    queueDelete({
+      id: item.id,
+      label: item.title,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setStudyContents((prev: StudyContent[]) => prev.filter(c => c.id !== item.id));
+      }
+    });
   };
 
   const toggleCategory = (cat: string) => {
@@ -779,10 +781,10 @@ export default function StudiesScreen() {
           <PDFReader
             key={viewingBook.id}
             title={viewingBook.name.replace('.pdf', '')}
-            pdfUrl={viewingBook.pdfBase64}
+            pdfUrl={viewingUrl || ''}
             initialPage={viewingBook.lastPage || 1}
             totalPages={viewingBook.totalPages}
-            onClose={() => setViewingBook(null)}
+            onClose={closeBook}
             onPageChange={(page) => {
               const status = (viewingBook.totalPages && page >= viewingBook.totalPages) ? 'completed' : 'in_progress';
               updateBookStatus(viewingBook.id, status, page);
@@ -1182,7 +1184,7 @@ export default function StudiesScreen() {
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteGreeting(g.id);
+                                    deleteGreeting(g);
                                   }}
                                   className={cn(
                                     "p-2 transition-colors",
@@ -1293,7 +1295,7 @@ export default function StudiesScreen() {
                             <Edit2 className="w-3 h-3" />
                           </button>
                           <button 
-                            onClick={(e) => deleteContent(content.id, e)}
+                            onClick={(e) => deleteContent(content, e)}
                             className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -1443,11 +1445,7 @@ export default function StudiesScreen() {
               )}
             >
               <button 
-                onClick={() => {
-                  setShowBookModal(false);
-                  setBookPdfDraft(null);
-                  setBookCoverDraft(null);
-                }}
+                onClick={cancelBookUpload}
                 className="absolute top-6 right-6 text-gray-400"
               >
                 <X className="w-5 h-5" />
@@ -1462,14 +1460,14 @@ export default function StudiesScreen() {
                 {/* PDF Selection */}
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Arquivo PDF</label>
-                  {isGeneratingBookSummary ? (
+                  {isProcessingBook ? (
                     <div className={cn(
                       "flex flex-col items-center justify-center p-8 border-2 border-dashed border-brand-copper/30 rounded-3xl bg-brand-copper/5 cursor-wait transition-all",
                       settings.darkMode && "bg-brand-copper/10"
                     )}>
-                      <Sparkles className="w-6 h-6 text-brand-copper animate-pulse mb-3" />
+                      <Book className="w-6 h-6 text-brand-copper animate-pulse mb-3" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-brand-copper animate-pulse">
-                        {typeof isGeneratingBookSummary === 'string' ? isGeneratingBookSummary : 'Carregando...'}
+                        {typeof isProcessingBook === 'string' ? isProcessingBook : 'Carregando...'}
                       </span>
                     </div>
                   ) : !bookPdfDraft ? (
@@ -1495,36 +1493,20 @@ export default function StudiesScreen() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <span className={cn("text-xs font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{bookPdfDraft.name}</span>
-                            {!bookPdfDraft.aiSummary && !isGeneratingBookSummary && (
-                              <button 
-                                onClick={generateSummaryForDraft}
-                                className="text-[9px] font-black uppercase tracking-widest text-brand-copper bg-brand-copper/5 px-2 py-1 rounded-lg border border-brand-copper/10 hover:bg-brand-copper/10 transition-colors"
-                              >
-                                Resumir com IA
-                              </button>
-                            )}
                           </div>
                         </div>
-                        <button onClick={() => setBookPdfDraft(null)} className="text-brand-red p-1 ml-2">
+                        <button 
+                          onClick={async () => {
+                            if (bookPdfDraft?.tempId) {
+                              await deletePdfBinary(bookPdfDraft.tempId);
+                            }
+                            setBookPdfDraft(null);
+                          }} 
+                          className="text-brand-red p-1 ml-2"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      {bookPdfDraft.aiSummary && (
-                        <div className="mt-3 p-4 rounded-2xl bg-brand-copper/5 border border-brand-copper/10 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-2 opacity-10">
-                            <Sparkles className="w-6 h-6 text-brand-copper" />
-                          </div>
-                          <h4 className="text-[8px] font-black uppercase tracking-widest text-brand-copper mb-2 flex items-center gap-1.5">
-                            <Sparkles className="w-3 h-3" /> Resumo Gerado
-                          </h4>
-                          <p className={cn(
-                            "text-[10px] font-medium leading-relaxed opacity-80",
-                            settings.darkMode ? "text-white" : "text-brand-navy"
-                          )}>
-                            {bookPdfDraft.aiSummary}
-                          </p>
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -1834,48 +1816,7 @@ export default function StudiesScreen() {
                       </button>
                     </div>
                   )}
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1">Opções do Livro</p>
-                  
-                  {selectedBookForAction.aiSummary ? (
-                    <div className="mt-4 px-4 py-3 bg-brand-copper/5 rounded-2xl border border-brand-copper/10 text-left relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Sparkles className="w-8 h-8 text-brand-copper" />
-                      </div>
-                      <h3 className="text-[9px] font-black uppercase tracking-widest text-brand-copper mb-2 flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3" /> Resumo da IA
-                      </h3>
-                      <p className={cn(
-                        "text-xs font-medium leading-relaxed opacity-80 relative z-10",
-                        settings.darkMode ? "text-white" : "text-brand-navy"
-                      )}>
-                        {selectedBookForAction.aiSummary}
-                      </p>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => handleGenerateSummaryForExistingBook(selectedBookForAction)}
-                      disabled={!!isGeneratingBookSummary}
-                      className={cn(
-                        "mt-4 w-full px-4 py-3 bg-brand-copper/5 hover:bg-brand-copper/10 rounded-2xl border border-brand-copper/20 text-left relative overflow-hidden transition-all flex items-center gap-3",
-                        isGeneratingBookSummary && "opacity-50 cursor-wait"
-                      )}
-                    >
-                      <div className="p-2 bg-brand-copper/10 rounded-xl">
-                        <Sparkles className={cn("w-4 h-4 text-brand-copper", isGeneratingBookSummary && "animate-pulse")} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-copper">
-                          {isGeneratingBookSummary ? (typeof isGeneratingBookSummary === 'string' ? isGeneratingBookSummary : "Gerando Resumo...") : "Gerar Resumo com IA"}
-                        </h3>
-                        <p className={cn(
-                          "text-[9px] font-medium opacity-60 mt-0.5",
-                          settings.darkMode ? "text-white" : "text-brand-navy"
-                        )}>
-                          Identifique rapidamente o conteúdo deste livro
-                        </p>
-                      </div>
-                    </button>
-                  )}
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1 mb-4">Opções do Livro</p>
                 </div>
               </div>
 
@@ -2069,7 +2010,7 @@ export default function StudiesScreen() {
 
                 <button 
                   onClick={() => {
-                    deleteBook(selectedBookForAction.id);
+                    deleteBook(selectedBookForAction);
                     setSelectedBookForAction(null);
                   }}
                   className="flex items-center gap-4 p-4 bg-red-50/30 rounded-2xl hover:bg-red-50 transition-colors group"
@@ -2215,38 +2156,7 @@ export default function StudiesScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeleteContentConfirm}
-        onClose={() => {
-          setShowDeleteContentConfirm(false);
-          setContentToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteContent}
-        title="Excluir Conteúdo"
-        message="Deseja realmente excluir este conteúdo permanentemente?"
-      />
-
-      <DeleteConfirmationModal 
-        isOpen={showDeleteBookConfirm}
-        onClose={() => {
-          setShowDeleteBookConfirm(false);
-          setBookToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteBook}
-        title="Excluir Livro"
-        message="Deseja realmente excluir este livro da sua biblioteca permanentemente?"
-      />
-
-      <DeleteConfirmationModal 
-        isOpen={showDeleteGreetingConfirm}
-        onClose={() => {
-          setShowDeleteGreetingConfirm(false);
-          setGreetingToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteGreeting}
-        title="Excluir Saudação"
-        message="Deseja realmente excluir esta saudação permanentemente?"
-      />
+      {/* Delete confirmation modals removed in favor of global undo */}
 
       {/* Study Content Details Modal */}
       <AnimatePresence>

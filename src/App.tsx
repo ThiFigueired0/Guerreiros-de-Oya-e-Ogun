@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react
 import { 
   Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
-  Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
+  Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
+  History as HistoryIcon
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
@@ -13,7 +14,8 @@ const ICON_MAP: Record<string, any> = {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle } from './types';
+import { AppSettings, Event, Candle, NotificationItem } from './types';
+import { UndoContext, UndoAction, useUndo } from './hooks/useUndo';
 
 const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Festa de Marias', category: 'Festa', date: '2026-01-24' },
@@ -530,8 +532,17 @@ function SocialButtons() {
   );
 }
 
-function NotificationCenter({ darkMode }: { darkMode: boolean }) {
+function NotificationCenter({ 
+  darkMode, 
+  notifications, 
+  setNotifications 
+}: { 
+  darkMode: boolean, 
+  notifications: NotificationItem[], 
+  setNotifications: (val: NotificationItem[] | ((prev: NotificationItem[]) => NotificationItem[])) => void 
+}) {
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [lastViewed, setLastViewed] = useStorage<number>('templo_notif_viewed', 0);
   const location = useLocation();
 
   // Close notifications on route change
@@ -539,17 +550,62 @@ function NotificationCenter({ darkMode }: { darkMode: boolean }) {
     setShowNotifications(false);
   }, [location.pathname]);
 
+  // Auto-expiry: Remove notifications older than 7 days
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  React.useEffect(() => {
+    const now = Date.now();
+    const validNotifications = notifications.filter(n => now - n.timestamp < SEVEN_DAYS_MS);
+    if (validNotifications.length !== notifications.length) {
+      setNotifications(validNotifications);
+    }
+  }, []);
+
+  const clearHistory = () => {
+    setNotifications([]);
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  // Mark all as read when closing to move them to "Anteriores"
+  React.useEffect(() => {
+    if (!showNotifications && notifications.some(n => !n.read)) {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  }, [showNotifications]);
+
+  const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
+  const unreadNotifications = sortedNotifications.filter((n: NotificationItem) => !n.read);
+  const readNotifications = sortedNotifications.filter((n: NotificationItem) => n.read);
+  
+  // Badge count: Only notifications newer than the last time the bell was clicked
+  const newNotificationsCount = notifications.filter(n => n.timestamp > lastViewed).length;
+
   return (
     <>
       <div className="absolute top-3 right-6 z-[60]">
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => setShowNotifications(true)}
+          onClick={() => {
+            setShowNotifications(true);
+            setLastViewed(Date.now());
+          }}
           className="w-10 h-10 rounded-full bg-white/95 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
         >
           <div className="relative">
             <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
+            {newNotificationsCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-5 w-5 bg-brand-red border-2 border-white items-center justify-center">
+                  <span className="text-[9px] font-black text-white leading-none">
+                    {newNotificationsCount > 9 ? '9+' : newNotificationsCount}
+                  </span>
+                </span>
+              </span>
+            )}
           </div>
         </motion.div>
       </div>
@@ -561,7 +617,7 @@ function NotificationCenter({ darkMode }: { darkMode: boolean }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50"
+            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowNotifications(false)}
           >
             <motion.div
@@ -574,7 +630,7 @@ function NotificationCenter({ darkMode }: { darkMode: boolean }) {
                 "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative border",
                 darkMode 
                   ? "bg-[#1A1A1A] text-white border-white/5" 
-                  : "bg-white text-brand-navy border-gray-100"
+                  : "bg-[#FDFDFD] text-slate-900 border-gray-100"
               )}
             >
               {/* Header */}
@@ -585,30 +641,266 @@ function NotificationCenter({ darkMode }: { darkMode: boolean }) {
                   </div>
                   <div>
                     <h2 className="text-xl font-black tracking-tight">Notificações</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Central de avisos</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowNotifications(false)}
-                  className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-90 transition-all"
+                  className="w-12 h-12 rounded-2xl bg-brand-navy dark:bg-brand-gold flex items-center justify-center active:scale-90 transition-all text-white hover:shadow-lg shadow-brand-navy/20"
+                  aria-label="Fechar"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-                <div className="w-24 h-24 rounded-[32px] bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                  <Bell className="w-10 h-10 opacity-20" />
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div className="mb-6 p-4 bg-brand-gold/5 dark:bg-white/5 rounded-[24px] border border-brand-gold/10 dark:border-white/5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-brand-gold/10 flex items-center justify-center shrink-0">
+                    <Info className="w-4 h-4 text-brand-gold" />
+                  </div>
+                  <p className="text-[11px] font-medium leading-tight opacity-70">
+                    Limpeza automática: as notificações expiram após 7 dias corridos.
+                  </p>
                 </div>
-                <h3 className="text-lg font-black tracking-tight mb-2">Tudo limpo por aqui!</h3>
-                <p className="text-xs font-bold opacity-40 uppercase tracking-widest max-w-[200px]">Sem notificações no momento</p>
+
+                {notifications.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center py-12 text-center opacity-40">
+                    <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
+                      <BellOff className="w-8 h-8" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em]">Céu Limpo</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1">Sem notificações</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {unreadNotifications.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy dark:text-brand-gold">Recentes</span>
+                            <span className="px-2 py-0.5 rounded-full bg-brand-gold text-[9px] font-black text-white">{unreadNotifications.length}</span>
+                          </div>
+                          <button 
+                            onClick={clearHistory}
+                            className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {unreadNotifications.map((notif: NotificationItem) => (
+                            <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} isUnread />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {readNotifications.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Anteriores</span>
+                          {!unreadNotifications.length && (
+                             <button 
+                               onClick={clearHistory}
+                               className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                             >
+                               <Trash2 className="w-3.5 h-3.5" />
+                               <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
+                             </button>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          {readNotifications.map((notif: NotificationItem) => (
+                            <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+function NotificationCard({ notif, darkMode, isUnread }: { notif: NotificationItem, darkMode: boolean, isUnread?: boolean }) {
+  const getStyles = () => {
+    switch (notif.category) {
+      case 'edição':
+        return {
+          bg: darkMode ? 'bg-blue-500/10' : 'bg-white',
+          border: darkMode ? 'border-blue-500/20' : 'border-blue-100',
+          iconBg: 'bg-blue-500/10',
+          iconColor: 'text-blue-600 dark:text-blue-400',
+          dot: 'bg-blue-500'
+        };
+      case 'calendário':
+        return {
+          bg: darkMode ? 'bg-brand-gold/5' : 'bg-white',
+          border: darkMode ? 'border-brand-gold/20' : 'border-amber-200',
+          iconBg: 'bg-brand-gold/10',
+          iconColor: 'text-brand-gold',
+          dot: 'bg-brand-gold'
+        };
+      case 'preceito':
+        return {
+          bg: darkMode ? 'bg-brand-copper/5' : 'bg-white',
+          border: darkMode ? 'border-brand-copper/20' : 'border-emerald-200',
+          iconBg: 'bg-brand-copper/10',
+          iconColor: 'text-brand-copper',
+          dot: 'bg-brand-copper'
+        };
+      case 'exclusão':
+        return {
+          bg: darkMode ? 'bg-brand-red/5' : 'bg-white',
+          border: darkMode ? 'border-brand-red/20' : 'border-red-200',
+          iconBg: 'bg-brand-red/10',
+          iconColor: 'text-brand-red',
+          dot: 'bg-brand-red'
+        };
+      default:
+        return {
+          bg: darkMode ? 'bg-white/5' : 'bg-white',
+          border: darkMode ? 'border-white/10' : 'border-gray-200',
+          iconBg: 'bg-gray-100 dark:bg-white/10',
+          iconColor: 'text-gray-500 dark:text-gray-400',
+          dot: 'bg-gray-500'
+        };
+    }
+  };
+
+  const styles = getStyles();
+  const titleColor = isUnread 
+    ? (darkMode ? "text-white" : "text-slate-950") 
+    : (darkMode ? "text-slate-400" : "text-slate-800");
+
+  const getIcon = () => {
+    switch (notif.category) {
+      case 'edição': return <PenTool className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'calendário': return <Calendar className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'preceito': return <Shield className={cn("w-5 h-5", styles.iconColor)} />;
+      default: return <HistoryIcon className={cn("w-5 h-5", styles.iconColor)} />;
+    }
+  };
+
+  const getTitleText = () => {
+    switch (notif.category) {
+      case 'edição': return "Atualização";
+      case 'calendário': return "Lembrete";
+      case 'preceito': return "Aviso Importante";
+      case 'exclusão': return "Item Removido";
+      default: return "Notificação";
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      className={cn(
+        "p-4 rounded-[28px] border flex items-center gap-4 transition-all relative overflow-hidden",
+        styles.bg,
+        styles.border,
+        isUnread && "ring-2 ring-inset " + (darkMode ? "ring-white/10" : "ring-brand-gold/10 shadow-lg shadow-brand-gold/5")
+      )}
+    >
+      {isUnread && (
+        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", styles.dot)} />
+      )}
+      
+      <div className={cn(
+        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-transparent shadow-sm",
+        styles.iconBg,
+        isUnread && "animate-pulse"
+      )}>
+        {getIcon()}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className={cn("text-[9px] uppercase font-black tracking-[0.2em]", isUnread ? styles.iconColor : (darkMode ? "text-slate-500" : "text-slate-400"))}>
+            {getTitleText()}
+          </p>
+          {isUnread && <div className={cn("w-1.5 h-1.5 rounded-full", styles.dot)} />}
+        </div>
+        <p className={cn(
+          "text-[13px] leading-tight transition-colors break-words font-bold",
+          titleColor
+        )}>
+          {notif.title}
+        </p>
+      </div>
+
+      <div className="text-right shrink-0 flex flex-col items-end gap-1">
+        <span className={cn("text-[10px] font-bold whitespace-nowrap", darkMode ? "text-slate-500" : "text-slate-400")}>
+          {new Date(notif.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+        </span>
+        <span className={cn("text-[10px] font-black", darkMode ? "text-slate-600" : "text-slate-500")}>
+          {new Date(notif.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: () => void, onFinish: () => void }) {
+  const [progress, setProgress] = React.useState(100);
+  const duration = 6000;
+  const startTime = React.useRef(Date.now());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime.current;
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+      setProgress(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        onFinish();
+      }
+    }, 16);
+
+    return () => clearInterval(timer);
+  }, [onFinish]);
+
+  return (
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 100, opacity: 0 }}
+      className="fixed bottom-28 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-brand-navy text-white rounded-3xl overflow-hidden shadow-2xl z-[150] p-4 flex items-center justify-between gap-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+          <Trash2 className="w-5 h-5 text-brand-red" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold leading-tight truncate">Item "{action.label}" excluído</p>
+          <p className="text-[10px] opacity-60 font-medium italic">Esta ação não pode ser desfeita após o tempo esgotar</p>
+        </div>
+      </div>
+      
+      <button
+        onClick={onUndo}
+        className="px-4 py-2 bg-brand-copper rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95 transition-all shadow-lg shadow-brand-copper/30"
+      >
+        Desfazer
+      </button>
+
+      {/* Progress Bar */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+        <motion.div 
+          className="h-full bg-brand-copper"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </motion.div>
   );
 }
 
@@ -620,6 +912,8 @@ export default function App() {
     pushNotifications: false
   });
 
+  const [notifications, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
+  const [deliveredIds, setDeliveredIds] = useStorage<string[]>('templo_delivered_automated', []);
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
   const [bichos, setBichos] = useStorage<any[]>('templo_bichos', []);
   const [candles, setCandles] = useStorage<Candle[]>('templo_candles', [
@@ -629,6 +923,149 @@ export default function App() {
   ]);
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
+  const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
+
+  // Automated Notifications for Events and Precepts
+  React.useEffect(() => {
+    const checkAutomatedNotifications = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      
+      // Only proceed with event reminders after 06:00 AM
+      const isAfterSixAM = currentHour >= 6;
+      
+      const todayStr = now.toISOString().split('T')[0];
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      
+      const newNotifs: NotificationItem[] = [];
+      const newDeliveredIds: string[] = [...deliveredIds];
+      const allEvents = [...CALENDAR_2026, ...events];
+
+      const addAutomatedNotif = (id: string, title: string, category: string) => {
+        // Double check: not in current history AND not in deliveredIds list
+        if (!notifications.some(n => n.id === id) && !deliveredIds.includes(id)) {
+          newNotifs.push({
+            id,
+            title,
+            timestamp: Date.now(),
+            category,
+            read: false
+          });
+          newDeliveredIds.push(id);
+        }
+      };
+
+      // 1. Calendar Event Reminders (1 day before and same day)
+      // Only send these if it's after 06:00 AM
+      if (isAfterSixAM) {
+        allEvents.forEach(event => {
+          const uniqueKey = 'id' in event ? event.id : `${event.date}_${event.title}`;
+          const eventId_today = `event_${uniqueKey}_today_${todayStr}`;
+          const eventId_tomorrow = `event_${uniqueKey}_tomorrow_${todayStr}`;
+
+          // Today's event
+          if (event.date === todayStr) {
+            addAutomatedNotif(eventId_today, `Evento hoje: ${event.title}`, 'calendário');
+          }
+          // Tomorrow's event
+          if (event.date === tomorrowStr) {
+            addAutomatedNotif(eventId_tomorrow, `Evento amanhã: ${event.title}`, 'calendário');
+          }
+        });
+      }
+
+      // 2. Precept Reminders (Sunday for Monday start)
+      const dayOfWeek = now.getDay(); // 0 is Sunday
+      if (dayOfWeek === 0 && isAfterSixAM) { // Sunday after 06:00
+        const preceptSundayId = `precept_sunday_${todayStr}`;
+        addAutomatedNotif(preceptSundayId, "Lembrete: Preceito inicia amanhã (segunda-feira)", 'preceito');
+      }
+
+      // 3. New Week Event (Monday)
+      if (dayOfWeek === 1 && isAfterSixAM) { // Monday after 06:00
+        const preceptMondayId = `precept_monday_${todayStr}`;
+        if (!notifications.some(n => n.id === preceptMondayId) && !deliveredIds.includes(preceptMondayId)) {
+          const weekEnd = new Date(now);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          const weekEndStr = weekEnd.toISOString().split('T')[0];
+          
+          const weekEvents = allEvents.filter(event => event.date >= todayStr && event.date <= weekEndStr);
+          const hasOpenRitual = weekEvents.some(e => e.category === 'Festa' || e.category === 'Gira aberta');
+          
+          let title = "Semana de preceito iniciada.";
+          if (weekEvents.length > 0) {
+            title += ` Teremos ${weekEvents.length} evento(s) nesta semana, incluindo: ${weekEvents[0].title}.`;
+            if (hasOpenRitual) {
+              title += " Há gira aberta ou festa programada!";
+            }
+          } else {
+            title += " Não há festas ou giras abertas programadas para esta semana.";
+          }
+
+          addAutomatedNotif(preceptMondayId, title, 'preceito');
+        }
+      }
+
+      // 4. Ogã Payment Reminder (on days with Gira de atendimento or Gira interna)
+      if (isAfterSixAM) {
+        const ogaEvents = allEvents.filter(e => 
+          e.date === todayStr && 
+          (e.category === 'Gira de atendimento' || e.category === 'Gira interna')
+        );
+        
+        ogaEvents.forEach(event => {
+          const ogaNotifId = `oga_payment_${todayStr}_${event.title}`;
+          addAutomatedNotif(ogaNotifId, `Lembrete Financeiro: Dia de girá (${event.title}). Verifique se possui os R$16 em espécie para o Ogã.`, 'preceito');
+        });
+      }
+
+      if (newNotifs.length > 0) {
+        setNotifications(prev => [...newNotifs, ...prev].slice(0, 100));
+        // Cleanup old delivered IDs to keep storage small (keep last 200)
+        setDeliveredIds(newDeliveredIds.slice(-200));
+      }
+    };
+
+    checkAutomatedNotifications();
+    const interval = setInterval(checkAutomatedNotifications, 30 * 60 * 1000); // Check every 30 mins
+    return () => clearInterval(interval);
+  }, [notifications.length, events.length, deliveredIds.length]); 
+
+  const queueDelete = (action: UndoAction) => {
+    // If there's an active one, confirm it immediately
+    if (activeUndo) {
+      finalizeDelete();
+    }
+    setActiveUndo(action);
+  };
+
+  const finalizeDelete = () => {
+    if (!activeUndo) return;
+    
+    // Execute actual deletion
+    activeUndo.onConfirm();
+
+    // Add to history
+    const newNotif: NotificationItem = {
+      id: activeUndo.id,
+      title: activeUndo.label,
+      timestamp: Date.now(),
+      category: 'exclusão',
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev].slice(0, 50)); // Keep last 50
+    
+    setActiveUndo(null);
+  };
+
+  const handleUndo = () => {
+    if (activeUndo?.onUndo) {
+      activeUndo.onUndo();
+    }
+    setActiveUndo(null);
+  };
 
   // Migration logic to ensure categories and 2026 calendar are updated
   React.useEffect(() => {
@@ -822,8 +1259,18 @@ export default function App() {
     }
   }, []);
 
+  // Apply dark mode class to body for Tailwind dark: variants
+  React.useEffect(() => {
+    if (settings.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.darkMode]);
+
   return (
-    <BrowserRouter>
+    <UndoContext.Provider value={{ queueDelete }}>
+      <BrowserRouter>
       <NotificationManager />
       <div className={cn(
         "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
@@ -838,11 +1285,26 @@ export default function App() {
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
           {/* Notification Icon - Global */}
-          <NotificationCenter darkMode={settings.darkMode} />
+          <NotificationCenter 
+            darkMode={settings.darkMode} 
+            notifications={notifications} 
+            setNotifications={setNotifications} 
+          />
 
           <Navigation />
           
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <AnimatePresence>
+            {activeUndo && (
+              <UndoToast 
+                key={activeUndo.id}
+                action={activeUndo} 
+                onUndo={handleUndo} 
+                onFinish={finalizeDelete} 
+              />
+            )}
+          </AnimatePresence>
+
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
             <TopHeader />
             <SocialButtons />
             
@@ -876,5 +1338,6 @@ export default function App() {
         </div>
       </div>
     </BrowserRouter>
+  </UndoContext.Provider>
   );
 }

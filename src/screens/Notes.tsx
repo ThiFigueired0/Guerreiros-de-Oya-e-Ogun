@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Plus, X, Trash2, Search, FileText, ChevronRight, Save, Camera, Image as ImageIcon, Trash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
+import { useUndo } from '../hooks/useUndo';
 import { Note, AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
@@ -32,6 +33,8 @@ export default function NotesScreen() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [newLink, setNewLink] = useState('');
+
+  const { queueDelete } = useUndo();
 
   const handleSave = () => {
     if (noteForm.title) {
@@ -145,7 +148,15 @@ export default function NotesScreen() {
 
   const handleDelete = () => {
     if (selectedNote) {
-      setNotes(notes.filter(n => n.id !== selectedNote.id));
+      const noteForUndo = { ...selectedNote };
+      queueDelete({
+        id: noteForUndo.id,
+        label: noteForUndo.title,
+        timestamp: Date.now(),
+        onConfirm: () => {
+          setNotes(prev => prev.filter(n => n.id !== noteForUndo.id));
+        }
+      });
       setSelectedNote(null);
     }
   };
@@ -486,7 +497,7 @@ export default function NotesScreen() {
                     
                     <div className={cn("pt-12 border-t border-gray-100", settings.darkMode && "border-gray-800")}>
                        <button 
-                         onClick={() => setShowDeleteConfirm(true)}
+                         onClick={handleDelete}
                          className="flex items-center gap-3 text-red-500 font-black text-xs uppercase tracking-widest p-4 bg-red-50 rounded-2xl w-full justify-center"
                        >
                          <Trash2 className="w-5 h-5" /> Excluir Anotação
@@ -499,13 +510,7 @@ export default function NotesScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDelete}
-        title="Excluir Anotação"
-        message="Deseja realmente excluir esta nota permanentemente?"
-      />
+      {/* Delete confirmation modal removed in favor of global undo */}
     </motion.div>
   );
 }

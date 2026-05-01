@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
+import { useUndo } from '../hooks/useUndo';
 import { AppSettings, FinancialRecord, Event } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
@@ -170,6 +171,8 @@ export default function Financeiro() {
   // Delete confirmation state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [recordToDeleteId, setRecordToDeleteId] = useState<string | null>(null);
+
+  const { queueDelete } = useUndo();
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -411,17 +414,15 @@ export default function Financeiro() {
     setEditingRecord(null);
   };
 
-  const deleteRecord = (id: string) => {
-    setRecordToDeleteId(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeleteRecord = () => {
-    if (recordToDeleteId) {
-      setRecords(prev => prev.filter(r => r.id !== recordToDeleteId));
-      setRecordToDeleteId(null);
-      setShowDeleteConfirm(false);
-    }
+  const deleteRecord = (record: FinancialRecord) => {
+    queueDelete({
+      id: record.id,
+      label: record.description,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setRecords(prev => prev.filter(r => r.id !== record.id));
+      }
+    });
   };
 
   return (
@@ -863,7 +864,10 @@ export default function Financeiro() {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button 
-                            onClick={() => deleteRecord(record.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteRecord(record);
+                            }}
                             className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1360,16 +1364,7 @@ export default function Financeiro() {
           </>
         )}
       </AnimatePresence>
-      <DeleteConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setRecordToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteRecord}
-        title="Excluir Registro"
-        message="Deseja realmente excluir este registro financeiro?"
-      />
+      {/* Delete confirmation removed in favor of global undo */}
     </motion.div>
   );
 }

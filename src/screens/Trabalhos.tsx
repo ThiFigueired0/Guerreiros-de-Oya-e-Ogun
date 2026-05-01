@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Edit2, X, Save, DollarSign, List, Info, Search, Calculator, PlusCircle, MinusCircle, History, ChevronRight, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { useStorage } from '../hooks/useStorage';
-import { AppSettings, Bicho, SimulatorItem, SimulationRecord, OfferingEntity, Candle, Event } from '../types';
+import { useUndo } from '../hooks/useUndo';
+import { AppSettings, Bicho, SimulatorItem, SimulationRecord, OfferingEntity, Candle, Event, NotificationItem } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '../lib/utils';
 
 export default function TrabalhosScreen() {
+  const { queueDelete } = useUndo();
+
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira', 'Festa', 'Trabalho', 'Reunião'],
@@ -72,9 +75,6 @@ export default function TrabalhosScreen() {
   const [events] = useStorage<Event[]>('templo_events', []);
 
   const [activeTab, setActiveTab] = useState<'cuts' | 'ebo' | 'candles'>('cuts');
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'bicho' | 'history' | 'candle' | 'simulator' } | null>(null);
 
   const [offerings, setOfferings] = useStorage<OfferingEntity[]>('templo_offerings', [
     {
@@ -212,33 +212,71 @@ export default function TrabalhosScreen() {
     setShowModal(true);
   };
 
-  const removeBicho = (id: string) => {
-    setItemToDelete({ id, type: 'bicho' });
-    setShowDeleteConfirm(true);
+  const removeBicho = (bicho: Bicho) => {
+    queueDelete({
+      id: bicho.id,
+      label: `Bicho: ${bicho.name}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setBichos(prev => prev.filter(b => b.id !== bicho.id));
+      }
+    });
   };
 
-  const confirmDelete = () => {
-    if (!itemToDelete) return;
-
-    if (itemToDelete.type === 'bicho') {
-      setBichos(bichos.filter(b => b.id !== itemToDelete.id));
-    } else if (itemToDelete.type === 'history') {
-      setSimulationHistory(simulationHistory.filter(r => r.id !== itemToDelete.id));
-    } else if (itemToDelete.type === 'candle') {
-      setCandles(candles.filter(c => c.id !== itemToDelete.id));
-    } else if (itemToDelete.type === 'simulator') {
-      setSimulatorItems(simulatorItems.filter(item => item.id !== itemToDelete.id));
-    }
-
-    setShowDeleteConfirm(false);
-    setItemToDelete(null);
+  const deleteHistoryRecord = (record: SimulationRecord, e: React.MouseEvent) => {
+    e.stopPropagation();
+    queueDelete({
+      id: record.id,
+      label: record.title || "Simulação",
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setSimulationHistory(prev => prev.filter(r => r.id !== record.id));
+      }
+    });
   };
+
+  const removeFromSimulator = (item: SimulatorItem) => {
+    // Immediate removal from simulator is usually fine, but let's stick to the pattern if requested
+    // However, the user said "any part of the system", so I will queue it.
+    const bichoName = bichos.find(b => b.id === item.bichoId)?.name || "Item";
+    queueDelete({
+      id: item.id,
+      label: `Item do Simulador: ${bichoName}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setSimulatorItems(prev => prev.filter(i => i.id !== item.id));
+      }
+    });
+  };
+
+  const removeCandle = (candle: Candle) => {
+    queueDelete({
+      id: candle.id,
+      label: `Vela: ${candle.color} ${candle.type}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setCandles(prev => prev.filter(c => c.id !== candle.id));
+      }
+    });
+  };
+
+  const [notifications, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
 
   const handleSaveCandle = () => {
     if (!candleForm.color || !candleForm.type) return;
 
     if (editingCandle) {
       setCandles(candles.map(c => c.id === editingCandle.id ? { ...c, ...candleForm } as Candle : c));
+      
+      // Add notification for update
+      const newNotif: NotificationItem = {
+        id: `update_candle_${Date.now()}`,
+        title: `Vela ${candleForm.color} (${candleForm.type}) atualizada`,
+        timestamp: Date.now(),
+        category: 'edição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     } else {
       const newCandle: Candle = {
         id: Date.now().toString(),
@@ -269,11 +307,6 @@ export default function TrabalhosScreen() {
     setSimulatorItems(simulatorItems.map(item => 
       item.id === id ? { ...item, ...updates } : item
     ));
-  };
-
-  const removeFromSimulator = (id: string) => {
-    setItemToDelete({ id, type: 'simulator' });
-    setShowDeleteConfirm(true);
   };
 
   const calculateSimulatorTotal = () => {
@@ -322,12 +355,6 @@ export default function TrabalhosScreen() {
     setActiveSimulationId(record.id);
     setShowHistoryModal(false);
     setShowSimulator(true);
-  };
-
-  const deleteHistoryRecord = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setItemToDelete({ id, type: 'history' });
-    setShowDeleteConfirm(true);
   };
 
   const white7DayCandle = candles.find(c => c.color.toLowerCase() === 'branca' && c.type === '7 Dias');
@@ -531,7 +558,7 @@ export default function TrabalhosScreen() {
                             <button onClick={(e) => { e.stopPropagation(); openEdit(bicho); }} className="p-2.5 bg-white dark:bg-white/10 text-gray-400 hover:text-brand-copper rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); removeBicho(bicho.id); }} className="p-2.5 bg-red-50 text-brand-red active:bg-red-100 rounded-xl shadow-sm border border-red-100/50 transition-colors">
+                            <button onClick={(e) => { e.stopPropagation(); removeBicho(bicho); }} className="p-2.5 bg-red-50 text-brand-red active:bg-red-100 rounded-xl shadow-sm border border-red-100/50 transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -1162,14 +1189,11 @@ export default function TrabalhosScreen() {
                       </button>
                       {!(candle.color.toLowerCase() === 'branca' && candle.type === '7 Dias') && (
                         <button 
-                          onClick={() => {
-                             setItemToDelete({ id: candle.id, type: 'candle' });
-                             setShowDeleteConfirm(true);
-                           }}
-                           className="p-2.5 rounded-xl text-gray-400 hover:text-brand-red hover:bg-brand-red/10 transition-all active:scale-90"
-                         >
-                           <Trash2 className="w-4 h-4" />
-                         </button>
+                          onClick={() => removeCandle(candle)}
+                          className="p-2.5 rounded-xl text-gray-400 hover:text-brand-red hover:bg-brand-red/10 transition-all active:scale-90"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1516,7 +1540,7 @@ export default function TrabalhosScreen() {
                               </button>
                             </div>
                             <button 
-                              onClick={() => removeFromSimulator(item.id)}
+                              onClick={() => removeFromSimulator(item)}
                               className="p-2 text-brand-red hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1707,7 +1731,7 @@ export default function TrabalhosScreen() {
                         </div>
                         <div className="flex items-center gap-3">
                           <button 
-                            onClick={(e) => deleteHistoryRecord(record.id, e)}
+                            onClick={(e) => deleteHistoryRecord(record, e)}
                             className="p-3 bg-red-50 text-brand-red rounded-2xl active:bg-red-100 transition-all shadow-sm border border-red-100"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1938,26 +1962,7 @@ export default function TrabalhosScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setItemToDelete(null);
-        }}
-        onConfirm={confirmDelete}
-        title={
-          itemToDelete?.type === 'bicho' ? "Excluir Bicho" :
-          itemToDelete?.type === 'history' ? "Excluir Simulação" :
-          itemToDelete?.type === 'simulator' ? "Remover do Simulador" :
-          "Excluir Vela"
-        }
-        message={
-          itemToDelete?.type === 'bicho' ? "Deseja realmente excluir este bicho dos registros?" :
-          itemToDelete?.type === 'history' ? "Deseja excluir permanentemente este registro de simulação?" :
-          itemToDelete?.type === 'simulator' ? "Deseja remover este bicho da sua simulação atual?" :
-          "Deseja excluir esta vela do seu estoque?"
-        }
-      />
+      {/* Delete confirmation modals removed in favor of global undo */}
     </motion.div>
   );
 }

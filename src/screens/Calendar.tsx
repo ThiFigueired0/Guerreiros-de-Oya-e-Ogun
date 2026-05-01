@@ -4,6 +4,7 @@ import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
+import { useUndo } from '../hooks/useUndo';
 import { Event, AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
@@ -28,8 +29,6 @@ export default function CalendarScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
     type: 'event',
     title: '',
@@ -44,6 +43,8 @@ export default function CalendarScreen() {
   const [showCategorySelect, setShowCategorySelect] = useState(false);
   const [showNameSelect, setShowNameSelect] = useState(false);
   const [nameSearch, setNameSearch] = useState('');
+
+  const { queueDelete } = useUndo();
 
   const parseEventDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -123,26 +124,23 @@ export default function CalendarScreen() {
     setShowDayEventsModal(false);
   };
 
-  const deleteEvent = (id: string) => {
-    setEventToDeleteId(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeleteEvent = () => {
-    if (eventToDeleteId) {
-      const updatedEvents = events.filter(e => e.id !== eventToDeleteId);
-      setEvents(updatedEvents);
-      
-      // If we are in the day modal, check if we should close it
-      if (selectedDay) {
-        const remainingOnDay = updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length;
-        if (remainingOnDay === 0) {
-          setShowDayEventsModal(false);
+  const deleteEvent = (event: Event) => {
+    queueDelete({
+      id: event.id,
+      label: event.title || event.reminder || 'Evento',
+      timestamp: Date.now(),
+      onConfirm: () => {
+        const updatedEvents = events.filter(e => e.id !== event.id);
+        setEvents(updatedEvents);
+        
+        if (selectedDay) {
+          const remainingOnDay = updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length;
+          if (remainingOnDay === 0) {
+            setShowDayEventsModal(false);
+          }
         }
       }
-      
-      setEventToDeleteId(null);
-    }
+    });
   };
 
   const closeModal = () => {
@@ -513,7 +511,7 @@ export default function CalendarScreen() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => deleteEvent(event.id)}
+                          onClick={() => deleteEvent(event)}
                           className={cn(
                             "p-3 rounded-xl transition-all active:scale-90",
                             settings.darkMode ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" : "bg-red-50 text-red-500 hover:bg-brand-red shadow-sm"
@@ -595,7 +593,7 @@ export default function CalendarScreen() {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => deleteEvent(event.id)}
+                        onClick={() => deleteEvent(event)}
                         className={cn(
                           "p-3.5 rounded-2xl transition-all active:scale-90",
                           settings.darkMode ? "bg-red-500/10 text-red-100" : "bg-red-50 text-red-500 border border-red-100"
@@ -989,16 +987,7 @@ export default function CalendarScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setEventToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteEvent}
-        title="Excluir Evento"
-        message="Deseja realmente excluir este evento permanentemente da agenda?"
-      />
+      {/* Delete confirmation modals removed in favor of global undo */}
 
       <AnimatePresence>
         {showDetailsModal && viewingEvent && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
 
-export function useIdbStorage<T>(key: string, initialValue: T): [T, (value: T) => void, boolean] {
+export function useIdbStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void, boolean] {
   const [storedValue, setStoredValue] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,12 +35,13 @@ export function useIdbStorage<T>(key: string, initialValue: T): [T, (value: T) =
     loadData();
   }, [key]);
 
-  const setValue = async (value: T) => {
+  const setValue = async (value: T | ((val: T) => T)) => {
     try {
-      setStoredValue(value);
-      await set(key, value);
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      await set(key, valueToStore);
       // Sync across tabs/instances
-      window.dispatchEvent(new CustomEvent('idb-storage-sync', { detail: { key, value } }));
+      window.dispatchEvent(new CustomEvent('idb-storage-sync', { detail: { key, value: valueToStore } }));
     } catch (error) {
       console.error('Error saving to IndexedDB:', error);
     }

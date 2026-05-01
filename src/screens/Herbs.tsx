@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
-import { HerbBath, AppSettings, ReadyBath, HerbStock } from '../types';
+import { useUndo } from '../hooks/useUndo';
+import { HerbBath, AppSettings, ReadyBath, HerbStock, NotificationItem } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
@@ -227,6 +228,7 @@ export default function HerbsScreen() {
   const [baths, setBaths] = useStorage<HerbBath[]>('templo_baths', INITIAL_BATHS);
   const [readyBaths, setReadyBaths] = useStorage<ReadyBath[]>('templo_ready_baths', INITIAL_READY_BATHS);
   const [herbStock, setHerbStock] = useStorage<HerbStock[]>('templo_herb_stock', []);
+  const [notifications, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
   const [activeSubTab, setActiveSubTab] = useState<'composition' | 'ready' | 'herbs_list'>('composition');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isManaging, setIsManaging] = useState(false);
@@ -285,9 +287,6 @@ export default function HerbsScreen() {
   });
 
   const [selectedBathForDetails, setSelectedBathForDetails] = useState<HerbBath | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isDeletingReady, setIsDeletingReady] = useState(false);
 
   // Ready Bath Listing State
   const [readySearch, setReadySearch] = useState('');
@@ -303,9 +302,9 @@ export default function HerbsScreen() {
   const [herbSearch, setHerbSearch] = useState('');
   const [customHerbName, setCustomHerbName] = useState('');
   const [stockSearch, setStockSearch] = useState('');
-  const [showDeleteStockConfirm, setShowDeleteStockConfirm] = useState(false);
-  const [herbToDeleteId, setHerbToDeleteId] = useState<string | null>(null);
   const [copiedPix, setCopiedPix] = useState(false);
+
+  const { queueDelete } = useUndo();
 
   const handleCopyPix = () => {
     navigator.clipboard.writeText('11982350614');
@@ -330,6 +329,16 @@ export default function HerbsScreen() {
     if (newBath.title) {
       if (editingId) {
         setBaths(baths.map(b => b.id === editingId ? { ...b, ...newBath } as HerbBath : b));
+        
+        // Add notification for update
+        const newNotif: NotificationItem = {
+          id: `update_bath_${Date.now()}`,
+          title: `Banho ${newBath.title} atualizado`,
+          timestamp: Date.now(),
+          category: 'edição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setBaths([...baths, { ...newBath, id: Date.now().toString() } as HerbBath]);
       }
@@ -366,27 +375,42 @@ export default function HerbsScreen() {
     setBaths(baths.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
   };
 
-  const deleteBath = (id: string) => {
-    setDeletingId(id);
-    setShowDeleteConfirm(true);
+  const deleteBath = (bath: HerbBath) => {
+    queueDelete({
+      id: bath.id,
+      label: bath.title,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setBaths(prev => prev.filter(b => b.id !== bath.id));
+      }
+    });
   };
 
-  const confirmDeleteBath = () => {
-    if (deletingId) {
-      if (isDeletingReady) {
-        setReadyBaths(readyBaths.filter(r => r.id !== deletingId));
-      } else {
-        setBaths(baths.filter(b => b.id !== deletingId));
+  const deleteReadyBath = (bath: ReadyBath) => {
+    queueDelete({
+      id: bath.id,
+      label: bath.title,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setReadyBaths(prev => prev.filter(r => r.id !== bath.id));
       }
-      setDeletingId(null);
-      setIsDeletingReady(false);
-    }
+    });
   };
 
   const handleSaveReadyBath = () => {
     if (readyForm.title) {
       if (editingReadyBath) {
         setReadyBaths(readyBaths.map(r => r.id === editingReadyBath.id ? { ...r, title: readyForm.title, quantity: readyForm.quantity, category: readyForm.category, notes: readyForm.notes } : r));
+        
+        // Add notification for update
+        const newNotif: NotificationItem = {
+          id: `update_ready_bath_${Date.now()}`,
+          title: `Banho Pronto ${readyForm.title} atualizado`,
+          timestamp: Date.now(),
+          category: 'edição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setReadyBaths([...readyBaths, { id: Date.now().toString(), title: readyForm.title, quantity: readyForm.quantity, price: settings.bathPackagePrice || 17, category: readyForm.category, notes: readyForm.notes, isFixed: false }]);
       }
@@ -397,24 +421,34 @@ export default function HerbsScreen() {
   };
 
   const adjustReadyQuantity = (id: string, delta: number) => {
+    const bath = readyBaths.find(r => r.id === id);
     setReadyBaths(readyBaths.map(r => r.id === id ? { ...r, quantity: Math.max(0, r.quantity + delta) } : r));
+    
+    if (bath) {
+      const newNotif: NotificationItem = {
+        id: `adjust_ready_bath_${Date.now()}`,
+        title: `Quantidade de ${bath.title} alterada para ${Math.max(0, bath.quantity + delta)}`,
+        timestamp: Date.now(),
+        category: 'edição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
+    }
   };
 
   const toggleHerbInStock = (id: string) => {
     setHerbStock(herbStock.map(h => h.id === id ? { ...h, inStock: !h.inStock } : h));
   };
 
-  const removeHerbFromStock = (id: string) => {
-    setHerbToDeleteId(id);
-    setShowDeleteStockConfirm(true);
-  };
-
-  const confirmDeleteHerbStock = () => {
-    if (herbToDeleteId) {
-      setHerbStock(herbStock.filter(h => h.id !== herbToDeleteId));
-      setHerbToDeleteId(null);
-      setShowDeleteStockConfirm(false);
-    }
+  const removeHerbFromStock = (herb: HerbStock) => {
+    queueDelete({
+      id: herb.id,
+      label: `Erva: ${herb.name}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setHerbStock(prev => prev.filter(h => h.id !== herb.id));
+      }
+    });
   };
 
   const addHerbToStock = (name: string) => {
@@ -707,7 +741,7 @@ export default function HerbsScreen() {
                             <Pencil className="w-5 h-5 text-brand-copper" />
                           </button>
                           <button 
-                            onClick={() => deleteBath(bath.id)}
+                            onClick={() => deleteBath(bath)}
                             className={cn(
                               "p-4 rounded-[20px] active:scale-95 transition-all",
                               settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500 shadow-sm"
@@ -1084,11 +1118,7 @@ export default function HerbsScreen() {
                           </button>
                           {!rb.isFixed && (
                             <button 
-                              onClick={() => {
-                                setDeletingId(rb.id);
-                                setIsDeletingReady(true);
-                                setShowDeleteConfirm(true);
-                              }}
+                              onClick={() => deleteReadyBath(rb)}
                               className={cn(
                                 "p-3 rounded-2xl active:scale-95 transition-all",
                                 settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500 shadow-sm"
@@ -1192,7 +1222,7 @@ export default function HerbsScreen() {
                       {herb.inStock ? 'Tenho' : 'Acabou'}
                     </span>
                     <button 
-                      onClick={() => removeHerbFromStock(herb.id)}
+                      onClick={() => removeHerbFromStock(herb)}
                       className="p-2 text-gray-300 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1809,7 +1839,8 @@ export default function HerbsScreen() {
                   {editingId && (
                     <button 
                       onClick={() => {
-                        deleteBath(editingId);
+                        const bath = baths.find(b => b.id === editingId);
+                        if (bath) deleteBath(bath);
                         closeModal();
                       }}
                       className={cn(
@@ -1827,26 +1858,7 @@ export default function HerbsScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setDeletingId(null);
-        }}
-        onConfirm={confirmDeleteBath}
-        title="Excluir Banho"
-        message="Deseja realmente excluir este banho permanentemente?"
-      />
-      <DeleteConfirmationModal
-        isOpen={showDeleteStockConfirm}
-        onClose={() => {
-          setShowDeleteStockConfirm(false);
-          setHerbToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteHerbStock}
-        title="Excluir Erva"
-        message="Deseja realmente remover esta erva do estoque?"
-      />
+      {/* Delete confirmation modals removed in favor of global undo */}
       {/* Management Mode Overlay Banner */}
       <AnimatePresence>
         {isManaging && (

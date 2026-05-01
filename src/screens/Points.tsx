@@ -3,13 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { Search, Heart, Share2, Youtube, Play, X, Plus, Trash2, Maximize2, Mic, Music, Square, PenTool, FolderIcon, ChevronLeft, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
-import { Ponto, AppSettings, Folder } from '../types';
+import { useUndo } from '../hooks/useUndo';
+import { Ponto, AppSettings, Folder, NotificationItem } from '../types';
 import { cn } from '../lib/utils';
-import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function PointsScreen() {
   const location = useLocation();
   const [pontos, setPontos] = useStorage<Ponto[]>('templo_pontos', []);
+  const [notifications, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
   
   // Cleanup test data from storage
   useEffect(() => {
@@ -23,10 +24,8 @@ export default function PointsScreen() {
   
   const [search, setSearch] = useState('');
   const [selectedPonto, setSelectedPonto] = useState<Ponto | null>(null);
-  const [showDeletePointConfirm, setShowDeletePointConfirm] = useState(false);
-  const [showDeleteFolderConfirm, setShowDeleteFolderConfirm] = useState(false);
-  const [pointToDeleteId, setPointToDeleteId] = useState<string | null>(null);
-  const [folderToDeleteId, setFolderToDeleteId] = useState<string | null>(null);
+
+  const { queueDelete } = useUndo();
 
   // Handle redirection from Home screen
   useEffect(() => {
@@ -134,6 +133,16 @@ export default function PointsScreen() {
     if (newPonto.title && newPonto.lyrics) {
       if (editingId) {
         setPontos(pontos.map(p => p.id === editingId ? { ...p, ...newPonto } as Ponto : p));
+        
+        // Add notification for update
+        const newNotif: NotificationItem = {
+          id: `update_ponto_${Date.now()}`,
+          title: `Letra de ponto "${newPonto.title}" atualizada`,
+          timestamp: Date.now(),
+          category: 'edição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setPontos([...pontos, { ...newPonto, id: Date.now().toString(), folderId: currentFolderId || undefined } as Ponto]);
       }
@@ -158,19 +167,18 @@ export default function PointsScreen() {
     setEditingFolderId(null);
   };
 
-  const deleteFolder = (id: string) => {
-    setFolderToDeleteId(id);
-    setShowDeleteFolderConfirm(true);
-  };
-
-  const confirmDeleteFolder = () => {
-    if (folderToDeleteId) {
-      setFolders(folders.filter(f => f.id !== folderToDeleteId));
-      // Optionally re-assign items to parent folder
-      setPontos(pontos.map(p => p.folderId === folderToDeleteId ? { ...p, folderId: currentFolderId || undefined } : p));
-      setFolders(folders.map(f => f.parentId === folderToDeleteId ? { ...f, parentId: currentFolderId || undefined } : f));
-      setFolderToDeleteId(null);
-    }
+  const deleteFolder = (folder: Folder) => {
+    queueDelete({
+      id: folder.id,
+      label: `Pasta: ${folder.name}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setFolders(folders => folders.filter(f => f.id !== folder.id));
+        // Optionally re-assign items to parent folder
+        setPontos(pontos => pontos.map(p => p.folderId === folder.id ? { ...p, folderId: currentFolderId || undefined } : p));
+        setFolders(folders => folders.map(f => f.parentId === folder.id ? { ...f, parentId: currentFolderId || undefined } : f));
+      }
+    });
   };
 
   const closeModal = () => {
@@ -187,17 +195,16 @@ export default function PointsScreen() {
     setShowModal(true);
   };
 
-  const deletePonto = (id: string) => {
-    setPointToDeleteId(id);
-    setShowDeletePointConfirm(true);
-  };
-
-  const confirmDeletePonto = () => {
-    if (pointToDeleteId) {
-      setPontos(pontos.filter(p => p.id !== pointToDeleteId));
-      if (selectedPonto?.id === pointToDeleteId) setSelectedPonto(null);
-      setPointToDeleteId(null);
-    }
+  const deletePonto = (ponto: Ponto) => {
+    queueDelete({
+      id: ponto.id,
+      label: `Ponto: ${ponto.title}`,
+      timestamp: Date.now(),
+      onConfirm: () => {
+        setPontos(pontos => pontos.filter(p => p.id !== ponto.id));
+        if (selectedPonto?.id === ponto.id) setSelectedPonto(null);
+      }
+    });
   };
 
   const getYoutubeEmbed = (url?: string) => {
@@ -374,7 +381,7 @@ export default function PointsScreen() {
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                deleteFolder(folder.id);
+                deleteFolder(folder);
               }}
               className={cn(
                 "p-2 rounded-lg transition-all",
@@ -419,7 +426,7 @@ export default function PointsScreen() {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    deletePonto(ponto.id);
+                    deletePonto(ponto);
                   }}
                   className={cn(
                     "p-2.5 rounded-xl transition-all",
@@ -649,7 +656,8 @@ export default function PointsScreen() {
                     {editingFolderId && (
                       <button 
                         onClick={() => {
-                          deleteFolder(editingFolderId);
+                          const folder = folders.find(f => f.id === editingFolderId);
+                          if (folder) deleteFolder(folder);
                           closeFolderModal();
                         }}
                         className={cn(
@@ -745,7 +753,8 @@ export default function PointsScreen() {
                     {editingId && (
                       <button 
                         onClick={() => {
-                          deletePonto(editingId);
+                          const ponto = pontos.find(p => p.id === editingId);
+                          if (ponto) deletePonto(ponto);
                           closeModal();
                         }}
                         className={cn(
@@ -763,27 +772,7 @@ export default function PointsScreen() {
         )}
       </AnimatePresence>
 
-      <DeleteConfirmationModal 
-        isOpen={showDeletePointConfirm}
-        onClose={() => {
-          setShowDeletePointConfirm(false);
-          setPointToDeleteId(null);
-        }}
-        onConfirm={confirmDeletePonto}
-        title="Excluir Ponto"
-        message="Deseja realmente excluir este ponto permanentemente?"
-      />
-
-      <DeleteConfirmationModal 
-        isOpen={showDeleteFolderConfirm}
-        onClose={() => {
-          setShowDeleteFolderConfirm(false);
-          setFolderToDeleteId(null);
-        }}
-        onConfirm={confirmDeleteFolder}
-        title="Excluir Pasta"
-        message="Deseja realmente excluir esta pasta permanentemente? Os itens dentro dela serão movidos para fora."
-      />
+      {/* Delete confirmation modals removed in favor of global undo */}
     </motion.div>
   );
 }

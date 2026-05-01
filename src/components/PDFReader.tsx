@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GoogleGenAI, Type } from "@google/genai";
 import { Document, Page, Outline, pdfjs } from "react-pdf";
 import {
   ChevronLeft,
@@ -147,13 +146,9 @@ export function PDFReader({
   }
 
   const [hasOutline, setHasOutline] = useState<boolean | null>(null);
-  const [aiSummary, setAiSummary] = useState<{ title: string; pageNumber: number }[] | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     setHasOutline(null);
-    setAiSummary(null);
-    setIsAiLoading(false);
   }, [pdfUrl]);
 
   const speechStateRef = useRef({
@@ -674,153 +669,7 @@ export function PDFReader({
     }
   };
 
-  const generateAiSummary = async () => {
-    if (!parsedPdfRef.current || isAiLoading || aiSummary !== null) return;
 
-    setIsAiLoading(true);
-    try {
-      const doc = parsedPdfRef.current;
-      const pagesToScan = Math.min(doc.numPages, 10);
-      let fullText = "";
-
-      for (let i = 1; i <= pagesToScan; i++) {
-        const page = await doc.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => ("str" in item ? item.str : ""))
-          .join(" ");
-        fullText += `--- Page ${i} ---\n${pageText}\n\n`;
-      }
-
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-      
-      const prompt = `
-        Analise o seguinte texto extraído das primeiras ${pagesToScan} páginas de um PDF.
-        Identifique o Sumário (Índice) do documento e extraia os títulos e seus respectivos números de página.
-        Ignore rodapés, cabeçalhos ou menus que não façam parte do sumário principal.
-        
-        Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}.
-        
-        Texto:
-        ${fullText.substring(0, 15000)}
-      `;
-
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                pageNumber: { type: Type.NUMBER }
-              },
-              required: ["title", "pageNumber"]
-            }
-          }
-        }
-      });
-
-      const responseText = result.text;
-      if (!responseText) {
-        setAiSummary([]);
-        return;
-      }
-      
-      try {
-        const parsed = JSON.parse(responseText);
-        if (Array.isArray(parsed)) {
-          setAiSummary(parsed);
-        } else {
-          setAiSummary([]);
-        }
-      } catch (parseError) {
-        console.error("Erro ao analisar JSON da IA:", parseError, responseText);
-        setAiSummary([]);
-      }
-    } catch (error) {
-      console.error("Erro ao gerar sumário por IA:", error);
-      setAiSummary([]);
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  const fileToGenerativePart = async (file: File) => {
-    const base64EncodedDataPromise = new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-      reader.readAsDataURL(file);
-    });
-    return {
-      inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-    };
-  };
-
-  const generateAiSummaryFromImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsAiLoading(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-      
-      const parts = await Promise.all(Array.from(files).map((f) => fileToGenerativePart(f) as unknown as any));
-
-      const prompt = `Analise essas imagens que contêm páginas de índice/sumário.
-Identifique o Sumário (Índice) e extraia os títulos e seus respectivos números de página.
-Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}.`;
-
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [prompt, ...parts],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                pageNumber: { type: Type.NUMBER }
-              },
-              required: ["title", "pageNumber"]
-            }
-          }
-        }
-      });
-
-      const responseText = result.text;
-      if (!responseText) {
-        setAiSummary([]);
-        return;
-      }
-      
-      try {
-        const parsed = JSON.parse(responseText);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAiSummary(parsed);
-          setHasOutline(false);
-        } else {
-          setAiSummary([]);
-        }
-      } catch (parseError) {
-        console.error("Erro ao analisar JSON da IA:", parseError, responseText);
-        setAiSummary([]);
-      }
-    } catch (error) {
-      console.error("Erro ao gerar sumário por IA de imagens:", error);
-      setAiSummary([]);
-    } finally {
-      setIsAiLoading(false);
-      if (e.target) {
-        e.target.value = '';
-      }
-    }
-  };
 
   const handleTopBarEraserClick = () => {
     setActiveHighlightColor(null);
@@ -971,12 +820,6 @@ Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}
     const timer = setTimeout(updateTextItemBounds, 500);
     return () => clearTimeout(timer);
   }, [pageNumber, scale, updateTextItemBounds]);
-
-  useEffect(() => {
-    if (activeSidebarTab === "outline" && hasOutline === false && aiSummary === null && !isAiLoading) {
-      generateAiSummary();
-    }
-  }, [activeSidebarTab, hasOutline, aiSummary, isAiLoading]);
 
   async function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages);
@@ -1962,16 +1805,6 @@ Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}
                             )}
                           />
                         </Document>
-                        <button
-                          onClick={() => {
-                            setHasOutline(false);
-                            setAiSummary(null);
-                          }}
-                          className="mt-6 w-full py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20 transition-colors border border-brand-copper/20 flex flex-col items-center justify-center gap-1 opacity-70 hover:opacity-100"
-                        >
-                          <span className="flex items-center gap-2"><Book className="w-4 h-4" /> Sumário vazio ou com erro?</span>
-                          <span className="text-[9px] opacity-70">Clique para escanear com Inteligência Artificial</span>
-                        </button>
                       </div>
                     )}
 
@@ -1983,53 +1816,12 @@ Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}
                       </div>
                     )}
 
-                    {/* AI Generated Fallback */}
                     {hasOutline === false && (
                       <div className="mt-4">
-                        {isAiLoading ? (
-                          <div className="flex flex-col items-center justify-center py-8 gap-3">
-                            <Loader2 className="w-6 h-6 text-brand-copper animate-spin" />
-                            <p className="text-[10px] uppercase font-black tracking-widest text-brand-copper animate-pulse">IA analisando documento...</p>
-                          </div>
-                        ) : aiSummary && aiSummary.length > 0 ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 mb-3 px-2">
-                              <div className="h-px flex-1 bg-brand-copper/20" />
-                              <span className="text-[9px] font-black uppercase tracking-tighter text-brand-copper/60">Sumário Gerado por IA</span>
-                              <div className="h-px flex-1 bg-brand-copper/20" />
-                            </div>
-                            {aiSummary.map((item, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => handlePageSelect(item.pageNumber)}
-                                className={cn(
-                                  "w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between group",
-                                  settings.darkMode ? "hover:bg-white/5 text-white/70 hover:text-white" : "hover:bg-brand-navy/5 text-brand-navy/70 hover:text-brand-navy"
-                                )}
-                              >
-                                <span className="truncate group-hover:translate-x-1 transition-transform">{item.title}</span>
-                                <span className="shrink-0 opacity-40 font-mono text-[10px] ml-2">{item.pageNumber}</span>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 px-4 flex flex-col items-center">
-                            <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                            <p className="text-xs opacity-50 font-bold mb-4">Este PDF não possui um sumário interno e a IA não conseguiu identificar um índice automático.</p>
-                            
-                            <label className="cursor-pointer mt-4 w-full py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20 transition-colors border border-brand-copper/20 flex flex-col items-center justify-center gap-1 opacity-80 hover:opacity-100">
-                              <span className="flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Enviar Prints do Sumário</span>
-                              <span className="text-[9px] opacity-70 mt-1 lowercase first-letter:uppercase font-medium">A IA criará um sumário com base nas imagens enviadas</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={generateAiSummaryFromImages}
-                              />
-                            </label>
-                          </div>
-                        )}
+                        <div className="text-center py-8 px-4 flex flex-col items-center">
+                          <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                          <p className="text-xs opacity-50 font-bold mb-4">Este documento não possui um sumário interno.</p>
+                        </div>
                       </div>
                     )}
                   </div>

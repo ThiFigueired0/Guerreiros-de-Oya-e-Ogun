@@ -130,7 +130,7 @@ export interface Trabalho {
 export interface StudyBook {
   id: string;
   name: string;
-  pdfBase64: string;
+  pdfBase64?: string;
   uploadDate: number;
   notes?: string;
   attachments?: {
@@ -146,7 +146,6 @@ export interface StudyBook {
   lastRead?: number;
   coverImage?: string;
   coverColor?: string;
-  aiSummary?: string;
 }
 
 export interface Greeting {
@@ -190,4 +189,12 @@ export interface FinancialRecord {
     total: number;
     masterId: string;
   };
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  timestamp: number;
+  category: string;
+  read: boolean;
 }
