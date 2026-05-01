@@ -955,15 +955,16 @@ export function PDFReader({
         <AnimatePresence>
           {activeSidebarTab && !isFocusMode && (
             <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 280, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={cn(
-                "shrink-0 flex flex-col absolute right-0 top-[76px] bottom-[100px] lg:top-0 lg:bottom-0 lg:border-l lg:relative z-20 transition-colors duration-500 overflow-hidden rounded-l-3xl lg:rounded-none",
-                settings.darkMode ? "bg-[#0A192F]/80 border-white/10 backdrop-blur-2xl" : "bg-white/80 border-[#001F3F]/10 backdrop-blur-2xl shadow-xl",
+                "flex flex-col absolute right-4 top-[96px] bottom-[100px] z-30 transition-colors duration-500 overflow-hidden rounded-3xl shadow-2xl border w-[320px] max-w-[calc(100vw-32px)]",
+                settings.darkMode ? "bg-[#0A192F]/95 border-white/10 backdrop-blur-2xl" : "bg-white/95 border-[#001F3F]/10 backdrop-blur-2xl",
               )}
             >
-              <div className="p-4 flex-1 flex flex-col h-full overflow-hidden w-[280px]">
+              <div className="p-4 flex-1 flex flex-col h-full overflow-hidden">
                 <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3
                     className={cn(
