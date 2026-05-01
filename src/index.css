@@ -39,9 +39,23 @@ body {
 }
 
 .artistic-shadow {
-  shadow: 0 10px 30px -10px rgba(0, 31, 63, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 31, 63, 0.1);
 }
 
 .accent-glow {
   box-shadow: 0 0 20px rgba(205, 127, 50, 0.2);
+}
+
+.react-pdf__Page__textContent {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+.react-pdf__Page__textContent ::selection {
+  background: rgba(0, 122, 255, 0.3) !important;
+  color: inherit !important;
+}
+
+.react-pdf__Page__annotations {
+  pointer-events: none !important;
 }
