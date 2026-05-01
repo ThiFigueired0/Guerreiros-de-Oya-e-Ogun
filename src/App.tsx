@@ -1,21 +1,33 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { 
-  Calendar, Droplets, Music, FileText, Settings, Heart, Plus, Search, Share2, Youtube, Play, X, Save, Trash2, Moon, Sun, ChevronRight, Mic, Star,
+  Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
   History as HistoryIcon
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from './lib/utils';
+import { useStorage } from './hooks/useStorage';
+import { AppSettings, Event, Candle, NotificationItem } from './types';
+import { UndoContext, UndoAction } from './hooks/useUndo';
+
+// Screens
+import CalendarScreen from './screens/Calendar';
+import HerbsScreen from './screens/Herbs';
+import PointsScreen from './screens/Points';
+import NotesScreen from './screens/Notes';
+import SettingsScreen from './screens/Settings';
+import TrabalhosScreen from './screens/Trabalhos';
+import HomeScreen from './screens/Home';
+import StudiesScreen from './screens/Studies';
+import FinanceiroScreen from './screens/Financeiro';
+import { NotificationManager } from './components/NotificationManager';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 };
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from './lib/utils';
-import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle, NotificationItem } from './types';
-import { UndoContext, UndoAction, useUndo } from './hooks/useUndo';
 
 const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Festa de Marias', category: 'Festa', date: '2026-01-24' },
@@ -65,18 +77,6 @@ const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-12-03' },
   { title: 'Enceramento Yabas (Baianos)', category: 'Festa', date: '2026-12-05' },
 ];
-
-// Screens
-import CalendarScreen from './screens/Calendar';
-import HerbsScreen from './screens/Herbs';
-import PointsScreen from './screens/Points';
-import NotesScreen from './screens/Notes';
-import SettingsScreen from './screens/Settings';
-import TrabalhosScreen from './screens/Trabalhos';
-import HomeScreen from './screens/Home';
-import StudiesScreen from './screens/Studies';
-import FinanceiroScreen from './screens/Financeiro';
-import { NotificationManager } from './components/NotificationManager';
 
 const ALL_TABS = [
   { path: '/home', label: 'Início', defaultIcon: Home },
@@ -1121,7 +1121,7 @@ export default function App() {
         se.date === satDateStr && (
           se.category === 'Gira' || 
           se.category === 'Festa' || 
-          se.category === 'Gira Aberta' ||
+          se.category === 'Gira aberta' ||
           se.title?.toLowerCase().includes('gira aberta') ||
           se.title?.toLowerCase().includes('festa') ||
           se.title?.toLowerCase().includes('gira de')
