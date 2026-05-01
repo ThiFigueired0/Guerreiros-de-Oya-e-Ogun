@@ -102,7 +102,7 @@ export function PDFReader({
   const [containerHeight, setContainerHeight] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLElement>(null);
-  const wheelTimeout = useRef<NodeJS.Timeout | null>(null);
+  const wheelTimeout = useRef<any>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [inputPage, setInputPage] = useState(String(initialPage));
 
