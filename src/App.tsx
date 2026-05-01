@@ -542,7 +542,6 @@ function NotificationCenter({
   setNotifications: (val: NotificationItem[] | ((prev: NotificationItem[]) => NotificationItem[])) => void 
 }) {
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [lastViewed, setLastViewed] = useStorage<number>('templo_notif_viewed', 0);
   const location = useLocation();
 
   // Close notifications on route change
@@ -568,19 +567,27 @@ function NotificationCenter({
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  // Mark all as read when closing to move them to "Anteriores"
+  // Mark all as read ONLY WHEN panel is closed (transitioning from true to false)
+  const previousShowNotifications = React.useRef(showNotifications);
   React.useEffect(() => {
-    if (!showNotifications && notifications.some(n => !n.read)) {
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    if (previousShowNotifications.current === true && showNotifications === false) {
+      setNotifications(prev => {
+        if (prev.some(n => !n.read)) {
+          return prev.map(n => ({ ...n, read: true }));
+        }
+        return prev;
+      });
     }
-  }, [showNotifications]);
+    previousShowNotifications.current = showNotifications;
+  }, [showNotifications, setNotifications]);
 
   const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
   const unreadNotifications = sortedNotifications.filter((n: NotificationItem) => !n.read);
   const readNotifications = sortedNotifications.filter((n: NotificationItem) => n.read);
   
-  // Badge count: Only notifications newer than the last time the bell was clicked
-  const newNotificationsCount = notifications.filter(n => n.timestamp > lastViewed).length;
+  // Badge count: Só mostra se houver não-lidas e o painel estiver fechado
+  const showBadge = !showNotifications && unreadNotifications.length > 0;
+  const unreadCount = unreadNotifications.length;
 
   return (
     <>
@@ -588,20 +595,17 @@ function NotificationCenter({
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            setShowNotifications(true);
-            setLastViewed(Date.now());
-          }}
+          onClick={() => setShowNotifications(true)}
           className="w-10 h-10 rounded-full bg-white/95 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
         >
           <div className="relative">
             <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
-            {newNotificationsCount > 0 && (
+            {showBadge && (
               <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-5 w-5 bg-brand-red border-2 border-white items-center justify-center">
                   <span className="text-[9px] font-black text-white leading-none">
-                    {newNotificationsCount > 9 ? '9+' : newNotificationsCount}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 </span>
               </span>
