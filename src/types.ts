@@ -146,6 +146,7 @@ export interface StudyBook {
   lastRead?: number;
   coverImage?: string;
   coverColor?: string;
+  aiSummary?: string;
 }
 
 export interface Greeting {
