@@ -908,6 +908,127 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
   );
 }
 
+function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) {
+  const [progress, setProgress] = React.useState(0);
+  
+  React.useEffect(() => {
+    if (!show) return;
+    const startTime = Date.now();
+    const duration = 4000;
+    
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const p = Math.min(100, (elapsed / duration) * 100);
+      setProgress(p);
+      if (p >= 100) clearInterval(timer);
+    }, 50);
+    
+    return () => clearInterval(timer);
+  }, [show]);
+
+  const leaves = React.useMemo(() => {
+    return [...Array(25)].map((_, i) => ({
+      id: i,
+      size: 15 + Math.random() * 25,
+      duration: 8 + Math.random() * 12,
+      delay: Math.random() * -20,
+      left: `${Math.random() * 100}%`,
+    }));
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.0, ease: "easeInOut" }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+          style={{ backgroundColor: '#001529' }}
+        >
+          {/* Global Animated Background */}
+          <div className="absolute inset-0 pointer-events-none">
+            {leaves.map((leaf) => (
+              <div
+                key={`splash-leaf-${leaf.id}`}
+                className="leaf-floating"
+                style={{
+                  '--left': leaf.left,
+                  '--duration': `${leaf.duration}s`,
+                  '--delay': `${leaf.delay}s`,
+                  '--size': `${leaf.size}px`,
+                  top: '100%'
+                } as React.CSSProperties}
+              >
+                <Leaf className="text-brand-copper/30 fill-brand-copper/10 w-full h-full" />
+              </div>
+            ))}
+            
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.15, 1],
+                opacity: [0.08, 0.12, 0.08],
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-copper rounded-full blur-[150px]"
+            />
+          </div>
+
+          {/* Logo & Content */}
+          <div className="relative z-10 flex flex-col items-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative"
+            >
+              {/* Glow */}
+              <motion.div 
+                animate={{ 
+                  opacity: [0.3, 0.5, 0.3]
+                }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-10 bg-brand-copper/40 rounded-full blur-3xl"
+              />
+
+              <div className="w-48 h-48 rounded-full border-2 border-brand-copper/30 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex items-center justify-center p-2 overflow-hidden relative">
+                {logo ? (
+                  <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <TempleLogo />
+                )}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="mt-10 text-center"
+            >
+              <h1 className="text-brand-gold font-serif text-2xl tracking-[0.5em] font-black uppercase drop-shadow-lg flex items-center gap-2">
+                GUERREIROS DE OYA E OGUN
+              </h1>
+              
+              {/* Progress Bar */}
+              <div className="w-48 h-1 bg-brand-copper/20 mx-auto mt-8 rounded-full overflow-hidden relative">
+                <div 
+                  className="absolute left-0 top-0 h-full bg-brand-gold transition-all duration-100 ease-linear"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              
+              <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.4em] mt-6">
+                Tenda de Umbanda • Oya e Ogum
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -1305,6 +1426,7 @@ export default function App() {
   return (
     <UndoContext.Provider value={{ queueDelete }}>
       <BrowserRouter>
+      <InitialLoader show={!isAppReady} logo={settings.logoBase64} />
       <NotificationManager />
       <div className={cn(
         "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",

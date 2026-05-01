@@ -9,7 +9,7 @@
 }
 
 body {
-  background-color: #050B14; /* Deep outer background */
+  background-color: #001529; /* Deep outer background */
   color: #1a1a1a;
   font-family: 'Inter', sans-serif;
   margin: 0;
@@ -61,6 +61,7 @@ body {
   left: var(--left, 50%);
   width: var(--size, 20px);
   height: var(--size, 20px);
+  will-change: transform;
 }
 
 .react-pdf__Page__textContent:not(.no-select) {
