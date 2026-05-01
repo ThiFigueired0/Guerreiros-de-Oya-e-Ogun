@@ -25,6 +25,7 @@ import {
   Trash,
   BookmarkPlus,
   Layers,
+  MoreVertical,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -96,6 +97,7 @@ export function PDFReader({
 
   // Improvements State
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<
     "search" | "bookmarks" | "notes" | null
   >(null);
@@ -529,29 +531,7 @@ export function PDFReader({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar scroll-smooth py-2">
-              <button
-                onClick={toggleBookmark}
-                className={cn(
-                  "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
-                  bookmarkedPages.includes(pageNumber)
-                    ? "text-brand-copper bg-brand-copper/10"
-                    : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
-                )}
-                title="Salvar Página"
-              >
-                <Bookmark
-                  className={cn(
-                    "w-5 h-5",
-                    bookmarkedPages.includes(pageNumber)
-                      ? "fill-brand-copper"
-                      : "",
-                  )}
-                />
-              </button>
-
-              <div className={cn("w-px h-6 mx-2 hidden sm:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
-
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 py-2">
               <button
                 onClick={() =>
                   setActiveSidebarTab(
@@ -559,7 +539,7 @@ export function PDFReader({
                   )
                 }
                 className={cn(
-                  "p-2 rounded-xl transition-all flex item-center gap-2 shrink-0",
+                  "p-2 rounded-xl transition-all flex items-center gap-2 shrink-0 md:hidden",
                   activeSidebarTab === "search"
                     ? "bg-brand-copper/10 text-brand-copper"
                     : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
@@ -569,89 +549,139 @@ export function PDFReader({
                 <Search className="w-5 h-5" />
               </button>
 
-              <button
-                onClick={() =>
-                  setActiveSidebarTab(
-                    activeSidebarTab === "bookmarks" ? null : "bookmarks",
-                  )
-                }
-                className={cn(
-                  "p-2 rounded-xl transition-all flex items-center gap-2 shrink-0",
-                  activeSidebarTab === "bookmarks"
-                    ? "bg-brand-copper/10 text-brand-copper"
-                    : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
-                )}
-                title="Marcadores"
-              >
-                <Layers className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={() =>
-                  setActiveSidebarTab(
-                    activeSidebarTab === "notes" ? null : "notes",
-                  )
-                }
-                className={cn(
-                  "p-2 rounded-xl transition-all flex items-center gap-2 shrink-0",
-                  activeSidebarTab === "notes"
-                    ? "bg-brand-copper/10 text-brand-copper"
-                    : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
-                )}
-                title="Notas Rápidas"
-              >
-                <Edit3 className="w-5 h-5" />
-              </button>
-
-              <div className={cn("w-px h-6 mx-2 hidden sm:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
-
-              <button
-                onClick={() => setScale(null)}
-                className={cn(
-                  "hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0",
-                  settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy"
-                )}
-              >
-                <Monitor className="w-4 h-4" /> Ajustar
-              </button>
-
-              <div className={cn("hidden lg:flex items-center gap-1 p-1 rounded-xl shrink-0 border", settings.darkMode ? "border-white/10 text-white/60" : "border-brand-navy/10 text-brand-navy/60")}>
+              <div className="md:hidden">
                 <button
-                  onClick={() => handleZoom(-0.1)}
-                  className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/10" : "hover:text-brand-navy hover:bg-brand-navy/5")}
+                  onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
+                    isMoreOptionsOpen
+                      ? settings.darkMode ? "bg-white/20 text-white" : "bg-brand-navy/10 text-brand-navy"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy"
+                  )}
+                  title="Mais Opções"
                 >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <span className={cn("text-[11px] font-black w-10 text-center", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  {Math.round((scale || 1) * 100)}%
-                </span>
-                <button
-                  onClick={() => handleZoom(0.1)}
-                  className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/10" : "hover:text-brand-navy hover:bg-brand-navy/5")}
-                >
-                  <ZoomIn className="w-4 h-4" />
+                  <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
 
-              <button
-                onClick={toggleFullScreen}
-                className={cn(
-                  "p-2 rounded-xl transition-all hidden sm:flex shrink-0",
-                  settings.darkMode ? "text-white/60 hover:text-white hover:bg-white/10" : "text-brand-navy/60 hover:text-brand-navy hover:bg-brand-navy/5"
-                )}
-              >
-                {isFullScreen ? (
-                  <Minimize2 className="w-5 h-5" />
-                ) : (
-                  <Maximize2 className="w-5 h-5" />
-                )}
-              </button>
+              <div className={cn(
+                "items-center gap-1 sm:gap-2",
+                isMoreOptionsOpen ? "absolute md:relative top-[75px] md:top-auto right-4 md:right-auto flex flex-col md:flex-row p-2 md:p-0 rounded-2xl border md:border-none shadow-xl md:shadow-none z-50 animate-in fade-in zoom-in-95 md:animate-none" : "hidden md:flex",
+                settings.darkMode ? "bg-[#0A192F] md:bg-transparent border-white/10" : "bg-white md:bg-transparent border-brand-navy/10"
+              )}>
+                <button
+                  onClick={toggleBookmark}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex shrink-0 items-center gap-2",
+                    bookmarkedPages.includes(pageNumber)
+                      ? "text-brand-copper bg-brand-copper/10"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Salvar Página"
+                >
+                  <Bookmark
+                    className={cn(
+                      "w-5 h-5",
+                      bookmarkedPages.includes(pageNumber)
+                        ? "fill-brand-copper"
+                        : "",
+                    )}
+                  />
+                </button>
 
-              <div className={cn("w-px h-6 mx-2 hidden sm:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
+                <div className={cn("w-px h-6 mx-2 hidden md:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
+
+                <button
+                  onClick={() =>
+                    setActiveSidebarTab(
+                      activeSidebarTab === "search" ? null : "search",
+                    )
+                  }
+                  className={cn(
+                    "p-2 rounded-xl transition-all items-center gap-2 shrink-0 hidden md:flex",
+                    activeSidebarTab === "search"
+                      ? "bg-brand-copper/10 text-brand-copper"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Buscar no documento"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    setActiveSidebarTab(
+                      activeSidebarTab === "bookmarks" ? null : "bookmarks",
+                    )
+                  }
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex items-center gap-2 shrink-0",
+                    activeSidebarTab === "bookmarks"
+                      ? "bg-brand-copper/10 text-brand-copper"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Marcadores"
+                >
+                  <Layers className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    setActiveSidebarTab(
+                      activeSidebarTab === "notes" ? null : "notes",
+                    )
+                  }
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex items-center gap-2 shrink-0",
+                    activeSidebarTab === "notes"
+                      ? "bg-brand-copper/10 text-brand-copper"
+                      : settings.darkMode ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy",
+                  )}
+                  title="Notas Rápidas e Grifos"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </button>
+
+                <div className={cn("flex items-center gap-1.5 px-2 py-1.5 rounded-xl shrink-0 border", settings.darkMode ? "border-white/10" : "border-brand-navy/10")}>
+                  <button
+                    onClick={() => handleTopBarColorClick("rgba(252, 211, 77, 0.4)")}
+                    className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-300 border shadow-sm transition-transform hover:scale-110", activeHighlightColor === "rgba(252, 211, 77, 0.4)" ? "ring-2 ring-amber-500 scale-110" : "border-black/10")}
+                    title="Grifar (Amarelo)"
+                  />
+                  <button
+                    onClick={() => handleTopBarColorClick("rgba(134, 239, 172, 0.4)")}
+                    className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-300 border shadow-sm transition-transform hover:scale-110", activeHighlightColor === "rgba(134, 239, 172, 0.4)" ? "ring-2 ring-green-500 scale-110" : "border-black/10")}
+                    title="Grifar (Verde)"
+                  />
+                  <button
+                    onClick={() => handleTopBarColorClick("rgba(249, 168, 212, 0.4)")}
+                    className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-pink-300 border shadow-sm transition-transform hover:scale-110", activeHighlightColor === "rgba(249, 168, 212, 0.4)" ? "ring-2 ring-pink-500 scale-110" : "border-black/10")}
+                    title="Grifar (Rosa)"
+                  />
+                </div>
+
+                <div className={cn("w-px h-6 mx-2 hidden sm:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
+
+                <button
+                  onClick={toggleFullScreen}
+                  className={cn(
+                    "p-2 rounded-xl transition-all hidden sm:flex shrink-0",
+                    settings.darkMode ? "text-white/60 hover:text-white hover:bg-white/10" : "text-brand-navy/60 hover:text-brand-navy hover:bg-brand-navy/5"
+                  )}
+                >
+                  {isFullScreen ? (
+                    <Minimize2 className="w-5 h-5" />
+                  ) : (
+                    <Maximize2 className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+
+              <div className={cn("w-px h-6 mx-2", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
 
               <button
                 onClick={onClose}
-                className="p-2 bg-brand-red/10 text-brand-red hover:bg-brand-red hover:text-white rounded-xl transition-all ml-1 shrink-0"
+                className="p-2 bg-brand-red/10 text-brand-red hover:bg-brand-red hover:text-white rounded-xl transition-all shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -662,9 +692,6 @@ export function PDFReader({
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Viewport */}
-        <div className="absolute top-4 left-4 z-[999] text-[10px] font-mono text-white/30 bg-black/50 px-2 py-1 pointer-events-none rounded border border-white/5 backdrop-blur-xl">
-          Highlights: {highlights.length}
-        </div>
         <main
           ref={viewerRef}
           className={cn(
@@ -929,19 +956,19 @@ export function PDFReader({
           {activeSidebarTab && !isFocusMode && (
             <motion.aside
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 320, opacity: 1 }}
+              animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               className={cn(
-                "border-l shrink-0 flex flex-col pt-16 pb-20 absolute right-0 top-0 bottom-0 lg:relative z-20 transition-colors duration-500 max-w-full",
-                "bg-[#050B14]/90 border-white/10 backdrop-blur-2xl",
+                "shrink-0 flex flex-col absolute right-0 top-[76px] bottom-[100px] lg:top-0 lg:bottom-0 lg:border-l lg:relative z-20 transition-colors duration-500 overflow-hidden rounded-l-3xl lg:rounded-none",
+                settings.darkMode ? "bg-[#0A192F]/80 border-white/10 backdrop-blur-2xl" : "bg-white/80 border-[#001F3F]/10 backdrop-blur-2xl shadow-xl",
               )}
             >
-              <div className="p-4 flex-1 flex flex-col h-full overflow-hidden w-[320px]">
+              <div className="p-4 flex-1 flex flex-col h-full overflow-hidden w-[280px]">
                 <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3
                     className={cn(
                       "text-[10px] font-black uppercase tracking-widest",
-                      "text-white",
+                      settings.darkMode ? "text-white" : "text-brand-navy",
                     )}
                   >
                     {activeSidebarTab === "notes"
@@ -952,7 +979,7 @@ export function PDFReader({
                   </h3>
                   <button
                     onClick={() => setActiveSidebarTab(null)}
-                    className={"text-white/40 hover:text-white"}
+                    className={settings.darkMode ? "text-white/40 hover:text-white" : "text-brand-navy/40 hover:text-brand-navy"}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -965,7 +992,7 @@ export function PDFReader({
                     placeholder="Seus pensamentos e anotações sobre este livro..."
                     className={cn(
                       "flex-1 w-full rounded-2xl p-4 resize-none focus:outline-none focus:ring-2 focus:ring-brand-copper/30 transition-all text-sm pointer-events-auto",
-                      "bg-white/5 text-white placeholder:text-white/20 border border-white/10 focus:bg-white/10",
+                      settings.darkMode ? "bg-white/5 text-white placeholder:text-white/20 border border-white/10 focus:bg-white/10" : "bg-brand-navy/5 text-brand-navy placeholder:text-brand-navy/40 border border-brand-navy/10 focus:bg-brand-navy/10",
                     )}
                   />
                 )}
@@ -979,7 +1006,7 @@ export function PDFReader({
                       }}
                       className={cn(
                         "flex items-center gap-2 p-2 rounded-xl border transition-all mb-4 shrink-0",
-                        "bg-white/5 border-white/10",
+                        settings.darkMode ? "bg-white/5 border-white/10" : "bg-brand-navy/5 border-brand-navy/10",
                       )}
                     >
                       <input
@@ -988,14 +1015,14 @@ export function PDFReader({
                         onChange={(e) => setSearchText(e.target.value)}
                         placeholder="Buscar no texto..."
                         className={cn(
-                          "flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1",
-                          "text-white placeholder:text-white/30",
+                          "flex-1 bg-transparent border-none focus:outline-none text-sm px-2 py-1 min-w-0",
+                          settings.darkMode ? "text-white placeholder:text-white/30" : "text-brand-navy placeholder:text-brand-navy/40",
                         )}
                       />
                       <button
                         type="submit"
                         disabled={isSearching || !searchText.trim()}
-                        className="p-2 bg-brand-copper hover:bg-brand-gold transition-colors text-white rounded-lg disabled:opacity-50"
+                        className="p-2 bg-brand-copper hover:bg-brand-gold transition-colors text-white rounded-lg disabled:opacity-50 shrink-0"
                       >
                         {isSearching ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1017,16 +1044,16 @@ export function PDFReader({
                                 );
                               }}
                               className={cn(
-                                "w-full text-left p-3 rounded-xl border transition-all hover:border-brand-copper flex items-center justify-between group",
+                                "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between group",
                                 pageNumber === pageNum
-                                  ? "border-brand-copper bg-brand-copper/10"
-                                  : "bg-white/5 border-white/10 hover:bg-white/10",
+                                  ? settings.darkMode ? "border-brand-copper bg-brand-copper/10" : "border-brand-copper bg-brand-copper/5"
+                                  : settings.darkMode ? "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20" : "bg-brand-navy/5 border-brand-navy/10 hover:bg-brand-navy/10 hover:border-brand-navy/20",
                               )}
                             >
                               <span
                                 className={cn(
                                   "text-sm font-medium",
-                                  "text-white",
+                                  settings.darkMode ? "text-white" : "text-brand-navy",
                                 )}
                               >
                                 Página {pageNum}
@@ -1034,7 +1061,7 @@ export function PDFReader({
                               <ChevronRight
                                 className={cn(
                                   "w-4 h-4 opacity-0 group-hover:opacity-100 transition-all",
-                                  "text-white/40",
+                                  settings.darkMode ? "text-white/40" : "text-brand-navy/40",
                                 )}
                               />
                             </button>
@@ -1044,7 +1071,7 @@ export function PDFReader({
                             <p
                               className={cn(
                                 "text-xs text-center p-4",
-                                "text-white/40",
+                                settings.darkMode ? "text-white/40" : "text-brand-navy/40",
                               )}
                             >
                               Nenhum resultado encontrado.
@@ -1065,19 +1092,19 @@ export function PDFReader({
                             className={cn(
                               "w-full p-2 pl-3 rounded-xl border flex items-center justify-between group transition-colors",
                               pageNumber === pageNum
-                                ? "border-brand-copper bg-brand-copper/10"
-                                : "bg-white/5 border-white/10",
+                                ? settings.darkMode ? "border-brand-copper bg-brand-copper/10" : "border-brand-copper bg-brand-copper/5"
+                                : settings.darkMode ? "bg-white/5 border-white/10" : "bg-brand-navy/5 border-brand-navy/10",
                             )}
                           >
                             <button
                               onClick={() => handlePageSelect(pageNum)}
-                              className="flex-1 flex items-center gap-2 text-left"
+                              className="flex-1 flex items-center gap-2 text-left min-w-0"
                             >
-                              <Bookmark className="w-3.5 h-3.5 text-brand-copper fill-brand-copper" />
+                              <Bookmark className="w-3.5 h-3.5 shrink-0 text-brand-copper fill-brand-copper" />
                               <span
                                 className={cn(
-                                  "text-sm font-medium",
-                                  "text-white",
+                                  "text-sm font-medium truncate",
+                                  settings.darkMode ? "text-white" : "text-brand-navy",
                                 )}
                               >
                                 Página {pageNum}
@@ -1090,7 +1117,7 @@ export function PDFReader({
                                 )
                               }
                               className={cn(
-                                "p-1.5 opacity-0 group-hover:opacity-100 rounded-lg transition-all",
+                                "p-1.5 opacity-0 group-hover:opacity-100 rounded-lg transition-all shrink-0",
                                 "hover:bg-brand-red/20 text-brand-red",
                               )}
                             >
@@ -1102,7 +1129,7 @@ export function PDFReader({
                       <p
                         className={cn(
                           "text-xs text-center p-4 leading-relaxed",
-                          "text-white/40",
+                          settings.darkMode ? "text-white/40" : "text-brand-navy/40",
                         )}
                       >
                         Nenhum marcador adicionado.
@@ -1123,66 +1150,94 @@ export function PDFReader({
       {/* Footer / Controls */}
       <AnimatePresence>
         {!isFocusMode && (
-          <motion.footer
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 max-w-[200px] pointer-events-none hover:-translate-y-1"
-          >
-            <div className={cn(
-              "flex items-center justify-between p-1 rounded-full pointer-events-auto border shadow-lg backdrop-blur-xl",
-              settings.darkMode ? "bg-white/10 border-white/20 text-white" : "bg-white/80 border-[#001F3F]/10 text-brand-navy"
-            )}>
-              {/* Left Action Box */}
-              <button
-                onClick={() => changePage(-1)}
-                disabled={pageNumber <= 1}
-                className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100",
-                  settings.darkMode ? "hover:bg-white/20" : "hover:bg-brand-navy/10"
-                )}
-              >
-                <ChevronLeft className="w-4 h-4 ml-[-1px]" />
-              </button>
+          <>
+            <motion.footer
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="fixed bottom-6 left-0 right-0 px-6 z-40 transition-all duration-500 pointer-events-none flex justify-between items-end"
+            >
+              {/* Invisible Left Spacer */}
+              <div className="w-[120px] hidden sm:block"></div>
 
-              {/* Center Text & Input */}
-              <div className="flex-1 flex items-baseline justify-center mx-2 gap-1">
-                <form
-                  onSubmit={handleManualPageChange}
-                  className="flex items-baseline justify-center gap-1"
+              {/* Center Pagination */}
+              <div className={cn(
+                "flex items-center justify-between p-1 rounded-full pointer-events-auto border shadow-lg backdrop-blur-xl hover:-translate-y-1 transition-transform",
+                settings.darkMode ? "bg-white/10 border-white/20 text-white" : "bg-white/80 border-[#001F3F]/10 text-brand-navy"
+              )}>
+                {/* Left Action Box */}
+                <button
+                  onClick={() => changePage(-1)}
+                  disabled={pageNumber <= 1}
+                  className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100",
+                    settings.darkMode ? "hover:bg-white/20" : "hover:bg-brand-navy/10"
+                  )}
                 >
-                  <input
-                    type="text"
-                    value={inputPage}
-                    onChange={(e) => setInputPage(e.target.value)}
-                    onBlur={handleManualPageChange}
-                    className={cn(
-                      "w-6 text-right text-xs font-black bg-transparent focus:outline-none transition-colors",
-                      settings.darkMode ? "text-white" : "text-brand-navy"
-                    )}
-                  />
-                  <span className={cn(
-                    "text-[10px] font-bold",
-                    settings.darkMode ? "text-white/50" : "text-brand-navy/50"
-                  )}>
-                    / {numPages || "?"}
-                  </span>
-                </form>
+                  <ChevronLeft className="w-4 h-4 ml-[-1px]" />
+                </button>
+
+                {/* Center Text & Input */}
+                <div className="flex-1 flex items-baseline justify-center mx-2 gap-1">
+                  <form
+                    onSubmit={handleManualPageChange}
+                    className="flex items-baseline justify-center gap-1"
+                  >
+                    <input
+                      type="text"
+                      value={inputPage}
+                      onChange={(e) => setInputPage(e.target.value)}
+                      onBlur={handleManualPageChange}
+                      className={cn(
+                        "w-6 text-right text-xs font-black bg-transparent focus:outline-none transition-colors",
+                        settings.darkMode ? "text-white" : "text-brand-navy"
+                      )}
+                    />
+                    <span className={cn(
+                      "text-[10px] font-bold",
+                      settings.darkMode ? "text-white/50" : "text-brand-navy/50"
+                    )}>
+                      / {numPages || "?"}
+                    </span>
+                  </form>
+                </div>
+
+                {/* Right Button */}
+                <button
+                  onClick={() => changePage(1)}
+                  disabled={pageNumber >= (numPages || 1)}
+                  className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100",
+                    settings.darkMode ? "hover:bg-white/20" : "hover:bg-brand-navy/10"
+                  )}
+                >
+                  <ChevronRight className="w-4 h-4 ml-[1px]" />
+                </button>
               </div>
 
-              {/* Right Button */}
-              <button
-                onClick={() => changePage(1)}
-                disabled={pageNumber >= (numPages || 1)}
-                className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100",
-                  settings.darkMode ? "hover:bg-white/20" : "hover:bg-brand-navy/10"
-                )}
-              >
-                <ChevronRight className="w-4 h-4 ml-[1px]" />
-              </button>
-            </div>
-          </motion.footer>
+              {/* Right Zoom Controls */}
+              <div className={cn(
+                "flex items-center gap-1 p-1 rounded-xl border shadow-lg backdrop-blur-xl pointer-events-auto hover:-translate-y-1 transition-transform",
+                settings.darkMode ? "bg-white/10 border-white/20 text-white/60" : "bg-white/80 border-[#001F3F]/10 text-brand-navy/60"
+              )}>
+                <button
+                  onClick={() => handleZoom(-0.1)}
+                  className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/20" : "hover:text-brand-navy hover:bg-brand-navy/10")}
+                >
+                  <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <span className={cn("text-[10px] sm:text-[11px] font-black w-8 sm:w-10 text-center cursor-pointer", settings.darkMode ? "text-white" : "text-brand-navy")} onClick={() => setScale(null)} title="Ajustar à Tela">
+                  {Math.round((scale || 1) * 100)}%
+                </span>
+                <button
+                  onClick={() => handleZoom(0.1)}
+                  className={cn("p-1.5 rounded-lg transition-all", settings.darkMode ? "hover:text-white hover:bg-white/20" : "hover:text-brand-navy hover:bg-brand-navy/10")}
+                >
+                  <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            </motion.footer>
+          </>
         )}
       </AnimatePresence>
     </motion.div>
