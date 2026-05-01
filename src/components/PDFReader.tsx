@@ -695,14 +695,12 @@ export function PDFReader({
   useEffect(() => {
     setInputPage(String(pageNumber));
     onPageChange(pageNumber);
-    const timer = setTimeout(updateTextItemBounds, 500);
-    return () => clearTimeout(timer);
-  }, [pageNumber, updateTextItemBounds, onPageChange]);
+  }, [pageNumber]);
 
   useEffect(() => {
     const timer = setTimeout(updateTextItemBounds, 500);
     return () => clearTimeout(timer);
-  }, [scale, updateTextItemBounds]);
+  }, [pageNumber, scale, updateTextItemBounds]);
 
   function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages);
@@ -1209,53 +1207,54 @@ export function PDFReader({
         )}
       </AnimatePresence>
 
+      {/* Floating Mini Player for Speech */}
+      <AnimatePresence>
+        {isSpeaking && (
+          <motion.div
+            initial={{ y: 100, opacity: 0, x: "-50%" }}
+            animate={{ y: 0, opacity: 1, x: "-50%" }}
+            exit={{ y: 100, opacity: 0, x: "-50%" }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60] px-4 md:px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center justify-between gap-4 md:gap-6 w-[calc(100vw-2rem)] md:w-auto md:min-w-[300px]"
+          >
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold truncate">Lendo agora</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex gap-0.5 shrink-0">
+                  {[1, 2, 3].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={isPaused ? { height: 4 } : { height: [4, 12, 4] }}
+                      transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                      className="w-1 bg-brand-copper rounded-full"
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-white truncate">Página {pageNumber}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:gap-3 shrink-0 ml-auto">
+              <button
+                onClick={isPaused ? resumeSpeech : pauseSpeech}
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+              >
+                {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
+              </button>
+              <button
+                onClick={stopSpeech}
+                className="w-10 h-10 rounded-full bg-brand-copper hover:bg-brand-copper-dark flex items-center justify-center transition-colors text-white shadow-lg"
+              >
+                <Square className="w-4 h-4 fill-current" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div 
         className="flex-1 flex overflow-hidden relative"
         onContextMenu={(e) => e.preventDefault()}
       >
-        {/* Floating Mini Player for Speech */}
-        <AnimatePresence>
-          {isSpeaking && (
-            <motion.div
-              initial={{ y: 100, opacity: 0, x: "-50%" }}
-              animate={{ y: 0, opacity: 1, x: "-50%" }}
-              exit={{ y: 100, opacity: 0, x: "-50%" }}
-              className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center gap-6 min-w-[300px]"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Lendo agora</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={isPaused ? { height: 4 } : { height: [4, 12, 4] }}
-                        transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                        className="w-1 bg-brand-copper rounded-full"
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm font-medium text-white truncate max-w-[140px]">Página {pageNumber}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 ml-auto">
-                <button
-                  onClick={isPaused ? resumeSpeech : pauseSpeech}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
-                >
-                  {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
-                </button>
-                <button
-                  onClick={stopSpeech}
-                  className="w-10 h-10 rounded-full bg-brand-copper hover:bg-brand-copper-dark flex items-center justify-center transition-colors text-white shadow-lg"
-                >
-                  <Square className="w-4 h-4 fill-current" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Main Viewport */}
         <main
