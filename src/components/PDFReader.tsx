@@ -1332,13 +1332,14 @@ export function PDFReader({
       {/* Floating Mini Player for Speech */}
       <AnimatePresence>
         {isSpeaking && (
-          <motion.div
-            initial={{ y: 100, opacity: 0, x: "-50%" }}
-            animate={{ y: 0, opacity: 1, x: "-50%" }}
-            exit={{ y: 100, opacity: 0, x: "-50%" }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60] px-4 md:px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center justify-between gap-4 md:gap-6 w-[calc(100vw-2rem)] md:w-auto md:min-w-[300px]"
-          >
-            <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="absolute bottom-8 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[60] pointer-events-none flex justify-center">
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="pointer-events-auto w-full md:w-auto px-4 md:px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center justify-between gap-4 md:gap-6 md:min-w-[300px]"
+            >
+              <div className="flex flex-col gap-0.5 min-w-0">
               <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold truncate">Lendo agora</span>
               <div className="flex items-center gap-2 min-w-0">
                 <div className="flex gap-0.5 shrink-0">
@@ -1369,7 +1370,8 @@ export function PDFReader({
                 <Square className="w-4 h-4 fill-current" />
               </button>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
