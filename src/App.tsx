@@ -239,9 +239,9 @@ function Navigation() {
   );
 }
 
-function TempleLogo() {
+function TempleLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 200 200" className="w-full h-full">
+    <svg viewBox="0 0 200 200" className={cn("w-full h-full", className)}>
       {/* Circle Background */}
       <circle cx="100" cy="100" r="95" fill="white" />
       
@@ -908,6 +908,146 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
   );
 }
 
+function LoadingOverlay({ show, logo }: { show: boolean, logo?: string | null }) {
+  const leaves = React.useMemo(() => {
+    return [...Array(40)].map((_, i) => ({
+      id: i,
+      size: 10 + Math.random() * 20,
+      duration: 15 + Math.random() * 30,
+      delay: Math.random() * -20,
+      opacity: 0.15 + Math.random() * 0.25,
+      pathX: Math.random() * 200 - 100,
+      pathY: Math.random() * 150 - 75,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      rotate: Math.random() * 360,
+      scale: 0.5 + Math.random() * 0.5
+    }));
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="fixed inset-0 z-[200] bg-brand-navy flex flex-col items-center justify-center overflow-hidden"
+          style={{ backgroundColor: '#001F3F' }}
+        >
+          {/* Animated Background */}
+          <div className="absolute inset-0 pointer-events-none">
+            {leaves.map((leaf) => (
+              <motion.div
+                key={`leaf-loading-${leaf.id}`}
+                initial={{ 
+                  left: leaf.left,
+                  top: leaf.top,
+                  rotate: leaf.rotate,
+                  opacity: 0,
+                  scale: leaf.scale
+                }}
+                animate={{ 
+                  x: [0, leaf.pathX, 0],
+                  y: [0, leaf.pathY, 0],
+                  rotate: [0, 180, 360],
+                  opacity: [0, leaf.opacity, leaf.opacity, 0]
+                }}
+                transition={{ 
+                  duration: leaf.duration, 
+                  repeat: Infinity, 
+                  ease: "easeInOut",
+                  delay: leaf.delay
+                }}
+                className="absolute z-0"
+              >
+                <Leaf 
+                  className="text-brand-copper/40 fill-brand-copper/10" 
+                  style={{ 
+                    width: leaf.size, 
+                    height: leaf.size,
+                  }} 
+                />
+              </motion.div>
+            ))}
+            
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.3, 1],
+                opacity: [0.1, 0.2, 0.1],
+              }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-copper rounded-full blur-[120px]"
+            />
+          </div>
+
+          {/* Logo Container */}
+          <div className="relative z-10 flex flex-col items-center">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ 
+                type: "spring",
+                damping: 20,
+                stiffness: 100,
+                delay: 0.2
+              }}
+              className="relative"
+            >
+              {/* Pulse Glow */}
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.2, 0.5, 0.2]
+                }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-8 bg-brand-copper rounded-full blur-2xl"
+              />
+
+              <div className="w-48 h-48 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 overflow-hidden relative">
+                {logo ? (
+                  <img 
+                    src={logo} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain filter drop-shadow-md"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        const fallback = parent.querySelector('.logo-fallback');
+                        if (fallback) fallback.classList.remove('hidden');
+                      }
+                    }}
+                  />
+                ) : (
+                  <TempleLogo />
+                )}
+                <div className="logo-fallback hidden absolute inset-0">
+                  <TempleLogo />
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="mt-8 text-center"
+            >
+              <h1 className="text-brand-gold font-serif text-lg tracking-[0.4em] font-black uppercase drop-shadow-lg">
+                Guerreiros
+              </h1>
+              <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em] mt-2">
+                Carregando fundamentos...
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -928,15 +1068,28 @@ export default function App() {
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
   const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Artificial delay to show splash screen, but could be tied to actual data readiness
+    const timer = setTimeout(() => setIsLoading(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Automated Notifications for Events and Precepts
   React.useEffect(() => {
     const checkAutomatedNotifications = () => {
       const now = new Date();
-      const currentHour = now.getHours();
       
-      // Only proceed with event reminders after 06:00 AM
-      const isAfterSixAM = currentHour >= 6;
+      // Get hour in Brasília / São Paulo time
+      const brHour = parseInt(new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: 'numeric',
+        hour12: false
+      }).format(now));
+      
+      // Only proceed with event reminders after 06:00 AM Brasília time
+      const isAfterSixAM = brHour >= 6;
       
       const todayStr = now.toISOString().split('T')[0];
       const tomorrow = new Date(now);
@@ -1275,6 +1428,7 @@ export default function App() {
   return (
     <UndoContext.Provider value={{ queueDelete }}>
       <BrowserRouter>
+      <LoadingOverlay show={isLoading} logo={settings.logoBase64} />
       <NotificationManager />
       <div className={cn(
         "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",

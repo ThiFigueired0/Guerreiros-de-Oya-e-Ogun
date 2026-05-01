@@ -4,8 +4,8 @@
   "description": "App para gestão de eventos, banhos de ervas, pontos cantados e anotações espirituais.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F9F9F9",
-  "theme_color": "#0a192f",
+  "background_color": "#001F3F",
+  "theme_color": "#001F3F",
   "icons": [
     {
       "src": "/icon.svg",
