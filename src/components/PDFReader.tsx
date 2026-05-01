@@ -32,7 +32,8 @@ import {
   LayoutGrid,
   Play,
   Pause,
-  Square
+  Square,
+  Eraser
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -424,61 +425,153 @@ export function PDFReader({
     y: number;
   } | null>(null);
 
+  const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null);
+  const [highlightPopupPos, setHighlightPopupPos] = useState<{
+    x: number;
+    y: number;
+    page: number;
+  } | null>(null);
+
   const [activeHighlightColor, setActiveHighlightColor] = useState<
     string | null
   >(null);
+  const [isEraserActive, setIsEraserActive] = useState(false);
 
   const [isPainting, setIsPainting] = useState(false);
   const paintHighlightIdRef = useRef<string | null>(null);
+  const paintStartIndexRef = useRef<number | null>(null);
   const textItemsBoundsRef = useRef<{ rect: DOMRect; text: string }[]>([]);
 
-  const findSnappedRect = (clientX: number, clientY: number, pageRect: DOMRect): HighlightRect | null => {
-    // We want to find the text line at this Y coordinate
-    // and set the X/width to roughly where the user is touching if we want a precise brush
-    // or just the whole line if the user touches a word.
-    
-    // For "brush" feel, we can just highlight the word/segment under the finger, but snapping Y is crucial.
-    const relativeX = ((clientX - pageRect.left) / pageRect.width) * 100;
-    const relativeY = ((clientY - pageRect.top) / pageRect.height) * 100;
+  const findSnappedIndex = (clientX: number, clientY: number): number | null => {
+    if (textItemsBoundsRef.current.length === 0) return null;
 
-    // Find text items on the same horizontal plane (with some tolerance)
-    const candidates = textItemsBoundsRef.current.filter(item => {
-      const itemTop = ((item.rect.top - pageRect.top) / pageRect.height) * 100;
-      const itemBottom = ((item.rect.bottom - pageRect.top) / pageRect.height) * 100;
-      return relativeY >= itemTop - 0.5 && relativeY <= itemBottom + 0.5;
-    });
+    let closestCandidateIndex = -1;
+    let minDistance = Infinity;
 
-    if (candidates.length === 0) {
-      // If no exact text item, maybe we just return a small block at the finger position
-      // but the user wants "align correctly to the lines"
+    for (let i = 0; i < textItemsBoundsRef.current.length; i++) {
+      const item = textItemsBoundsRef.current[i];
+      let dx = 0;
+      let dy = 0;
+
+      if (clientX < item.rect.left) {
+        dx = item.rect.left - clientX;
+      } else if (clientX > item.rect.right) {
+        dx = clientX - item.rect.right;
+      }
+
+      if (clientY < item.rect.top) {
+        dy = item.rect.top - clientY;
+      } else if (clientY > item.rect.bottom) {
+        dy = clientY - item.rect.bottom;
+      }
+
+      // Weight Y heavily so precision matches the horizontal line we are closest to
+      const distance = (dx * dx) + (dy * dy * 25);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestCandidateIndex = i;
+      }
+    }
+
+    // Allow a generous maximum distance for fat finger leeway (~40px vertically or ~200px horizontally)
+    if (closestCandidateIndex === -1 || minDistance > 50000) {
       return null;
     }
 
-    // Find the item closest to X
-    const item = candidates.find(c => {
-      const itemLeft = ((c.rect.left - pageRect.left) / pageRect.width) * 100;
-      const itemRight = ((c.rect.right - pageRect.left) / pageRect.width) * 100;
-      return relativeX >= itemLeft - 1 && relativeX <= itemRight + 1;
-    });
+    return closestCandidateIndex;
+  };
 
-    if (!item) return null;
+  const getRectsForRange = (
+    startIndex: number, 
+    endIndex: number, 
+    pageRect: DOMRect,
+    allHighlights: Highlight[],
+    currentHighlightId: string
+  ): HighlightRect[] => {
+    const minIdx = Math.min(startIndex, endIndex);
+    const maxIdx = Math.max(startIndex, endIndex);
+    const rects: HighlightRect[] = [];
+    
+    const currentPageHighlights = allHighlights.filter(h => h.page === pageNumberRef.current && h.id !== currentHighlightId);
 
-    return {
-      x: ((item.rect.left - pageRect.left) / pageRect.width) * 100,
-      y: ((item.rect.top - pageRect.top) / pageRect.height) * 100,
-      width: (item.rect.width / pageRect.width) * 100,
-      height: (item.rect.height / pageRect.height) * 100,
-    };
+    for (let i = minIdx; i <= maxIdx; i++) {
+      const item = textItemsBoundsRef.current[i];
+      if (!item) continue;
+      
+      // Filter out overly large rects that might be background containers
+      if (item.rect.width > pageRect.width * 0.9 || item.rect.height > pageRect.height * 0.9) continue;
+
+      const x = ((item.rect.left - pageRect.left) / pageRect.width) * 100;
+      const y = ((item.rect.top - pageRect.top) / pageRect.height) * 100;
+      const width = (item.rect.width / pageRect.width) * 100;
+      const height = (item.rect.height / pageRect.height) * 100;
+
+      // Check if this rect overlaps heavily with any existing highlight on this page
+      const overlaps = currentPageHighlights.some(h => {
+        return h.rects.some(r => {
+          // Compare using center points to avoid tiny floating point overlaps
+          const centerX = x + width / 2;
+          const centerY = y + height / 2;
+          return (
+            centerX >= r.x &&
+            centerX <= r.x + r.width &&
+            centerY >= r.y &&
+            centerY <= r.y + r.height
+          );
+        });
+      });
+
+      if (!overlaps) {
+        rects.push({ x, y, width, height });
+      }
+    }
+    return rects;
   };
 
   const updateTextItemBounds = useCallback(() => {
     const textLayer = viewerRef.current?.querySelector(".react-pdf__Page__textContent");
     if (textLayer) {
-      const spans = textLayer.querySelectorAll("span");
-      textItemsBoundsRef.current = Array.from(spans).map(span => ({
+      const spans = Array.from(textLayer.children).filter(el => el.tagName === "SPAN");
+
+      spans.forEach(span => {
+        if (span.querySelector(".pdf-word") || span.classList.contains("pdf-word-processed")) return;
+        span.classList.add("pdf-word-processed");
+
+        // Iterate backwards or make a copy of childNodes because we are modifying the DOM
+        const childNodes = Array.from(span.childNodes);
+        
+        childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent || "";
+            if (!text.trim()) return;
+            const words = text.split(/(\s+)/);
+            
+            const fragment = document.createDocumentFragment();
+            words.forEach(word => {
+              if (word.trim()) {
+                const wordSpan = document.createElement('span');
+                wordSpan.textContent = word;
+                wordSpan.className = "pdf-word";
+                fragment.appendChild(wordSpan);
+              } else if (word) {
+                fragment.appendChild(document.createTextNode(word));
+              }
+            });
+            node.parentNode?.replaceChild(fragment, node);
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as Element;
+            el.classList.add("pdf-word");
+          }
+        });
+      });
+
+      const wordSpans = textLayer.querySelectorAll(".pdf-word");
+      
+      textItemsBoundsRef.current = Array.from(wordSpans).map(span => ({
         rect: span.getBoundingClientRect(),
         text: span.textContent || ""
-      }));
+      })).filter(item => item.rect.width > 0 && item.rect.height > 0);
     }
   }, []);
 
@@ -495,27 +588,31 @@ export function PDFReader({
 
     if (x < pageRect.left || x > pageRect.right || y < pageRect.top || y > pageRect.bottom) return;
 
+    const snappedIndex = findSnappedIndex(x, y);
+    if (snappedIndex === null) return;
+
     setIsPainting(true);
     const id = Math.random().toString(36).substring(2, 9);
     paintHighlightIdRef.current = id;
+    paintStartIndexRef.current = snappedIndex;
 
-    // Find the nearest text line/item to snap
-    const snappedRect = findSnappedRect(x, y, pageRect);
-    if (!snappedRect) return;
-
-    setHighlights((prev) => [
-      ...prev,
-      {
-        id,
-        page: pageNumberRef.current,
-        color: activeHighlightColor,
-        rects: [snappedRect],
-      },
-    ]);
+    setHighlights((prev) => {
+      const rects = getRectsForRange(snappedIndex, snappedIndex, pageRect, prev, id);
+      
+      return [
+        ...prev,
+        {
+          id,
+          page: pageNumberRef.current,
+          color: activeHighlightColor,
+          rects,
+        },
+      ];
+    });
   };
 
   const handlePaintMove = (e: React.TouchEvent) => {
-    if (!isPainting || !paintHighlightIdRef.current || !activeHighlightColor) return;
+    if (!isPainting || !paintHighlightIdRef.current || !activeHighlightColor || paintStartIndexRef.current === null) return;
 
     const touch = e.touches[0];
     const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
@@ -525,28 +622,23 @@ export function PDFReader({
     const x = touch.clientX;
     const y = touch.clientY;
 
-    const snappedRect = findSnappedRect(x, y, pageRect);
-    if (!snappedRect) return;
+    const snappedIndex = findSnappedIndex(x, y);
+    if (snappedIndex === null) return;
+
 
     setHighlights((prev) => {
       const hIdx = prev.findIndex((h) => h.id === paintHighlightIdRef.current);
       if (hIdx === -1) return prev;
+      
+      const rects = getRectsForRange(paintStartIndexRef.current!, snappedIndex, pageRect, prev, paintHighlightIdRef.current!);
 
       const currentHighlight = prev[hIdx];
-      // Check if this rect is already in the highlight
-      const exists = currentHighlight.rects.some(
-        (r) => 
-          Math.abs(r.y - snappedRect.y) < 0.1 && 
-          Math.abs(r.x - snappedRect.x) < 0.1 &&
-          Math.abs(r.width - snappedRect.width) < 0.1
-      );
-
-      if (exists) return prev;
-
+      // Optimize by checking if rect length changed or we could just update it.
+      // Easiest is to always update tracking precisely.
       const newHighlights = [...prev];
       newHighlights[hIdx] = {
         ...currentHighlight,
-        rects: [...currentHighlight.rects, snappedRect],
+        rects,
       };
       return newHighlights;
     });
@@ -555,6 +647,7 @@ export function PDFReader({
   const effectiveScale = scale ?? (pdfPageWidth && containerWidth ? containerWidth / pdfPageWidth : 1);
 
   const handleTopBarColorClick = (color: string) => {
+    setIsEraserActive(false);
     if (activeHighlightColor === color) {
       setActiveHighlightColor(null);
       setIsPainting(false);
@@ -565,6 +658,24 @@ export function PDFReader({
       setSelectionRects(null);
       setActiveSelectionPercentRects(null);
       setSelectionPopupPos(null);
+      setActiveHighlightId(null);
+      setHighlightPopupPos(null);
+    }
+  };
+
+  const handleTopBarEraserClick = () => {
+    setActiveHighlightColor(null);
+    if (isEraserActive) {
+      setIsEraserActive(false);
+      setIsPainting(false);
+    } else {
+      setIsEraserActive(true);
+      window.getSelection()?.removeAllRanges();
+      setSelectionRects(null);
+      setActiveSelectionPercentRects(null);
+      setSelectionPopupPos(null);
+      setActiveHighlightId(null);
+      setHighlightPopupPos(null);
     }
   };
 
@@ -1175,6 +1286,17 @@ export function PDFReader({
                     className={cn("w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-pink-300 border shadow-sm transition-transform hover:scale-110", activeHighlightColor === "rgba(249, 168, 212, 0.4)" ? "ring-2 ring-pink-500 scale-110" : "border-black/10")}
                     title="Grifar (Rosa)"
                   />
+                  <div className="w-px h-4 bg-black/10 dark:bg-white/10 mx-0.5" />
+                  <button
+                    onClick={handleTopBarEraserClick}
+                    className={cn("w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full border shadow-sm transition-transform hover:scale-110", 
+                      isEraserActive ? "bg-red-100 border-red-300 text-red-500 scale-110 ring-2 ring-red-400" : "bg-gray-100 border-black/10 text-gray-500",
+                      settings.darkMode && !isEraserActive && "bg-white/10 border-white/10 text-white/60"
+                    )}
+                    title="Apagar Grifo"
+                  >
+                    <Eraser className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
                 </div>
 
                 <div className={cn("w-px h-6 mx-2 hidden sm:block", settings.darkMode ? "bg-white/10" : "bg-brand-navy/10")} />
@@ -1263,12 +1385,19 @@ export function PDFReader({
             "flex-1 overflow-auto relative transition-all duration-300",
             !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
             "bg-[#0A192F]",
-            activeHighlightColor && "no-select cursor-crosshair touch-none"
+            (activeHighlightColor || isEraserActive) && "no-select touch-none",
+            activeHighlightColor && "cursor-crosshair",
+            isEraserActive && "cursor-alias"
           )}
           onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
           onClick={() => {
-            if (activeHighlightColor) return;
+            if (activeHighlightColor || isEraserActive) return;
             if (window.getSelection()?.toString().trim().length) return;
+            if (activeHighlightId) {
+              setActiveHighlightId(null);
+              setHighlightPopupPos(null);
+              return;
+            }
             setIsFocusMode(!isFocusMode);
           }}
         >
@@ -1345,7 +1474,7 @@ export function PDFReader({
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
                       customTextRenderer={textRenderer}
-                      className={activeHighlightColor ? "no-select" : ""}
+                      className={activeHighlightColor || isEraserActive ? "no-select" : ""}
                       loading={null}
                     />
                     {highlights
@@ -1358,19 +1487,69 @@ export function PDFReader({
                           {h.rects.map((r, i) => (
                             <div
                               key={i}
-                              title="Clique para remover"
-                              className="absolute mix-blend-multiply cursor-pointer group z-40 pointer-events-auto"
+                              title={isEraserActive ? "Apagar" : "Clique para selecionar"}
+                              className={cn(
+                                "absolute mix-blend-multiply z-40 pointer-events-auto transition-colors",
+                                isEraserActive ? "cursor-alias" : "cursor-pointer",
+                                activeHighlightId === h.id ? "ring-2 ring-red-400 outline-none" : ""
+                              )}
+                              onTouchStart={(e) => {
+                                e.stopPropagation();
+                                if (isEraserActive) {
+                                  setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                  setActiveHighlightId(null);
+                                }
+                              }}
+                              onMouseEnter={(e) => {
+                                if (isEraserActive && e.buttons === 1) { // Left mouse button down
+                                  setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                  setActiveHighlightId(null);
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                              }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setHighlights((prev) =>
-                                  prev.filter((x) => x.id !== h.id),
-                                );
+                                if (activeHighlightColor) return;
+                                if (isEraserActive) {
+                                  setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                  setActiveHighlightId(null);
+                                  return;
+                                }
+                                const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
+                                if (!pageRect) return;
+                                
+                                setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
+                                if (h.id !== activeHighlightId) {
+                                  setHighlightPopupPos({
+                                    x: ((e.clientX - pageRect.left) / pageRect.width) * 100,
+                                    y: ((e.clientY - pageRect.top) / pageRect.height) * 100,
+                                    page: pageNumber
+                                  });
+                                } else {
+                                  setHighlightPopupPos(null);
+                                }
                               }}
                               onTouchEnd={(e) => {
-                                // Don't prevent default here as we need click to fire for confirm dialog in some browsers,
-                                // but we can stop propagation so it doesn't trigger viewer actions.
+                                e.preventDefault();
                                 e.stopPropagation();
+                                if (activeHighlightColor || isEraserActive) return;
+                                const touch = e.changedTouches[0];
+                                const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
+                                if (!pageRect || !touch) return;
+                                
+                                setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
+                                if (h.id !== activeHighlightId) {
+                                  setHighlightPopupPos({
+                                    x: ((touch.clientX - pageRect.left) / pageRect.width) * 100,
+                                    y: ((touch.clientY - pageRect.top) / pageRect.height) * 100,
+                                    page: pageNumber
+                                  });
+                                } else {
+                                  setHighlightPopupPos(null);
+                                }
                               }}
                               style={{
                                 left: `${r.x}%`,
@@ -1402,6 +1581,37 @@ export function PDFReader({
                         ))}
                       </div>
                     )}
+
+                    {/* Highlight Delete Popup */}
+                    <AnimatePresence>
+                      {activeHighlightId && highlightPopupPos && highlightPopupPos.page === pageNumber && !activeHighlightColor && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                          className="absolute z-[200] flex items-center gap-2 p-1.5 bg-[#050B14]/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 pointer-events-auto"
+                          style={{
+                            left: `${highlightPopupPos.x}%`,
+                            top: `calc(${highlightPopupPos.y}% - 48px)`,
+                            transform: "translateX(-50%)",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onTouchEnd={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              setHighlights((prev) => prev.filter((x) => x.id !== activeHighlightId));
+                              setActiveHighlightId(null);
+                              setHighlightPopupPos(null);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-red-400 rounded-lg hover:bg-red-400/10 transition-colors"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                            <span className="text-xs font-semibold">Remover</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     {/* Selection Popup */}
                     <AnimatePresence>
