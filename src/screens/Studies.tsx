@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
   Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History, Settings
@@ -319,6 +319,9 @@ export default function StudiesScreen() {
 
   // PDF Upload
   const handlePdfPreview = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent default to avoid any potential form submission reload
+    e.preventDefault();
+    
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -327,38 +330,24 @@ export default function StudiesScreen() {
       return;
     }
 
-    setIsGeneratingBookSummary("Lendo PDF");
+    setIsGeneratingBookSummary("Lendo documento...");
 
     try {
-      // Small delay to allow UI to update to "Lendo PDF"
+      // Small delay to allow UI to update
       await new Promise(r => setTimeout(r, 50));
       
-      // Step 1: Read and parse with PDF.js
-      setIsGeneratingBookSummary("Lendo páginas");
+      // Step 1: Read basic PDF info (pages)
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
       const loadingTask = pdfjsLib.getDocument(uint8Array);
       const pdf = await loadingTask.promise;
-      
       const totalPages = pdf.numPages;
-      let extractedText = '';
-
-      // Extract text from the first few pages for summarization
-      const pagesToScan = Math.min(totalPages, 8);
-      for (let i = 1; i <= pagesToScan; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        extractedText += textContent.items.map((item: any) => item.str).join(' ') + ' ';
-        page.cleanup(); // Free page memory
-      }
+      await pdf.destroy();
       
-      await pdf.destroy(); // Free entire PDF document from memory
-      
-      // Delay to let Garbage Collector clear PDF contents before we load Base64
-      await new Promise(r => setTimeout(r, 100));
+      setIsGeneratingBookSummary("Preparando para salvar...");
+      await new Promise(r => setTimeout(r, 50));
 
       // Step 2: Read base64 for storage
-      setIsGeneratingBookSummary("Salvando arquivo");
       const base64Promise = new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => resolve(ev.target?.result as string);
@@ -367,48 +356,76 @@ export default function StudiesScreen() {
       });
       const base64 = await base64Promise;
 
-      let aiSummary = undefined;
-      if (extractedText) {
-        setIsGeneratingBookSummary("Analisando com IA");
-        // Ensure UI updates
-        await new Promise(r => setTimeout(r, 50));
-        
-        try {
-          // Get the key safely without triggering process is not defined
-          const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || '';
-          const ai = new GoogleGenAI({ apiKey });
-          const prompt = `Faça um mini resumo (máximo de 2 parágrafos curtos) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
-          
-          const result = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-              temperature: 0.1
-            }
-          });
-          
-          if (result.text) {
-            aiSummary = result.text.trim();
-          }
-        } catch (error) {
-          console.error("Erro ao gerar resumo da IA:", error);
-          alert(`Erro ao gerar resumo: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
-
+      // Just set the draft, don't generate summary automatically to avoid reloads/crashes
       setBookPdfDraft({
         name: file.name,
         data: base64,
-        totalPages,
-        aiSummary
+        totalPages
       });
     } catch(err) {
        console.error("Error on handlePdfPreview:", err);
-       alert("Ocorreu um erro ao processar o arquivo.");
+       alert("Ocorreu um erro ao processar o arquivo. Verifique se o arquivo não é muito grande.");
     } finally {
       setIsGeneratingBookSummary(false);
-      // Clean input so it can be re-selected if failed
+      // Clean input so it can be re-selected
       e.target.value = '';
+    }
+  };
+
+  const generateSummaryForDraft = async () => {
+    if (!bookPdfDraft) return;
+    
+    setIsGeneratingBookSummary("Extraindo texto...");
+    try {
+      // Small delay to allow UI to update
+      await new Promise(r => setTimeout(r, 50));
+      
+      const response = await fetch(bookPdfDraft.data);
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const loadingTask = pdfjsLib.getDocument(uint8Array);
+      const pdf = await loadingTask.promise;
+      
+      let extractedText = '';
+      const pagesToScan = Math.min(pdf.numPages, 8);
+      
+      for (let i = 1; i <= pagesToScan; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        extractedText += textContent.items.map((item: any) => (item as any).str).join(' ') + ' ';
+        page.cleanup();
+      }
+      await pdf.destroy();
+
+      if (extractedText) {
+        setIsGeneratingBookSummary("Gerando resumo com IA...");
+        await new Promise(r => setTimeout(r, 50));
+        
+        try {
+          const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || '';
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const prompt = `Faça um mini resumo (MÁXIMO DE 2 PARÁGRAFOS CURTOS) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
+          
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          
+          if (text) {
+            setBookPdfDraft({
+              ...bookPdfDraft,
+              aiSummary: text.trim()
+            });
+          }
+        } catch (error) {
+          console.error("Erro ao gerar resumo da IA:", error);
+          // Don't alert here, just fail gracefully so the book can still be saved
+        }
+      }
+    } catch (error) {
+      console.error("Error extracting text for summary:", error);
+    } finally {
+      setIsGeneratingBookSummary(false);
     }
   };
 
@@ -587,19 +604,16 @@ export default function StudiesScreen() {
         setIsGeneratingBookSummary("Analisando com IA");
         await new Promise(r => setTimeout(r, 50));
         const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || '';
-        const ai = new GoogleGenAI({ apiKey });
-        const prompt = `Faça um mini resumo (máximo de 2 parágrafos curtos) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `Faça um mini resumo (MÁXIMO DE 2 PARÁGRAFOS CURTOS) sobre o principal assunto deste documento. Formule um texto em prosa, direto e objetivo. Não descreva ou liste os itens do índice ou sumário, e não use tópicos/marcadores (bullet points). Caso o texto seja apenas o índice, tente deduzir o tema principal do livro de forma corrida. Baseie-se apenas no seguinte texto:\n\nTexto extraído do documento:\n${extractedText.substring(0, 10000)}`;
         
-        const result = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-          config: {
-            temperature: 0.1
-          }
-        });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
         
-        if (result.text) {
-          const updatedBook = { ...book, aiSummary: result.text.trim() };
+        if (text) {
+          const updatedBook = { ...book, aiSummary: text.trim() };
           setBooks(books.map(b => b.id === book.id ? updatedBook : b));
           setSelectedBookForAction(updatedBook);
         }
@@ -1473,18 +1487,45 @@ export default function StudiesScreen() {
                       />
                     </label>
                   ) : (
-                    <div className={cn(
-                      "p-4 rounded-2xl bg-brand-navy/5 flex items-center justify-between border border-brand-navy/10",
-                      settings.darkMode && "bg-brand-navy/20"
-                    )}>
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <FileText className="w-5 h-5 text-brand-copper flex-shrink-0" />
-                        <span className={cn("text-xs font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{bookPdfDraft.name}</span>
+                    <>
+                      <div className={cn(
+                        "p-4 rounded-2xl bg-brand-navy/5 flex items-center justify-between border border-brand-navy/10",
+                        settings.darkMode && "bg-brand-navy/20"
+                      )}>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className={cn("text-xs font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{bookPdfDraft.name}</span>
+                            {!bookPdfDraft.aiSummary && !isGeneratingBookSummary && (
+                              <button 
+                                onClick={generateSummaryForDraft}
+                                className="text-[9px] font-black uppercase tracking-widest text-brand-copper bg-brand-copper/5 px-2 py-1 rounded-lg border border-brand-copper/10 hover:bg-brand-copper/10 transition-colors"
+                              >
+                                Resumir com IA
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <button onClick={() => setBookPdfDraft(null)} className="text-brand-red p-1 ml-2">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button onClick={() => setBookPdfDraft(null)} className="text-brand-red p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                      {bookPdfDraft.aiSummary && (
+                        <div className="mt-3 p-4 rounded-2xl bg-brand-copper/5 border border-brand-copper/10 relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-2 opacity-10">
+                            <Sparkles className="w-6 h-6 text-brand-copper" />
+                          </div>
+                          <h4 className="text-[8px] font-black uppercase tracking-widest text-brand-copper mb-2 flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3" /> Resumo Gerado
+                          </h4>
+                          <p className={cn(
+                            "text-[10px] font-medium leading-relaxed opacity-80",
+                            settings.darkMode ? "text-white" : "text-brand-navy"
+                          )}>
+                            {bookPdfDraft.aiSummary}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
