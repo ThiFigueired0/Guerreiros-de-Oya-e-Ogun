@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Document, Page, Outline, pdfjs } from "react-pdf";
 import {
   ChevronLeft,
@@ -33,7 +34,9 @@ import {
   Play,
   Pause,
   Square,
-  Eraser
+  Eraser,
+  Book,
+  UploadCloud
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -144,6 +147,14 @@ export function PDFReader({
   }
 
   const [hasOutline, setHasOutline] = useState<boolean | null>(null);
+  const [aiSummary, setAiSummary] = useState<{ title: string; pageNumber: number }[] | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  useEffect(() => {
+    setHasOutline(null);
+    setAiSummary(null);
+    setIsAiLoading(false);
+  }, [pdfUrl]);
 
   const speechStateRef = useRef({
     speaking: false,
@@ -663,6 +674,154 @@ export function PDFReader({
     }
   };
 
+  const generateAiSummary = async () => {
+    if (!parsedPdfRef.current || isAiLoading || aiSummary !== null) return;
+
+    setIsAiLoading(true);
+    try {
+      const doc = parsedPdfRef.current;
+      const pagesToScan = Math.min(doc.numPages, 10);
+      let fullText = "";
+
+      for (let i = 1; i <= pagesToScan; i++) {
+        const page = await doc.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => ("str" in item ? item.str : ""))
+          .join(" ");
+        fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+      }
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      
+      const prompt = `
+        Analise o seguinte texto extraído das primeiras ${pagesToScan} páginas de um PDF.
+        Identifique o Sumário (Índice) do documento e extraia os títulos e seus respectivos números de página.
+        Ignore rodapés, cabeçalhos ou menus que não façam parte do sumário principal.
+        
+        Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}.
+        
+        Texto:
+        ${fullText.substring(0, 15000)}
+      `;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                pageNumber: { type: Type.NUMBER }
+              },
+              required: ["title", "pageNumber"]
+            }
+          }
+        }
+      });
+
+      const responseText = result.text;
+      if (!responseText) {
+        setAiSummary([]);
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        if (Array.isArray(parsed)) {
+          setAiSummary(parsed);
+        } else {
+          setAiSummary([]);
+        }
+      } catch (parseError) {
+        console.error("Erro ao analisar JSON da IA:", parseError, responseText);
+        setAiSummary([]);
+      }
+    } catch (error) {
+      console.error("Erro ao gerar sumário por IA:", error);
+      setAiSummary([]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const fileToGenerativePart = async (file: File) => {
+    const base64EncodedDataPromise = new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+    return {
+      inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+    };
+  };
+
+  const generateAiSummaryFromImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsAiLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+      
+      const parts = await Promise.all(Array.from(files).map((f) => fileToGenerativePart(f) as unknown as any));
+
+      const prompt = `Analise essas imagens que contêm páginas de índice/sumário.
+Identifique o Sumário (Índice) e extraia os títulos e seus respectivos números de página.
+Retorne APENAS um array JSON de objetos: {"title": string, "pageNumber": number}.`;
+
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [prompt, ...parts],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                pageNumber: { type: Type.NUMBER }
+              },
+              required: ["title", "pageNumber"]
+            }
+          }
+        }
+      });
+
+      const responseText = result.text;
+      if (!responseText) {
+        setAiSummary([]);
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAiSummary(parsed);
+          setHasOutline(false);
+        } else {
+          setAiSummary([]);
+        }
+      } catch (parseError) {
+        console.error("Erro ao analisar JSON da IA:", parseError, responseText);
+        setAiSummary([]);
+      }
+    } catch (error) {
+      console.error("Erro ao gerar sumário por IA de imagens:", error);
+      setAiSummary([]);
+    } finally {
+      setIsAiLoading(false);
+      if (e.target) {
+        e.target.value = '';
+      }
+    }
+  };
+
   const handleTopBarEraserClick = () => {
     setActiveHighlightColor(null);
     if (isEraserActive) {
@@ -813,10 +972,24 @@ export function PDFReader({
     return () => clearTimeout(timer);
   }, [pageNumber, scale, updateTextItemBounds]);
 
-  function onDocumentLoadSuccess(pdf: any) {
+  useEffect(() => {
+    if (activeSidebarTab === "outline" && hasOutline === false && aiSummary === null && !isAiLoading) {
+      generateAiSummary();
+    }
+  }, [activeSidebarTab, hasOutline, aiSummary, isAiLoading]);
+
+  async function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages);
     parsedPdfRef.current = pdf;
     setLoading(false);
+    
+    try {
+      const outline = await pdf.getOutline();
+      setHasOutline(Boolean(outline && outline.length > 0));
+    } catch (err) {
+      console.error("Error fetching outline", err);
+      setHasOutline(false);
+    }
   }
 
   const changePage = (offset: number) => {
@@ -1332,44 +1505,44 @@ export function PDFReader({
       {/* Floating Mini Player for Speech */}
       <AnimatePresence>
         {isSpeaking && (
-          <div className="absolute bottom-8 left-4 right-4 md:left-1/2 md:-translate-x-1/2 z-[60] pointer-events-none flex justify-center">
+          <div className="absolute bottom-6 left-0 right-0 z-[60] pointer-events-none flex justify-center px-4">
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
-              className="pointer-events-auto w-full md:w-auto px-4 md:px-6 py-3 rounded-2xl bg-brand-navy shadow-2xl border border-white/10 flex items-center justify-between gap-4 md:gap-6 md:min-w-[300px]"
+              className="pointer-events-auto w-full max-w-[400px] px-4 py-3 rounded-2xl bg-[#001F3F] shadow-2xl border border-white/10 flex items-center justify-between gap-4"
             >
-              <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold truncate">Lendo agora</span>
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="flex gap-0.5 shrink-0">
-                  {[1, 2, 3].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={isPaused ? { height: 4 } : { height: [4, 12, 4] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                      className="w-1 bg-brand-copper rounded-full"
-                    />
-                  ))}
+              <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold truncate">Lendo agora</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex gap-0.5 shrink-0">
+                    {[1, 2, 3].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={isPaused ? { height: 4 } : { height: [4, 12, 4] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                        className="w-1 bg-[#CD7F32] rounded-full"
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-medium text-white truncate">Página {pageNumber}</span>
                 </div>
-                <span className="text-sm font-medium text-white truncate">Página {pageNumber}</span>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 md:gap-3 shrink-0 ml-auto">
-              <button
-                onClick={isPaused ? resumeSpeech : pauseSpeech}
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
-              >
-                {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
-              </button>
-              <button
-                onClick={stopSpeech}
-                className="w-10 h-10 rounded-full bg-brand-copper hover:bg-brand-copper-dark flex items-center justify-center transition-colors text-white shadow-lg"
-              >
-                <Square className="w-4 h-4 fill-current" />
-              </button>
-            </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={isPaused ? resumeSpeech : pauseSpeech}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+                >
+                  {isPaused ? <Play className="w-5 h-5 fill-current" /> : <Pause className="w-5 h-5 fill-current" />}
+                </button>
+                <button
+                  onClick={stopSpeech}
+                  className="w-10 h-10 rounded-full bg-[#CD7F32] hover:bg-[#a66526] flex items-center justify-center transition-colors text-white shadow-lg"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -1739,7 +1912,7 @@ export function PDFReader({
                 <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3
                     className={cn(
-                      "text-[10px] font-black uppercase tracking-widest",
+                      "text-[10px] font-black uppercase tracking-widest flex items-center gap-2",
                       settings.darkMode ? "text-white" : "text-brand-navy",
                     )}
                   >
@@ -1775,27 +1948,90 @@ export function PDFReader({
 
                 {activeSidebarTab === "outline" && (
                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pointer-events-auto">
-                    <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando sumário...</div>}>
-                      <Outline 
-                        onItemClick={({ pageNumber }) => {
-                          if (pageNumber) handlePageSelect(typeof pageNumber === 'string' ? parseInt(pageNumber, 10) : pageNumber);
-                        }}
-                        onLoadSuccess={(outline) => {
-                          setHasOutline(outline && outline.length > 0);
-                        }}
-                        onLoadError={() => setHasOutline(false)}
-                        className={cn(
-                          "custom-pdf-outline text-sm overflow-hidden",
-                          settings.darkMode ? "text-white/80" : "text-brand-navy/80"
+                    {/* Official Outline */}
+                    {hasOutline === true && (
+                      <div className="flex flex-col gap-4">
+                        <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando sumário...</div>}>
+                          <Outline 
+                            onItemClick={({ pageNumber }) => {
+                              if (pageNumber) handlePageSelect(typeof pageNumber === 'string' ? parseInt(pageNumber, 10) : pageNumber);
+                            }}
+                            className={cn(
+                              "custom-pdf-outline text-sm overflow-hidden",
+                              settings.darkMode ? "text-white/80" : "text-brand-navy/80"
+                            )}
+                          />
+                        </Document>
+                        <button
+                          onClick={() => {
+                            setHasOutline(false);
+                            setAiSummary(null);
+                          }}
+                          className="mt-6 w-full py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20 transition-colors border border-brand-copper/20 flex flex-col items-center justify-center gap-1 opacity-70 hover:opacity-100"
+                        >
+                          <span className="flex items-center gap-2"><Book className="w-4 h-4" /> Sumário vazio ou com erro?</span>
+                          <span className="text-[9px] opacity-70">Clique para escanear com Inteligência Artificial</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Pending check */}
+                    {hasOutline === null && (
+                      <div className="text-center py-8 px-4 flex flex-col items-center gap-3">
+                        <Loader2 className="w-5 h-5 opacity-50 animate-spin" />
+                        <p className="text-xs opacity-50 font-medium">Verificando sumário existente...</p>
+                      </div>
+                    )}
+
+                    {/* AI Generated Fallback */}
+                    {hasOutline === false && (
+                      <div className="mt-4">
+                        {isAiLoading ? (
+                          <div className="flex flex-col items-center justify-center py-8 gap-3">
+                            <Loader2 className="w-6 h-6 text-brand-copper animate-spin" />
+                            <p className="text-[10px] uppercase font-black tracking-widest text-brand-copper animate-pulse">IA analisando documento...</p>
+                          </div>
+                        ) : aiSummary && aiSummary.length > 0 ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 mb-3 px-2">
+                              <div className="h-px flex-1 bg-brand-copper/20" />
+                              <span className="text-[9px] font-black uppercase tracking-tighter text-brand-copper/60">Sumário Gerado por IA</span>
+                              <div className="h-px flex-1 bg-brand-copper/20" />
+                            </div>
+                            {aiSummary.map((item, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handlePageSelect(item.pageNumber)}
+                                className={cn(
+                                  "w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center justify-between group",
+                                  settings.darkMode ? "hover:bg-white/5 text-white/70 hover:text-white" : "hover:bg-brand-navy/5 text-brand-navy/70 hover:text-brand-navy"
+                                )}
+                              >
+                                <span className="truncate group-hover:translate-x-1 transition-transform">{item.title}</span>
+                                <span className="shrink-0 opacity-40 font-mono text-[10px] ml-2">{item.pageNumber}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 px-4 flex flex-col items-center">
+                            <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                            <p className="text-xs opacity-50 font-bold mb-4">Este PDF não possui um sumário interno e a IA não conseguiu identificar um índice automático.</p>
+                            
+                            <label className="cursor-pointer mt-4 w-full py-3 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20 transition-colors border border-brand-copper/20 flex flex-col items-center justify-center gap-1 opacity-80 hover:opacity-100">
+                              <span className="flex items-center gap-2"><UploadCloud className="w-4 h-4" /> Enviar Prints do Sumário</span>
+                              <span className="text-[9px] opacity-70 mt-1 lowercase first-letter:uppercase font-medium">A IA criará um sumário com base nas imagens enviadas</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={generateAiSummaryFromImages}
+                              />
+                            </label>
+                          </div>
                         )}
-                      />
-                      {hasOutline === false && (
-                        <div className="text-center py-8 px-4">
-                          <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                          <p className="text-xs opacity-50 font-bold">Este PDF não possui um sumário interno configurado.</p>
-                        </div>
-                      )}
-                    </Document>
+                      </div>
+                    )}
                   </div>
                 )}
 
