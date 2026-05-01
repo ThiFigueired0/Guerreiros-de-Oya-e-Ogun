@@ -93,6 +93,7 @@ export function PDFReader({
   const viewerRef = useRef<HTMLElement>(null);
   const wheelTimeout = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pinchStateRef = useRef<{ initialDist: number; initialScale: number } | null>(null);
   const [inputPage, setInputPage] = useState(String(initialPage));
 
   // Improvements State
@@ -254,6 +255,62 @@ export function PDFReader({
       observer.disconnect();
     };
   }, [isFocusMode, activeSidebarTab]);
+
+  const scaleRef = useRef(scale);
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        pinchStateRef.current = {
+          initialDist: dist,
+          initialScale: scaleRef.current || 1,
+        };
+      } else {
+        pinchStateRef.current = null;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchStateRef.current) {
+        e.preventDefault();
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const ratio = dist / pinchStateRef.current.initialDist;
+        const newScale = Math.min(Math.max(0.5, pinchStateRef.current.initialScale * ratio), 3);
+        setScale(newScale);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        pinchStateRef.current = null;
+      }
+    };
+
+    viewer.addEventListener("touchstart", handleTouchStart, { passive: false });
+    viewer.addEventListener("touchmove", handleTouchMove, { passive: false });
+    viewer.addEventListener("touchend", handleTouchEnd);
+    viewer.addEventListener("touchcancel", handleTouchEnd);
+
+    return () => {
+      viewer.removeEventListener("touchstart", handleTouchStart);
+      viewer.removeEventListener("touchmove", handleTouchMove);
+      viewer.removeEventListener("touchend", handleTouchEnd);
+      viewer.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     setInputPage(String(pageNumber));
