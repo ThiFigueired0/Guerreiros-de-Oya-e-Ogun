@@ -17,7 +17,12 @@ export default function HomeScreen() {
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     bathCategories: ['Gerais', 'Orixás', 'Entidades'],
-    pushNotifications: false
+    pushNotifications: false,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const [baths] = useStorage<HerbBath[]>('templo_baths', []);
@@ -108,7 +113,13 @@ export default function HomeScreen() {
           )}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[8px] font-black text-gray-300 uppercase tracking-widest">Logo</div>
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                  {settings.caixaLogo ? (
+                    <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
+                  )}
+                </div>
                 <div>
                   <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
                   <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
@@ -142,7 +153,13 @@ export default function HomeScreen() {
           )}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[8px] font-black text-gray-300 uppercase tracking-widest">Logo</div>
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                  {settings.nubankLogo ? (
+                    <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
+                  )}
+                </div>
                 <div>
                   <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos & Banhos</p>
                   <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Nubank</p>

@@ -164,7 +164,12 @@ export default function StudiesScreen() {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
-    pushNotifications: false
+    pushNotifications: false,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const [books, setBooks, isBooksLoading] = useIdbStorage<StudyBook[]>('templo_books', []);

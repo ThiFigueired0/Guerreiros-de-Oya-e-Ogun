@@ -43,7 +43,12 @@ export default function SettingsScreen() {
     pushNotifications: true,
     tabIcons: {},
     primaryTabPaths: DEFAULT_PRIMARY,
-    secondaryTabPaths: DEFAULT_SECONDARY
+    secondaryTabPaths: DEFAULT_SECONDARY,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const [activeSubScreen, setActiveSubScreen] = useState<string | null>(null);

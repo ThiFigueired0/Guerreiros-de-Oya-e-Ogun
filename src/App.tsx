@@ -106,6 +106,11 @@ function Navigation() {
     secondaryTabPaths: DEFAULT_SECONDARY,
     immersiveMode: true,
     primaryColor: '#B8860B',
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const primaryPaths = settings.primaryTabPaths || DEFAULT_PRIMARY;
@@ -311,6 +316,11 @@ const TopHeader = React.memo(function TopHeader() {
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false,
     immersiveMode: true,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const leaves = React.useMemo(() => {
@@ -487,6 +497,11 @@ function SocialButtons() {
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     pushNotifications: false,
     immersiveMode: true,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   if (location.pathname !== '/home') return null;
@@ -928,6 +943,11 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
     eventNames: [],
     pushNotifications: true,
     immersiveMode: true,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
   
   React.useEffect(() => {
@@ -1057,6 +1077,11 @@ export default function App() {
     pushNotifications: false,
     immersiveMode: true,
     primaryColor: '#B8860B',
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   // Apply the Primary Color dynamically

@@ -19,7 +19,12 @@ export default function Financeiro() {
     pushNotifications: false,
     currentCashOnHand: 0,
     lastCashUpdate: Date.now(),
-    bathPackagePrice: 17
+    bathPackagePrice: 17,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const [records, setRecords] = useStorage<FinancialRecord[]>('templo_finance', []);
