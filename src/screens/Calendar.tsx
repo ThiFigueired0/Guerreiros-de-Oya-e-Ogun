@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown, Star } from 'lucide-react';
@@ -10,7 +11,18 @@ import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function CalendarScreen() {
+  const location = useLocation();
+  const agendaRef = useRef<HTMLDivElement>(null);
+  
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    if (location.state?.scrollToAgenda && agendaRef.current) {
+      agendaRef.current.scrollIntoView({ behavior: 'smooth' });
+      // Clean up the state so it doesn't scroll again on re-renders unless triggered
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -358,7 +370,7 @@ export default function CalendarScreen() {
         </div>
       </div>
 
-      <div className="space-y-6 px-1">
+      <div ref={agendaRef} className="space-y-6 px-1 pt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex flex-col">
             <div className="flex items-center gap-3">

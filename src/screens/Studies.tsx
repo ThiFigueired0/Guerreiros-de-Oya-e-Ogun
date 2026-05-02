@@ -11,7 +11,7 @@ import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { get, set, del } from 'idb-keyval';
 import { useUndo } from '../hooks/useUndo';
-import { Greeting, StudyBook, AppSettings, StudyContent } from '../types';
+import { Greeting, StudyBook, AppSettings, StudyContent, GlossaryTerm } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { PDFReader } from '../components/PDFReader';
 
@@ -175,9 +175,10 @@ export default function StudiesScreen() {
   const [books, setBooks, isBooksLoading] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [greetings, setGreetings] = useStorage<Greeting[]>('templo_greetings', INITIAL_GREETINGS);
   const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', INITIAL_STUDY_CONTENTS);
+  const [glossaryTerms, setGlossaryTerms] = useStorage<GlossaryTerm[]>('templo_glossary', []);
 
   // UI state
-  const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents'>('library');
+  const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents' | 'glossary'>('library');
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['in_progress']);
   const [search, setSearch] = useState('');
   const [bookSearch, setBookSearch] = useState('');
@@ -247,6 +248,13 @@ export default function StudiesScreen() {
   });
   const [selectedContent, setSelectedContent] = useState<StudyContent | null>(null);
   const [contentSearch, setContentSearch] = useState('');
+
+  // Glossary State
+  const [showGlossaryModal, setShowGlossaryModal] = useState(false);
+  const [editingGlossaryTerm, setEditingGlossaryTerm] = useState<GlossaryTerm | null>(null);
+  const [glossaryForm, setGlossaryForm] = useState<Partial<GlossaryTerm>>({ term: '', definition: '', category: '' });
+  const [glossarySearch, setGlossarySearch] = useState('');
+  const [selectedGlossaryTerm, setSelectedGlossaryTerm] = useState<GlossaryTerm | null>(null);
 
   const [newLink, setNewLink] = useState('');
   const addLink = () => {
@@ -668,6 +676,27 @@ export default function StudiesScreen() {
     setContentForm({ title: '', category: 'Fundamento', content: '', attachments: [], links: [] });
   };
 
+  const handleSaveGlossaryTerm = () => {
+    if (!glossaryForm.term || !glossaryForm.definition) return;
+    
+    const newTerm: GlossaryTerm = {
+      id: editingGlossaryTerm ? editingGlossaryTerm.id : Date.now().toString(),
+      term: glossaryForm.term,
+      definition: glossaryForm.definition,
+      category: glossaryForm.category
+    };
+
+    if (editingGlossaryTerm) {
+      setGlossaryTerms(glossaryTerms.map(t => t.id === editingGlossaryTerm.id ? newTerm : t));
+    } else {
+      setGlossaryTerms([...glossaryTerms, newTerm]);
+    }
+    
+    setShowGlossaryModal(false);
+    setEditingGlossaryTerm(null);
+    setGlossaryForm({ term: '', definition: '', category: '' });
+  };
+
   const deleteContent = (item: StudyContent, e: React.MouseEvent) => {
     e.stopPropagation();
     queueDelete({
@@ -778,6 +807,18 @@ export default function StudiesScreen() {
         >
           <LayoutList className="w-3.5 h-3.5" />
           <span className="leading-none">Conteúdos</span>
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('glossary')}
+          className={cn(
+            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
+            activeSubTab === 'glossary' 
+              ? "bg-brand-navy text-white shadow-md" 
+              : "text-gray-400 hover:text-brand-navy"
+          )}
+        >
+          <ScrollText className="w-3.5 h-3.5" />
+          <span className="leading-none">Glossário</span>
         </button>
       </div>
 
@@ -1346,6 +1387,124 @@ export default function StudiesScreen() {
                           <ChevronRight className="w-3 h-3" />
                         </div>
                       </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </section>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'glossary' && (
+          <motion.div
+            key="glossary"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+          >
+            <section className="mb-10 px-2">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-brand-copper" />
+                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Glossário umbandista</h2>
+                </div>
+                <button 
+                  onClick={() => {
+                    setEditingGlossaryTerm(null);
+                    setGlossaryForm({ term: '', definition: '', category: '' });
+                    setShowGlossaryModal(true);
+                  }}
+                  className="text-[10px] uppercase font-black tracking-widest text-brand-copper bg-brand-copper/10 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+                >
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Buscar termo..."
+                  value={glossarySearch}
+                  onChange={(e) => setGlossarySearch(e.target.value)}
+                  className={cn(
+                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20 flex-1",
+                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {glossaryTerms.filter(t => t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || t.definition.toLowerCase().includes(glossarySearch.toLowerCase())).length === 0 ? (
+                  <div className={cn(
+                    "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
+                    settings.darkMode && "border-gray-800"
+                  )}>
+                    <BookOpen className="w-12 h-12 text-gray-200" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Nenhum termo encontrado</p>
+                      <p className="text-[10px] text-gray-300 max-w-[200px]">Adicione palavras ao glossário para consulta futura.</p>
+                    </div>
+                  </div>
+                ) : (
+                  glossaryTerms
+                    .filter(t => t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || t.definition.toLowerCase().includes(glossarySearch.toLowerCase()))
+                    .sort((a,b) => a.term.localeCompare(b.term))
+                    .map((term) => (
+                    <motion.div
+                      key={term.id}
+                      onClick={() => setSelectedGlossaryTerm(term)}
+                      className={cn(
+                        "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
+                        settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                      )}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1">
+                          {term.category && (
+                            <span className={cn(
+                              "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit bg-brand-copper/10 text-brand-copper"
+                            )}>
+                              {term.category}
+                            </span>
+                          )}
+                          <h3 className={cn("text-sm font-black text-brand-navy mt-1", settings.darkMode && "text-white")}>
+                            {term.term}
+                          </h3>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingGlossaryTerm(term);
+                              setGlossaryForm({ ...term });
+                              setShowGlossaryModal(true);
+                            }}
+                            className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              queueDelete({
+                                id: term.id,
+                                label: term.term,
+                                timestamp: Date.now(),
+                                onConfirm: () => {
+                                  setGlossaryTerms((prev: GlossaryTerm[]) => prev.filter(t => t.id !== term.id));
+                                }
+                              });
+                            }}
+                            className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className={cn("text-xs text-gray-500 leading-relaxed font-medium line-clamp-2", settings.darkMode && "text-gray-400")}>
+                        {term.definition}
+                      </p>
                     </motion.div>
                   ))
                 )}
@@ -2460,6 +2619,87 @@ export default function StudiesScreen() {
                     className="w-full bg-brand-navy text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all text-xs"
                   >
                     Salvar Conteúdo
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Glossary Modal */}
+      <AnimatePresence>
+        {showGlossaryModal && (
+          <div className="fixed inset-0 z-[140] flex items-start justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-sm overflow-y-auto pt-10 sm:pt-0 sm:items-center">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={cn(
+                "w-full max-w-sm bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
+                settings.darkMode && "bg-[#1A1A1A]"
+              )}
+            >
+              <button 
+                onClick={() => setShowGlossaryModal(false)}
+                className="absolute top-6 right-6 text-gray-400 p-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <h2 className={cn("text-xl font-black text-brand-navy mb-6", settings.darkMode && "text-white")}>
+                {editingGlossaryTerm ? 'Editar Termo' : 'Novo Termo de Glossário'}
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Termo</label>
+                  <input 
+                    type="text"
+                    value={glossaryForm.term}
+                    onChange={(e) => setGlossaryForm({ ...glossaryForm, term: e.target.value })}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Ex: Amaci"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Categoria (Opcional)</label>
+                  <input 
+                    type="text"
+                    value={glossaryForm.category}
+                    onChange={(e) => setGlossaryForm({ ...glossaryForm, category: e.target.value })}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Ex: Rito, Ferramenta, Item..."
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Definição / Significado</label>
+                  <textarea 
+                    value={glossaryForm.definition}
+                    onChange={(e) => setGlossaryForm({ ...glossaryForm, definition: e.target.value })}
+                    rows={6}
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-[24px] text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none leading-relaxed",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                    placeholder="Descreva o significado deste termo na umbanda..."
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    onClick={handleSaveGlossaryTerm}
+                    className="w-full bg-brand-navy text-white py-4 rounded-[20px] font-black uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all text-[11px]"
+                  >
+                    Salvar Termo
                   </button>
                 </div>
               </div>

@@ -23,6 +23,7 @@ import HomeScreen from './screens/Home';
 import StudiesScreen from './screens/Studies';
 import FinanceiroScreen from './screens/Financeiro';
 import { NotificationManager } from './components/NotificationManager';
+import { GlobalSearch } from './components/GlobalSearch';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -228,13 +229,9 @@ function Navigation() {
               )}
             >
               <div className={cn(
-                "px-6 py-4 flex items-center justify-between border-b",
+                "px-6 py-4 flex items-center justify-end border-b",
                 settings.darkMode ? "border-white/5" : "border-gray-100"
               )}>
-                 <span className={cn(
-                   "text-[10px] font-black uppercase tracking-widest",
-                   settings.darkMode ? "text-gray-400" : "text-gray-400"
-                 )}>Mais Funcionalidades</span>
                  <button onClick={() => setShowMore(false)} className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                    <X className="w-4 h-4 text-gray-400" />
                  </button>
@@ -676,10 +673,15 @@ function NotificationCenter({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowNotifications(true)}
-          className="w-10 h-10 rounded-full bg-white/95 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.3)] border border-brand-copper/20 cursor-pointer"
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all",
+            darkMode 
+              ? "bg-black/40 border border-white/10" 
+              : "bg-white/10 border border-white/20 hover:bg-white/20"
+          )}
         >
           <div className="relative">
-            <Bell className="w-5 h-5 text-brand-navy" strokeWidth={2.5} />
+            <Bell className={cn("w-5 h-5", darkMode ? "text-gray-300" : "text-white")} strokeWidth={2.5} />
             {showBadge && (
               <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
@@ -1568,7 +1570,8 @@ export default function App() {
           "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
-          {/* Notification Icon - Global */}
+          {/* Top Floating Buttons */}
+          <GlobalSearch />
           <NotificationCenter 
             darkMode={settings.darkMode} 
             notifications={notifications} 

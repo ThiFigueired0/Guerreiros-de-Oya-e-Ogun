@@ -174,6 +174,13 @@ export interface Greeting {
   firma?: string;
 }
 
+export interface GlossaryTerm {
+  id: string;
+  term: string;
+  definition: string;
+  category?: string;
+}
+
 export interface StudyContent {
   id: string;
   title: string;
