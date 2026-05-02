@@ -1023,30 +1023,7 @@ export default function Financeiro() {
                 </div>
               </div>
 
-              {/* Linha do Tempo e Planejamento */}
-              <div className={cn(
-                "p-4 rounded-[28px] border transition-all relative overflow-hidden flex flex-col gap-4",
-                settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#8A05BE] text-white shadow-lg shadow-[#8A05BE]/20 flex items-center justify-center shrink-0">
-                    <History className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-[#8A05BE] mb-0.5 opacity-60">Pagamento Ogã</p>
-                    <p className={cn("text-xs font-black tracking-tight truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank (Celular)</p>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white dark:bg-white/5 p-2 rounded-xl border border-gray-100 dark:border-white/5">
-                    <p className={cn("text-xs font-mono font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
-                    <button 
-                      onClick={() => copyToClipboard('11982350614', 'oga-nubank')}
-                      className="w-7 h-7 bg-[#8A05BE] text-white rounded-lg flex items-center justify-center shadow-lg active:scale-90 transition-all shrink-0"
-                    >
-                      {copied === 'oga-nubank' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
+
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">

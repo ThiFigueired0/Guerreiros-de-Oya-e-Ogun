@@ -340,14 +340,33 @@ const TopHeader = React.memo(function TopHeader() {
   }, []);
 
   return (
-    <div className={cn(
-      "relative overflow-hidden pt-20 pb-16 shadow-2xl flex flex-col items-center",
-      settings.darkMode 
-        ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
-        : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
-    )}>
+    <div 
+      className={cn(
+        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[40dvh] sm:min-h-0",
+        settings.darkMode 
+          ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
+          : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+      )}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+        paddingBottom: '4rem',
+        backgroundAttachment: 'scroll',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       {/* Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/p6.png')] blur-[1px]" />
+      <div 
+        className="absolute inset-0 opacity-[0.03] pointer-events-none blur-[1px]" 
+        style={{
+          backgroundImage: "url('https://www.transparenttextures.com/patterns/p6.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'scroll'
+        }}
+      />
 
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -982,7 +1001,7 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1.0, ease: "easeInOut" }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh]"
           style={{ backgroundColor: '#001529' }}
         >
           {/* Global Animated Background */}
@@ -1499,7 +1518,7 @@ export default function App() {
       <InitialLoader show={!isAppReady} logo={settings.logoBase64} />
       <NotificationManager />
       <div className={cn(
-        "min-h-screen bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
+        "min-h-[100dvh] bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
         settings.darkMode && "bg-black"
       )}>
         {/* Outer Glow Effects (Desktop/Tablet feel) */}
@@ -1507,7 +1526,7 @@ export default function App() {
         <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
 
         <div className={cn(
-          "w-full h-full sm:h-[812px] max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
+          "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
           {/* Notification Icon - Global */}

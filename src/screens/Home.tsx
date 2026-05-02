@@ -105,85 +105,77 @@ export default function HomeScreen() {
           </h3>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
           {/* Caixa Card */}
           <div className={cn(
-            "p-5 rounded-[28px] border transition-all relative overflow-hidden",
-            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-gray-50/50 border-gray-100"
+            "p-4 rounded-[32px] border transition-all relative overflow-hidden flex flex-col",
+            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
           )}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
-                  {settings.caixaLogo ? (
-                    <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
-                  )}
-                </div>
-                <div>
-                  <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
-                  <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
-                </div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                {settings.caixaLogo ? (
+                  <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[6px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40 leading-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>Caixa Econômica</p>
+                <p className={cn("text-[7px] font-bold uppercase tracking-widest opacity-30", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
               </div>
             </div>
             
             <div className={cn(
-              "p-4 rounded-2xl flex items-center justify-between gap-4 mb-4",
+              "p-2 rounded-xl flex items-center justify-between gap-2 mt-auto",
               settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
             )}>
-              <div className="overflow-hidden">
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (CPF)</p>
-                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
+              <div className="overflow-hidden min-w-0">
+                <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">PIX (CPF)</p>
+                <p className={cn("text-[11px] font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
               </div>
               <button 
                 onClick={() => copyToClipboard('33464358810', 'caixa')}
-                className="w-10 h-10 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
+                className="w-6 h-6 bg-brand-copper text-white rounded-lg flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
               >
-                {copied === 'caixa' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                {copied === 'caixa' ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               </button>
             </div>
-            
-            <p className="text-[10px] text-gray-400 font-medium px-1">Utilize esta conta exclusivamente para o pagamento das mensalidades do templo.</p>
           </div>
 
           {/* Nubank Card */}
           <div className={cn(
-            "p-5 rounded-[28px] border transition-all relative overflow-hidden",
-            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-gray-50/50 border-gray-100"
+            "p-4 rounded-[32px] border transition-all relative overflow-hidden flex flex-col",
+            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
           )}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
-                  {settings.nubankLogo ? (
-                    <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
-                  )}
-                </div>
-                <div>
-                  <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos & Banhos</p>
-                  <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Nubank</p>
-                </div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                {settings.nubankLogo ? (
+                  <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[6px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40 leading-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank</p>
+                <p className={cn("text-[7px] font-bold uppercase tracking-widest opacity-30", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos</p>
               </div>
             </div>
             
             <div className={cn(
-              "p-4 rounded-2xl flex items-center justify-between gap-4 mb-4",
+              "p-2 rounded-xl flex items-center justify-between gap-2 mt-auto",
               settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
             )}>
-              <div className="overflow-hidden">
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (Celular)</p>
-                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
+              <div className="overflow-hidden min-w-0">
+                <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">PIX (CEL)</p>
+                <p className={cn("text-[11px] font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
               </div>
               <button 
                 onClick={() => copyToClipboard('11982350614', 'nubank')}
-                className="w-10 h-10 bg-[#8A05BE] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-90 transition-all shrink-0"
+                className="w-6 h-6 bg-[#8A05BE] text-white rounded-lg flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-90 transition-all shrink-0"
               >
-                {copied === 'nubank' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                {copied === 'nubank' ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               </button>
             </div>
-            
-            <p className="text-[10px] text-gray-400 font-medium px-1">Utilize esta conta para compra de banhos, materiais e outras necessidades gerais.</p>
           </div>
         </div>
       </section>

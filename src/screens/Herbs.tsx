@@ -222,7 +222,12 @@ export default function HerbsScreen() {
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
     bathCategories: ['Gerais', 'Orixás', 'Entidades'],
     pushNotifications: false,
-    bathPackagePrice: 17
+    bathPackagePrice: 17,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
   });
 
   const [baths, setBaths] = useStorage<HerbBath[]>('templo_baths', INITIAL_BATHS);
@@ -784,8 +789,12 @@ export default function HerbsScreen() {
                   "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all flex-1 min-w-[200px]",
                   settings.darkMode ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-100 shadow-sm"
                 )}>
-                  <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/30">
-                    <span className="text-[10px] font-black text-white">Nu</span>
+                  <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-600/30 overflow-hidden">
+                    {settings.nubankLogo ? (
+                      <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] font-black text-white uppercase">Nu</span>
+                    )}
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-[8px] font-black uppercase tracking-widest text-purple-400">Chave PIX Nubank</span>
