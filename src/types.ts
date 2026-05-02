@@ -87,6 +87,11 @@ export interface AppSettings {
   bathPackagePrice?: number;
   currentCashOnHand?: number;
   lastCashUpdate?: number;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  birthDate?: string;
+  gender?: 'Masculino' | 'Feminino';
 }
 
 export interface Bicho {

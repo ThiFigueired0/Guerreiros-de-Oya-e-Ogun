@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { 
   Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera, AlertTriangle,
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone, ArrowUp, ArrowDown, ArrowLeftRight, FileText, GripVertical,
-  Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap, Globe, Sparkles
+  Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap, Globe, Sparkles,
+  UserCircle, Fingerprint, Mail, AtSign, Cake, Dna, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
@@ -48,7 +49,12 @@ export default function SettingsScreen() {
     nubankLogo: '',
     tiktokLogo: '',
     instagramLogo: '',
-    orixaPhotos: {}
+    orixaPhotos: {},
+    firstName: '',
+    lastName: '',
+    email: '',
+    birthDate: '',
+    gender: 'Masculino'
   });
 
   const [activeSubScreen, setActiveSubScreen] = useState<string | null>(null);
@@ -192,172 +198,319 @@ export default function SettingsScreen() {
     switch (activeSubScreen) {
       case 'profile':
         return (
-          <div className="space-y-6">
-            {/* Logo do Terreiro */}
-            <section className={cn(
-              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+          <div className="space-y-8 pb-32 overflow-y-auto max-h-[80vh] px-1 scrollbar-hide">
+            {/* Header Summary */}
+            <div className={cn(
+              "p-8 rounded-[40px] flex flex-col items-center text-center gap-4 relative overflow-hidden",
+              settings.darkMode ? "bg-black/40 border border-gray-800" : "bg-brand-navy shadow-xl shadow-brand-navy/20"
             )}>
-              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3" /> Identidade Visual do Terreiro
-              </h3>
-              <div className="flex flex-col items-center">
-                <div className={cn(
-                  "w-32 h-32 rounded-full border-2 border-brand-copper mb-6 relative overflow-hidden bg-gray-50 flex items-center justify-center p-2 shadow-inner",
-                  settings.darkMode && "bg-black/40"
-                )}>
-                  {settings.logoBase64 ? (
-                    <img src={settings.logoBase64} alt="Preview" className="w-full h-full object-contain" />
-                  ) : (
-                    <ImageIcon className="w-10 h-10 text-gray-200" />
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={(e) => handleLogoUpload(e, 'logoBase64')} 
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-xs bg-brand-navy text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest flex items-center gap-2"
-                  >
-                    <Camera className="w-4 h-4" /> Alterar Logo
-                  </button>
-                  {settings.logoBase64 && (
-                    <button 
-                      onClick={removeLogo}
-                      className="text-xs bg-red-50 text-red-500 px-6 py-3 rounded-2xl font-black uppercase tracking-widest"
-                    >
-                      Remover
-                    </button>
-                  )}
-                </div>
-                <p className="text-[9px] text-gray-700 dark:text-gray-400 mt-6 uppercase font-bold text-center tracking-widest leading-loose max-w-[200px]">A logo será exibida no topo de todas as telas em formato circular.</p>
+              <div className="w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-2xl">
+                <User className="w-12 h-12 text-white" />
               </div>
-            </section>
-
-            {/* Logos Financeiras */}
-            <section className={cn(
-              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
-            )}>
-              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
-                <Wallet className="w-3 h-3" /> Logos Bancárias
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col items-center gap-3">
-                  <div className={cn(
-                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all",
-                    settings.caixaLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
-                  )}>
-                    {settings.caixaLogo ? (
-                      <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Caixa</span>
-                    )}
-                  </div>
-                  <input type="file" ref={caixaRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'caixaLogo')} />
-                  <button onClick={() => caixaRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-brand-navy dark:text-brand-gold">Upload Caixa</button>
-                </div>
-
-                <div className="flex flex-col items-center gap-3">
-                  <div className={cn(
-                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all",
-                    settings.nubankLogo ? "border-[#8A05BE]" : "border-gray-200 dark:border-gray-800"
-                  )}>
-                    {settings.nubankLogo ? (
-                      <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Nubank</span>
-                    )}
-                  </div>
-                  <input type="file" ref={nubankRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'nubankLogo')} />
-                  <button onClick={() => nubankRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-[#8A05BE]">Upload Nubank</button>
-                </div>
+              <div className="space-y-1">
+                <h2 className="text-xl font-black text-white tracking-tight">
+                  {settings.firstName ? `${settings.firstName} ${settings.lastName}` : 'Seu Perfil'}
+                </h2>
+                <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.2em]">Meus Dados & Identidade</p>
               </div>
-            </section>
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-brand-copper/20 rounded-full blur-3xl p-10 select-none pointer-events-none" />
+              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-brand-gold/10 rounded-full blur-2xl select-none pointer-events-none" />
+            </div>
 
-            {/* Logos Redes Sociais */}
-            <section className={cn(
-              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
-            )}>
-              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
-                <Globe className="w-3 h-3" /> Logos Redes Sociais
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col items-center gap-3">
-                  <div className={cn(
-                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden",
-                    settings.instagramLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
-                  )}>
-                    {settings.instagramLogo ? (
-                      <img src={settings.instagramLogo} alt="Instagram" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Instagram</span>
-                    )}
-                  </div>
-                  <input type="file" ref={instagramRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'instagramLogo')} />
-                  <button onClick={() => instagramRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-brand-navy dark:text-brand-gold">Upload Insta</button>
+            {/* Informações Pessoais */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
+                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Informações Pessoais</h3>
                 </div>
-
-                <div className="flex flex-col items-center gap-3">
-                  <div className={cn(
-                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden",
-                    settings.tiktokLogo ? "border-black" : "border-gray-200 dark:border-gray-800"
-                  )}>
-                    {settings.tiktokLogo ? (
-                      <img src={settings.tiktokLogo} alt="TikTok" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">TikTok</span>
-                    )}
-                  </div>
-                  <input type="file" ref={tiktokRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'tiktokLogo')} />
-                  <button onClick={() => tiktokRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-gray-500">Upload TikTok</button>
-                </div>
+                <UserCircle className="w-3.5 h-3.5 text-gray-300" />
               </div>
-            </section>
-
-            {/* Fotos dos Orixás */}
-            <section className={cn(
-              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
-            )}>
-              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
-                <Sparkles className="w-3 h-3" /> Fotos dos Orixás (Estudos)
-              </h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                {ORIXAS.map(orixa => (
-                  <div key={orixa} className="flex flex-col items-center gap-2">
-                    <div className={cn(
-                      "w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black/20 transition-all",
-                      settings.orixaPhotos?.[orixa] ? "border-brand-copper" : "border-gray-200 dark:border-gray-800"
-                    )}>
-                      {settings.orixaPhotos?.[orixa] ? (
-                        <img src={settings.orixaPhotos[orixa]} alt={orixa} className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-6 h-6 text-gray-200 dark:text-gray-700" />
-                      )}
-                    </div>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-center h-4 flex items-center">{orixa}</p>
+              <div className={cn(
+                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors space-y-6",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+              )}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nome</label>
                     <input 
-                      type="file" 
-                      ref={el => { orixaRefs.current[orixa] = el; }} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={(e) => handleOrixaPhotoUpload(e, orixa)} 
+                      type="text" 
+                      value={settings.firstName || ''}
+                      onChange={(e) => setSettings({ ...settings, firstName: e.target.value })}
+                      placeholder="Nome"
+                      className={cn(
+                        "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
+                      )}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Sobrenome</label>
+                    <input 
+                      type="text" 
+                      value={settings.lastName || ''}
+                      onChange={(e) => setSettings({ ...settings, lastName: e.target.value })}
+                      placeholder="Sobrenome"
+                      className={cn(
+                        "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nascimento</label>
+                    <div className="relative">
+                      <input 
+                        type="date" 
+                        value={settings.birthDate || ''}
+                        onChange={(e) => setSettings({ ...settings, birthDate: e.target.value })}
+                        className={cn(
+                          "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                          settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Sexo / Gênero</label>
+                    <div className={cn(
+                      "flex p-1 bg-gray-50 rounded-[20px] border border-gray-100 h-[52px]",
+                      settings.darkMode && "bg-black/40 border-gray-800"
+                    )}>
+                      <button
+                        onClick={() => setSettings({ ...settings, gender: 'Masculino' })}
+                        className={cn(
+                          "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
+                          (settings.gender === 'Masculino' || !settings.gender) 
+                            ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
+                            : "text-gray-400"
+                        )}
+                      >
+                        Masc
+                      </button>
+                      <button
+                        onClick={() => setSettings({ ...settings, gender: 'Feminino' })}
+                        className={cn(
+                          "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
+                          settings.gender === 'Feminino' 
+                            ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
+                            : "text-gray-400"
+                        )}
+                      >
+                        Fem
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Contato Institucional */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
+                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Contato & Registros</h3>
+                </div>
+                <Mail className="w-3.5 h-3.5 text-gray-300" />
+              </div>
+              <div className={cn(
+                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+              )}>
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">E-mail Institucional</label>
+                  <div className="relative">
+                    <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <input 
+                      type="email" 
+                      value={settings.email || ''}
+                      onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                      placeholder="exemplo@email.com"
+                      className={cn(
+                        "w-full bg-gray-100/50 pl-11 pr-4 py-4 rounded-[20px] text-xs font-bold outline-none border border-transparent focus:border-brand-copper transition-all",
+                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Identidade do Terreiro */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
+                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identidade Visual do Axé</h3>
+                </div>
+                <ShieldCheck className="w-3.5 h-3.5 text-gray-300" />
+              </div>
+              <div className={cn(
+                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors space-y-8",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+              )}>
+                {/* Logo Principal */}
+                <div className="flex flex-col items-center gap-4 py-4 border-b border-gray-50 dark:border-white/5">
+                  <div className={cn(
+                    "w-32 h-32 rounded-full border-2 border-brand-copper/30 relative overflow-hidden bg-gray-50 flex items-center justify-center p-2 shadow-inner",
+                    settings.darkMode && "bg-black/40 border-brand-copper/20"
+                  )}>
+                    {settings.logoBase64 ? (
+                      <img src={settings.logoBase64} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <ImageIcon className="w-10 h-10 text-gray-200" />
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoBase64')} />
                     <button 
-                      onClick={() => orixaRefs.current[orixa]?.click()}
-                      className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-copper hover:underline px-2 py-1"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[9px] bg-brand-navy text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-brand-navy/20 active:scale-95 transition-all"
                     >
-                      Upload
+                      <Camera className="w-4 h-4" /> Alterar Logo
+                    </button>
+                    {settings.logoBase64 && (
+                      <button 
+                        onClick={removeLogo} 
+                        className="p-3 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all border border-red-100 dark:border-red-500/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fotos dos Orixás */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Registros Fotográficos (Orixás)</p>
+                    <Sparkles className="w-3 h-3 text-brand-copper opacity-50" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {ORIXAS.map(orixa => (
+                      <div key={orixa} className="flex flex-col items-center gap-2 group">
+                        <div 
+                          onClick={() => orixaRefs.current[orixa]?.click()}
+                          className={cn(
+                            "w-20 h-20 rounded-[28px] border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black/20 cursor-pointer transition-all active:scale-90 group-hover:border-brand-copper group-hover:bg-brand-copper/5",
+                            settings.orixaPhotos?.[orixa] ? "border-brand-copper/50 border-solid" : "border-gray-200 dark:border-gray-800"
+                          )}
+                        >
+                          {settings.orixaPhotos?.[orixa] ? (
+                            <img src={settings.orixaPhotos[orixa]} alt={orixa} className="w-full h-full object-cover" />
+                          ) : (
+                            <Fingerprint className="w-6 h-6 text-gray-200 dark:text-gray-700/50" />
+                          )}
+                        </div>
+                        <p className="text-[7px] font-black uppercase tracking-widest text-center truncate w-full opacity-40">{orixa}</p>
+                        <input 
+                          type="file" 
+                          ref={el => { orixaRefs.current[orixa] = el; }} 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={(e) => handleOrixaPhotoUpload(e, orixa)} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Presença Digital & Financeiro */}
+            <section className="space-y-4 pb-20">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
+                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Conexões & Redes</h3>
+                </div>
+                <Globe className="w-3.5 h-3.5 text-gray-300" />
+              </div>
+              <div className={cn(
+                "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 transition-colors space-y-10",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+              )}>
+                {/* Financeiro */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 px-1">
+                    <Wallet className="w-3 h-3 text-brand-navy dark:text-brand-copper" />
+                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Interface de Pagamentos (Logos)</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => caixaRef.current?.click()}
+                      className={cn(
+                        "flex flex-col items-center gap-4 p-5 rounded-[32px] border-2 border-dashed transition-all active:scale-95 group",
+                        settings.caixaLogo ? "border-brand-navy/30 bg-brand-navy/5" : "border-gray-50 dark:border-gray-800/50 hover:border-brand-navy/20"
+                      )}
+                    >
+                      <div className="w-14 h-14 bg-white dark:bg-white/5 rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden border border-gray-50 dark:border-white/5">
+                        {settings.caixaLogo ? <img src={settings.caixaLogo} className="w-full h-full object-cover" /> : <Plus className="w-4 h-4 text-gray-200" />}
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-brand-navy dark:text-white opacity-60">Caixa Logo</span>
+                      <input type="file" ref={caixaRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'caixaLogo')} />
+                    </button>
+
+                    <button 
+                      onClick={() => nubankRef.current?.click()}
+                      className={cn(
+                        "flex flex-col items-center gap-4 p-5 rounded-[32px] border-2 border-dashed transition-all active:scale-95 group",
+                        settings.nubankLogo ? "border-[#8A05BE]/30 bg-[#8A05BE]/5" : "border-gray-50 dark:border-gray-800/50 hover:border-[#8A05BE]/20"
+                      )}
+                    >
+                      <div className="w-14 h-14 bg-white dark:bg-white/5 rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden border border-gray-50 dark:border-white/5">
+                        {settings.nubankLogo ? <img src={settings.nubankLogo} className="w-full h-full object-cover" /> : <Plus className="w-4 h-4 text-gray-200" />}
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-[#8A05BE] opacity-60">Nubank Logo</span>
+                      <input type="file" ref={nubankRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'nubankLogo')} />
                     </button>
                   </div>
-                ))}
+                </div>
+
+                {/* Social */}
+                <div className="space-y-6">
+                  <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Presença Social</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => instagramRef.current?.click()}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95",
+                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-purple-500/30" : "bg-white hover:border-purple-500/20"
+                      )}
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/10">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">Instagram<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
+                      <input type="file" ref={instagramRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'instagramLogo')} />
+                    </button>
+
+                    <button 
+                      onClick={() => tiktokRef.current?.click()}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95",
+                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-white/30" : "bg-white hover:border-black/5"
+                      )}
+                    >
+                      <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/10">
+                        <Smartphone className="w-5 h-5" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">TikTok<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
+                      <input type="file" ref={tiktokRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'tiktokLogo')} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informação Final */}
+              <div className="mt-8 p-6 rounded-[32px] bg-brand-navy/5 dark:bg-white/5 border border-dashed border-brand-navy/10 dark:border-white/10">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed text-center italic">
+                  "As informações aqui contidas são fundamentais para o registro histórico e burocrático do templo. Mantenha seus dados sempre atualizados."
+                </p>
               </div>
             </section>
           </div>

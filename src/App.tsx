@@ -1100,7 +1100,12 @@ export default function App() {
     nubankLogo: '',
     tiktokLogo: '',
     instagramLogo: '',
-    orixaPhotos: {}
+    orixaPhotos: {},
+    firstName: '',
+    lastName: '',
+    email: '',
+    birthDate: '',
+    gender: 'Masculino'
   });
 
   // Apply the Primary Color dynamically
