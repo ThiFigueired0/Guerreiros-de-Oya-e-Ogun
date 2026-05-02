@@ -576,7 +576,13 @@ export default function Financeiro() {
                 settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
               )}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[7px] font-black text-gray-300 uppercase tracking-widest">Caixa</div>
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                    {settings.caixaLogo ? (
+                      <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <span className="text-[7px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
+                    )}
+                  </div>
                   <div>
                     <p className={cn("text-[9px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
                     <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
@@ -728,7 +734,13 @@ export default function Financeiro() {
                   settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
                 )}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[6px] font-black text-gray-300 uppercase tracking-widest">Caixa</div>
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                      {settings.caixaLogo ? (
+                        <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-1" />
+                      ) : (
+                        <span className="text-[6px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
+                      )}
+                    </div>
                     <div>
                       <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40", settings.darkMode ? "text-white" : "text-brand-navy")}>Caixa Econômica</p>
                     </div>
@@ -757,7 +769,13 @@ export default function Financeiro() {
                   settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
                 )}>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center text-[6px] font-black text-gray-300 uppercase tracking-widest">Nubank</div>
+                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+                      {settings.nubankLogo ? (
+                        <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-contain p-1" />
+                      ) : (
+                        <span className="text-[6px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
+                      )}
+                    </div>
                     <div>
                       <p className={cn("text-[8px] font-black uppercase tracking-widest opacity-40", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank</p>
                     </div>

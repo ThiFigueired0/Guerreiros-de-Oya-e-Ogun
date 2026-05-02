@@ -1155,7 +1155,7 @@ export default function StudiesScreen() {
                             <div 
                               key={g.id}
                               onClick={() => {
-                                if (g.summary || g.imageUrl) {
+                                if (g.summary || g.imageUrl || (settings.orixaPhotos && settings.orixaPhotos[g.entity])) {
                                   setSelectedGreeting(g);
                                 }
                               }}
@@ -1164,9 +1164,23 @@ export default function StudiesScreen() {
                                 settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-lg"
                               )}
                             >
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
-                                <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "w-10 h-10 rounded-full border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center bg-gray-50 dark:bg-white/5",
+                                  settings.darkMode && "border-gray-800"
+                                )}>
+                                  {(settings.orixaPhotos && settings.orixaPhotos[g.entity]) ? (
+                                    <img src={settings.orixaPhotos[g.entity]} alt={g.entity} className="w-full h-full object-cover" />
+                                  ) : g.imageUrl ? (
+                                    <img src={g.imageUrl} alt={g.entity} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{g.entity.substring(0, 2)}</div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
+                                  <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
+                                </div>
                               </div>
                               <div className="flex gap-1 transition-opacity">
                                 <button 
@@ -1356,10 +1370,10 @@ export default function StudiesScreen() {
                 <X className="w-5 h-5" />
               </button>
 
-              {selectedGreeting.imageUrl && (
+              {(selectedGreeting.imageUrl || (settings.orixaPhotos && settings.orixaPhotos[selectedGreeting.entity])) && (
                 <div className="relative h-64 w-full">
                   <img 
-                    src={selectedGreeting.imageUrl} 
+                    src={settings.orixaPhotos?.[selectedGreeting.entity] || selectedGreeting.imageUrl} 
                     alt={selectedGreeting.entity}
                     className="w-full h-full object-cover"
                   />
@@ -1371,7 +1385,7 @@ export default function StudiesScreen() {
               )}
 
               <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                {!selectedGreeting.imageUrl && (
+                {!(selectedGreeting.imageUrl || (settings.orixaPhotos && settings.orixaPhotos[selectedGreeting.entity])) && (
                   <h2 className={cn("text-2xl font-black text-brand-navy mb-1", settings.darkMode && "text-white")}>
                     {selectedGreeting.entity}
                   </h2>

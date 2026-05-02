@@ -104,6 +104,8 @@ function Navigation() {
     tabIcons: {},
     primaryTabPaths: DEFAULT_PRIMARY,
     secondaryTabPaths: DEFAULT_SECONDARY,
+    immersiveMode: true,
+    primaryColor: '#B8860B',
   });
 
   const primaryPaths = settings.primaryTabPaths || DEFAULT_PRIMARY;
@@ -307,7 +309,8 @@ const TopHeader = React.memo(function TopHeader() {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
-    pushNotifications: false
+    pushNotifications: false,
+    immersiveMode: true,
   });
 
   const leaves = React.useMemo(() => {
@@ -339,7 +342,7 @@ const TopHeader = React.memo(function TopHeader() {
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Floating Leaves across the entire banner - Higher visibility */}
-        {leaves.map((leaf) => (
+        {(settings.immersiveMode !== false) && leaves.map((leaf) => (
           <motion.div
             key={`leaf-fixed-${leaf.id}`}
             initial={{ 
@@ -482,7 +485,8 @@ function SocialButtons() {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
-    pushNotifications: false
+    pushNotifications: false,
+    immersiveMode: true,
   });
 
   if (location.pathname !== '/home') return null;
@@ -501,7 +505,11 @@ function SocialButtons() {
         )}
       >
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
-          {/* Placeholder for Instagram Logo */}
+          {settings.instagramLogo ? (
+            <img src={settings.instagramLogo} alt="Instagram Logo" className="w-full h-full object-contain p-1" />
+          ) : (
+            null
+          )}
         </div>
         <div className="text-left relative z-10">
           <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">Instagram</h3>
@@ -521,7 +529,11 @@ function SocialButtons() {
         )}
       >
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
-          {/* Placeholder for TikTok Logo */}
+          {settings.tiktokLogo ? (
+            <img src={settings.tiktokLogo} alt="TikTok Logo" className="w-full h-full object-contain p-1" />
+          ) : (
+            null
+          )}
         </div>
         <div className="text-left relative z-10">
           <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
@@ -910,6 +922,13 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
 
 function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) {
   const [progress, setProgress] = React.useState(0);
+  const [settings] = useStorage<AppSettings>('templo_settings', {
+    darkMode: false,
+    eventCategories: [],
+    eventNames: [],
+    pushNotifications: true,
+    immersiveMode: true,
+  });
   
   React.useEffect(() => {
     if (!show) return;
@@ -948,7 +967,7 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
         >
           {/* Global Animated Background */}
           <div className="absolute inset-0 pointer-events-none">
-            {leaves.map((leaf) => (
+            {settings.immersiveMode !== false && leaves.map((leaf) => (
               <div
                 key={`splash-leaf-${leaf.id}`}
                 className="leaf-floating"
@@ -1035,8 +1054,22 @@ export default function App() {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
-    pushNotifications: false
+    pushNotifications: false,
+    immersiveMode: true,
+    primaryColor: '#B8860B',
   });
+
+  // Apply the Primary Color dynamically
+  React.useEffect(() => {
+    if (settings.primaryColor) {
+      document.documentElement.style.setProperty('--brand-copper', settings.primaryColor);
+      // Also derive a lighter version if needed, or just let it use the same
+      document.documentElement.style.setProperty('--brand-gold', settings.primaryColor);
+    } else {
+      document.documentElement.style.removeProperty('--brand-copper');
+      document.documentElement.style.removeProperty('--brand-gold');
+    }
+  }, [settings.primaryColor]);
 
   const [notifications, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
   const [deliveredIds, setDeliveredIds] = useStorage<string[]>('templo_delivered_automated', []);
@@ -1087,8 +1120,24 @@ export default function App() {
         hour12: false
       }).format(now));
       
-      // Only proceed with event reminders after 06:00 AM Brasília time
-      const isAfterSixAM = brHour >= 6;
+      // Check Silent Hours
+      const isSilentTime = () => {
+        if (!settings.pushNotifications) return true;
+        if (!settings.silentHoursStart || !settings.silentHoursEnd) return false;
+        const time = brHour * 60 + now.getMinutes();
+        const [startH, startM] = settings.silentHoursStart.split(':').map(Number);
+        const [endH, endM] = settings.silentHoursEnd.split(':').map(Number);
+        const startValue = startH * 60 + (startM || 0);
+        const endValue = endH * 60 + (endM || 0);
+        
+        if (startValue < endValue) {
+          return time >= startValue && time <= endValue;
+        } else {
+          return time >= startValue || time <= endValue;
+        }
+      };
+
+      if (isSilentTime()) return;
       
       const todayStr = now.toISOString().split('T')[0];
       const tomorrow = new Date(now);
@@ -1114,9 +1163,7 @@ export default function App() {
       };
 
       // 1. Calendar Event Reminders (1 day before and same day)
-      // Only send these if it's after 06:00 AM
-      if (isAfterSixAM) {
-        allEvents.forEach(event => {
+      allEvents.forEach(event => {
           const uniqueKey = 'id' in event ? event.id : `${event.date}_${event.title}`;
           const eventId_today = `event_${uniqueKey}_today_${todayStr}`;
           const eventId_tomorrow = `event_${uniqueKey}_tomorrow_${todayStr}`;
@@ -1130,17 +1177,16 @@ export default function App() {
             addAutomatedNotif(eventId_tomorrow, `Evento amanhã: ${event.title}`, 'calendário');
           }
         });
-      }
 
       // 2. Precept Reminders (Sunday for Monday start)
       const dayOfWeek = now.getDay(); // 0 is Sunday
-      if (dayOfWeek === 0 && isAfterSixAM) { // Sunday after 06:00
+      if (dayOfWeek === 0) { // Sunday
         const preceptSundayId = `precept_sunday_${todayStr}`;
         addAutomatedNotif(preceptSundayId, "Lembrete: Preceito inicia amanhã (segunda-feira)", 'preceito');
       }
 
       // 3. New Week Event (Monday)
-      if (dayOfWeek === 1 && isAfterSixAM) { // Monday after 06:00
+      if (dayOfWeek === 1) { // Monday
         const preceptMondayId = `precept_monday_${todayStr}`;
         if (!notifications.some(n => n.id === preceptMondayId) && !deliveredIds.includes(preceptMondayId)) {
           const weekEnd = new Date(now);
@@ -1165,17 +1211,15 @@ export default function App() {
       }
 
       // 4. Ogã Payment Reminder (on days with Gira de atendimento or Gira interna)
-      if (isAfterSixAM) {
-        const ogaEvents = allEvents.filter(e => 
-          e.date === todayStr && 
-          (e.category === 'Gira de atendimento' || e.category === 'Gira interna')
-        );
+      const ogaEvents = allEvents.filter(e => 
+        e.date === todayStr && 
+        (e.category === 'Gira de atendimento' || e.category === 'Gira interna')
+      );
         
         ogaEvents.forEach(event => {
           const ogaNotifId = `oga_payment_${todayStr}_${event.title}`;
           addAutomatedNotif(ogaNotifId, `Lembrete Financeiro: Dia de girá (${event.title}). Verifique se possui os R$16 em espécie para o Ogã.`, 'preceito');
         });
-      }
 
       if (newNotifs.length > 0) {
         setNotifications(prev => [...newNotifs, ...prev].slice(0, 100));

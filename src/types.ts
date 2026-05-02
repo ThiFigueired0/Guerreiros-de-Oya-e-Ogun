@@ -66,11 +66,21 @@ export interface HerbStock {
 
 export interface AppSettings {
   darkMode: boolean;
+  immersiveMode?: boolean;
+  reminderHours?: number;
+  silentHoursStart?: string;
+  silentHoursEnd?: string;
+  primaryColor?: string;
   eventCategories: string[];
   eventNames: string[];
   bathCategories?: string[];
   pushNotifications: boolean;
   logoBase64?: string;
+  caixaLogo?: string;
+  nubankLogo?: string;
+  tiktokLogo?: string;
+  instagramLogo?: string;
+  orixaPhotos?: Record<string, string>;
   tabIcons?: Record<string, string>;
   primaryTabPaths?: string[];
   secondaryTabPaths?: string[];

@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { 
-  Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera,
+  Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera, AlertTriangle,
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone, ArrowUp, ArrowDown, ArrowLeftRight, FileText, GripVertical,
-  Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
+  Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap, Globe, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
@@ -12,7 +12,7 @@ import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 const AVAILABLE_ICONS: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
-  Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
+  Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 };
 
 const ALL_TABS = [
@@ -33,6 +33,11 @@ const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settin
 export default function SettingsScreen() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
+    immersiveMode: true,
+    reminderHours: 2,
+    silentHoursStart: '22:00',
+    silentHoursEnd: '08:00',
+    primaryColor: '#B8860B',
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Gira de Pretos Velhos', 'Gira de Caboclos', 'Gira de Exu/Pomba Gira', 'Gira de Erês', 'Gira de Marinheiros', 'Gira de Boiadeiros', 'Gira de Ciganos'],
     pushNotifications: true,
@@ -47,18 +52,46 @@ export default function SettingsScreen() {
   const [activeTabPicker, setActiveTabPicker] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{type: 'category' | 'name', value: string} | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const caixaRef = useRef<HTMLInputElement>(null);
+  const nubankRef = useRef<HTMLInputElement>(null);
+  const instagramRef = useRef<HTMLInputElement>(null);
+  const tiktokRef = useRef<HTMLInputElement>(null);
+  const orixaRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const primaryTabs = settings.primaryTabPaths || DEFAULT_PRIMARY;
   const secondaryTabs = settings.secondaryTabPaths || DEFAULT_SECONDARY;
 
+  const ORIXAS = [
+    'Oxala', 'Iemanja', 'Ogum', 'Iansã/Oya', 'Oxossi', 'Oxum', 
+    'Xangô', 'Omolu e Obaluaê', 'Nanã', 'Oxumare'
+  ];
+
   // Handlers
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, field: keyof AppSettings = 'logoBase64') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSettings({ ...settings, logoBase64: reader.result as string });
+        setSettings({ ...settings, [field]: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOrixaPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, orixaName: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings({ 
+          ...settings, 
+          orixaPhotos: { 
+            ...(settings.orixaPhotos || {}), 
+            [orixaName]: reader.result as string 
+          } 
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -97,6 +130,7 @@ export default function SettingsScreen() {
   };
 
   const toggleDarkMode = () => setSettings({ ...settings, darkMode: !settings.darkMode });
+  const toggleImmersiveMode = () => setSettings({ ...settings, immersiveMode: !settings.immersiveMode });
   const toggleNotifications = () => setSettings({ ...settings, pushNotifications: !settings.pushNotifications });
 
   const moveTab = (path: string, from: 'primary' | 'secondary', to: 'primary' | 'secondary') => {
@@ -149,64 +183,18 @@ export default function SettingsScreen() {
     setItemToDelete(null);
   };
 
-  // Export Data
-  const exportData = () => {
-    const allData: Record<string, any> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('templo_')) {
-        const value = localStorage.getItem(key);
-        try {
-          allData[key] = JSON.parse(value!);
-        } catch (e) {
-          allData[key] = value;
-        }
-      }
-    }
-    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `templo_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  // Import Data
-  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target?.result as string);
-          Object.entries(data).forEach(([key, value]) => {
-            if (key.startsWith('templo_')) {
-              localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-            }
-          });
-          window.location.reload();
-        } catch (e) {
-          alert('Erro ao importar arquivo.');
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
   const renderSubScreen = () => {
     switch (activeSubScreen) {
       case 'profile':
         return (
           <div className="space-y-6">
+            {/* Logo do Terreiro */}
             <section className={cn(
               "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
               settings.darkMode && "bg-[#1A1A1A] border-gray-800"
             )}>
               <h3 className="text-[10px] font-black text-brand-copper uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3" /> Identidade Visual
+                <ShieldCheck className="w-3 h-3" /> Identidade Visual do Terreiro
               </h3>
               <div className="flex flex-col items-center">
                 <div className={cn(
@@ -225,7 +213,7 @@ export default function SettingsScreen() {
                     ref={fileInputRef} 
                     className="hidden" 
                     accept="image/*" 
-                    onChange={handleLogoUpload} 
+                    onChange={(e) => handleLogoUpload(e, 'logoBase64')} 
                   />
                   <button 
                     onClick={() => fileInputRef.current?.click()}
@@ -242,7 +230,129 @@ export default function SettingsScreen() {
                     </button>
                   )}
                 </div>
-                <p className="text-[9px] text-gray-400 mt-6 uppercase font-bold text-center tracking-widest leading-loose max-w-[200px]">A logo será exibida no topo de todas as telas em formato circular.</p>
+                <p className="text-[9px] text-gray-700 dark:text-gray-400 mt-6 uppercase font-bold text-center tracking-widest leading-loose max-w-[200px]">A logo será exibida no topo de todas as telas em formato circular.</p>
+              </div>
+            </section>
+
+            {/* Logos Financeiras */}
+            <section className={cn(
+              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
+              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+            )}>
+              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
+                <Wallet className="w-3 h-3" /> Logos Bancárias
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div className={cn(
+                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all",
+                    settings.caixaLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
+                  )}>
+                    {settings.caixaLogo ? (
+                      <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Caixa</span>
+                    )}
+                  </div>
+                  <input type="file" ref={caixaRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'caixaLogo')} />
+                  <button onClick={() => caixaRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-brand-navy dark:text-brand-gold">Upload Caixa</button>
+                </div>
+
+                <div className="flex flex-col items-center gap-3">
+                  <div className={cn(
+                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all",
+                    settings.nubankLogo ? "border-[#8A05BE]" : "border-gray-200 dark:border-gray-800"
+                  )}>
+                    {settings.nubankLogo ? (
+                      <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Nubank</span>
+                    )}
+                  </div>
+                  <input type="file" ref={nubankRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'nubankLogo')} />
+                  <button onClick={() => nubankRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-[#8A05BE]">Upload Nubank</button>
+                </div>
+              </div>
+            </section>
+
+            {/* Logos Redes Sociais */}
+            <section className={cn(
+              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
+              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+            )}>
+              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
+                <Globe className="w-3 h-3" /> Logos Redes Sociais
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div className={cn(
+                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden",
+                    settings.instagramLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
+                  )}>
+                    {settings.instagramLogo ? (
+                      <img src={settings.instagramLogo} alt="Instagram" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Instagram</span>
+                    )}
+                  </div>
+                  <input type="file" ref={instagramRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'instagramLogo')} />
+                  <button onClick={() => instagramRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-brand-navy dark:text-brand-gold">Upload Insta</button>
+                </div>
+
+                <div className="flex flex-col items-center gap-3">
+                  <div className={cn(
+                    "w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden",
+                    settings.tiktokLogo ? "border-black" : "border-gray-200 dark:border-gray-800"
+                  )}>
+                    {settings.tiktokLogo ? (
+                      <img src={settings.tiktokLogo} alt="TikTok" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-[8px] font-black uppercase tracking-widest opacity-30">TikTok</span>
+                    )}
+                  </div>
+                  <input type="file" ref={tiktokRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'tiktokLogo')} />
+                  <button onClick={() => tiktokRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-gray-500">Upload TikTok</button>
+                </div>
+              </div>
+            </section>
+
+            {/* Fotos dos Orixás */}
+            <section className={cn(
+              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
+              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+            )}>
+              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
+                <Sparkles className="w-3 h-3" /> Fotos dos Orixás (Estudos)
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                {ORIXAS.map(orixa => (
+                  <div key={orixa} className="flex flex-col items-center gap-2">
+                    <div className={cn(
+                      "w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black/20 transition-all",
+                      settings.orixaPhotos?.[orixa] ? "border-brand-copper" : "border-gray-200 dark:border-gray-800"
+                    )}>
+                      {settings.orixaPhotos?.[orixa] ? (
+                        <img src={settings.orixaPhotos[orixa]} alt={orixa} className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-6 h-6 text-gray-200 dark:text-gray-700" />
+                      )}
+                    </div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-center h-4 flex items-center">{orixa}</p>
+                    <input 
+                      type="file" 
+                      ref={el => { orixaRefs.current[orixa] = el; }} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={(e) => handleOrixaPhotoUpload(e, orixa)} 
+                    />
+                    <button 
+                      onClick={() => orixaRefs.current[orixa]?.click()}
+                      className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-copper hover:underline px-2 py-1"
+                    >
+                      Upload
+                    </button>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
@@ -261,7 +371,7 @@ export default function SettingsScreen() {
               
               <div className="space-y-8">
                 <div>
-                  <p className="text-[9px] font-black uppercase text-gray-400 mb-4 tracking-widest flex items-center gap-2">
+                  <p className="text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 mb-4 tracking-widest flex items-center gap-2">
                     <Layout className="w-3 h-3" /> Barra de Navegação (Principal)
                   </p>
                   <Reorder.Group 
@@ -316,7 +426,7 @@ export default function SettingsScreen() {
                 </div>
 
                 <div>
-                  <p className="text-[9px] font-black uppercase text-gray-400 mb-4 tracking-widest flex items-center gap-2">
+                  <p className="text-[9px] font-black uppercase text-gray-700 dark:text-gray-400 mb-4 tracking-widest flex items-center gap-2">
                     <Plus className="w-3 h-3" /> Menu Secundário (Mais)
                   </p>
                   <Reorder.Group 
@@ -376,7 +486,7 @@ export default function SettingsScreen() {
                     <div key={tab.path} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/50">
                       <div className="flex flex-col">
                         <span className={cn("text-xs font-bold", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{tab.label}</span>
-                        <span className="text-[8px] text-gray-400 font-black uppercase tracking-widest">Toque no ícone</span>
+                        <span className="text-[8px] text-gray-700 dark:text-gray-400 font-black uppercase tracking-widest">Toque no ícone</span>
                       </div>
                       
                       <div className="relative">
@@ -436,7 +546,7 @@ export default function SettingsScreen() {
                <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em]">Gestão de Agenda</h3>
                <div className="space-y-6">
                   <div className={cn("pb-6 border-b border-gray-100", settings.darkMode && "border-gray-800")}>
-                    <p className={cn("text-[9px] font-black text-gray-400 mb-4 uppercase tracking-widest")}>Categorias de Evento</p>
+                    <p className={cn("text-[9px] font-black text-gray-700 dark:text-gray-400 mb-4 uppercase tracking-widest")}>Categorias de Evento</p>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {settings.eventCategories.map((cat, i) => (
                         <span key={`${cat}-${i}`} className={cn(
@@ -466,7 +576,7 @@ export default function SettingsScreen() {
                   </div>
 
                   <div>
-                    <p className={cn("text-[9px] font-black text-gray-400 mb-4 uppercase tracking-widest")}>Sugestões de Nomes</p>
+                    <p className={cn("text-[9px] font-black text-gray-700 dark:text-gray-400 mb-4 uppercase tracking-widest")}>Sugestões de Nomes</p>
                     <div className="grid gap-2 mb-4 h-48 overflow-y-auto pr-2 custom-scrollbar">
                       {settings.eventNames.map((name, i) => (
                         <div key={`${name}-${i}`} className={cn(
@@ -518,7 +628,7 @@ export default function SettingsScreen() {
                     </div>
                     <div>
                       <p className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Modo Escuro</p>
-                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Interface Noturna</p>
+                      <p className="text-[10px] text-gray-600 dark:text-gray-400 font-medium uppercase tracking-widest">Interface Noturna</p>
                     </div>
                   </div>
                   <button 
@@ -538,11 +648,60 @@ export default function SettingsScreen() {
                 <div className="flex items-center justify-between p-4 rounded-3xl bg-gray-50/50">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-brand-copper/10 flex items-center justify-center text-brand-copper">
+                      <Leaf className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Modo Imersivo</p>
+                      <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Animações de Folhas</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={toggleImmersiveMode}
+                    className={cn(
+                      "w-14 h-7 rounded-full p-1 transition-colors relative shadow-inner",
+                      settings.immersiveMode ? "bg-brand-copper" : "bg-gray-300"
+                    )}
+                  >
+                    <motion.div 
+                      animate={{ x: settings.immersiveMode ? 28 : 0 }}
+                      className="w-5 h-5 bg-white rounded-full shadow-lg" 
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-3xl bg-gray-50/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Cor Principal</p>
+                      <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Tom do Templo</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {['#B8860B', '#8B4513', '#1A1A1A', '#CC0000'].map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setSettings({ ...settings, primaryColor: color })}
+                        className={cn(
+                          "w-6 h-6 rounded-full border-2 transition-all",
+                          settings.primaryColor === color ? "border-brand-navy scale-110 shadow-md" : "border-transparent opacity-60"
+                        )}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-3xl bg-gray-50/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-brand-navy/10 flex items-center justify-center text-brand-navy">
                       <Bell className="w-5 h-5" />
                     </div>
                     <div>
                       <p className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Notificações</p>
-                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">Alertas de Eventos</p>
+                      <p className="text-[10px] text-gray-600 dark:text-gray-400 font-medium uppercase tracking-widest">Alertas de Eventos</p>
                     </div>
                   </div>
                   <button 
@@ -558,86 +717,98 @@ export default function SettingsScreen() {
                     />
                   </button>
                 </div>
-              </div>
-            </section>
-          </div>
-        );
 
-      case 'data':
-        return (
-          <div className="space-y-6">
-            <section className={cn(
-              "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800"
-            )}>
-              <h3 className="text-[10px] font-black text-brand-copper uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
-                <Hash className="w-3 h-3" /> Backup & Importação
-              </h3>
-              <div className="grid gap-3">
-                <button 
-                  onClick={exportData}
-                  className={cn(
-                    "w-full p-5 rounded-3xl flex items-center justify-between border transition-all active:scale-[0.98]",
-                    settings.darkMode ? "bg-black/20 border-gray-800" : "bg-gray-50 border-gray-100"
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
-                      <ArrowDown className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className={cn("text-xs font-black uppercase text-brand-navy tracking-widest", settings.darkMode && "text-white")}>Exportar Dados</p>
-                      <p className="text-[9px] font-bold text-gray-400">Salvar backup do aplicativo</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
-                </button>
-
-                <div className="relative">
-                  <input 
-                    type="file" 
-                    id="import-input" 
-                    className="hidden" 
-                    accept=".json" 
-                    onChange={importData} 
-                  />
-                  <label 
-                    htmlFor="import-input"
-                    className={cn(
-                      "w-full p-5 rounded-3xl flex items-center justify-between border transition-all active:scale-[0.98] cursor-pointer",
-                      settings.darkMode ? "bg-black/20 border-gray-800" : "bg-gray-50 border-gray-100"
-                    )}
+                {settings.pushNotifications && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="grid gap-4 pt-4 mt-2 border-t border-gray-100 dark:border-gray-800"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                        <ArrowUp className="w-5 h-5" />
-                      </div>
-                      <div className="text-left">
-                        <p className={cn("text-xs font-black uppercase text-brand-navy tracking-widest", settings.darkMode && "text-white")}>Importar Dados</p>
-                        <p className="text-[9px] font-bold text-gray-400">Restaurar de um arquivo</p>
+                    <div className="flex flex-col gap-3">
+                      <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] px-1">Lembrete Prévio</span>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl flex gap-1 relative overflow-hidden">
+                        {[
+                          { val: 1, label: '1H' },
+                          { val: 2, label: '2H' },
+                          { val: 4, label: '4H' },
+                          { val: 24, label: '1 Dia' }
+                        ].map((opt) => {
+                          const isActive = settings.reminderHours === opt.val;
+                          return (
+                            <button
+                              key={opt.val}
+                              onClick={() => setSettings({ ...settings, reminderHours: opt.val })}
+                              className={cn(
+                                "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all relative z-10",
+                                isActive ? "text-white" : "text-brand-navy/60 dark:text-gray-400 hover:text-brand-navy dark:hover:text-white"
+                              )}
+                            >
+                              {isActive && (
+                                <motion.div 
+                                  layoutId="active-pill"
+                                  className="absolute inset-0 bg-brand-copper rounded-xl shadow-lg -z-10"
+                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                              )}
+                              {opt.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300" />
-                  </label>
-                </div>
-              </div>
-            </section>
 
-            <section className="py-10 text-center">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-10 h-px bg-brand-copper/30" />
-                <p className={cn("text-[10px] font-black text-brand-navy uppercase tracking-[0.4em]", settings.darkMode && "text-white")}>Oya & Ogun</p>
-                <div className="w-10 h-px bg-brand-copper/30" />
+                    <div className="flex flex-col gap-3 mt-2">
+                      <span className="text-[10px] font-black uppercase text-gray-700 dark:text-gray-400 tracking-[0.2em] px-1">Horário de Silêncio</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 group relative">
+                          <input 
+                            type="time" 
+                            value={settings.silentHoursStart || "22:00"}
+                            onChange={(e) => setSettings({ ...settings, silentHoursStart: e.target.value })}
+                            className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                          />
+                          <div className="bg-white dark:bg-gray-900 rounded-3xl py-4 flex flex-col items-center justify-center gap-1 border border-gray-100 dark:border-gray-800 shadow-sm group-hover:border-brand-copper/30 transition-all">
+                            <span className="text-[8px] font-black text-brand-navy/40 dark:text-gray-500 uppercase tracking-widest">Início</span>
+                            <div className="flex items-center gap-2">
+                              <Moon className="w-3 h-3 text-brand-navy opacity-50" />
+                              <span className="text-sm font-black text-brand-navy dark:text-white font-mono">
+                                {settings.silentHoursStart || "22:00"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="w-4 h-px bg-gray-200 dark:bg-gray-800" />
+                        
+                        <div className="flex-1 group relative">
+                          <input 
+                            type="time" 
+                            value={settings.silentHoursEnd || "08:00"}
+                            onChange={(e) => setSettings({ ...settings, silentHoursEnd: e.target.value })}
+                            className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                          />
+                          <div className="bg-white dark:bg-gray-900 rounded-3xl py-4 flex flex-col items-center justify-center gap-1 border border-gray-100 dark:border-gray-800 shadow-sm group-hover:border-brand-gold/30 transition-all">
+                            <span className="text-[8px] font-black text-brand-navy/40 dark:text-gray-500 uppercase tracking-widest">Fim</span>
+                            <div className="flex items-center gap-2">
+                              <Sun className="w-3 h-3 text-brand-gold opacity-50" />
+                              <span className="text-sm font-black text-brand-navy dark:text-white font-mono">
+                                {settings.silentHoursEnd || "08:00"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-700 dark:text-gray-400 font-bold px-2 text-center leading-relaxed">
+                        Toque nos cartões para ajustar o período sem notificações.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
               </div>
-              <div className="inline-block px-6 py-2 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-inner">
-                <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Versão Gold • 2.0.0</p>
-              </div>
-              <p className="mt-6 text-[8px] font-bold text-gray-300 uppercase tracking-widest leading-loose max-w-[200px] mx-auto opacity-50">
-                Desenvolvido com fé para a gestão de terreiros de Umbanda.
-              </p>
             </section>
           </div>
         );
+
       default:
         return null;
     }
@@ -648,8 +819,13 @@ export default function SettingsScreen() {
     { id: 'menu', label: 'Menu & Interface', sub: 'Ordem das abas e ícones', icon: Layout, color: 'text-blue-500 bg-blue-500/10' },
     { id: 'events', label: 'Agenda & Eventos', sub: 'Categorias e nomes padrão', icon: Calendar, color: 'text-purple-500 bg-purple-500/10' },
     { id: 'preferences', label: 'Preferências', sub: 'Modo escuro e avisos', icon: Settings, color: 'text-emerald-500 bg-emerald-500/10' },
-    { id: 'data', label: 'Dados & Suporte', sub: 'Backup, info e suporte', icon: Hash, color: 'text-brand-navy bg-brand-navy/10' },
   ];
+
+  const handlePanic = () => {
+    if (confirm('MODO DE SEGURANÇA: Você será redirecionado para o ambiente de desenvolvimento do Google AI Studio para realizar ajustes estruturais. Continuar?')) {
+      window.open('https://aistudio.google.com/', '_blank');
+    }
+  };
 
   return (
     <motion.div 
@@ -683,7 +859,7 @@ export default function SettingsScreen() {
               </div>
               <div className="text-left">
                 <p className={cn("text-[13px] font-black uppercase tracking-wider text-brand-navy mb-1", settings.darkMode && "text-white")}>{cat.label}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{cat.sub}</p>
+                <p className="text-[10px] font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest">{cat.sub}</p>
               </div>
             </div>
             <div className={cn("w-8 h-8 rounded-full flex items-center justify-center opacity-30 group-hover:opacity-100 transition-opacity", settings.darkMode ? "bg-white/10" : "bg-gray-100")}>
@@ -691,11 +867,33 @@ export default function SettingsScreen() {
             </div>
           </button>
         ))}
+
+        {/* Panic Button Section */}
+        <div className="pt-4 mt-4 border-t border-red-100/30 dark:border-red-900/20">
+          <button
+            onClick={handlePanic}
+            className={cn(
+              "w-full p-6 rounded-[32px] flex flex-col items-center justify-center gap-3 border border-red-100/50 dark:border-red-900/20 transition-all active:scale-[0.95] group",
+              settings.darkMode ? "bg-red-900/10 hover:bg-red-900/20" : "bg-red-50 hover:bg-red-100/50"
+            )}
+          >
+            <div className="w-14 h-14 rounded-full bg-red-500 shadow-[0_4px_15px_rgba(239,68,68,0.4)] flex items-center justify-center text-white relative">
+              <div className="absolute inset-0 rounded-full animate-ping bg-red-500 opacity-20" />
+              <AlertTriangle className="w-8 h-8 relative z-10" />
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-black uppercase text-red-600 dark:text-red-400 tracking-[0.2em] mb-1">Botão de Pânico</p>
+              <p className="text-[10px] font-bold text-red-500/60 dark:text-red-400/50 uppercase tracking-widest leading-relaxed px-4">
+                Redirecionar ao AI Studio para<br />alterações fundamentais no sistema
+              </p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Categories Footnote */}
       <div className="mt-12 text-center">
-        <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Gestão Terreiro Oya & Ogun</p>
+        <p className="text-[10px] font-black text-gray-700 dark:text-gray-400 uppercase tracking-[0.3em]">Gestão Terreiro Oya & Ogun</p>
       </div>
 
       <AnimatePresence>
