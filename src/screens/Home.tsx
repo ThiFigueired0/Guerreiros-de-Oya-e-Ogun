@@ -1,13 +1,13 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
 import { cn } from '../lib/utils';
-import { format, isAfter, isToday, startOfToday } from 'date-fns';
+import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function HomeScreen() {
@@ -29,45 +29,37 @@ export default function HomeScreen() {
   const [pontos] = useStorage<Ponto[]>('templo_pontos', []);
   const [books] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [events] = useStorage<Event[]>('templo_events', []);
+  
   const [copied, setCopied] = React.useState<string | null>(null);
-  const [eventSearch, setEventSearch] = React.useState('');
-  const [selectedEventCategory, setSelectedEventCategory] = React.useState<string | null>(null);
+  const [showPixMenu, setShowPixMenu] = React.useState(false);
 
   const favBaths = baths.filter(b => b.isFavorite);
   const favPontos = pontos.filter(p => p.isFavorite);
-  const favBooks = books.filter(b => b.isFavorite);
   const inProgressBooks = books.filter(b => b.readingStatus === 'in_progress');
 
-  // Próximos eventos (hoje ou no futuro) com filtro
-  const upcomingEvents = events
-    .filter(e => {
-      // Ajuste para evitar problemas de fuso horário com strings de data yyyy-MM-dd
-      const [year, month, day] = e.date.split('-').map(Number);
-      const eventDate = new Date(year, month - 1, day);
-      const isFutureOrToday = isToday(eventDate) || isAfter(eventDate, startOfToday());
-      
-      const matchesSearch = e.title.toLowerCase().includes(eventSearch.toLowerCase());
-      const matchesCategory = !selectedEventCategory || e.category === selectedEventCategory;
-      
-      return isFutureOrToday && matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  // Agrupar por mes
-  const groupedUpcomingEvents = upcomingEvents.reduce((groups, event) => {
-    const [year, month, day] = event.date.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const monthYear = format(date, 'MMMM yyyy', { locale: ptBR });
-    if (!groups[monthYear]) groups[monthYear] = [];
-    groups[monthYear].push(event);
-    return groups;
-  }, {} as Record<string, Event[]>);
+  // Próximos eventos (hoje ou no futuro)
+  const upcomingEvents = useMemo(() => {
+    return events
+      .filter(e => {
+        const [year, month, day] = e.date.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        return isToday(eventDate) || isAfter(eventDate, startOfToday());
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [events]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 2000);
   };
+
+  const nextEvent = upcomingEvents[0];
+  const lastBook = inProgressBooks[0];
+
+  const currentDate = new Date();
+  const greeting = currentDate.getHours() < 12 ? "Bom dia" : currentDate.getHours() < 18 ? "Boa tarde" : "Boa noite";
+  const firstName = settings.firstName?.split(' ')[0] || "Guerreiro";
 
   return (
     <motion.div 
@@ -78,395 +70,285 @@ export default function HomeScreen() {
         settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
       )}
     >
-      {/* Welcome Section */}
-      <section className="mb-8 px-2">
-        <h2 className={cn(
-          "text-2xl font-black font-serif tracking-tight",
-          settings.darkMode ? "text-white" : "text-brand-navy"
-        )}>
-          Bem-vindo, Guerreiro!
-        </h2>
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-1">
-          {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
-        </p>
-      </section>
-
-      {/* PIX Payments Section */}
-      <section className={cn(
-        "rounded-[32px] p-6 mb-8 shadow-sm border overflow-hidden relative",
-        settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
-      )}>
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-brand-copper/20 rounded-xl text-brand-copper text-brand-copper">
-            <CreditCard className="w-4 h-4" />
+      {/* 1. Header Profiling */}
+      <header className="flex items-center justify-between mb-8 mt-2 px-2">
+        <div>
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 mb-1"
+          >
+            <Sparkles className="w-4 h-4 text-brand-copper" />
+            <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+              {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+            </span>
+          </motion.div>
+          <h2 className={cn(
+            "text-2xl font-black tracking-tight flex items-center gap-2",
+            settings.darkMode ? "text-white" : "text-brand-navy"
+          )}>
+            {greeting}, {firstName}!
+          </h2>
+        </div>
+        {settings.logoBase64 && (
+          <div className={cn(
+            "w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg",
+            settings.darkMode ? "border-white/10" : "border-brand-copper/20"
+          )}>
+            <img src={settings.logoBase64} alt="Terreiro" className="w-full h-full object-cover" />
           </div>
-          <h3 className={cn("font-black text-xs uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-            Contribuições & Pagamentos
-          </h3>
+        )}
+      </header>
+
+      {/* 2. Bento Grid Dashboard */}
+      <section className="grid grid-cols-2 gap-3 mb-8">
+        {/* Widget 1: Próxima Gira (Ocupa 2 colunas se for muito importante ou 1 coluna grande) */}
+        <div 
+          onClick={() => navigate('/calendar')}
+          className={cn(
+            "col-span-2 p-5 rounded-[32px] border relative overflow-hidden transition-all active:scale-[0.98]",
+            settings.darkMode 
+              ? "bg-gradient-to-br from-[#1A1A1A] to-[#222] border-gray-800" 
+              : "bg-brand-navy border-brand-navy shadow-xl shadow-brand-navy/20"
+          )}
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Calendar className={cn("w-24 h-24", settings.darkMode ? "text-white" : "text-brand-copper")} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="bg-brand-copper/20 p-1.5 rounded-xl text-brand-copper">
+                <Clock className="w-4 h-4" />
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-widest",
+                settings.darkMode ? "text-brand-copper" : "text-brand-copper"
+              )}>Próximo Evento</span>
+            </div>
+            
+            {nextEvent ? (
+              <div>
+                <h3 className="text-xl font-black text-white leading-tight mb-2 pr-8">{nextEvent.title}</h3>
+                <div className="flex items-center gap-3 text-white/70">
+                  <span className="text-xs font-bold bg-white/10 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                    {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
+                  </span>
+                  <span className="text-xs font-medium">{nextEvent.category}</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-black text-white/50 leading-tight">Nenhum evento próximo</h3>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-4 overflow-x-auto pb-6 -mx-6 px-6 snap-x snap-mandatory scrollbar-hide">
-          {/* Caixa Card */}
-          <div className={cn(
-            "p-6 rounded-[32px] border transition-all relative overflow-hidden snap-center min-w-[280px] flex-1 flex flex-col",
-            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-gray-100 shadow-sm"
-          )}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
-                {settings.caixaLogo ? (
-                  <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
-                )}
-              </div>
-              <div>
-                <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Mensalidade</p>
-                <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Caixa Econômica</p>
-              </div>
+        {/* Widget 2: Estudo / Progresso */}
+        <div 
+          onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
+          className={cn(
+            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98]",
+            settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
+          )}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={cn("p-2 rounded-xl", settings.darkMode ? "bg-white/5" : "bg-gray-50")}>
+              <GraduationCap className={cn("w-5 h-5", settings.darkMode ? "text-white" : "text-brand-navy")} />
             </div>
-            
-            <div className={cn(
-              "p-4 rounded-2xl flex items-center justify-between gap-4 mt-auto",
-              settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
-            )}>
-              <div className="overflow-hidden">
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (CPF)</p>
-                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
-              </div>
-              <button 
-                onClick={() => copyToClipboard('33464358810', 'caixa')}
-                className="w-10 h-10 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-90 transition-all shrink-0"
-              >
-                {copied === 'caixa' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-              </button>
-            </div>
-            
-            <p className="text-[10px] text-gray-400 font-medium px-1 mt-4">Utilize esta conta exclusivamente para as mensalidades.</p>
+            {lastBook && <span className="text-[10px] font-black text-brand-copper">{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>}
           </div>
+          <div>
+            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Último Estudo</p>
+            <p className={cn(
+              "font-bold text-xs leading-tight line-clamp-2",
+              settings.darkMode ? "text-gray-200" : "text-brand-navy"
+            )}>{lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}</p>
+          </div>
+        </div>
 
-          {/* Nubank Card */}
-          <div className={cn(
-            "p-6 rounded-[32px] border transition-all relative overflow-hidden snap-center min-w-[280px] flex-1 flex flex-col",
-            settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-gray-100 shadow-sm"
-          )}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
-                  {settings.nubankLogo ? (
-                    <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
-                  )}
+        {/* Widget 3: Financeiro / PIX (Compacto) */}
+        <div 
+          onClick={() => setShowPixMenu(!showPixMenu)}
+          className={cn(
+            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] overflow-hidden",
+            settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-brand-copper border-brand-copper shadow-lg shadow-brand-copper/20"
+          )}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={cn("p-2 rounded-xl", settings.darkMode ? "bg-white/5 text-brand-copper" : "bg-white/20 text-white")}>
+              <Wallet className="w-5 h-5" />
+            </div>
+            <ChevronRight className={cn("w-4 h-4 opacity-50", settings.darkMode ? "text-gray-400" : "text-white")} />
+          </div>
+          <div>
+            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-gray-400" : "text-white/60")}>Dados Bancários</p>
+            <p className={cn(
+              "font-bold text-sm leading-tight",
+              settings.darkMode ? "text-white" : "text-white"
+            )}>PIX / Ajuda</p>
+          </div>
+          
+          {/* Menu PIX Expandido (Overlay interno) */}
+          <AnimatePresence>
+            {showPixMenu && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute inset-0 z-20 flex flex-col justify-center p-4 bg-brand-navy/95 backdrop-blur-md rounded-[28px]"
+              >
+                <button 
+                   onClick={(e) => { e.stopPropagation(); copyToClipboard('33464358810', 'caixa'); }}
+                   className="bg-white/10 p-2.5 rounded-xl mb-2 flex items-center justify-between active:scale-95 transition-all text-white border border-white/5"
+                >
+                   <div className="flex flex-col items-start gap-0.5 text-left">
+                     <span className="text-[9px] font-black uppercase tracking-wider text-white/50">Caixa (Mensalidade)</span>
+                     <span className="text-xs font-mono font-bold font-black">33464358810</span>
+                   </div>
+                   {copied === 'caixa' ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 opacity-50" />}
+                </button>
+                <button 
+                   onClick={(e) => { e.stopPropagation(); copyToClipboard('11982350614', 'nubank'); }}
+                   className="bg-white/10 p-2.5 rounded-xl flex items-center justify-between active:scale-95 transition-all text-white border border-white/5"
+                >
+                   <div className="flex flex-col items-start gap-0.5 text-left">
+                     <span className="text-[9px] font-black uppercase tracking-wider text-white/50">Nubank (Banhos/Diversos)</span>
+                     <span className="text-xs font-mono font-bold font-black">11982350614</span>
+                   </div>
+                   {copied === 'nubank' ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 opacity-50" />}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* 3. Atalhos / Favoritos Rápidos */}
+      {(favBaths.length > 0 || favPontos.length > 0) && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className={cn("font-black text-[10px] uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+              Meus Favoritos
+            </h3>
+            <Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" />
+          </div>
+          
+          <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide snap-x">
+            {favBaths.map(bath => (
+              <button 
+                key={bath.id} 
+                onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
+                className={cn(
+                  "min-w-[120px] max-w-[120px] p-4 rounded-[24px] border transition-all active:scale-95 text-left snap-start flex-shrink-0 flex flex-col justify-between aspect-square",
+                  settings.darkMode ? "bg-[#1A1A1A]/80 border-gray-800" : "bg-white border-gray-100 shadow-sm"
+                )}
+              >
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", settings.darkMode ? "bg-brand-copper/10" : "bg-brand-copper/5")}>
+                  <Leaf className="w-4 h-4 text-brand-copper" />
                 </div>
                 <div>
-                  <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>Diversos & Banhos</p>
-                  <p className={cn("font-bold text-base tracking-tight", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>Nubank</p>
+                  <p className={cn("font-bold text-[10px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{bath.title}</p>
                 </div>
-              </div>
-            </div>
-            
-            <div className={cn(
-              "p-4 rounded-2xl flex items-center justify-between gap-4 mt-auto",
-              settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
-            )}>
-              <div className="overflow-hidden">
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (Celular)</p>
-                <p className={cn("text-lg font-mono font-black tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
-              </div>
-              <button 
-                onClick={() => copyToClipboard('11982350614', 'nubank')}
-                className="w-10 h-10 bg-[#8A05BE] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-90 transition-all shrink-0"
-              >
-                {copied === 'nubank' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               </button>
-            </div>
+            ))}
             
-            <p className="text-[10px] text-gray-400 font-medium px-1 mt-4">Utilize esta conta para materiais e necessidades gerais.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Suggested Content / Favorites */}
-      <div className="space-y-6">
-        {favBaths.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <Leaf className="w-3 h-3 text-brand-copper fill-brand-copper" />
-              <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Banhos Favoritos
-              </h3>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
-              {favBaths.map(bath => (
-                <button 
-                  key={bath.id} 
-                  onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
-                  className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 text-left",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                  )}
-                >
-                  <Leaf className="w-4 h-4 text-brand-copper mb-3" />
-                  <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    {bath.title}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {favPontos.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <Music className="w-3 h-3 text-brand-red fill-brand-red" />
-              <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Pontos Favoritos
-              </h3>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
-              {favPontos.map(ponto => (
-                <button 
-                  key={ponto.id} 
-                  onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
-                  className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 text-left",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                  )}
-                >
-                  <Music className="w-4 h-4 text-brand-red mb-3" />
-                  <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    {ponto.title}
-                  </p>
-                  <p className="text-[9px] text-gray-400 truncate">{ponto.entity || 'Ponto Cantado'}</p>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {inProgressBooks.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <GraduationCap className="w-3 h-3 text-brand-copper fill-brand-copper" />
-              <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Estudos em Andamento
-              </h3>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
-              {inProgressBooks.map(book => (
-                <button 
-                  key={book.id} 
-                  onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
-                  className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 relative overflow-hidden text-left",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <GraduationCap className="w-4 h-4 text-brand-copper" />
-                    {book.isFavorite && (
-                      <Heart className="w-3.5 h-3.5 text-brand-copper fill-brand-copper" />
-                    )}
-                  </div>
-                  
-                  <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    {book.name.replace('.pdf', '')}
-                  </p>
-                  
-                  <div className="mt-2">
-                    <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">
-                      {book.totalPages && book.totalPages > 0 
-                        ? `${Math.round(((book.lastPage || 0) / book.totalPages) * 100)}% concluído` 
-                        : 'Em andamento'}
-                    </p>
-                    
-                    {book.totalPages && book.totalPages > 0 && (
-                      <div className="h-0.5 w-full bg-gray-100 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(book.lastPage || 0) / book.totalPages * 100}%` }}
-                          className="h-full bg-brand-copper"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {favBooks.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <GraduationCap className="w-3 h-3 text-brand-copper fill-brand-copper" />
-              <h3 className={cn("font-black text-[10px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
-                Estudos Favoritos
-              </h3>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-4 px-1 scrollbar-hide">
-              {favBooks.map(book => (
-                <button 
-                  key={book.id} 
-                  onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
-                  className={cn(
-                    "min-w-[160px] p-4 rounded-[24px] border transition-all active:scale-95 relative overflow-hidden text-left",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <GraduationCap className="w-4 h-4 text-brand-copper" />
-                    {book.readingStatus === 'completed' && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                    )}
-                  </div>
-                  
-                  <p className={cn("font-bold text-[11px] leading-tight mb-1 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                    {book.name.replace('.pdf', '')}
-                  </p>
-                  
-                  <div className="mt-2">
-                    <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">
-                      {book.readingStatus === 'completed' ? 'Concluído' : 
-                       book.readingStatus === 'in_progress' ? (
-                         book.totalPages && book.totalPages > 0 
-                           ? `${Math.round(((book.lastPage || 0) / book.totalPages) * 100)}% concluído` 
-                           : 'Em andamento'
-                       ) : 'Não iniciado'}
-                    </p>
-                    
-                    {book.readingStatus === 'in_progress' && book.totalPages && book.totalPages > 0 && (
-                      <div className="h-0.5 w-full bg-gray-100 dark:bg-white/10 rounded-full mt-1.5 overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(book.lastPage || 0) / book.totalPages * 100}%` }}
-                          className="h-full bg-brand-copper"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {favBaths.length === 0 && favPontos.length === 0 && favBooks.length === 0 && (
-          <div className={cn(
-            "p-8 rounded-[32px] text-center border-2 border-dashed",
-            settings.darkMode ? "border-gray-800 bg-white/5" : "border-gray-100 bg-white"
-          )}>
-            <div className="w-12 h-12 bg-brand-copper/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-5 h-5 text-brand-copper" />
-            </div>
-            <p className={cn("font-bold text-sm mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Seu App está vazio</p>
-            <p className="text-[10px] text-gray-400 px-8">Favorite banhos, pontos e livros para acessá-los rapidamente por aqui.</p>
-          </div>
-        )}
-      </div>
-
-      <section className="mt-8 px-2">
-        <div className={cn(
-          "p-5 rounded-[32px] border-2 space-y-4",
-          settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
-        )}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-brand-navy" />
-              <p className={cn("font-black text-[9px] uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                PRÓXIMOS EVENTOS
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4 mb-6">
-            <div className="relative">
-              <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4", settings.darkMode ? "text-white/20" : "text-gray-400")} />
-              <input 
-                type="text"
-                placeholder="Buscar eventos..."
-                value={eventSearch}
-                onChange={(e) => setEventSearch(e.target.value)}
+            {favPontos.map(ponto => (
+              <button 
+                key={ponto.id} 
+                onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
                 className={cn(
-                  "w-full pl-11 pr-4 py-3 rounded-2xl text-xs transition-all outline-none",
-                  settings.darkMode ? "bg-black/20 border-gray-800 focus:bg-black/40 text-white" : "bg-gray-50 border-gray-100 focus:bg-white text-brand-navy"
+                  "min-w-[120px] max-w-[120px] p-4 rounded-[24px] border transition-all active:scale-95 text-left snap-start flex-shrink-0 flex flex-col justify-between aspect-square",
+                  settings.darkMode ? "bg-[#1A1A1A]/80 border-gray-800" : "bg-white border-gray-100 shadow-sm"
                 )}
-              />
-              {eventSearch && (
-                <button 
-                  onClick={() => setEventSearch('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full"
-                >
-                  <X className="w-3 h-3 text-gray-400" />
-                </button>
+              >
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", settings.darkMode ? "bg-brand-red/10" : "bg-brand-red/5")}>
+                  <Music className="w-4 h-4 text-brand-red" />
+                </div>
+                <div>
+                  <p className={cn("font-bold text-[10px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{ponto.title}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 4. Agenda Resumida */}
+      <section className="px-2 mb-6">
+        <h3 className={cn("font-black text-[10px] uppercase tracking-widest mb-4", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+          Agenda da Semana
+        </h3>
+        
+        <div className="space-y-3">
+          {upcomingEvents.slice(0, 4).map((event) => {
+            const eventDate = parseISO(event.date);
+            const isEventToday = isToday(eventDate);
+            
+            return (
+              <div 
+                 key={event.id}
+                 className={cn(
+                   "flex items-center gap-4 p-4 rounded-[24px] border transition-all",
+                   settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100 shadow-sm",
+                   isEventToday && (settings.darkMode ? "border-brand-copper/30 bg-brand-copper/5" : "border-brand-copper/20 bg-brand-copper/5")
+                 )}
+              >
+                <div className={cn(
+                   "flex flex-col items-center justify-center min-w-[48px] h-[48px] rounded-2xl font-bold border",
+                   settings.darkMode ? "bg-[#222] border-gray-700/50 text-white" : "bg-gray-50 border-gray-100 text-brand-navy",
+                   isEventToday && "bg-brand-copper border-brand-copper text-white shadow-lg shadow-brand-copper/20"
+                 )}>
+                    <span className="text-sm leading-none">{format(eventDate, 'dd')}</span>
+                    <span className={cn("text-[9px] uppercase font-black", isEventToday ? "opacity-100 text-white" : "opacity-50")}>
+                      {format(eventDate, 'eee', { locale: ptBR }).replace('.', '')}
+                    </span>
+                 </div>
+                 
+                 <div className="flex-1">
+                   <div className="flex items-center justify-between gap-2 mb-0.5">
+                     <p className={cn("font-bold text-sm leading-tight truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                       {event.title}
+                     </p>
+                     {isEventToday && (
+                       <span className="text-[8px] font-black uppercase bg-brand-copper text-white px-2 py-0.5 rounded-full shrink-0">Hoje</span>
+                     )}
+                   </div>
+                   <div className="flex gap-2 items-center">
+                     <span className={cn(
+                       "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg",
+                       settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"
+                     )}>
+                       {event.category}
+                     </span>
+                     {event.reminder && (
+                       <span className="text-[10px] text-gray-400 flex items-center gap-1 font-medium">
+                         <Clock className="w-3 h-3" /> {event.reminder}
+                       </span>
+                     )}
+                   </div>
+                 </div>
+              </div>
+            );
+          })}
+          
+          {upcomingEvents.length === 0 && (
+             <div className="p-8 text-center text-gray-400 text-xs">
+               Nenhum evento agendado para os próximos dias.
+             </div>
+          )}
+          
+          {upcomingEvents.length > 4 && (
+            <button 
+              onClick={() => navigate('/calendar')}
+              className={cn(
+                "w-full py-4 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all",
+                settings.darkMode ? "text-gray-400 hover:bg-white/5" : "text-gray-500 hover:bg-black/5"
               )}
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button 
-                onClick={() => setSelectedEventCategory(null)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all",
-                  !selectedEventCategory 
-                    ? "bg-brand-copper text-white" 
-                    : settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"
-                )}
-              >
-                Todos
-              </button>
-              {settings.eventCategories.map(cat => (
-                <button 
-                  key={cat}
-                  onClick={() => setSelectedEventCategory(selectedEventCategory === cat ? null : cat)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all",
-                    selectedEventCategory === cat 
-                      ? "bg-brand-copper text-white" 
-                      : settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-500"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {Object.keys(groupedUpcomingEvents).length > 0 ? (
-            <div className="space-y-6">
-              {Object.entries(groupedUpcomingEvents).map(([month, events]) => (
-                <div key={month} className="space-y-3">
-                  <p className={cn("text-[10px] font-black uppercase text-brand-copper tracking-wider border-b pb-1", settings.darkMode ? "border-white/10" : "border-gray-100")}>
-                    {month}
-                  </p>
-                  <div className="space-y-3">
-                    {events.map((event) => (
-                      <div key={event.id} className="group flex items-start gap-4">
-                         <div className={cn(
-                           "flex flex-col items-center justify-center min-w-[40px] h-[40px] rounded-xl font-bold",
-                           settings.darkMode ? "bg-white/5 text-white" : "bg-brand-navy/5 text-brand-navy"
-                         )}>
-                            <span className="text-xs leading-none">{event.date.split('-')[2]}</span>
-                            <span className="text-[8px] uppercase opacity-50">
-                              {format(new Date(event.date.split('-').map(Number)[0], event.date.split('-').map(Number)[1]-1, event.date.split('-').map(Number)[2]), 'EEE', { locale: ptBR }).replace('.', '')}
-                            </span>
-                         </div>
-                         <div className="flex-1">
-                           <p className={cn("font-bold text-sm leading-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                             {event.title}
-                           </p>
-                           <p className="text-[10px] text-gray-400 mt-0.5">
-                             {event.category}
-                           </p>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[10px] text-gray-400">Nenhum evento agendado recentemente.</p>
+            >
+              Ver agenda completa
+            </button>
           )}
         </div>
       </section>

@@ -79,15 +79,15 @@ const CALENDAR_2026: Omit<Event, 'id'>[] = [
 ];
 
 const ALL_TABS = [
-  { path: '/home', label: 'Início', defaultIcon: Home },
-  { path: '/calendar', label: 'Agenda', defaultIcon: Calendar },
-  { path: '/herbs', label: 'Banhos', defaultIcon: Leaf },
-  { path: '/trab', label: 'Trabalhos', defaultIcon: Anchor },
-  { path: '/points', label: 'Pontos', defaultIcon: Music },
-  { path: '/studies', label: 'Estudos', defaultIcon: GraduationCap },
-  { path: '/notes', label: 'Notas', defaultIcon: FileText },
-  { path: '/finance', label: 'Financeiro', defaultIcon: Wallet },
-  { path: '/settings', label: 'Ajustes', defaultIcon: Settings },
+  { path: '/home', label: 'Início', defaultIcon: Home, description: 'Visão geral' },
+  { path: '/calendar', label: 'Agenda', defaultIcon: Calendar, description: 'Eventos e giras digitais' },
+  { path: '/herbs', label: 'Banhos', defaultIcon: Leaf, description: 'Ervas e receitas sagradas' },
+  { path: '/trab', label: 'Trabalhos', defaultIcon: Anchor, description: 'Trabalhos e rituais' },
+  { path: '/points', label: 'Pontos', defaultIcon: Music, description: 'Hinário cantado' },
+  { path: '/studies', label: 'Estudos', defaultIcon: GraduationCap, description: 'Doutrina e fundamentos' },
+  { path: '/notes', label: 'Notas', defaultIcon: FileText, description: 'Anotações pessoais' },
+  { path: '/finance', label: 'Financeiro', defaultIcon: Wallet, description: 'Gestão de valores e caixa' },
+  { path: '/settings', label: 'Ajustes', defaultIcon: Settings, description: 'Perfil e preferências' },
 ];
 
 const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
@@ -124,10 +124,10 @@ function Navigation() {
   return (
     <>
       <nav className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md h-20 rounded-[28px] bg-white/95 backdrop-blur-xl border border-gray-100/50 z-[100] transition-all duration-500 flex items-center shadow-2xl",
-        settings.darkMode && "bg-[#1A1A1A]/95 border-gray-800 shadow-black/60"
+        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
+        settings.darkMode && "bg-[#121212]/70 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
       )}>
-        <div className="flex justify-around items-center w-full px-2">
+        <div className="flex justify-between items-center w-full relative">
           {currentPrimaryTabs.map((tab) => {
             const isActive = location.pathname.startsWith(tab.path);
             const iconName = settings.tabIcons?.[tab.path];
@@ -141,24 +141,29 @@ function Navigation() {
                   setShowMore(false);
                 }}
                 className={cn(
-                  "flex flex-col items-center justify-center min-w-[64px] py-1 transition-all duration-300 relative",
-                  isActive ? (settings.darkMode ? "text-brand-copper" : "text-brand-navy") : "text-gray-400"
+                  "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-500 ease-out z-10",
+                  isActive ? (settings.darkMode ? "text-white" : "text-brand-navy") : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 )}
               >
                 {isActive && (
                   <motion.div 
-                    layoutId="active-nav-line"
-                    className="absolute bottom-0 w-8 h-0.5 bg-brand-copper rounded-t-full"
+                    layoutId="nav-pill"
+                    className={cn(
+                      "absolute inset-0 rounded-full shadow-sm -z-10",
+                      settings.darkMode ? "bg-white/10" : "bg-white"
+                    )}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center mb-0.5 transition-colors",
-                  isActive && (settings.darkMode ? "bg-brand-copper/20" : "bg-brand-copper/10")
+                <IconComponent className={cn(
+                  "w-6 h-6 transition-transform duration-300", 
+                  isActive ? "stroke-[2.5px] scale-105" : "scale-100"
+                )} />
+                <span className={cn(
+                  "text-[9px] font-bold mt-1 transition-all duration-300 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1",
+                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 absolute bottom-1"
                 )}>
-                  <IconComponent className={cn("w-6 h-6", isActive && "stroke-[2.5px] scale-110")} />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-tighter text-center px-1 leading-none">
-                  {tab.label}
+                  {isActive && tab.label}
                 </span>
               </Link>
             );
@@ -167,29 +172,36 @@ function Navigation() {
           <button
             onClick={() => setShowMore(!showMore)}
             className={cn(
-              "flex flex-col items-center justify-center min-w-[64px] py-1 transition-all duration-300 relative",
-              (showMore || activeTabInSecondary) ? (settings.darkMode ? "text-brand-copper" : "text-brand-navy") : "text-gray-400"
+              "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-500 ease-out z-10",
+              (showMore || activeTabInSecondary) ? (settings.darkMode ? "text-white" : "text-brand-navy") : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
             {activeTabInSecondary && !showMore && (
               <motion.div 
-                layoutId="active-nav-line"
-                className="absolute bottom-0 w-8 h-0.5 bg-brand-copper rounded-t-full"
+                layoutId="nav-pill"
+                className={cn(
+                  "absolute inset-0 rounded-full shadow-sm -z-10",
+                  settings.darkMode ? "bg-white/10" : "bg-white"
+                )}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center mb-0.5 transition-colors",
-              (showMore || activeTabInSecondary) && (settings.darkMode ? "bg-brand-copper/20" : "bg-brand-copper/10")
-            )}>
-              <div className="relative">
-                 <LayoutGrid className={cn("w-6 h-6", (showMore || activeTabInSecondary) && "stroke-[2.5px] scale-110")} />
-                 {activeTabInSecondary && !showMore && (
-                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-brand-copper rounded-full shadow-sm" />
-                 )}
-              </div>
+            
+            <div className="relative">
+               <LayoutGrid className={cn(
+                 "w-6 h-6 transition-transform duration-300", 
+                 (showMore || activeTabInSecondary) ? "stroke-[2.5px] scale-105" : "scale-100"
+               )} />
+               {activeTabInSecondary && !showMore && (
+                 <div className="absolute 0 top-0 right-0 w-2 h-2 bg-[#B8860B] rounded-full border border-white dark:border-[#121212]" />
+               )}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-tighter text-center px-1 leading-none">
-              Mais
+            
+            <span className={cn(
+              "text-[9px] font-bold mt-1 transition-all duration-300",
+              (showMore || activeTabInSecondary) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 absolute bottom-1"
+            )}>
+              {(showMore || activeTabInSecondary) && 'Menu'}
             </span>
           </button>
         </div>
@@ -203,41 +215,63 @@ function Navigation() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMore(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[95]"
+              className="fixed inset-0 bg-black/40 backdrop-blur-md z-[95]"
             />
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={cn(
-                "fixed bottom-[130px] left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-white/98 backdrop-blur-xl rounded-[32px] p-6 grid grid-cols-2 gap-4 z-[100] shadow-2xl border border-gray-100",
-                settings.darkMode && "bg-[#1A1A1A]/98 border-gray-800 shadow-black/80"
+                "fixed bottom-[110px] left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] bg-white/80 backdrop-blur-3xl rounded-[36px] overflow-hidden z-[100] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/50 pb-2",
+                settings.darkMode && "bg-[#1E1E1E]/80 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
               )}
             >
-              {currentSecondaryTabs.map((tab) => {
-                const isActive = location.pathname.startsWith(tab.path);
-                const iconName = settings.tabIcons?.[tab.path];
-                const IconComponent = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : tab.defaultIcon;
+              <div className={cn(
+                "px-6 py-4 flex items-center justify-between border-b",
+                settings.darkMode ? "border-white/5" : "border-gray-100"
+              )}>
+                 <span className={cn(
+                   "text-[10px] font-black uppercase tracking-widest",
+                   settings.darkMode ? "text-gray-400" : "text-gray-400"
+                 )}>Mais Funcionalidades</span>
+                 <button onClick={() => setShowMore(false)} className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                   <X className="w-4 h-4 text-gray-400" />
+                 </button>
+              </div>
+              
+              <div className="p-4 grid grid-cols-3 gap-y-6 gap-x-2">
+                {currentSecondaryTabs.map((tab) => {
+                  const isActive = location.pathname.startsWith(tab.path);
+                  const iconName = settings.tabIcons?.[tab.path];
+                  const IconComponent = iconName && ICON_MAP[iconName] ? ICON_MAP[iconName] : tab.defaultIcon;
 
-                return (
-                  <Link
-                    key={tab.path}
-                    to={tab.path}
-                    onClick={() => {
-                      setShowMore(false);
-                    }}
-                    className={cn(
-                      "flex items-center gap-4 p-4 rounded-xl transition-all active:scale-[0.98]",
-                      isActive 
-                        ? (settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-copper/10 text-brand-navy")
-                        : (settings.darkMode ? "text-gray-400 hover:bg-white/5" : "text-gray-500 hover:bg-black/5")
-                    )}
-                  >
-                    <IconComponent className={cn("w-6 h-6", isActive && "stroke-[2.5px]")} />
-                    <span className="text-sm font-black uppercase tracking-tight">{tab.label}</span>
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      key={tab.path}
+                      to={tab.path}
+                      onClick={() => setShowMore(false)}
+                      className="flex flex-col items-center gap-2 group"
+                    >
+                      <div className={cn(
+                        "w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-300 relative group-hover:scale-105",
+                        isActive 
+                           ? (settings.darkMode ? "bg-white text-[#121212]" : "bg-brand-navy text-white shadow-lg shadow-brand-navy/20")
+                           : (settings.darkMode ? "bg-white/10 text-gray-300 hover:bg-white/20" : "bg-gray-50/80 text-gray-600 hover:bg-gray-100")
+                      )}>
+                        {isActive && (
+                           <div className="absolute inset-0 rounded-[20px] shadow-sm shadow-black/5" />
+                        )}
+                        <IconComponent className={cn("w-7 h-7", isActive && "stroke-[2.5px]")} />
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-tighter text-center w-full px-1",
+                        isActive ? (settings.darkMode ? "text-white" : "text-brand-navy") : "text-gray-500"
+                      )}>{tab.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             </motion.div>
           </>
         )}
