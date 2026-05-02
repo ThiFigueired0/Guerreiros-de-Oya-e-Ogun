@@ -504,9 +504,9 @@ function SocialButtons() {
           settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
         )}
       >
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
           {settings.instagramLogo ? (
-            <img src={settings.instagramLogo} alt="Instagram Logo" className="w-full h-full object-contain p-1" />
+            <img src={settings.instagramLogo} alt="Instagram Logo" className="w-full h-full object-cover" />
           ) : (
             null
           )}
@@ -528,9 +528,9 @@ function SocialButtons() {
           settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
         )}
       >
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
           {settings.tiktokLogo ? (
-            <img src={settings.tiktokLogo} alt="TikTok Logo" className="w-full h-full object-contain p-1" />
+            <img src={settings.tiktokLogo} alt="TikTok Logo" className="w-full h-full object-cover" />
           ) : (
             null
           )}

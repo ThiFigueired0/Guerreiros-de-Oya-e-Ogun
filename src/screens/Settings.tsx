@@ -290,7 +290,7 @@ export default function SettingsScreen() {
                     settings.instagramLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
                   )}>
                     {settings.instagramLogo ? (
-                      <img src={settings.instagramLogo} alt="Instagram" className="w-full h-full object-contain p-2" />
+                      <img src={settings.instagramLogo} alt="Instagram" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Instagram</span>
                     )}
@@ -305,7 +305,7 @@ export default function SettingsScreen() {
                     settings.tiktokLogo ? "border-black" : "border-gray-200 dark:border-gray-800"
                   )}>
                     {settings.tiktokLogo ? (
-                      <img src={settings.tiktokLogo} alt="TikTok" className="w-full h-full object-contain p-2" />
+                      <img src={settings.tiktokLogo} alt="TikTok" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[8px] font-black uppercase tracking-widest opacity-30">TikTok</span>
                     )}
