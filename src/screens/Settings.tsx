@@ -254,7 +254,7 @@ export default function SettingsScreen() {
                     settings.caixaLogo ? "border-brand-navy" : "border-gray-200 dark:border-gray-800"
                   )}>
                     {settings.caixaLogo ? (
-                      <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-2" />
+                      <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Caixa</span>
                     )}
@@ -269,7 +269,7 @@ export default function SettingsScreen() {
                     settings.nubankLogo ? "border-[#8A05BE]" : "border-gray-200 dark:border-gray-800"
                   )}>
                     {settings.nubankLogo ? (
-                      <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-contain p-2" />
+                      <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Nubank</span>
                     )}

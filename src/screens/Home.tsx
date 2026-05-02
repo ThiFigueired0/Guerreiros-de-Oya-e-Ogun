@@ -115,7 +115,7 @@ export default function HomeScreen() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
                   {settings.caixaLogo ? (
-                    <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-contain p-2" />
+                    <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Caixa</span>
                   )}
@@ -155,7 +155,7 @@ export default function HomeScreen() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/10 shadow-sm border border-gray-100 dark:border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
                   {settings.nubankLogo ? (
-                    <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-contain p-2" />
+                    <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Nubank</span>
                   )}
