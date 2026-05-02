@@ -4,7 +4,7 @@ import {
   Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
-  History as HistoryIcon
+  History as HistoryIcon, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -24,6 +24,7 @@ import StudiesScreen from './screens/Studies';
 import FinanceiroScreen from './screens/Financeiro';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
+import AuthScreen from './screens/Auth';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -277,70 +278,8 @@ function Navigation() {
   );
 }
 
-function TempleLogo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 200 200" className={cn("w-full h-full", className)}>
-      {/* Circle Background */}
-      <circle cx="100" cy="100" r="95" fill="white" />
-      
-      {/* Decorative Orbs around the edge - representing Orixá symbols */}
-      <g opacity="0.3">
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-          <circle 
-            key={i}
-            cx={100 + 80 * Math.cos((angle * Math.PI) / 180)} 
-            cy={100 + 80 * Math.sin((angle * Math.PI) / 180)} 
-            r="4" 
-            fill="#B8860B" 
-          />
-        ))}
-      </g>
-
-      {/* Main Sword (Ogum) - Sharp grey sword */}
-      <path 
-        d="M60 170 L160 40 L175 30 L180 45 L170 155 L60 170" 
-        fill="#4A4A4A" 
-        stroke="#1A1A1A" 
-        strokeWidth="1.5"
-      />
-      <path 
-        d="M60 170 L170 35" 
-        stroke="white" 
-        strokeWidth="0.5" 
-        opacity="0.3" 
-      />
-      {/* Handle */}
-      <rect x="50" y="160" width="20" height="30" transform="rotate(-45 60 175)" fill="#1A1A1A" rx="2" />
-      <path d="M45 165 Q35 175 45 185" fill="none" stroke="#CC0000" strokeWidth="4" />
-
-      {/* Oya Figure - Silhouette with red/white details */}
-      <g transform="translate(60, 80) scale(0.6)">
-        {/* Sky/Wind elements around Oya */}
-        <path d="M20 20 Q50 0 80 20" fill="none" stroke="#CC0000" strokeWidth="2" opacity="0.5" />
-        
-        {/* Oya Figure Body */}
-        <circle cx="50" cy="30" r="10" fill="#1A1A1A" /> {/* Head */}
-        <path d="M30 65 Q50 40 70 65 L80 120 L20 120 Z" fill="#FFFFFF" stroke="#1A1A1A" strokeWidth="1" /> {/* Dress */}
-        <path d="M30 70 L70 70 L70 90 L30 90 Z" fill="#CC0000" opacity="0.8" /> {/* Red sash */}
-        
-        {/* Arms and smaller swords */}
-        <path d="M35 50 Q20 60 25 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
-        <path d="M65 50 Q80 60 75 80" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
-        <path d="M15 75 L35 85" stroke="#4A4A4A" strokeWidth="4" strokeLinecap="round" />
-      </g>
-
-      {/* Texts around or near the logo */}
-      <defs>
-        <path id="circlePath" d="M 100, 100 m -75, 0 a 75,75 0 1,1 150,0 a 75,75 0 1,1 -150,0" />
-      </defs>
-      <text fill="#0A0F1F" fontSize="9" fontWeight="900" letterSpacing="1">
-        <textPath xlinkHref="#circlePath" startOffset="0%">TENDA DE UMBANDA • GUERREIROS DE OYA E PAI OGUM •</textPath>
-      </text>
-    </svg>
-  );
-}
-
 const TopHeader = React.memo(function TopHeader() {
+  const [isGuest] = useStorage<boolean>('templo_guest', false);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
@@ -460,15 +399,21 @@ const TopHeader = React.memo(function TopHeader() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="flex flex-col items-center mb-8"
+          className="flex flex-col items-center mb-8 gap-2"
         >
+          {isGuest && (
+            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-1.5">
+              <Ghost className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Modo Guest</span>
+            </div>
+          )}
           <h2 className="text-brand-copper font-serif text-[11px] sm:text-[13px] uppercase tracking-[0.4em] sm:tracking-[0.5em] font-black text-center px-2 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
             Guerreiros de Oya e Ogun
           </h2>
           <motion.div 
             animate={{ width: ['0%', '100%', '0%'] }}
             transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-3" 
+            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
           />
         </motion.div>
 
@@ -512,26 +457,13 @@ const TopHeader = React.memo(function TopHeader() {
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
             
-            {settings.logoBase64 ? (
-               <img 
+            {settings.logoBase64 && (
+              <img 
                 src={settings.logoBase64} 
                 alt="Logo Templo" 
                 className="w-full h-full object-contain filter drop-shadow-md"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    const fallback = parent.querySelector('.logo-fallback');
-                    if (fallback) fallback.classList.remove('hidden');
-                  }
-                }}
               />
-            ) : (
-              <TempleLogo />
             )}
-            <div className="logo-fallback hidden absolute inset-0">
-              <TempleLogo />
-            </div>
           </div>
         </motion.div>
       </div>
@@ -1087,10 +1019,8 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
               />
 
               <div className="w-48 h-48 rounded-full border border-brand-copper/30 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 overflow-hidden relative">
-                {logo ? (
+                {logo && (
                   <img src={logo} alt="Logo" className="w-full h-full object-contain logo-optimized" />
-                ) : (
-                  <TempleLogo className="logo-optimized" />
                 )}
               </div>
             </motion.div>
@@ -1124,8 +1054,13 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
   );
 }
 
+
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useStorage<boolean>('templo_auth', false);
+  const [isGuest, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
+
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
     eventNames: ['Gira de Baianos', 'Festa de Cosme e Damião', 'Trabalho de Cura'],
@@ -1141,7 +1076,7 @@ export default function App() {
     lastName: '',
     email: '',
     birthDate: '',
-    gender: 'Masculino'
+    gender: 'masculino'
   });
 
   // Apply the Primary Color dynamically
@@ -1548,8 +1483,10 @@ export default function App() {
   React.useEffect(() => {
     if (settings.darkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
     }
   }, [settings.darkMode]);
 
@@ -1570,58 +1507,64 @@ export default function App() {
           "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
-          {/* Top Floating Buttons */}
-          <GlobalSearch />
-          <NotificationCenter 
-            darkMode={settings.darkMode} 
-            notifications={notifications} 
-            setNotifications={setNotifications} 
-          />
-
-          <Navigation />
-          
-          <AnimatePresence>
-            {activeUndo && (
-              <UndoToast 
-                key={activeUndo.id}
-                action={activeUndo} 
-                onUndo={handleUndo} 
-                onFinish={finalizeDelete} 
+          {!isAuthenticated ? (
+            <AuthScreen onLogin={(guest) => { setIsAuthenticated(true); setIsGuest(!!guest); }} />
+          ) : (
+            <>
+              {/* Top Floating Buttons */}
+              <GlobalSearch />
+              <NotificationCenter 
+                darkMode={settings.darkMode} 
+                notifications={notifications} 
+                setNotifications={setNotifications} 
               />
-            )}
-          </AnimatePresence>
 
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <TopHeader />
-            <SocialButtons />
-            
-            <Routes>
-              <Route path="/home" element={
-                <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
-                  <AnimatePresence mode="wait">
-                    <HomeScreen />
-                  </AnimatePresence>
-                </main>
-              } />
-              <Route path="*" element={
-                <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
-                  <AnimatePresence mode="wait">
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/home" replace />} />
-                      <Route path="/calendar" element={<CalendarScreen />} />
-                      <Route path="/herbs" element={<HerbsScreen />} />
-                      <Route path="/trab" element={<TrabalhosScreen />} />
-                      <Route path="/points" element={<PointsScreen />} />
-                      <Route path="/studies" element={<StudiesScreen />} />
-                      <Route path="/notes" element={<NotesScreen />} />
-                      <Route path="/finance" element={<FinanceiroScreen />} />
-                      <Route path="/settings" element={<SettingsScreen />} />
-                    </Routes>
-                  </AnimatePresence>
-                </main>
-              } />
-            </Routes>
-          </div>
+              <Navigation />
+              
+              <AnimatePresence>
+                {activeUndo && (
+                  <UndoToast 
+                    key={activeUndo.id}
+                    action={activeUndo} 
+                    onUndo={handleUndo} 
+                    onFinish={finalizeDelete} 
+                  />
+                )}
+              </AnimatePresence>
+
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <TopHeader />
+                <SocialButtons />
+                
+                <Routes>
+                  <Route path="/home" element={
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
+                      <AnimatePresence mode="wait">
+                        <HomeScreen />
+                      </AnimatePresence>
+                    </main>
+                  } />
+                  <Route path="*" element={
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
+                      <AnimatePresence mode="wait">
+                        <Routes>
+                          <Route path="/" element={<Navigate to="/home" replace />} />
+                          <Route path="/calendar" element={<CalendarScreen />} />
+                          <Route path="/herbs" element={<HerbsScreen />} />
+                          <Route path="/trab" element={<TrabalhosScreen />} />
+                          <Route path="/points" element={<PointsScreen />} />
+                          <Route path="/studies" element={<StudiesScreen />} />
+                          <Route path="/notes" element={<NotesScreen />} />
+                          <Route path="/finance" element={<FinanceiroScreen />} />
+                          <Route path="/settings" element={<SettingsScreen />} />
+                        </Routes>
+                      </AnimatePresence>
+                    </main>
+                  } />
+                </Routes>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </BrowserRouter>

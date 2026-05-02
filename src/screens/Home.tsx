@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
@@ -25,18 +25,32 @@ export default function HomeScreen() {
     orixaPhotos: {}
   });
 
-  const [baths] = useStorage<HerbBath[]>('templo_baths', []);
-  const [pontos] = useStorage<Ponto[]>('templo_pontos', []);
-  const [books] = useIdbStorage<StudyBook[]>('templo_books', []);
+  const [baths, setBaths] = useStorage<HerbBath[]>('templo_baths', []);
+  const [pontos, setPontos] = useStorage<Ponto[]>('templo_pontos', []);
+  const [books, setBooks] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [events] = useStorage<Event[]>('templo_events', []);
   
   const [copied, setCopied] = React.useState<string | null>(null);
   const [showPixMenu, setShowPixMenu] = React.useState(false);
+  const [favFilter, setFavFilter] = React.useState<'all' | 'baths' | 'pontos' | 'books'>('all');
 
   const favBaths = baths.filter(b => b.isFavorite);
   const favPontos = pontos.filter(p => p.isFavorite);
   const favBooks = books.filter(b => b.isFavorite);
   const inProgressBooks = books.filter(b => b.readingStatus === 'in_progress');
+
+  const toggleFavBath = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setBaths(baths.map(b => b.id === id ? { ...b, isFavorite: false } : b));
+  };
+  const toggleFavPonto = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setPontos(pontos.map(p => p.id === id ? { ...p, isFavorite: false } : p));
+  };
+  const toggleFavBook = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setBooks(books.map(b => b.id === id ? { ...b, isFavorite: false } : b));
+  };
 
   // Próximos eventos (hoje ou no futuro)
   const upcomingEvents = useMemo(() => {
@@ -73,7 +87,11 @@ export default function HomeScreen() {
 
   const currentDate = new Date();
   const greeting = currentDate.getHours() < 12 ? "Bom dia" : currentDate.getHours() < 18 ? "Boa tarde" : "Boa noite";
-  const firstName = settings.firstName?.split(' ')[0] || "Guerreiro";
+  const displayName = settings.nickname?.trim() 
+    ? settings.nickname.trim() 
+    : settings.firstName?.trim() 
+      ? settings.firstName.trim().split(' ')[0] 
+      : "Guerreiro";
 
   return (
     <motion.div 
@@ -101,17 +119,9 @@ export default function HomeScreen() {
             "text-2xl font-black tracking-tight flex items-center gap-2",
             settings.darkMode ? "text-white" : "text-brand-navy"
           )}>
-            {greeting}, {firstName}!
+            {greeting}, {displayName}!
           </h2>
         </div>
-        {settings.logoBase64 && (
-          <div className={cn(
-            "w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg",
-            settings.darkMode ? "border-white/10" : "border-brand-copper/20"
-          )}>
-            <img src={settings.logoBase64} alt="Terreiro" className="w-full h-full object-cover" />
-          </div>
-        )}
       </header>
 
       {/* 2. Bento Grid Dashboard */}
@@ -221,6 +231,70 @@ export default function HomeScreen() {
               "font-bold text-sm leading-tight",
               settings.darkMode ? "text-white" : "text-white"
             )}>PIX / Ajuda</p>
+          </div>
+        </div>
+
+        {/* Area: Contatos e Localização */}
+        <div className="col-span-2 space-y-4 mb-4">
+          
+          {/* Endereço do Terreiro */}
+          <div className={cn(
+            "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden flex items-center gap-4 sm:gap-6 group hover:translate-y-[-2px]",
+            settings.darkMode 
+              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border border-gray-800 hover:border-red-500/30 hover:shadow-[0_8px_30px_rgba(239,68,68,0.1)]" 
+              : "bg-gradient-to-br from-[#fff5f5] to-white border border-[#fce8e8] hover:border-[#fcd9d9] shadow-[0_8px_30px_rgba(239,68,68,0.04)] hover:shadow-[0_12px_40px_rgba(239,68,68,0.12)]"
+          )}>
+            {/* Background Map Decoration */}
+            <div className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500 pointer-events-none">
+              <MapPin className="w-48 h-48 sm:w-56 sm:h-56 stroke-[1]" />
+            </div>
+
+            <div className={cn(
+              "w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-[24px] sm:rounded-[28px] shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3 shadow-sm",
+              settings.darkMode ? "bg-red-500/20 text-red-400" : "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-red-500/20"
+            )}>
+              <MapPin className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2]" />
+            </div>
+            
+            <div className="flex-1 min-w-0 pr-2 relative z-10">
+              <p className={cn("text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-1.5 sm:mb-2", settings.darkMode ? "text-red-400/70" : "text-red-600/80")}>
+                Endereço do Terreiro
+              </p>
+              <p className={cn("font-bold text-[14px] sm:text-[16px] leading-tight mb-1 truncate whitespace-normal transition-colors", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-[#0a182c]")}>
+                Av. Sapopemba,<br/>
+                16068 - Jd ster
+              </p>
+              <p className={cn("text-[11px] sm:text-xs font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                São Paulo - SP, 08830-180
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shrink-0 relative z-10">
+              <button 
+                onClick={(e) => { e.preventDefault(); copyToClipboard("Av. Sapopemba, 16068 - Jd ster, São Paulo - SP, 08830-180", "address"); }}
+                className={cn(
+                  "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-95 group/btn",
+                  copied === 'address' 
+                    ? "bg-green-500 text-white shadow-md shadow-green-500/20" 
+                    : settings.darkMode 
+                      ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" 
+                      : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
+                )}
+              >
+                {copied === 'address' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />}
+              </button>
+              <a 
+                href="https://maps.app.goo.gl/bVTm79ZwaBrbJHq19?g_st=aw"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-95 group/btn",
+                  settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
+                )}
+              >
+                <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -340,82 +414,217 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       {/* 3. Atalhos / Favoritos Rápidos */}
-      {(favBaths.length > 0 || favPontos.length > 0 || favBooks.length > 0) && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h3 className={cn("font-black text-[10px] uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-              Meus Favoritos
-            </h3>
-            <Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" />
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto pb-4 px-2 scrollbar-hide snap-x -mx-2">
-            {favBaths.map(bath => (
-              <button 
-                key={bath.id} 
-                onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
-                className={cn(
-                  "min-w-[200px] max-w-[240px] p-3 rounded-[20px] border transition-all active:scale-95 text-left snap-start flex-shrink-0 flex items-center gap-3",
-                  settings.darkMode ? "bg-[#1A1A1A]/80 border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                )}
-              >
-                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0", settings.darkMode ? "bg-brand-copper/10" : "bg-brand-copper/5")}>
-                  <Leaf className="w-5 h-5 text-brand-copper" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-brand-copper">Banho</p>
-                  <p className={cn("font-bold text-xs leading-tight truncate", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{bath.title}</p>
-                </div>
-              </button>
-            ))}
-            
-            {favPontos.map(ponto => (
-              <button 
-                key={ponto.id} 
-                onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
-                className={cn(
-                  "min-w-[200px] max-w-[240px] p-3 rounded-[20px] border transition-all active:scale-95 text-left snap-start flex-shrink-0 flex items-center gap-3",
-                  settings.darkMode ? "bg-[#1A1A1A]/80 border-gray-800" : "bg-white border-gray-100 shadow-sm"
-                )}
-              >
-                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0", settings.darkMode ? "bg-brand-red/10" : "bg-brand-red/5")}>
-                  <Music className="w-5 h-5 text-brand-red" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-brand-red">Ponto</p>
-                  <p className={cn("font-bold text-xs leading-tight truncate", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{ponto.title}</p>
-                </div>
-              </button>
-            ))}
+      <section className="mb-8 pl-2">
+        <div className="flex items-center justify-between mb-4 pr-4">
+          <h3 className={cn("font-black text-[10px] uppercase tracking-[0.2em]", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+            Meus Favoritos
+          </h3>
+          <Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" />
+        </div>
 
-            {favBooks.map(book => (
-              <button 
-                key={book.id} 
-                onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
+        {(favBaths.length > 0 || favPontos.length > 0 || favBooks.length > 0) ? (
+          <>
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pr-4">
+              <button
+                onClick={() => setFavFilter('all')}
                 className={cn(
-                  "min-w-[200px] max-w-[240px] p-3 rounded-[20px] border transition-all active:scale-95 text-left snap-start flex-shrink-0 flex items-center gap-3 overflow-hidden",
-                  settings.darkMode ? "bg-[#1A1A1A]/80 border-gray-800" : "bg-white border-gray-100 shadow-sm"
+                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                  favFilter === 'all' 
+                    ? (settings.darkMode ? "bg-white text-black" : "bg-brand-navy text-white")
+                    : (settings.darkMode ? "bg-white/5 text-gray-400 hover:bg-white/10" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
                 )}
               >
-                <div className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden", 
-                  (!book.coverImage && !book.coverColor) ? (settings.darkMode ? "bg-white/10" : "bg-gray-100") : ""
-                )} style={book.coverColor && !book.coverImage ? { backgroundColor: book.coverColor } : undefined}>
-                  {book.coverImage ? (
-                    <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <GraduationCap className={cn("w-5 h-5", book.coverColor ? "text-white" : (settings.darkMode ? "text-white" : "text-brand-navy"))} />
-                  )}
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-[9px] font-black uppercase tracking-wider mb-0.5" style={{ color: book.coverColor || (settings.darkMode ? '#e5e7eb' : '#9ca3af') }}>Estudo</p>
-                  <p className={cn("font-bold text-xs leading-tight truncate", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>{book.name.replace('.pdf', '')}</p>
-                </div>
+                Todos
               </button>
-            ))}
+              {favBaths.length > 0 && (
+                <button
+                  onClick={() => setFavFilter('baths')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                    favFilter === 'baths' 
+                      ? (settings.darkMode ? "bg-emerald-500 text-white" : "bg-emerald-500 text-white")
+                      : (settings.darkMode ? "bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
+                  )}
+                >
+                  Banhos
+                </button>
+              )}
+              {favPontos.length > 0 && (
+                <button
+                  onClick={() => setFavFilter('pontos')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                    favFilter === 'pontos' 
+                      ? (settings.darkMode ? "bg-rose-500 text-white" : "bg-rose-500 text-white")
+                      : (settings.darkMode ? "bg-rose-500/10 text-rose-500/70 hover:bg-rose-500/20" : "bg-rose-50 text-rose-600 hover:bg-rose-100")
+                  )}
+                >
+                  Pontos
+                </button>
+              )}
+              {favBooks.length > 0 && (
+                <button
+                  onClick={() => setFavFilter('books')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                    favFilter === 'books' 
+                      ? (settings.darkMode ? "bg-indigo-500 text-white" : "bg-indigo-500 text-white")
+                      : (settings.darkMode ? "bg-indigo-500/10 text-indigo-500/70 hover:bg-indigo-500/20" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")
+                  )}
+                >
+                  Estudos
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-8 pr-4 scrollbar-hide snap-x relative">
+              {(favFilter === 'all' || favFilter === 'baths') && favBaths.map(bath => (
+                <div key={bath.id} className="relative group/card snap-start flex-shrink-0">
+                  <button 
+                    onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
+                    className={cn(
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      settings.darkMode
+                        ? "bg-gradient-to-b from-[#111c18] to-[#0d1411] border-[#182b22] hover:border-emerald-500/30 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] hover:-translate-y-1"
+                        : "bg-gradient-to-b from-emerald-50 to-white border-emerald-100 shadow-sm hover:shadow-[0_12px_40px_rgba(16,185,129,0.12)] hover:border-emerald-200 hover:-translate-y-1"
+                    )}
+                  >
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/30 transition-colors pointer-events-none" />
+                    
+                    <div className={cn(
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
+                      settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white text-emerald-600 shadow-sm"
+                    )}>
+                      <Leaf className="w-6 h-6" />
+                    </div>
+
+                    <div className="relative z-10 mt-auto">
+                      <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-emerald-500/80" : "text-emerald-600/80")}>Banho</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-emerald-900")}>{bath.title}</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => toggleFavBath(e, bath.id)}
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-emerald-500/10 active:scale-95 z-20"
+                  >
+                    <HeartOff className="w-4 h-4 text-emerald-500 opacity-60 hover:opacity-100" />
+                  </button>
+                </div>
+              ))}
+              
+              {(favFilter === 'all' || favFilter === 'pontos') && favPontos.map(ponto => (
+                <div key={ponto.id} className="relative group/card snap-start flex-shrink-0">
+                  <button 
+                    onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
+                    className={cn(
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      settings.darkMode
+                        ? "bg-gradient-to-b from-[#1c1114] to-[#140d0f] border-[#2b181a] hover:border-rose-500/30 hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] hover:-translate-y-1"
+                        : "bg-gradient-to-b from-rose-50 to-white border-rose-100 shadow-sm hover:shadow-[0_12px_40px_rgba(244,63,94,0.12)] hover:border-rose-200 hover:-translate-y-1"
+                    )}
+                  >
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl group-hover:bg-rose-500/30 transition-colors pointer-events-none" />
+
+                    <div className={cn(
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6",
+                      settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-white text-rose-600 shadow-sm"
+                    )}>
+                      <Music className="w-6 h-6" />
+                    </div>
+
+                    <div className="relative z-10 mt-auto">
+                      <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-rose-500/80" : "text-rose-600/80")}>Ponto</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-rose-900")}>{ponto.title}</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => toggleFavPonto(e, ponto.id)}
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-rose-500/10 active:scale-95 z-20"
+                  >
+                    <HeartOff className="w-4 h-4 text-rose-500 opacity-60 hover:opacity-100" />
+                  </button>
+                </div>
+              ))}
+
+              {(favFilter === 'all' || favFilter === 'books') && favBooks.map(book => (
+                <div key={book.id} className="relative group/card snap-start flex-shrink-0">
+                  <button 
+                    onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
+                    className={cn(
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      settings.darkMode
+                        ? "bg-gradient-to-b from-[#11131c] to-[#0d0f14] border-[#181d2b] hover:border-indigo-500/30 hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] hover:-translate-y-1"
+                        : "bg-gradient-to-b from-indigo-50 to-white border-indigo-100 shadow-sm hover:shadow-[0_12px_40px_rgba(99,102,241,0.12)] hover:border-indigo-200 hover:-translate-y-1"
+                    )}
+                  >
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors pointer-events-none" />
+
+                    <div className={cn(
+                      "w-12 h-12 rounded-[20px] shadow-sm flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 group-hover:scale-110", 
+                      (!book.coverImage && !book.coverColor) ? (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-white text-indigo-600") : ""
+                    )} style={book.coverColor && !book.coverImage ? { backgroundColor: book.coverColor } : undefined}>
+                      {book.coverImage ? (
+                        <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "")} />
+                      )}
+                    </div>
+
+                    <div className="relative z-10 mt-auto">
+                      <p className="text-[9px] font-black uppercase tracking-[0.15em] mb-1.5" style={{ color: book.coverColor || (settings.darkMode ? '#818cf8' : '#4f46e5') }}>Estudo</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-indigo-900")}>{book.name.replace('.pdf', '')}</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => toggleFavBook(e, book.id)}
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-indigo-500/10 active:scale-95 z-20"
+                  >
+                    <HeartOff className="w-4 h-4 text-indigo-500 opacity-60 hover:opacity-100" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className={cn(
+            "p-6 sm:p-8 rounded-[32px] border flex flex-col items-center justify-center text-center mr-4 mt-2",
+            settings.darkMode ? "bg-white/5 border-white/10" : "bg-white/80 border-gray-100 shadow-sm"
+          )}>
+            <div className={cn(
+              "w-16 h-16 rounded-full flex items-center justify-center mb-4",
+              settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-300"
+            )}>
+              <Heart className="w-8 h-8 stroke-[1.5]" />
+            </div>
+            <h4 className={cn("font-bold text-base mb-2", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
+              Nenhum favorito ainda
+            </h4>
+            <p className={cn("text-[13px] leading-relaxed max-w-[220px] mb-6", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+              Salve seus banhos, pontos e estudos preferidos para ter acesso rápido aqui.
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => navigate('/herbs')}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
+                  settings.darkMode ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
+                )}
+              >
+                + Banho
+              </button>
+              <button 
+                onClick={() => navigate('/points')}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
+                  settings.darkMode ? "bg-rose-500/20 text-rose-400 hover:bg-rose-500/30" : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                )}
+              >
+                + Ponto
+              </button>
+            </div>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* 4. Agenda Resumida */}
       <section className="px-2 pb-24">
@@ -530,6 +739,75 @@ export default function HomeScreen() {
               Ver agenda completa
             </button>
           )}
+        </div>
+
+        {/* Contatos */}
+        <div className={cn(
+          "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto",
+          settings.darkMode 
+            ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border border-gray-800 hover:border-gray-700 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)]" 
+            : "bg-gradient-to-br from-[#f4f7fb] to-white border border-[#e2e8f0] hover:border-[#cbd5e1] shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+        )}>
+          <div className="absolute -right-6 -bottom-6 opacity-[0.02] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+            <Phone className="w-48 h-48 sm:w-56 sm:h-56 stroke-[1]" />
+          </div>
+
+          <div className="flex items-center gap-4 sm:gap-5 mb-6 sm:mb-8 relative z-10">
+            <div className={cn(
+              "w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-[24px] shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 shadow-sm",
+              settings.darkMode ? "bg-[#2A3F5B]/30 text-[#8ba3c7]" : "bg-gradient-to-br from-brand-navy to-[#102b4e] text-white shadow-brand-navy/20"
+            )}>
+              <Phone className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
+            </div>
+            <p className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-[#8ba3c7]" : "text-brand-navy/80")}>
+              Contatos Úteis
+            </p>
+          </div>
+          
+          <div className="grid gap-3 sm:gap-4 relative z-10">
+            {[
+              { name: "Terreiro", phone: "(11) 98555-0847", raw: "11985550847", id: "terreiro_phone" },
+              { name: "Mãe Stela", phone: "(11) 98235-0614", raw: "11982350614", id: "stela_phone" }
+            ].map((contact, idx) => (
+              <div key={idx} className={cn(
+                "flex items-center justify-between p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all border group/item hover:scale-[1.02]",
+                settings.darkMode 
+                  ? "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10" 
+                  : "bg-white border-transparent hover:border-brand-navy/10 shadow-sm hover:shadow-md"
+              )}>
+                <div className="flex flex-col truncate pr-3 sm:pr-4">
+                  <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] block mb-1", settings.darkMode ? "text-gray-400" : "text-brand-navy/60")}>{contact.name}</span>
+                  <span className={cn("font-bold text-[15px] sm:text-[19px] tracking-tight truncate", settings.darkMode ? "text-gray-100" : "text-brand-navy")}>{contact.phone}</span>
+                </div>
+                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                  <button 
+                    onClick={() => copyToClipboard(contact.raw, contact.id)}
+                    className={cn(
+                      "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-[0.95]",
+                      copied === contact.id ? "bg-green-500 text-white shadow-sm shadow-green-500/20" : settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-white/20" : "bg-gray-50 text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy"
+                    )}
+                  >
+                    {copied === contact.id ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />}
+                  </button>
+                  <a
+                    href={`https://wa.me/55${contact.raw}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-[0.95] overflow-hidden group-hover/item:shadow-lg group-hover/item:-translate-y-0.5",
+                      settings.whatsappLogo ? "bg-transparent border border-gray-100 hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700" : "bg-gradient-to-br from-[#25D366] to-[#1fac53] text-white shadow-[0_8px_20px_-4px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_25px_-4px_rgba(37,211,102,0.5)]"
+                    )}
+                  >
+                    {settings.whatsappLogo ? (
+                      <img src={settings.whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover" />
+                    ) : (
+                      <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 fill-current stroke-none" />
+                    )}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </motion.div>

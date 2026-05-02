@@ -80,6 +80,7 @@ export interface AppSettings {
   nubankLogo?: string;
   tiktokLogo?: string;
   instagramLogo?: string;
+  whatsappLogo?: string;
   orixaPhotos?: Record<string, string>;
   tabIcons?: Record<string, string>;
   primaryTabPaths?: string[];
@@ -89,9 +90,10 @@ export interface AppSettings {
   lastCashUpdate?: number;
   firstName?: string;
   lastName?: string;
+  nickname?: string;
   email?: string;
   birthDate?: string;
-  gender?: 'Masculino' | 'Feminino';
+  gender?: 'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer';
 }
 
 export interface Bicho {

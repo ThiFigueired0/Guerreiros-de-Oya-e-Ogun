@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Book, Music, Leaf, Calendar, ArrowRight, FileText, Bookmark } from 'lucide-react';
+import { Search, X, Book, Music, Leaf, Calendar, ArrowRight, FileText, Bookmark, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import Fuse from 'fuse.js';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { cn } from '../lib/utils';
@@ -11,8 +12,10 @@ export function GlobalSearch() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   
   const [settings] = useStorage<AppSettings>('templo_settings', { darkMode: false } as AppSettings);
+  const [recentSearches, setRecentSearches] = useStorage<string[]>('templo_recent_searches', []);
   
   // Data sources
   const [events] = useStorage<Event[]>('templo_events', []);
@@ -34,58 +37,76 @@ export function GlobalSearch() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const searchData = React.useMemo(() => {
+    const data: any[] = [];
+    
+    events.forEach(e => {
+      data.push({ type: 'Evento', item: e, label: e.title || e.category, desc: e.date, icon: Calendar, path: '/calendar', searchContent: [e.title, e.category].join(' ') });
+    });
+
+    books.forEach(b => {
+      data.push({ type: 'Livro', item: b, label: b.name.replace('.pdf', ''), desc: 'Minha Estante', icon: Book, path: '/studies', state: { openBookId: b.id }, searchContent: b.name });
+    });
+
+    studyContents.forEach(s => {
+      data.push({ type: 'Estudo', item: s, label: s.title, desc: s.category, icon: FileText, path: '/studies', state: { activeTab: 'contents' }, searchContent: [s.title, s.content, s.category].join(' ') });
+    });
+
+    glossaryTerms.forEach(g => {
+      data.push({ type: 'Glossário', item: g, label: g.term, desc: g.category || 'Termo', icon: Bookmark, path: '/studies', state: { activeTab: 'glossary' }, searchContent: [g.term, g.definition, g.category].join(' ') });
+    });
+
+    pontos.forEach(p => {
+      data.push({ type: 'Ponto', item: p, label: p.title, desc: p.entity, icon: Music, path: '/points', state: { pontoId: p.id, folderId: p.folderId }, searchContent: [p.title, p.lyrics, p.entity].join(' ') });
+    });
+
+    baths.forEach(b => {
+      data.push({ type: 'Banho', item: b, label: b.title, desc: b.category || 'Banho', icon: Leaf, path: '/herbs', state: { openBathId: b.id }, searchContent: [b.title, b.herbs, b.observations, b.category].join(' ') });
+    });
+    
+    return data;
+  }, [events, books, studyContents, glossaryTerms, pontos, baths]);
+
+  const fuse = React.useMemo(() => new Fuse(searchData, {
+    keys: ['label', 'searchContent', 'desc'],
+    threshold: 0.4,
+    ignoreLocation: true,
+    includeScore: true
+  }), [searchData]);
+
   const results = React.useMemo(() => {
     if (!query.trim()) return [];
     
-    const q = query.toLowerCase();
-    const matches: any[] = [];
+    const searchResults = fuse.search(query);
+    return searchResults.map(result => result.item).slice(0, 8);
+  }, [query, fuse]);
 
-    // Search Events
-    events.forEach(e => {
-      if (e.title.toLowerCase().includes(q) || e.category.toLowerCase().includes(q)) {
-        matches.push({ type: 'Evento', item: e, label: e.title || e.category, desc: e.date, icon: Calendar, path: '/calendar' });
-      }
-    });
-
-    // Search Books
-    books.forEach(b => {
-      if (b.name.toLowerCase().includes(q)) {
-        matches.push({ type: 'Livro', item: b, label: b.name.replace('.pdf', ''), desc: 'Minha Estante', icon: Book, path: '/studies', state: { openBookId: b.id } });
-      }
-    });
-
-    // Search Studies
-    studyContents.forEach(s => {
-      if (s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q) || s.category.toLowerCase().includes(q)) {
-        matches.push({ type: 'Estudo', item: s, label: s.title, desc: s.category, icon: FileText, path: '/studies', state: { activeTab: 'contents' } });
-      }
-    });
-
-    // Search Glossary
-    glossaryTerms.forEach(g => {
-      if (g.term.toLowerCase().includes(q) || g.definition.toLowerCase().includes(q)) {
-        matches.push({ type: 'Glossário', item: g, label: g.term, desc: g.category || 'Termo', icon: Bookmark, path: '/studies', state: { activeTab: 'glossary' } });
-      }
-    });
-
-    // Search Pontos
-    pontos.forEach(p => {
-      if (p.title.toLowerCase().includes(q) || p.lyrics.toLowerCase().includes(q) || p.entity.toLowerCase().includes(q)) {
-        matches.push({ type: 'Ponto', item: p, label: p.title, desc: p.entity, icon: Music, path: '/points', state: { pontoId: p.id, folderId: p.folderId } });
-      }
-    });
-
-    // Search Baths/Herbs
-    baths.forEach(b => {
-      if (b.title.toLowerCase().includes(q) || b.herbs.toLowerCase().includes(q) || b.observations.toLowerCase().includes(q)) {
-        matches.push({ type: 'Banho', item: b, label: b.title, desc: b.category || 'Banho', icon: Leaf, path: '/herbs', state: { openBathId: b.id } });
-      }
-    });
-
-    return matches.slice(0, 8); // LIMIT to 8 results
-  }, [query, events, books, studyContents, glossaryTerms, pontos, baths]);
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, results]);
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && results[selectedIndex]) {
+      e.preventDefault();
+      handleNavigate(results[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
 
   const handleNavigate = (result: any) => {
+    if (query.trim()) {
+      setRecentSearches(prev => {
+        const updated = [query.trim(), ...prev.filter(q => q !== query.trim())].slice(0, 5);
+        return updated;
+      });
+    }
     setIsOpen(false);
     setQuery('');
     navigate(result.path, { state: result.state });
@@ -131,6 +152,7 @@ export function GlobalSearch() {
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Pesquisar em todo o app..."
                   className="flex-1 bg-transparent border-none outline-none text-sm font-medium focus:ring-0 px-0"
                   style={{ color: settings.darkMode ? 'white' : '#1a202c' }}
@@ -145,12 +167,36 @@ export function GlobalSearch() {
 
               <div className="max-h-[60vh] overflow-y-auto">
                 {query.trim() === '' ? (
-                  <div className="p-12 text-center flex flex-col items-center">
-                    <Search className={cn("w-8 h-8 mb-3 opacity-20", settings.darkMode ? "text-white" : "text-brand-navy")} />
-                    <p className={cn("text-xs font-black uppercase tracking-widest", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
-                      Comece a digitar para pesquisar
-                    </p>
-                  </div>
+                  recentSearches.length > 0 ? (
+                    <div className="py-2">
+                      <div className="px-5 py-2">
+                        <span className={cn("text-[9px] font-black uppercase tracking-widest block mb-1", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
+                          Pesquisas Recentes
+                        </span>
+                      </div>
+                      {recentSearches.map((recentQuery, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setQuery(recentQuery)}
+                          className={cn(
+                            "w-full text-left px-5 py-3 flex items-center gap-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                          )}
+                        >
+                          <History className={cn("w-4 h-4", settings.darkMode ? "text-gray-500" : "text-gray-400")} />
+                          <span className={cn("text-sm font-medium", settings.darkMode ? "text-gray-300" : "text-gray-600")}>
+                            {recentQuery}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center flex flex-col items-center">
+                      <Search className={cn("w-8 h-8 mb-3 opacity-20", settings.darkMode ? "text-white" : "text-brand-navy")} />
+                      <p className={cn("text-xs font-black uppercase tracking-widest", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
+                        Comece a digitar para pesquisar
+                      </p>
+                    </div>
+                  )
                 ) : results.length === 0 ? (
                   <div className="p-12 text-center">
                     <p className={cn("text-xs font-black uppercase tracking-widest", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
@@ -161,18 +207,25 @@ export function GlobalSearch() {
                   <div className="py-2">
                     {results.map((result, index) => {
                       const Icon = result.icon;
+                      const isSelected = index === selectedIndex;
                       return (
                         <button
                           key={index}
                           onClick={() => handleNavigate(result)}
+                          onMouseEnter={() => setSelectedIndex(index)}
                           className={cn(
-                            "w-full text-left px-5 py-4 flex items-center gap-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5",
+                            "w-full text-left px-5 py-4 flex items-center gap-4 transition-colors",
+                            isSelected 
+                              ? (settings.darkMode ? "bg-white/10" : "bg-black/5") 
+                              : "hover:bg-black/5 dark:hover:bg-white/5",
                             index !== results.length - 1 && (settings.darkMode ? "border-b border-gray-800" : "border-b border-gray-50")
                           )}
                         >
                           <div className={cn(
-                            "p-2.5 rounded-xl shrink-0",
-                            settings.darkMode ? "bg-white/5 text-brand-copper" : "bg-gray-100 text-brand-navy"
+                            "p-2.5 rounded-xl shrink-0 transition-colors",
+                            isSelected 
+                              ? (settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-navy/10 text-brand-navy")
+                              : (settings.darkMode ? "bg-white/5 text-brand-copper" : "bg-gray-100 text-brand-navy")
                           )}>
                             <Icon className="w-4 h-4" />
                           </div>

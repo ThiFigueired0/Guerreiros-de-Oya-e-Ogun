@@ -3,13 +3,14 @@ import {
   Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera, AlertTriangle,
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone, ArrowUp, ArrowDown, ArrowLeftRight, FileText, GripVertical,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap, Globe, Sparkles,
-  UserCircle, Fingerprint, Mail, AtSign, Cake, Dna, ChevronDown
+  UserCircle, Fingerprint, Mail, AtSign, Cake, Dna, ChevronDown, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { CustomDatePicker } from '../components/CustomDatePicker';
 
 const AVAILABLE_ICONS: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -32,6 +33,8 @@ const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
 const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
 export default function SettingsScreen() {
+  const [, setIsAuthenticated] = useStorage<boolean>('templo_auth', false);
+  const [, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     immersiveMode: true,
@@ -54,7 +57,7 @@ export default function SettingsScreen() {
     lastName: '',
     email: '',
     birthDate: '',
-    gender: 'Masculino'
+    gender: 'masculino'
   });
 
   const [activeSubScreen, setActiveSubScreen] = useState<string | null>(null);
@@ -63,16 +66,33 @@ export default function SettingsScreen() {
   const [activeTabPicker, setActiveTabPicker] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{type: 'category' | 'name', value: string} | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const caixaRef = useRef<HTMLInputElement>(null);
   const nubankRef = useRef<HTMLInputElement>(null);
   const instagramRef = useRef<HTMLInputElement>(null);
   const tiktokRef = useRef<HTMLInputElement>(null);
+  const whatsappRef = useRef<HTMLInputElement>(null);
   const orixaRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const primaryTabs = settings.primaryTabPaths || DEFAULT_PRIMARY;
   const secondaryTabs = settings.secondaryTabPaths || DEFAULT_SECONDARY;
+
+  const calculateAge = (birthDate: string | undefined) => {
+    if (!birthDate) return null;
+    const [year, month, day] = birthDate.split('-').map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    const m = today.getMonth() - (month - 1);
+    if (m < 0 || (m === 0 && today.getDate() < day)) {
+      age--;
+    }
+    return age;
+  };
+
+  const userAge = calculateAge(settings.birthDate);
 
   const ORIXAS = [
     'Oxala', 'Iemanja', 'Ogum', 'Iansã/Oya', 'Oxossi', 'Oxum', 
@@ -259,20 +279,43 @@ export default function SettingsScreen() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Apelido (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={settings.nickname || ''}
+                    onChange={(e) => setSettings({ ...settings, nickname: e.target.value })}
+                    placeholder="Como gostaria de ser chamado"
+                    className={cn(
+                      "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                      settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
+                    )}
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nascimento</label>
                     <div className="relative">
-                      <input 
-                        type="date" 
-                        value={settings.birthDate || ''}
-                        onChange={(e) => setSettings({ ...settings, birthDate: e.target.value })}
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("opacity-50", settings.darkMode ? "text-white" : "text-gray-500")}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                      </div>
+                      <button 
+                        onClick={() => setIsDatePickerOpen(true)}
                         className={cn(
-                          "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
-                          settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                          "w-full text-left bg-gray-50 pl-11 pr-4 py-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 transition-all cursor-pointer",
+                          settings.darkMode && "bg-black/40 border-gray-800",
+                          !settings.birthDate && !settings.darkMode ? "text-gray-400" : !settings.birthDate && settings.darkMode ? "text-gray-600" : settings.darkMode ? "text-white" : "text-brand-navy"
                         )}
-                      />
+                      >
+                        {settings.birthDate ? settings.birthDate.split('-').reverse().join('/') : 'DD/MM/AAAA'}
+                      </button>
                     </div>
+                    {userAge !== null && (
+                      <div className={cn("text-[10px] font-medium px-2 mt-1", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
+                        Idade atual: <strong>{userAge} anos</strong>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Sexo / Gênero</label>
@@ -281,10 +324,10 @@ export default function SettingsScreen() {
                       settings.darkMode && "bg-black/40 border-gray-800"
                     )}>
                       <button
-                        onClick={() => setSettings({ ...settings, gender: 'Masculino' })}
+                        onClick={() => setSettings({ ...settings, gender: 'masculino' })}
                         className={cn(
                           "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
-                          (settings.gender === 'Masculino' || !settings.gender) 
+                          (settings.gender === 'masculino' || !settings.gender) 
                             ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
                             : "text-gray-400"
                         )}
@@ -292,10 +335,10 @@ export default function SettingsScreen() {
                         Masc
                       </button>
                       <button
-                        onClick={() => setSettings({ ...settings, gender: 'Feminino' })}
+                        onClick={() => setSettings({ ...settings, gender: 'feminino' })}
                         className={cn(
                           "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
-                          settings.gender === 'Feminino' 
+                          settings.gender === 'feminino' 
                             ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
                             : "text-gray-400"
                         )}
@@ -501,6 +544,20 @@ export default function SettingsScreen() {
                       </div>
                       <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">TikTok<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
                       <input type="file" ref={tiktokRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'tiktokLogo')} />
+                    </button>
+
+                    <button 
+                      onClick={() => whatsappRef.current?.click()}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95 col-span-2 sm:col-span-1",
+                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-green-500/30" : "bg-white hover:border-green-500/20"
+                      )}
+                    >
+                      <div className="w-10 h-10 bg-[#25D366] rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20">
+                        <Smartphone className="w-5 h-5" />
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">WhatsApp<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
+                      <input type="file" ref={whatsappRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'whatsappLogo')} />
                     </button>
                   </div>
                 </div>
@@ -980,9 +1037,7 @@ export default function SettingsScreen() {
   ];
 
   const handlePanic = () => {
-    if (confirm('MODO DE SEGURANÇA: Você será redirecionado para o ambiente de desenvolvimento do Google AI Studio para realizar ajustes estruturais. Continuar?')) {
-      window.open('https://aistudio.google.com/', '_blank');
-    }
+    window.open('https://aistudio.google.com/', '_blank');
   };
 
   return (
@@ -1025,6 +1080,44 @@ export default function SettingsScreen() {
             </div>
           </button>
         ))}
+
+        {/* Logout / Exit Button */}
+        <button
+          onClick={() => {
+            if (showLogoutConfirm) {
+              setIsAuthenticated(false);
+              setIsGuest(false);
+              setTimeout(() => {
+                window.location.reload();
+              }, 100);
+            } else {
+              setShowLogoutConfirm(true);
+              setTimeout(() => setShowLogoutConfirm(false), 3000);
+            }
+          }}
+          className={cn(
+            "w-full p-6 rounded-[32px] flex items-center justify-between border transition-all active:scale-[0.97] group mt-4",
+            settings.darkMode ? "bg-red-900/10 border-red-900/20 hover:bg-red-900/20" : "bg-white border-red-100 hover:bg-red-50 shadow-sm",
+            showLogoutConfirm && "ring-2 ring-red-500 bg-red-50 dark:bg-red-900/30"
+          )}
+        >
+          <div className="flex items-center gap-5">
+            <div className={cn("w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform group-hover:scale-110 text-red-500 bg-red-100 dark:bg-red-500/20")}>
+              <LogOut className="w-6 h-6" />
+            </div>
+            <div className="text-left">
+              <p className={cn("text-[13px] font-black uppercase tracking-wider text-red-600 dark:text-red-400 mb-1")}>
+                {showLogoutConfirm ? "Confirmar Saída" : "Sair do Aplicativo"}
+              </p>
+              <p className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 uppercase tracking-widest">
+                {showLogoutConfirm ? "Toque novamente para sair" : "Desconectar e voltar ao login"}
+              </p>
+            </div>
+          </div>
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center opacity-30 group-hover:opacity-100 transition-opacity", settings.darkMode ? "bg-red-500/10" : "bg-red-100")}>
+            <LogOut className="w-4 h-4 text-red-500" />
+          </div>
+        </button>
 
         {/* Panic Button Section */}
         <div className="pt-4 mt-4 border-t border-red-100/30 dark:border-red-900/20">
@@ -1112,6 +1205,14 @@ export default function SettingsScreen() {
           ? "Deseja realmente excluir esta categoria de evento?" 
           : "Deseja realmente excluir esta sugestão de nome?"
         }
+      />
+
+      <CustomDatePicker
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        value={settings.birthDate || ''}
+        onChange={(date) => setSettings({ ...settings, birthDate: date })}
+        darkMode={settings.darkMode}
       />
     </motion.div>
   );
