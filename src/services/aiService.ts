@@ -1,18 +1,26 @@
-// Logs de inspeção no topo do arquivo
-console.log('Ambiente detectado:', typeof process !== 'undefined' ? process.env.NODE_ENV : 'Browser/Vite');
-console.log('Chave Groq presente (EXPO)?:', typeof process !== 'undefined' && !!process.env.EXPO_PUBLIC_GROQ_API_KEY);
-console.log('Chave Groq presente (VITE)?:', !!import.meta.env.VITE_GROQ_API_KEY);
+// Tenta obter a chave de diferentes fontes, priorizando Vite (import.meta.env)
+const getApiKey = () => {
+  // 1. Prioridade absoluta para Vite
+  if (import.meta.env && import.meta.env.VITE_GROQ_API_KEY) {
+    return import.meta.env.VITE_GROQ_API_KEY;
+  }
+  
+  // 2. Fallback para Node/Expo process.env se disponível
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  }
+  
+  return undefined;
+};
 
-// Mapeamento Direto com fallbacks universais
-const FINAL_KEY = (typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || '') : '') 
-  || import.meta.env.VITE_GROQ_API_KEY 
-  || '';
+export const askAI = async (prompt: string): Promise<string> => {
+  const apiKey = getApiKey();
+  
+  console.log('Tentando conectar com a Groq...');
 
-export async function askAI(prompt: string): Promise<string> {
-  // Validação de Segurança
-  if (!FINAL_KEY) {
-    console.error('Erro Crítico: Chave API não injetada no Build do Vercel.');
-    throw new Error('Erro Crítico: Chave API não injetada no Build do Vercel.');
+  if (!apiKey) {
+    console.error('Erro: Chave API GROQ não encontrada nos ambientes compatíveis.');
+    return 'Erro de configuração no servidor. Tente novamente em instantes';
   }
 
   try {
@@ -20,7 +28,7 @@ export async function askAI(prompt: string): Promise<string> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${FINAL_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'llama3-8b-8192',
@@ -41,13 +49,14 @@ export async function askAI(prompt: string): Promise<string> {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Erro na API Groq: ${response.status} ${JSON.stringify(errorData)}`);
+      console.error('Erro na resposta da Groq:', errorData);
+      return 'O assistente está temporariamente indisponível. Por favor, tente mais tarde.';
     }
 
     const data = await response.json();
     return data.choices[0]?.message?.content || 'Sem resposta do assistente.';
   } catch (error) {
-    console.error('Erro ao chamar Groq AI:', error);
-    throw error;
+    console.error('Falha na comunicação com a IA:', error);
+    return 'Houve um problema ao processar sua pergunta. Verifique sua conexão.';
   }
-}
+};
