@@ -2,13 +2,14 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2 } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
 import { cn } from '../lib/utils';
 import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { askAI } from '../services/aiService';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
@@ -33,6 +34,21 @@ export default function HomeScreen() {
   const [copied, setCopied] = React.useState<string | null>(null);
   const [showPixMenu, setShowPixMenu] = React.useState(false);
   const [favFilter, setFavFilter] = React.useState<'all' | 'baths' | 'pontos' | 'books'>('all');
+  const [aiResponse, setAiResponse] = React.useState<string | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = React.useState(false);
+
+  const handleAskAI = async () => {
+    setIsLoadingAI(true);
+    setAiResponse(null);
+    try {
+      const response = await askAI('Olá, qual é o seu nome e como você pode me ajudar?');
+      setAiResponse(response);
+    } catch (error) {
+      setAiResponse('Ocorreu um erro ao conectar com o assistente. Verifique se a chave API está configurada.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
 
   const favBaths = baths.filter(b => b.isFavorite);
   const favPontos = pontos.filter(p => p.isFavorite);
@@ -122,7 +138,57 @@ export default function HomeScreen() {
             {greeting}, {displayName}!
           </h2>
         </div>
+        <button 
+          onClick={handleAskAI}
+          disabled={isLoadingAI}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+            settings.darkMode 
+              ? "bg-brand-copper/20 text-brand-copper border border-brand-copper/30 shadow-brand-copper/10" 
+              : "bg-brand-copper text-white shadow-brand-copper/20"
+          )}
+        >
+          {isLoadingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+          Assistente
+        </button>
       </header>
+
+      {/* AI Response Display */}
+      <AnimatePresence>
+        {aiResponse && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-2 mb-6"
+          >
+            <div className={cn(
+              "p-5 rounded-[32px] border relative overflow-hidden",
+              settings.darkMode 
+                ? "bg-[#1A1A1A] border-gray-800 text-gray-200" 
+                : "bg-white border-brand-copper/20 text-brand-navy shadow-xl shadow-brand-copper/5"
+            )}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-brand-copper/10 rounded-xl text-brand-copper">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Assistente Oya Ogum</span>
+                </div>
+                <button 
+                  onClick={() => setAiResponse(null)}
+                  className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+              <p className="text-sm font-bold leading-relaxed italic">
+                "{aiResponse}"
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 2. Bento Grid Dashboard */}
       <section className="grid grid-cols-2 gap-3 mb-8 px-2">
@@ -157,13 +223,25 @@ export default function HomeScreen() {
             
             {nextEvent ? (
               <div>
-                <h3 className="text-xl font-black text-white leading-tight mb-2 pr-12 drop-shadow-sm">{nextEvent.title}</h3>
-                <div className="flex items-center gap-2.5 text-white/90">
-                  <span className="text-xs font-bold leading-none bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
-                    {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
-                  </span>
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-black/20 border border-black/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm text-white/80">{nextEvent.category}</span>
-                </div>
+                      <h3 className={cn(
+                        "text-xl font-black text-white leading-tight mb-2 pr-12 drop-shadow-sm",
+                        nextEvent.isCanceled && "line-through opacity-50"
+                      )}>
+                        {nextEvent.title}
+                      </h3>
+                      <div className="flex items-center gap-2.5 text-white/90">
+                        <span className="text-xs font-bold leading-none bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
+                          {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-black/20 border border-black/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm text-white/80">
+                          {nextEvent.category}
+                        </span>
+                        {nextEvent.isCanceled && (
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-red-500/80 border border-red-500 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm text-white">
+                            Cancelado
+                          </span>
+                        )}
+                      </div>
               </div>
             ) : (
               <div>
@@ -702,8 +780,13 @@ export default function HomeScreen() {
                      )}
                    </div>
 
-                   <p className={cn("font-medium text-[15px] leading-tight truncate", settings.darkMode ? "text-white group-hover:text-gray-200 transition-colors" : "text-[#1a202c] group-hover:text-brand-navy transition-colors")}>
+                   <p className={cn(
+                     "font-medium text-[15px] leading-tight truncate", 
+                     settings.darkMode ? "text-white group-hover:text-gray-200 transition-colors" : "text-[#1a202c] group-hover:text-brand-navy transition-colors",
+                     event.isCanceled && "line-through opacity-50"
+                   )}>
                      {event.title}
+                     {event.isCanceled && <span className="ml-2 text-[9px] font-black text-red-500 uppercase tracking-widest no-underline opacity-100 italic">Cancelado</span>}
                    </p>
                    
                    {event.reminder && (

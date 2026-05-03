@@ -5,6 +5,9 @@ export interface Event {
   date: string;
   reminder?: string;
   type?: 'event' | 'reminder';
+  isCanceled?: boolean;
+  cancelReason?: string;
+  replacementDate?: string;
 }
 
 export interface HerbBath {

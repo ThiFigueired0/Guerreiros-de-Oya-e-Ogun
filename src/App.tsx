@@ -35,52 +35,54 @@ const ICON_MAP: Record<string, any> = {
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
 };
 
+const DEFAULT_DEV_REMINDER = "Obrigatório:\n- Bebidas para as quartinhas (Exu, Pombagira, Exu Mirim e Malandro)\n- Velas\n- Isqueiro\n- Roupa branca (Calça, shorts, camisa e Eketê)";
+
 const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Festa de Marias', category: 'Festa', date: '2026-01-24' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-01-29' },
+  { title: 'Gira de desenvolvimento - Oxóssi', category: 'Desenvolvimento', date: '2026-01-29', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Abertura da casa - festa de Oxossi (Caboclos)', category: 'Festa', date: '2026-01-31' },
   { title: 'Festa de Iemanjá (Marinheiro)', category: 'Festa', date: '2026-02-14' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-02-12' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-02-26' },
+  { title: 'Gira de desenvolvimento - Iemanjá', category: 'Desenvolvimento', date: '2026-02-12', reminder: DEFAULT_DEV_REMINDER },
+  { title: 'Gira de desenvolvimento - Baianos', category: 'Desenvolvimento', date: '2026-02-26', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de baianos', category: 'Gira aberta', date: '2026-02-28' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-03-12' },
+  { title: 'Gira de desenvolvimento - Exu e Pombagira', category: 'Desenvolvimento', date: '2026-03-12', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Exu e Pombagira', category: 'Gira aberta', date: '2026-03-14' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-03-26' },
+  { title: 'Gira de desenvolvimento - Malandros', category: 'Desenvolvimento', date: '2026-03-26', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Malandros', category: 'Gira aberta', date: '2026-03-28' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-04-09' },
+  { title: 'Gira de desenvolvimento - Ciganos', category: 'Desenvolvimento', date: '2026-04-09', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Ciganos', category: 'Gira aberta', date: '2026-04-11' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-04-23' },
+  { title: 'Gira de desenvolvimento - Ogun', category: 'Desenvolvimento', date: '2026-04-23', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Ogun (Baianos)', category: 'Festa', date: '2026-04-25' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-05-07' },
+  { title: 'Gira de desenvolvimento - Preto Velho', category: 'Desenvolvimento', date: '2026-05-07', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa preto velho', category: 'Festa', date: '2026-05-09' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-05-21' },
+  { title: 'Gira de desenvolvimento - Cigana', category: 'Desenvolvimento', date: '2026-05-21', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa cigana', category: 'Festa', date: '2026-05-23' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-06-04' },
+  { title: 'Gira de desenvolvimento - Marinheiro', category: 'Desenvolvimento', date: '2026-06-04', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Marinheiro', category: 'Gira aberta', date: '2026-06-06' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-06-18' },
+  { title: 'Gira de desenvolvimento - Xangô', category: 'Desenvolvimento', date: '2026-06-18', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Xangô (Caboclos)', category: 'Festa', date: '2026-06-20' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-07-09' },
+  { title: 'Gira de desenvolvimento - Exu e Pombagira', category: 'Desenvolvimento', date: '2026-07-09', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Exu e Pombagira', category: 'Gira aberta', date: '2026-07-11' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-07-23' },
+  { title: 'Gira de desenvolvimento - Nanã', category: 'Desenvolvimento', date: '2026-07-23', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Nanã (Preto velho)', category: 'Festa', date: '2026-07-25' },
   { title: 'Gira de Malandros', category: 'Gira aberta', date: '2026-08-01' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-08-13' },
+  { title: 'Gira de desenvolvimento - Omolu', category: 'Desenvolvimento', date: '2026-08-13', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Omolu (Baianos)', category: 'Festa', date: '2026-08-15' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-08-27' },
+  { title: 'Gira de desenvolvimento - Ciganos', category: 'Desenvolvimento', date: '2026-08-27', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Ciganos', category: 'Gira aberta', date: '2026-08-29' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-09-10' },
+  { title: 'Gira de desenvolvimento - Marinheiros', category: 'Desenvolvimento', date: '2026-09-10', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Marinheiros', category: 'Gira aberta', date: '2026-09-12' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-09-23' },
+  { title: 'Gira de desenvolvimento - Exu Mirim', category: 'Desenvolvimento', date: '2026-09-23', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Exu mirim', category: 'Gira aberta', date: '2026-09-26' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-10-08' },
+  { title: 'Gira de desenvolvimento - Erê', category: 'Desenvolvimento', date: '2026-10-08', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Erê', category: 'Festa', date: '2026-10-10' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-10-22' },
+  { title: 'Gira de desenvolvimento - Baianos', category: 'Desenvolvimento', date: '2026-10-22', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Baianos', category: 'Gira aberta', date: '2026-10-24' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-11-05' },
+  { title: 'Gira de desenvolvimento - Malandros', category: 'Desenvolvimento', date: '2026-11-05', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Gira de Malandros', category: 'Festa', date: '2026-11-07' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-11-19' },
+  { title: 'Gira de desenvolvimento - Exu e Pombagira', category: 'Desenvolvimento', date: '2026-11-19', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Festa de Exu e Pombagira (no terreiro)', category: 'Festa', date: '2026-11-21' },
-  { title: 'Gira de desenvolvimento', category: 'Desenvolvimento', date: '2026-12-03' },
+  { title: 'Gira de desenvolvimento - Encerramento', category: 'Desenvolvimento', date: '2026-12-03', reminder: DEFAULT_DEV_REMINDER },
   { title: 'Enceramento Yabas (Baianos)', category: 'Festa', date: '2026-12-05' },
 ];
 
@@ -1558,8 +1560,17 @@ function AppContent() {
       return e;
     });
 
-    // 6. Delete "Gira de Baianos" from 2026-05-23 as requested
-    const finalizedEvents = correctedEvents.filter(e => !(e.title === 'Gira de Baianos' && e.date === '2026-05-23'));
+    // 6. Delete "Gira de Baianos" from 2026-05-23 as requested and update generic development events
+    const finalizedEvents = correctedEvents.map(e => {
+      if (e.title === 'Gira de desenvolvimento' && e.category === 'Desenvolvimento') {
+        const defaultMatch = CALENDAR_2026.find(d => d.date === e.date && d.category === 'Desenvolvimento');
+        if (defaultMatch && defaultMatch.title !== e.title) {
+          eventsNeedCorrection = true;
+          return { ...e, title: defaultMatch.title, reminder: defaultMatch.reminder || e.reminder };
+        }
+      }
+      return e;
+    }).filter(e => !(e.title === 'Gira de Baianos' && e.date === '2026-05-23'));
 
     if (eventsNeedCorrection || finalizedEvents.length !== events.length) {
       setEvents(finalizedEvents);

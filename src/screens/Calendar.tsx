@@ -41,12 +41,17 @@ export default function CalendarScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const DEFAULT_DEV_REMINDER = "Obrigatório:\n- Bebidas para as quartinhas (Exu, Pombagira, Exu Mirim e Malandro)\n- Velas\n- Isqueiro\n- Roupa branca (Calça, shorts, camisa e Eketê)";
+
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
     type: 'event',
-    title: '',
+    title: settings.eventCategories[0] === 'Desenvolvimento' ? 'Gira de desenvolvimento' : '',
     category: settings.eventCategories[0],
     date: format(new Date(), 'yyyy-MM-dd'),
-    reminder: ''
+    reminder: settings.eventCategories[0] === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+    isCanceled: false,
+    cancelReason: '',
+    replacementDate: ''
   });
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -108,6 +113,24 @@ export default function CalendarScreen() {
 
   const eventsInMonth = events.filter(e => isSameMonth(parseEventDate(e.date), currentDate));
 
+  const suggestDevTitle = (dateStr: string) => {
+    if (!dateStr) return 'Gira de desenvolvimento';
+    const date = parseEventDate(dateStr);
+    const futureEvents = events
+      .filter(e => {
+        const eDate = parseEventDate(e.date);
+        return eDate > date && (e.category === 'Gira aberta' || e.category === 'Festa');
+      })
+      .sort((a, b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
+    
+    if (futureEvents.length > 0) {
+      const next = futureEvents[0];
+      const baseName = next.title.replace(/Gira de |Festa de |Festa /g, '').trim();
+      return `Gira de desenvolvimento - ${baseName}`;
+    }
+    return 'Gira de desenvolvimento';
+  };
+
   const handleSaveEvent = () => {
     const isReminder = newEvent.type === 'reminder';
     const hasRequired = isReminder ? newEvent.reminder : (newEvent.title && newEvent.date);
@@ -130,7 +153,12 @@ export default function CalendarScreen() {
   };
 
   const openEditModal = (event: Event) => {
-    setNewEvent(event);
+    setNewEvent({
+      ...event,
+      isCanceled: !!event.isCanceled,
+      cancelReason: event.cancelReason || '',
+      replacementDate: event.replacementDate || ''
+    });
     setEditingId(event.id);
     setShowModal(true);
     setShowDayEventsModal(false);
@@ -160,25 +188,35 @@ export default function CalendarScreen() {
     setEditingId(null);
     setShowCategorySelect(false);
     setShowNameSelect(false);
+    const cat = settings.eventCategories[0];
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
     setNewEvent({ 
       type: 'event',
-      title: '', 
-      category: settings.eventCategories[0], 
-      date: format(new Date(), 'yyyy-MM-dd'), 
-      reminder: '' 
+      title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
+      category: cat, 
+      date: dateStr, 
+      reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+      isCanceled: false,
+      cancelReason: '',
+      replacementDate: ''
     });
   };
 
   const handleDayClick = (day: Date) => {
     const dayEvents = getEventsForDay(day, true);
     setSelectedDay(day);
+    const cat = settings.eventCategories[0];
+    const dateStr = format(day, 'yyyy-MM-dd');
     if (dayEvents.length === 0) {
       setNewEvent({ 
         type: 'event',
-        title: '', 
-        category: settings.eventCategories[0], 
-        date: format(day, 'yyyy-MM-dd'),
-        reminder: ''
+        title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
+        category: cat, 
+        date: dateStr,
+        reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+        isCanceled: false,
+        cancelReason: '',
+        replacementDate: ''
       });
       setShowModal(true);
     } else {
@@ -392,7 +430,17 @@ export default function CalendarScreen() {
           <button 
             onClick={() => {
               setEditingId(null);
-              setNewEvent({ title: '', category: settings.eventCategories[0], date: format(new Date(), 'yyyy-MM-dd'), reminder: '' });
+              const cat = settings.eventCategories[0];
+              const dateStr = format(new Date(), 'yyyy-MM-dd');
+              setNewEvent({ 
+                title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
+                category: cat, 
+                date: dateStr, 
+                reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+                isCanceled: false,
+                cancelReason: '',
+                replacementDate: ''
+              });
               setShowModal(true);
             }}
             className={cn(
@@ -494,9 +542,23 @@ export default function CalendarScreen() {
                           {event.category}
                         </span>
                       </div>
-                      <h4 className={cn("font-bold text-brand-navy truncate text-base leading-tight", settings.darkMode && "text-white")}>
+                      <h4 className={cn(
+                        "font-bold text-brand-navy truncate text-base leading-tight", 
+                        settings.darkMode && "text-white",
+                        event.isCanceled && "line-through opacity-50"
+                      )}>
                         {event.title || 'Lembrete'}
                       </h4>
+                      {event.isCanceled && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Evento Cancelado</span>
+                          {event.replacementDate && (
+                            <span className="text-[9px] font-bold text-brand-copper uppercase">
+                              Reposição: {format(parseEventDate(event.replacementDate), 'dd/MM/yyyy')}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {event.reminder && (
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium line-clamp-1 mt-0.5 leading-relaxed bg-brand-gold/5 dark:bg-white/5 px-2 py-1 rounded-lg border-l-2 border-brand-gold/30">
                           {event.reminder}
@@ -587,7 +649,20 @@ export default function CalendarScreen() {
                         />
                         <span className="text-[9px] text-brand-copper font-black uppercase tracking-widest">{event.category}</span>
                       </div>
-                      <h4 className="font-bold text-lg truncate leading-tight">{event.title || 'Lembrete'}</h4>
+                      <h4 className={cn(
+                        "font-bold text-lg truncate leading-tight",
+                        event.isCanceled && "line-through opacity-50"
+                      )}>{event.title || 'Lembrete'}</h4>
+                      {event.isCanceled && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Evento Cancelado</span>
+                          {event.replacementDate && (
+                            <span className="text-[9px] font-bold text-brand-copper uppercase">
+                              Reposição: {format(parseEventDate(event.replacementDate), 'dd/MM/yyyy')}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {event.reminder && (
                         <p className="text-xs text-gray-400 mt-2 bg-brand-gold/5 dark:bg-white/5 p-3 rounded-2xl border-l-2 border-brand-gold/30 leading-relaxed">
                           {event.reminder}
@@ -620,11 +695,16 @@ export default function CalendarScreen() {
 
               <button
                 onClick={() => {
+                  const cat = settings.eventCategories[0];
+                  const dateStr = format(selectedDay, 'yyyy-MM-dd');
                   setNewEvent({ 
-                    title: '', 
-                    category: settings.eventCategories[0], 
-                    date: format(selectedDay, 'yyyy-MM-dd'),
-                    reminder: ''
+                    title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
+                    category: cat, 
+                    date: dateStr,
+                    reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+                    isCanceled: false,
+                    cancelReason: '',
+                    replacementDate: ''
                   });
                   setShowDayEventsModal(false);
                   setShowModal(true);
@@ -835,7 +915,17 @@ export default function CalendarScreen() {
                                       <button
                                         key={cat}
                                         onClick={() => {
-                                          setNewEvent({...newEvent, category: cat});
+                                          let reminder = newEvent.reminder || '';
+                                          let title = newEvent.title || '';
+                                          
+                                          if (cat === 'Desenvolvimento') {
+                                            if (!reminder) reminder = DEFAULT_DEV_REMINDER;
+                                            if (!title || title === 'Gira de desenvolvimento') {
+                                              title = suggestDevTitle(newEvent.date || '');
+                                            }
+                                          }
+                                          
+                                          setNewEvent({...newEvent, category: cat, reminder, title});
                                           setShowCategorySelect(false);
                                         }}
                                         className={cn(
@@ -882,6 +972,65 @@ export default function CalendarScreen() {
                           settings.darkMode && "bg-black/40 text-white"
                         )}
                       />
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100 dark:border-white/5">
+                      <div 
+                        className="flex items-center justify-between mb-4 cursor-pointer"
+                        onClick={() => setNewEvent(prev => ({ ...prev, isCanceled: !prev.isCanceled }))}
+                      >
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none">Evento Cancelado?</span>
+                        <button
+                          type="button"
+                          className={cn(
+                            "w-12 h-6 rounded-full relative transition-colors duration-300 pointer-events-none",
+                            newEvent.isCanceled ? "bg-red-500" : "bg-gray-200 dark:bg-white/10"
+                          )}
+                        >
+                          <div className={cn(
+                            "absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-sm",
+                            newEvent.isCanceled ? "left-7" : "left-1"
+                          )} />
+                        </button>
+                      </div>
+
+                      <AnimatePresence>
+                        {newEvent.isCanceled && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3, ease: 'circOut' }}
+                            className="space-y-4 overflow-hidden"
+                          >
+                            <div className="pt-2">
+                              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Motivo do Cancelamento</label>
+                              <textarea
+                                value={newEvent.cancelReason || ''}
+                                onChange={(e) => setNewEvent(prev => ({ ...prev, cancelReason: e.target.value }))}
+                                placeholder="Ex: Chuva forte ou indisponibilidade do terreiro"
+                                rows={2}
+                                className={cn(
+                                  "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all resize-none",
+                                  settings.darkMode && "bg-black/40 text-white"
+                                )}
+                              />
+                            </div>
+                            <div className="pb-2">
+                              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Data de Reposição (Opcional)</label>
+                              <input
+                                type="date"
+                                value={newEvent.replacementDate || ''}
+                                onChange={(e) => setNewEvent(prev => ({ ...prev, replacementDate: e.target.value }))}
+                                className={cn(
+                                  "w-full bg-gray-50 border-none rounded-[24px] p-5 focus:ring-2 focus:ring-brand-copper outline-none text-brand-navy font-bold text-sm transition-all cursor-pointer",
+                                  settings.darkMode && "bg-black/40 text-white"
+                                )}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </>
                 )}
@@ -1030,18 +1179,47 @@ export default function CalendarScreen() {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-6">
                   <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
+                    className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg",
+                      viewingEvent.isCanceled && "grayscale opacity-50"
+                    )}
                     style={{ backgroundColor: getCategoryColor(viewingEvent.category) }}
                   >
                     <CalendarIcon className="w-5 h-5" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase text-brand-copper tracking-widest leading-none">{viewingEvent.category}</span>
-                    <h3 className={cn("text-lg font-black text-brand-navy leading-tight mt-1", settings.darkMode && "text-white")}>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-[10px] font-black uppercase text-brand-copper tracking-widest leading-none">
+                      {viewingEvent.category}
+                      {viewingEvent.isCanceled && <span className="ml-2 text-red-500">• CANCELADO</span>}
+                    </span>
+                    <h3 className={cn(
+                      "text-lg font-black text-brand-navy leading-tight mt-1 truncate", 
+                      settings.darkMode && "text-white",
+                      viewingEvent.isCanceled && "line-through opacity-50"
+                    )}>
                       {viewingEvent.title || 'Lembrete'}
                     </h3>
                   </div>
                 </div>
+
+                {viewingEvent.isCanceled && (
+                  <div className="mb-6 p-5 bg-red-50 dark:bg-red-500/10 rounded-[24px] border border-red-100 dark:border-red-500/20">
+                    <span className="block text-[9px] font-black text-red-500 uppercase tracking-widest mb-2">Informações de Cancelamento</span>
+                    {viewingEvent.cancelReason && (
+                      <p className="text-sm font-bold text-red-900 dark:text-red-200 leading-relaxed mb-3 italic">
+                        "{viewingEvent.cancelReason}"
+                      </p>
+                    )}
+                    {viewingEvent.replacementDate && (
+                      <div className="flex items-center gap-2 text-brand-copper">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Reposição em {format(parseEventDate(viewingEvent.replacementDate), 'dd/MM/yyyy')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-black/20 rounded-[24px] mb-6 border border-gray-100 dark:border-white/5">
                   <div className="flex flex-col items-center justify-center min-w-[50px] pr-4 border-r border-gray-200 dark:border-white/10 text-center">
