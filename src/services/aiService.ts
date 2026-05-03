@@ -1,16 +1,18 @@
+// Logs de inspeção no topo do arquivo
+console.log('Ambiente detectado:', typeof process !== 'undefined' ? process.env.NODE_ENV : 'Browser/Vite');
+console.log('Chave Groq presente (EXPO)?:', typeof process !== 'undefined' && !!process.env.EXPO_PUBLIC_GROQ_API_KEY);
+console.log('Chave Groq presente (VITE)?:', !!import.meta.env.VITE_GROQ_API_KEY);
+
+// Mapeamento Direto com fallbacks universais
+const FINAL_KEY = (typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || '') : '') 
+  || import.meta.env.VITE_GROQ_API_KEY 
+  || '';
+
 export async function askAI(prompt: string): Promise<string> {
-  // Diagnóstico técnico
-  if (typeof process !== 'undefined' && process.env) {
-    console.log('Variáveis detectadas:', Object.keys(process.env).filter(key => key.includes('GROQ')));
-  }
-  
-  const apiKey = (typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY) : undefined) 
-    || import.meta.env?.VITE_GROQ_API_KEY;
-
-  console.log('Assistente Oya Ogum - Chave carregada:', !!apiKey);
-
-  if (!apiKey) {
-    throw new Error('Erro: Chave não encontrada nos envs. Verifique o Prefixo.');
+  // Validação de Segurança
+  if (!FINAL_KEY) {
+    console.error('Erro Crítico: Chave API não injetada no Build do Vercel.');
+    throw new Error('Erro Crítico: Chave API não injetada no Build do Vercel.');
   }
 
   try {
@@ -18,7 +20,7 @@ export async function askAI(prompt: string): Promise<string> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${FINAL_KEY}`
       },
       body: JSON.stringify({
         model: 'llama3-8b-8192',
