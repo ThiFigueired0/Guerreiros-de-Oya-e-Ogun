@@ -25,6 +25,7 @@ import FinanceiroScreen from './screens/Financeiro';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
 import AuthScreen from './screens/Auth';
+import CompleteProfile from './screens/CompleteProfile';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 
 const ICON_MAP: Record<string, any> = {
@@ -1059,6 +1060,15 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
+
+  // Check if profile is complete (required metadata exists for Google users)
+  const isProfileComplete = React.useMemo(() => {
+    if (!user) return true; // Let Auth handle login
+    const metadata = user.user_metadata;
+    // We require nickname, birth_date and gender
+    return !!(metadata?.nickname && metadata?.birth_date && metadata?.gender);
+  }, [user]);
+
   const [isGuest, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
 
@@ -1125,6 +1135,10 @@ function AppContent() {
       }
       if (!newSettings.gender && metadata.gender) {
         newSettings.gender = metadata.gender;
+        hasChanges = true;
+      }
+      if (!newSettings.birthDate && metadata.birth_date) {
+        newSettings.birthDate = metadata.birth_date;
         hasChanges = true;
       }
       if (!newSettings.email && user.email) {
@@ -1548,6 +1562,8 @@ function AppContent() {
             </div>
           ) : (!user && !isGuest) ? (
             <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
+          ) : (user && !isProfileComplete) ? (
+            <CompleteProfile />
           ) : (
             <>
               {/* Top Floating Buttons */}

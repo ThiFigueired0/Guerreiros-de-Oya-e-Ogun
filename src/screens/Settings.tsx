@@ -35,7 +35,7 @@ const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
 const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
 export default function SettingsScreen() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [, setIsAuthenticated] = useStorage<boolean>('templo_auth', false);
   const [, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
@@ -232,6 +232,7 @@ export default function SettingsScreen() {
           first_name: settings.firstName,
           last_name: settings.lastName,
           nickname: settings.nickname,
+          birth_date: settings.birthDate,
           gender: settings.gender,
         }
       });
@@ -259,8 +260,7 @@ export default function SettingsScreen() {
       // Para apps client-side, o padrão é deslogar e limpar storage local.
       // Se houver uma Edge Function 'delete-user', poderíamos chamá-la aqui.
       
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOut();
 
       // Limpar estados locais
       setIsAuthenticated(false);
@@ -1277,13 +1277,19 @@ export default function SettingsScreen() {
 
         {/* Logout / Exit Button */}
         <button
-          onClick={() => {
+          onClick={async () => {
             if (showLogoutConfirm) {
-              setIsAuthenticated(false);
-              setIsGuest(false);
-              setTimeout(() => {
-                window.location.reload();
-              }, 100);
+              try {
+                await signOut();
+                setIsAuthenticated(false);
+                setIsGuest(false);
+                // The redirection should happen automatically via App.tsx observing 'user' state null
+              } catch (err) {
+                console.error("Erro ao sair:", err);
+                // Se falhar o supabase, ainda assim limpamos o local
+                setIsAuthenticated(false);
+                setIsGuest(false);
+              }
             } else {
               setShowLogoutConfirm(true);
               setTimeout(() => setShowLogoutConfirm(false), 3000);

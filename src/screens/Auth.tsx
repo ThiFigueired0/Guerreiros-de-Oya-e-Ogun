@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Leaf, Mail, Lock, User, Ghost, Loader2 } from 'lucide-react';
+import { ArrowLeft, Leaf, Mail, Lock, User, Ghost, Loader2, Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings } from '../types';
 import { supabase } from '../lib/supabase';
+import { CustomDatePicker } from '../components/CustomDatePicker';
 
 const GoogleIcon = ({ className }: { className?: string }) => (
   <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -25,6 +26,8 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [nickname, setNickname] = useState('');
+  const [birthDate, setBirthDate] = useState(''); // YYYY-MM-DD
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   
   const [gender, setGender] = useState<'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer' | null>(null);
   const [settings] = useStorage<AppSettings>('templo_settings', { darkMode: false } as AppSettings);
@@ -61,6 +64,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
               first_name: firstName,
               last_name: lastName,
               nickname,
+              birth_date: birthDate,
               gender,
             }
           }
@@ -412,6 +416,28 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </div>
 
                   <div className="space-y-1.5">
+                    <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Data de Nascimento</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Calendar className={cn("h-4 w-4", settings.darkMode ? "text-gray-500" : "text-gray-400")} />
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setIsDatePickerOpen(true)}
+                        className={cn(
+                          "w-full text-left pl-11 pr-5 py-3.5 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper",
+                          settings.darkMode 
+                            ? "bg-white/5 border-white/5 text-white focus:bg-white/10" 
+                            : "bg-white/70 border-brand-navy/10 text-brand-navy focus:bg-white/95",
+                          !birthDate && (settings.darkMode ? "text-gray-500" : "text-brand-navy/40")
+                        )} 
+                      >
+                        {birthDate ? birthDate.split('-').reverse().join('/') : 'DD/MM/AAAA'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
                     <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Gênero</label>
                     <div className="flex gap-4">
                       <button
@@ -534,6 +560,14 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
           </AnimatePresence>
         </motion.div>
       </div>
+
+      <CustomDatePicker
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        value={birthDate}
+        onChange={setBirthDate}
+        darkMode={settings.darkMode}
+      />
     </div>
   );
 }
