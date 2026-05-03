@@ -18,6 +18,7 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 
 export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) => void }) {
   const [isLogin, setIsLogin] = useState(true);
+  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -37,10 +38,33 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
     setError(null);
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Por favor, digite seu e-mail para recuperar a senha.');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    setResetSent(false);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://guerreiros-de-oya-e-ogunv1.vercel.app/',
+      });
+      if (error) throw error;
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao enviar e-mail de recuperação.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setResetSent(false);
 
     try {
       if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
@@ -237,6 +261,12 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </div>
                 )}
 
+                {resetSent && (
+                  <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 text-[11px] font-bold text-center">
+                    E-mail de recuperação enviado! Verifique sua caixa de entrada.
+                  </div>
+                )}
+
                 <div className="space-y-5">
                   <div className="space-y-1.5">
                     <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Email</label>
@@ -277,7 +307,13 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       />
                     </div>
                     <div className="flex justify-end pt-1 pr-2">
-                       <button type="button" className={cn("text-[9px] font-bold uppercase tracking-widest hover:underline transition-colors", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Esqueci minha senha</button>
+                       <button 
+                        type="button" 
+                        onClick={handleForgotPassword}
+                        className={cn("text-[9px] font-bold uppercase tracking-widest hover:underline transition-colors", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}
+                       >
+                         Esqueci minha senha
+                       </button>
                     </div>
                   </div>
                 </div>

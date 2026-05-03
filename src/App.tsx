@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { 
   Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
@@ -26,7 +26,9 @@ import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
 import AuthScreen from './screens/Auth';
 import CompleteProfile from './screens/CompleteProfile';
+import ResetPassword from './screens/ResetPassword';
 import { AuthProvider, useAuth } from './lib/AuthContext';
+import { supabase } from './lib/supabase';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -1060,13 +1062,24 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovering(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Check if profile is complete (required metadata exists for Google users)
   const isProfileComplete = React.useMemo(() => {
     if (!user) return true; // Let Auth handle login
     const metadata = user.user_metadata;
-    // We require nickname, birth_date and gender
-    return !!(metadata?.nickname && metadata?.birth_date && metadata?.gender);
+    // We require birth_date and gender (nickname is optional)
+    return !!(metadata?.birth_date && metadata?.gender);
   }, [user]);
 
   const [isGuest, setIsGuest] = useStorage<boolean>('templo_guest', false);
@@ -1560,6 +1573,8 @@ function AppContent() {
             <div className="flex-1 flex items-center justify-center">
               <InitialLoader show={true} logo={settings.logoBase64} />
             </div>
+          ) : isRecovering ? (
+            <ResetPassword onSuccess={() => setIsRecovering(false)} />
           ) : (!user && !isGuest) ? (
             <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
           ) : (user && !isProfileComplete) ? (

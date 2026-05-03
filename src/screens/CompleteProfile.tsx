@@ -14,12 +14,12 @@ export default function CompleteProfile() {
   
   const [nickname, setNickname] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [gender, setGender] = useState<'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer' | null>(null);
+  const [gender, setGender] = useState<'masculino' | 'feminino' | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  const isComplete = nickname && birthDate && gender;
+  const isComplete = birthDate && gender;
 
   const handleComplete = async () => {
     if (!user || !isComplete) return;
@@ -118,9 +118,7 @@ export default function CompleteProfile() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { id: 'masculino', label: 'Masculino' },
-                { id: 'feminino', label: 'Feminino' },
-                { id: 'outro', label: 'Outro' },
-                { id: 'prefiro_nao_dizer', label: 'Ocultar' }
+                { id: 'feminino', label: 'Feminino' }
               ].map((item) => (
                 <button
                   key={item.id}
