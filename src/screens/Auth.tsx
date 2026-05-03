@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Leaf, Mail, Lock, User, Ghost } from 'lucide-react';
+import { ArrowLeft, Leaf, Mail, Lock, User, Ghost, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings } from '../types';
+import { supabase } from '../lib/supabase';
 
 const GoogleIcon = ({ className }: { className?: string }) => (
   <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -16,10 +17,90 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 
 export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) => void }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [gender, setGender] = useState<'masculino' | 'feminino' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [nickname, setNickname] = useState('');
+  
+  const [gender, setGender] = useState<'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer' | null>(null);
   const [settings] = useStorage<AppSettings>('templo_settings', { darkMode: false } as AppSettings);
 
-  const toggleMode = () => setIsLogin(!isLogin);
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError(null);
+  };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.error("ERRO: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não definidos!");
+        throw new Error("As chaves de API do Supabase não foram encontradas. Verifique suas configurações de ambiente.");
+      }
+
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        onLogin(false);
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+              nickname,
+              gender,
+            }
+          }
+        });
+        if (error) throw error;
+        if (data.user) {
+          onLogin(false);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ocorreu um erro na autenticação.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.error("ERRO: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não definidos no login com Google!");
+        alert("ERRO CRÍTICO: Chaves do Supabase não encontradas! O login do Google falhará.");
+        throw new Error("As chaves de API do Supabase não foram encontradas. Verifique suas configurações de ambiente.");
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          // Fallback para variação com APP_URL definida no .env ou origem atual de janela
+          redirectTo: typeof import.meta.env.APP_URL === 'string' ? import.meta.env.APP_URL : window.location.origin,
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error("Erro na autenticação:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const leaves = useMemo(() => {
     return [...Array(60)].map((_, i) => ({
@@ -128,8 +209,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
 
           <AnimatePresence mode="wait">
             {isLogin ? (
-              <motion.div
+              <motion.form
                 key="login-form"
+                onSubmit={handleAuth}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -145,6 +227,12 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </p>
                 </div>
 
+                {error && (
+                  <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold text-center">
+                    {error}
+                  </div>
+                )}
+
                 <div className="space-y-5">
                   <div className="space-y-1.5">
                     <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Email</label>
@@ -154,6 +242,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       </div>
                       <input 
                         type="email" 
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="seu@email.com"
                         className={cn(
                           "w-full pl-11 pr-5 py-4 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper placeholder-opacity-50",
@@ -171,6 +262,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       </div>
                       <input 
                         type="password" 
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className={cn(
                           "w-full pl-11 pr-5 py-4 rounded-2xl border outline-none text-sm font-medium tracking-widest transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper placeholder-opacity-50",
@@ -179,17 +273,18 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       />
                     </div>
                     <div className="flex justify-end pt-1 pr-2">
-                       <button className={cn("text-[9px] font-bold uppercase tracking-widest hover:underline transition-colors", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Esqueci minha senha</button>
+                       <button type="button" className={cn("text-[9px] font-bold uppercase tracking-widest hover:underline transition-colors", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Esqueci minha senha</button>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-10 space-y-3">
                   <button 
-                    onClick={() => onLogin(false)}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-copper to-[#8b5a00] text-white font-bold text-xs uppercase tracking-[0.2em] shadow-xl shadow-brand-copper/20 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-copper/50 focus:ring-offset-2"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-copper to-[#8b5a00] text-white font-bold text-xs uppercase tracking-[0.2em] shadow-xl shadow-brand-copper/20 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-copper/50 focus:ring-offset-2 flex items-center justify-center gap-2"
                   >
-                    Entrar
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar'}
                   </button>
                   
                   <div className="flex items-center justify-center gap-4 py-2">
@@ -199,6 +294,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </div>
 
                   <button 
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
                     className={cn(
                       "w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-[0.1em] active:scale-95 transition-all outline-none border",
                       settings.darkMode ? "border-white/10 text-white hover:bg-white/5" : "border-brand-navy/10 text-brand-navy hover:bg-gray-50/50"
@@ -228,10 +326,11 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </motion.form>
             ) : (
-               <motion.div
+               <motion.form
                 key="signup-form"
+                onSubmit={handleAuth}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -244,6 +343,12 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </h2>
                 </div>
 
+                {error && (
+                  <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-bold text-center">
+                    {error}
+                  </div>
+                )}
+
                 <div className="space-y-4 max-h-[50vh] overflow-y-auto scrollbar-hide px-1 pb-4">
                   <div className="flex gap-4">
                     <div className="space-y-1.5 flex-1">
@@ -254,6 +359,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                         </div>
                         <input 
                           type="text" 
+                          required
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
                           placeholder="Nome"
                           className={cn(
                             "w-full pl-10 pr-4 py-3.5 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
@@ -271,6 +379,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                         </div>
                         <input 
                           type="text" 
+                          required
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
                           placeholder="Sobrenome"
                           className={cn(
                             "w-full pl-10 pr-4 py-3.5 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
@@ -289,6 +400,8 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       </div>
                       <input 
                         type="text" 
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
                         placeholder="Como gostaria de ser chamado"
                         className={cn(
                           "w-full pl-11 pr-5 py-3.5 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
@@ -302,6 +415,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                     <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Gênero</label>
                     <div className="flex gap-4">
                       <button
+                        type="button"
                         onClick={() => setGender('masculino')}
                         className={cn(
                           "flex-1 py-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-center relative overflow-hidden",
@@ -318,6 +432,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                         Masculino
                       </button>
                       <button
+                        type="button"
                         onClick={() => setGender('feminino')}
                         className={cn(
                           "flex-1 py-3.5 rounded-2xl border text-sm font-medium transition-all flex items-center justify-center relative overflow-hidden",
@@ -344,6 +459,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       </div>
                       <input 
                         type="email" 
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="seu@email.com"
                         className={cn(
                           "w-full pl-11 pr-5 py-3.5 rounded-2xl border outline-none text-sm font-medium transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
@@ -361,23 +479,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                       </div>
                       <input 
                         type="password" 
-                        placeholder="••••••••"
-                        className={cn(
-                          "w-full pl-11 pr-5 py-3.5 rounded-2xl border outline-none text-sm font-medium tracking-widest transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
-                          settings.darkMode ? "bg-white/5 border-white/5 text-white placeholder-gray-500 focus:bg-white/10" : "bg-white/70 border-brand-navy/10 text-brand-navy placeholder-brand-navy/40 focus:bg-white/95"
-                        )} 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className={cn("text-[10px] font-black uppercase tracking-widest ml-2", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Confirmar Senha</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Lock className={cn("h-4 w-4", settings.darkMode ? "text-gray-500" : "text-gray-400")} />
-                      </div>
-                      <input 
-                        type="password" 
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className={cn(
                           "w-full pl-11 pr-5 py-3.5 rounded-2xl border outline-none text-sm font-medium tracking-widest transition-all focus:border-brand-copper focus:ring-1 focus:ring-brand-copper",
@@ -390,10 +494,11 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
 
                 <div className="mt-8 space-y-3 pt-2">
                   <button 
-                    onClick={() => onLogin(false)}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-copper to-[#8b5a00] text-white font-bold text-xs uppercase tracking-[0.2em] shadow-lg shadow-brand-copper/20 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-copper/50 focus:ring-offset-2"
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-copper to-[#8b5a00] text-white font-bold text-xs uppercase tracking-[0.2em] shadow-lg shadow-brand-copper/20 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-copper/50 focus:ring-offset-2 flex items-center justify-center gap-2"
                   >
-                    Cadastrar
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cadastrar'}
                   </button>
 
                   <div className="flex items-center justify-center gap-4 py-1">
@@ -403,6 +508,9 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                   </div>
 
                   <button 
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
                     className={cn(
                       "w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-[0.1em] active:scale-95 transition-all outline-none border",
                       settings.darkMode ? "border-white/10 text-white hover:bg-white/5" : "border-brand-navy/10 text-brand-navy hover:bg-gray-50/50"
@@ -421,7 +529,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </motion.form>
             )}
           </AnimatePresence>
         </motion.div>

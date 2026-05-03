@@ -25,6 +25,7 @@ import FinanceiroScreen from './screens/Financeiro';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
 import AuthScreen from './screens/Auth';
+import { AuthProvider, useAuth } from './lib/AuthContext';
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -1056,8 +1057,8 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
 
 
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useStorage<boolean>('templo_auth', false);
+function AppContent() {
+  const { user, loading: authLoading } = useAuth();
   const [isGuest, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
 
@@ -1102,6 +1103,41 @@ export default function App() {
   ]);
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
+
+  // Sync user profile from Supabase metadata if logged in
+  React.useEffect(() => {
+    if (user && user.user_metadata) {
+      const metadata = user.user_metadata;
+      let hasChanges = false;
+      const newSettings = { ...settings };
+
+      if (!newSettings.firstName && metadata.first_name) {
+        newSettings.firstName = metadata.first_name;
+        hasChanges = true;
+      }
+      if (!newSettings.lastName && metadata.last_name) {
+        newSettings.lastName = metadata.last_name;
+        hasChanges = true;
+      }
+      if (!newSettings.nickname && metadata.nickname) {
+        newSettings.nickname = metadata.nickname;
+        hasChanges = true;
+      }
+      if (!newSettings.gender && metadata.gender) {
+        newSettings.gender = metadata.gender;
+        hasChanges = true;
+      }
+      if (!newSettings.email && user.email) {
+        newSettings.email = user.email;
+        hasChanges = true;
+      }
+
+      if (hasChanges) {
+        setSettings(newSettings);
+      }
+    }
+  }, [user]); // Run when user logs in
+
   const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
   const [isAppReady, setIsAppReady] = React.useState(false);
   const [hasRemovedPreloader, setHasRemovedPreloader] = React.useState(false);
@@ -1492,7 +1528,6 @@ export default function App() {
 
   return (
     <UndoContext.Provider value={{ queueDelete }}>
-      <BrowserRouter>
       <InitialLoader show={!isAppReady} logo={settings.logoBase64} />
       <NotificationManager />
       <div className={cn(
@@ -1507,8 +1542,12 @@ export default function App() {
           "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
           settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
         )}>
-          {!isAuthenticated ? (
-            <AuthScreen onLogin={(guest) => { setIsAuthenticated(true); setIsGuest(!!guest); }} />
+          {authLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <InitialLoader show={true} logo={settings.logoBase64} />
+            </div>
+          ) : (!user && !isGuest) ? (
+            <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
           ) : (
             <>
               {/* Top Floating Buttons */}
@@ -1567,7 +1606,14 @@ export default function App() {
           )}
         </div>
       </div>
+    </UndoContext.Provider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
-  </UndoContext.Provider>
   );
 }

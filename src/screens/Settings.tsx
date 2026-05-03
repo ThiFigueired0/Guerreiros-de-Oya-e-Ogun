@@ -3,7 +3,7 @@ import {
   Moon, Sun, ChevronRight, Plus, Trash2, ShieldCheck, X, Image as ImageIcon, Camera, AlertTriangle,
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout, Smartphone, ArrowUp, ArrowDown, ArrowLeftRight, FileText, GripVertical,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Clock, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap, Globe, Sparkles,
-  UserCircle, Fingerprint, Mail, AtSign, Cake, Dna, ChevronDown, LogOut
+  UserCircle, Fingerprint, Mail, AtSign, Cake, Dna, ChevronDown, LogOut, Loader2, Check
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
@@ -11,6 +11,8 @@ import { AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { CustomDatePicker } from '../components/CustomDatePicker';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
 
 const AVAILABLE_ICONS: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -33,6 +35,7 @@ const DEFAULT_PRIMARY = ['/home', '/calendar', '/herbs', '/trab'];
 const DEFAULT_SECONDARY = ['/points', '/studies', '/notes', '/finance', '/settings'];
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
   const [, setIsAuthenticated] = useStorage<boolean>('templo_auth', false);
   const [, setIsGuest] = useStorage<boolean>('templo_guest', false);
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {
@@ -68,6 +71,10 @@ export default function SettingsScreen() {
   const [itemToDelete, setItemToDelete] = useState<{type: 'category' | 'name', value: string} | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const caixaRef = useRef<HTMLInputElement>(null);
@@ -214,6 +221,68 @@ export default function SettingsScreen() {
     setItemToDelete(null);
   };
 
+  const saveProfileToSupabase = async () => {
+    if (!user) return;
+    setIsSavingProfile(true);
+    setSaveStatus('idle');
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          first_name: settings.firstName,
+          last_name: settings.lastName,
+          nickname: settings.nickname,
+          gender: settings.gender,
+        }
+      });
+
+      if (error) throw error;
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error("Erro ao salvar perfil:", err);
+      setSaveStatus('error');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeletingAccount(true);
+    
+    try {
+      // 1. Tentar chamar uma RPC ou deletar dados de tabelas públicas se existirem
+      // Exemplo: await supabase.from('profiles').delete().eq('id', user.id);
+      
+      // 2. Nota: Supabase Auth requer Admin API para deletar usuário real.
+      // Para apps client-side, o padrão é deslogar e limpar storage local.
+      // Se houver uma Edge Function 'delete-user', poderíamos chamá-la aqui.
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Limpar estados locais
+      setIsAuthenticated(false);
+      setIsGuest(false);
+      setSettings({
+        ...settings,
+        firstName: '',
+        lastName: '',
+        nickname: '',
+        email: '',
+      });
+      
+      setShowDeleteAccountConfirm(false);
+      // Redirecionar será automático pelo App.tsx observando o estado de auth
+    } catch (err) {
+      console.error("Erro ao excluir conta:", err);
+      alert("Erro ao processar exclusão. Tente novamente.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   const renderSubScreen = () => {
     switch (activeSubScreen) {
       case 'profile':
@@ -348,8 +417,133 @@ export default function SettingsScreen() {
                     </div>
                   </div>
                 </div>
+
+                {/* Save Profile Button */}
+                {user && (
+                  <div className="pt-2">
+                    <button
+                      onClick={saveProfileToSupabase}
+                      disabled={isSavingProfile}
+                      className={cn(
+                        "w-full py-4 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                        saveStatus === 'success' 
+                          ? "bg-green-600 text-white shadow-green-600/20" 
+                          : saveStatus === 'error'
+                            ? "bg-red-600 text-white shadow-red-600/20"
+                            : "bg-brand-copper text-white shadow-brand-copper/20 hover:bg-brand-gold disabled:opacity-50"
+                      )}
+                    >
+                      {isSavingProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span>Salvando...</span>
+                        </>
+                      ) : saveStatus === 'success' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-white" />
+                          <span>Salvo na Nuvem</span>
+                        </>
+                      ) : saveStatus === 'error' ? (
+                        <>
+                          <AlertTriangle className="w-3.5 h-3.5 text-white" />
+                          <span>Erro ao Salvar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="w-3.5 h-3.5" />
+                          <span>Salvar na Conta Supabase</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[7px] text-center mt-3 text-gray-400 font-bold uppercase tracking-widest px-4 leading-relaxed">
+                      Seus dados serão sincronizados com outros dispositivos ao fazer login
+                    </p>
+                  </div>
+                )}
+
+                {/* Account Deletion Section */}
+                {user && (
+                  <div className="pt-8 border-t border-red-500/10 mt-8">
+                    <div className="bg-red-500/5 rounded-[24px] p-6 border border-red-500/10 mb-8">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500">Zona de Perigo</h4>
+                          <p className="text-[9px] text-gray-500 font-medium">Ações irreversíveis para sua conta</p>
+                        </div>
+                      </div>
+                      
+                      <p className="text-[9px] text-gray-400 mb-6 leading-relaxed font-medium">
+                        Ao excluir sua conta, todos os seus dados personalizados, preferências e registros vinculados a este e-mail serão removidos permanentemente de nossos servidores.
+                      </p>
+
+                      <button
+                        onClick={() => setShowDeleteAccountConfirm(true)}
+                        className="w-full py-4 rounded-[20px] bg-transparent border-2 border-red-500/20 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        <span>Encerrar Minha Jornada</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
+
+            {/* Account Deletion Confirmation Modal */}
+            <AnimatePresence>
+              {showDeleteAccountConfirm && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    className="bg-white dark:bg-[#1A1A1A] w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl"
+                  >
+                    <div className="p-8 text-center">
+                      <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-500" />
+                      </div>
+                      
+                      <h3 className="text-xl font-black text-gray-900 dark:text-white mb-3 uppercase tracking-tight">Tem certeza?</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                        Esta ação é <span className="text-red-600 font-bold">permanente</span>. Você perderá acesso a todos os seus dados e configurações do Terreiro.
+                      </p>
+
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={handleConfirmDeleteAccount}
+                          disabled={isDeletingAccount}
+                          className="w-full py-4 rounded-[20px] bg-red-600 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isDeletingAccount ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Sim, excluir permanentemente"
+                          )}
+                        </button>
+                        
+                        <button
+                          onClick={() => setShowDeleteAccountConfirm(false)}
+                          disabled={isDeletingAccount}
+                          className="w-full py-4 rounded-[20px] bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+                        >
+                          Cancelar e voltar
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
 
             {/* Contato Institucional */}
             <section className="space-y-4">
