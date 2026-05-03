@@ -774,75 +774,104 @@ export default function HomeScreen() {
             {(settings.usefulContacts && settings.usefulContacts.length > 0 ? settings.usefulContacts : [
               { id: 'fixed-1', name: "Terreiro", phone: "(11) 98555-0847" },
               { id: 'fixed-2', name: "Mãe Stela", phone: "(11) 98235-0614" }
-            ]).map((contact) => (
-              <div key={contact.id} className={cn(
-                "group/item relative flex items-center justify-between p-3.5 sm:p-4.5 rounded-[24px] sm:rounded-[32px] transition-all border",
-                settings.darkMode 
-                  ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 shadow-xl" 
-                  : "bg-white border-white hover:border-blue-200 shadow-sm hover:shadow-xl shadow-blue-900/5"
-              )}>
-                <div className="flex items-center gap-3 sm:gap-4 flex-1 truncate">
+            ]).map((contact, index) => {
+              const isEven = index % 2 === 1;
+              return (
+                <div key={contact.id} className={cn(
+                  "group/item relative flex items-center justify-between p-3.5 sm:p-4.5 rounded-[24px] sm:rounded-[32px] transition-all border",
+                  isEven && "flex-row-reverse",
+                  settings.darkMode 
+                    ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 shadow-xl" 
+                    : "bg-white border-white hover:border-blue-200 shadow-sm hover:shadow-xl shadow-blue-900/5"
+                )}>
                   <div className={cn(
-                    "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover/item:scale-110 shadow-inner overflow-hidden",
-                    settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-400"
+                    "flex items-center gap-3 sm:gap-4 flex-1 truncate",
+                    isEven && "flex-row-reverse text-right"
                   )}>
-                    {contact.photo ? (
-                      <img src={contact.photo} className="w-full h-full object-cover" alt={contact.name} />
-                    ) : (
-                      <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                    )}
-                  </div>
-                  <div className="flex flex-col truncate">
-                    <span className={cn(
-                      "text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] block mb-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity",
-                      settings.darkMode ? "text-gray-400" : "text-brand-navy"
+                    <div className={cn(
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover/item:scale-110 shadow-inner overflow-hidden",
+                      settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-400"
                     )}>
-                      {contact.name}
-                    </span>
-                    <span className={cn(
-                      "font-bold text-[13px] sm:text-[16px] tracking-tight truncate",
-                      settings.darkMode ? "text-white" : "text-brand-navy"
-                    )}>
-                      {contact.phone}
-                    </span>
+                      {contact.photo ? (
+                        <img src={contact.photo} className="w-full h-full object-cover" alt={contact.name} />
+                      ) : (
+                        <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                      )}
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <span className={cn(
+                        "text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] block mb-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity",
+                        settings.darkMode ? "text-gray-400" : "text-brand-navy"
+                      )}>
+                        {contact.name}
+                        {contact.isFixed && <span className={cn("ml-1.5 text-[7px] text-brand-gold font-black", isEven && "mr-1.5 ml-0")}>(FIXO)</span>}
+                      </span>
+                      <span className={cn(
+                        "font-bold text-[13px] sm:text-[16px] tracking-tight truncate",
+                        settings.darkMode ? "text-white" : "text-brand-navy"
+                      )}>
+                        {contact.phone}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-3 sm:ml-4 relative z-10">
-                  <button 
-                    onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
-                    className={cn(
-                      "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
-                      copied === contact.id 
-                        ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
-                        : settings.darkMode 
-                          ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
-                          : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
-                    )}
-                  >
-                    {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
                   
-                  <a
-                    href={`https://wa.me/55${contact.phone.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all active:scale-[0.8] text-white shadow-lg overflow-hidden",
-                      settings.whatsappLogo 
-                        ? (settings.darkMode ? "bg-white/5" : "bg-gray-50")
-                        : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 hover:shadow-[#25D366]/40 hover:-translate-y-0.5"
+                  <div className={cn(
+                    "flex items-center gap-1.5 sm:gap-2.5 shrink-0 relative z-10",
+                    isEven ? "mr-3 sm:mr-4" : "ml-3 sm:ml-4"
+                  )}>
+                    {!isEven && (
+                      <button 
+                        onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
+                        className={cn(
+                          "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
+                          copied === contact.id 
+                            ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
+                            : settings.darkMode 
+                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
+                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                        )}
+                      >
+                        {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
                     )}
-                  >
-                    {settings.whatsappLogo ? (
-                      <img src={settings.whatsappLogo} className="w-full h-full object-cover" alt="WA" />
-                    ) : (
-                      <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current stroke-none" />
+                    
+                    <a
+                      href={`https://wa.me/55${contact.phone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all active:scale-[0.8] text-white shadow-lg overflow-hidden",
+                        settings.whatsappLogo 
+                          ? (settings.darkMode ? "bg-white/5 p-1.5" : "bg-gray-50 p-1.5")
+                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 hover:shadow-[#25D366]/40 hover:-translate-y-0.5"
+                      )}
+                    >
+                      {settings.whatsappLogo ? (
+                        <img src={settings.whatsappLogo} className="w-full h-full object-contain" alt="WA" />
+                      ) : (
+                        <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current stroke-none" />
+                      )}
+                    </a>
+
+                    {isEven && (
+                      <button 
+                        onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
+                        className={cn(
+                          "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
+                          copied === contact.id 
+                            ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
+                            : settings.darkMode 
+                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
+                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                        )}
+                      >
+                        {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
                     )}
-                  </a>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
