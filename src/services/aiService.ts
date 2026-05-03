@@ -1,13 +1,16 @@
 export async function askAI(prompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY || (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_GROQ_API_KEY : undefined);
+  // Diagnóstico técnico
+  if (typeof process !== 'undefined' && process.env) {
+    console.log('Variáveis detectadas:', Object.keys(process.env).filter(key => key.includes('GROQ')));
+  }
+  
+  const apiKey = (typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.VITE_GROQ_API_KEY) : undefined) 
+    || import.meta.env?.VITE_GROQ_API_KEY;
 
   console.log('Assistente Oya Ogum - Chave carregada:', !!apiKey);
 
   if (!apiKey) {
-    // Instrução detalhada para debug em caso de erro
-    const availableKeys = Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')).join(', ');
-    console.warn('DEBUG: Variáveis VITE_ disponíveis:', availableKeys || 'Nenhuma');
-    throw new Error('Chave API não encontrada. Certifique-se de definir VITE_GROQ_API_KEY nas configurações.');
+    throw new Error('Erro: Chave não encontrada nos envs. Verifique o Prefixo.');
   }
 
   try {
