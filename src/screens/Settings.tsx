@@ -60,15 +60,39 @@ export default function SettingsScreen() {
     lastName: '',
     email: '',
     birthDate: '',
-    gender: 'masculino'
+    gender: 'masculino',
+    profilePhoto: '',
+    usefulContacts: [
+      { id: 'fixed-terreiro', name: 'Terreiro', phone: '(11) 98555-0847', isFixed: true },
+      { id: 'fixed-stela', name: 'Mãe Stela', phone: '(11) 98235-0614', isFixed: true }
+    ]
   });
 
   const [activeSubScreen, setActiveSubScreen] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!settings.usefulContacts || settings.usefulContacts.length === 0) {
+      setSettings(prev => ({
+        ...prev,
+        usefulContacts: [
+          { id: 'fixed-terreiro', name: 'Terreiro', phone: '(11) 98555-0847', isFixed: true },
+          { id: 'fixed-stela', name: 'Mãe Stela', phone: '(11) 98235-0614', isFixed: true }
+        ]
+      }));
+    }
+  }, []);
+
   const [newCat, setNewCat] = useState('');
   const [newName, setNewName] = useState('');
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactPhoto, setNewContactPhoto] = useState<string | undefined>(undefined);
+  const contactPhotoRef = useRef<HTMLInputElement>(null);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const editContactPhotoRef = useRef<HTMLInputElement>(null);
   const [activeTabPicker, setActiveTabPicker] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{type: 'category' | 'name', value: string} | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{type: 'category' | 'name' | 'contact', value: string} | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -76,12 +100,21 @@ export default function SettingsScreen() {
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   
+  // States for password change
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const caixaRef = useRef<HTMLInputElement>(null);
   const nubankRef = useRef<HTMLInputElement>(null);
   const instagramRef = useRef<HTMLInputElement>(null);
   const tiktokRef = useRef<HTMLInputElement>(null);
   const whatsappRef = useRef<HTMLInputElement>(null);
+  const profilePhotoRef = useRef<HTMLInputElement>(null);
   const orixaRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const primaryTabs = settings.primaryTabPaths || DEFAULT_PRIMARY;
@@ -135,6 +168,27 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleContactPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, isNew: boolean, contactId?: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        if (isNew) {
+          setNewContactPhoto(result);
+        } else if (contactId) {
+          setSettings({
+            ...settings,
+            usefulContacts: settings.usefulContacts?.map(c => 
+              c.id === contactId ? { ...c, photo: result } : c
+            )
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const removeLogo = () => setSettings({ ...settings, logoBase64: undefined });
 
   const addCategory = () => {
@@ -160,6 +214,45 @@ export default function SettingsScreen() {
       });
       setNewName('');
     }
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 2) return `(${numbers}`;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    if (formatted.length <= 15) {
+      setNewContactPhone(formatted);
+    }
+  };
+
+  const addContact = () => {
+    if (newContactName.trim() && newContactPhone.length >= 14) {
+      const newContact = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: newContactName.trim(),
+        phone: newContactPhone,
+        photo: newContactPhoto,
+        isFixed: false
+      };
+      setSettings({
+        ...settings,
+        usefulContacts: [...(settings.usefulContacts || []), newContact]
+      });
+      setNewContactName('');
+      setNewContactPhone('');
+      setNewContactPhoto(undefined);
+    }
+  };
+
+  const removeContact = (id: string) => {
+    setItemToDelete({ type: 'contact', value: id });
+    setShowDeleteConfirm(true);
   };
 
   const removeName = (name: string) => {
@@ -211,6 +304,11 @@ export default function SettingsScreen() {
         ...settings,
         eventCategories: settings.eventCategories.filter(c => c !== itemToDelete.value)
       });
+    } else if (itemToDelete.type === 'contact') {
+      setSettings({
+        ...settings,
+        usefulContacts: settings.usefulContacts?.filter(c => c.id !== itemToDelete.value)
+      });
     } else {
       setSettings({
         ...settings,
@@ -245,6 +343,66 @@ export default function SettingsScreen() {
       setSaveStatus('error');
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!user || !user.email) return;
+    
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      setPasswordErrorMessage('Preencha todos os campos de senha.');
+      setPasswordStatus('error');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordErrorMessage('As novas senhas não coincidem.');
+      setPasswordStatus('error');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordErrorMessage('A nova senha deve ter pelo menos 6 caracteres.');
+      setPasswordStatus('error');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    setPasswordStatus('idle');
+    setPasswordErrorMessage('');
+
+    try {
+      // Step 1: Verify current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        setPasswordErrorMessage('Senha atual incorreta.');
+        setPasswordStatus('error');
+        return;
+      }
+
+      // Step 2: Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      setPasswordStatus('success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      
+      setTimeout(() => setPasswordStatus('idle'), 5000);
+    } catch (err: any) {
+      console.error("Erro ao alterar senha:", err);
+      setPasswordErrorMessage(err.message || 'Erro ao processar alteração.');
+      setPasswordStatus('error');
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -287,354 +445,378 @@ export default function SettingsScreen() {
     switch (activeSubScreen) {
       case 'profile':
         return (
-          <div className="space-y-8 pb-32 overflow-y-auto max-h-[80vh] px-1 scrollbar-hide">
-            {/* Header Summary */}
+          <div className="space-y-12 pb-32 overflow-y-auto max-h-[85vh] px-1 scrollbar-hide">
+            {/* 1. Resumo do Perfil */}
             <div className={cn(
               "p-8 rounded-[40px] flex flex-col items-center text-center gap-4 relative overflow-hidden",
               settings.darkMode ? "bg-black/40 border border-gray-800" : "bg-brand-navy shadow-xl shadow-brand-navy/20"
             )}>
-              <div className="w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-2xl">
-                <User className="w-12 h-12 text-white" />
+              <div 
+                onClick={() => profilePhotoRef.current?.click()}
+                className="group w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-2xl relative z-10 cursor-pointer overflow-hidden transition-all active:scale-95"
+              >
+                {settings.profilePhoto ? (
+                  <img src={settings.profilePhoto} alt="Perfil" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                <input 
+                  type="file" 
+                  ref={profilePhotoRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={(e) => handleLogoUpload(e, 'profilePhoto')} 
+                />
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-1 relative z-10">
                 <h2 className="text-xl font-black text-white tracking-tight">
                   {settings.firstName ? `${settings.firstName} ${settings.lastName}` : 'Seu Perfil'}
                 </h2>
-                <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.2em]">Meus Dados & Identidade</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-[9px] text-white/40 font-black uppercase tracking-[0.2em]">{user?.email}</p>
+                  {settings.profilePhoto && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSettings({ ...settings, profilePhoto: undefined });
+                      }}
+                      className="text-[8px] text-red-400 font-bold uppercase tracking-widest hover:text-red-300 transition-colors"
+                    >
+                      Remover Foto
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-brand-copper/20 rounded-full blur-3xl p-10 select-none pointer-events-none" />
-              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-brand-gold/10 rounded-full blur-2xl select-none pointer-events-none" />
             </div>
 
-            {/* Informações Pessoais */}
+            {/* 2. Informações Pessoais (Ação Principal) */}
             <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Informações Pessoais</h3>
-                </div>
-                <UserCircle className="w-3.5 h-3.5 text-gray-300" />
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
+                <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identidade Pessoal</h3>
               </div>
+              
               <div className={cn(
-                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors space-y-6",
+                "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100",
                 settings.darkMode && "bg-[#1A1A1A] border-gray-800"
               )}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nome</label>
-                    <input 
-                      type="text" 
-                      value={settings.firstName || ''}
-                      onChange={(e) => setSettings({ ...settings, firstName: e.target.value })}
-                      placeholder="Nome"
-                      className={cn(
-                        "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
-                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
-                      )}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Sobrenome</label>
-                    <input 
-                      type="text" 
-                      value={settings.lastName || ''}
-                      onChange={(e) => setSettings({ ...settings, lastName: e.target.value })}
-                      placeholder="Sobrenome"
-                      className={cn(
-                        "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
-                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Apelido (Opcional)</label>
-                  <input 
-                    type="text" 
-                    value={settings.nickname || ''}
-                    onChange={(e) => setSettings({ ...settings, nickname: e.target.value })}
-                    placeholder="Como gostaria de ser chamado"
-                    className={cn(
-                      "w-full bg-gray-50 p-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
-                      settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nascimento</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("opacity-50", settings.darkMode ? "text-white" : "text-gray-500")}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                      </div>
-                      <button 
-                        onClick={() => setIsDatePickerOpen(true)}
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Primeiro Nome</label>
+                      <input 
+                        type="text" 
+                        value={settings.firstName || ''}
+                        onChange={(e) => setSettings({ ...settings, firstName: e.target.value })}
                         className={cn(
-                          "w-full text-left bg-gray-50 pl-11 pr-4 py-4 rounded-[20px] text-xs font-bold outline-none border border-gray-100 transition-all cursor-pointer",
-                          settings.darkMode && "bg-black/40 border-gray-800",
-                          !settings.birthDate && !settings.darkMode ? "text-gray-400" : !settings.birthDate && settings.darkMode ? "text-gray-600" : settings.darkMode ? "text-white" : "text-brand-navy"
+                          "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                          settings.darkMode && "bg-black/40 border-gray-800 text-white"
                         )}
-                      >
-                        {settings.birthDate ? settings.birthDate.split('-').reverse().join('/') : 'DD/MM/AAAA'}
-                      </button>
+                      />
                     </div>
-                    {userAge !== null && (
-                      <div className={cn("text-[10px] font-medium px-2 mt-1", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>
-                        Idade atual: <strong>{userAge} anos</strong>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Sexo / Gênero</label>
-                    <div className={cn(
-                      "flex p-1 bg-gray-50 rounded-[20px] border border-gray-100 h-[52px]",
-                      settings.darkMode && "bg-black/40 border-gray-800"
-                    )}>
-                      <button
-                        onClick={() => setSettings({ ...settings, gender: 'masculino' })}
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Sobrenome</label>
+                      <input 
+                        type="text" 
+                        value={settings.lastName || ''}
+                        onChange={(e) => setSettings({ ...settings, lastName: e.target.value })}
                         className={cn(
-                          "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
-                          (settings.gender === 'masculino' || !settings.gender) 
-                            ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
-                            : "text-gray-400"
+                          "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                          settings.darkMode && "bg-black/40 border-gray-800 text-white"
                         )}
-                      >
-                        Masc
-                      </button>
-                      <button
-                        onClick={() => setSettings({ ...settings, gender: 'feminino' })}
-                        className={cn(
-                          "flex-1 text-[8px] font-black uppercase tracking-widest rounded-[16px] transition-all relative z-10",
-                          settings.gender === 'feminino' 
-                            ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20" 
-                            : "text-gray-400"
-                        )}
-                      >
-                        Fem
-                      </button>
+                      />
                     </div>
                   </div>
-                </div>
 
-                {/* Save Profile Button */}
-                {user && (
-                  <div className="pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Como quer ser chamado</label>
+                      <input 
+                        type="text" 
+                        value={settings.nickname || ''}
+                        onChange={(e) => setSettings({ ...settings, nickname: e.target.value })}
+                        placeholder="Seu apelido"
+                        className={cn(
+                          "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all",
+                          settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Gênero</label>
+                      <div className={cn(
+                        "flex p-1 bg-gray-50 rounded-[22px] border border-gray-100 h-14",
+                        settings.darkMode && "bg-black/40 border-gray-800"
+                      )}>
+                        {['masculino', 'feminino'].map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setSettings({ ...settings, gender: g as any })}
+                            className={cn(
+                              "flex-1 text-[9px] font-black uppercase tracking-widest rounded-[18px] transition-all",
+                              (settings.gender === g || (!settings.gender && g === 'masculino'))
+                                ? "bg-brand-copper text-white shadow-lg" 
+                                : "text-gray-400 hover:text-gray-600"
+                            )}
+                          >
+                            {g.slice(0, 4)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
                     <button
                       onClick={saveProfileToSupabase}
                       disabled={isSavingProfile}
                       className={cn(
-                        "w-full py-4 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                        "w-full py-5 rounded-[28px] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl flex items-center justify-center gap-3 transition-all active:scale-[0.97]",
                         saveStatus === 'success' 
-                          ? "bg-green-600 text-white shadow-green-600/20" 
-                          : saveStatus === 'error'
-                            ? "bg-red-600 text-white shadow-red-600/20"
-                            : "bg-brand-copper text-white shadow-brand-copper/20 hover:bg-brand-gold disabled:opacity-50"
+                          ? "bg-green-600 text-white shadow-green-600/30" : "bg-brand-copper text-white shadow-brand-copper/20 hover:bg-brand-gold disabled:opacity-50"
                       )}
                     >
-                      {isSavingProfile ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-white" />
-                          <span>Salvando...</span>
-                        </>
-                      ) : saveStatus === 'success' ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-white" />
-                          <span>Salvo na Nuvem</span>
-                        </>
-                      ) : saveStatus === 'error' ? (
-                        <>
-                          <AlertTriangle className="w-3.5 h-3.5 text-white" />
-                          <span>Erro ao Salvar</span>
-                        </>
-                      ) : (
-                        <>
-                          <Globe className="w-3.5 h-3.5" />
-                          <span>Salvar na Conta Supabase</span>
-                        </>
-                      )}
+                      {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Sincronizar Perfil</span>}
                     </button>
-                    <p className="text-[7px] text-center mt-3 text-gray-400 font-bold uppercase tracking-widest px-4 leading-relaxed">
-                      Seus dados serão sincronizados com outros dispositivos ao fazer login
-                    </p>
                   </div>
-                )}
-
-                {/* Account Deletion Section */}
-                {user && (
-                  <div className="pt-8 border-t border-red-500/10 mt-8">
-                    <div className="bg-red-500/5 rounded-[24px] p-6 border border-red-500/10 mb-8">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                          <Trash2 className="w-4 h-4 text-red-500" />
+                </div>
+              </div>
+            </section>
+            
+            {/* Contatos Úteis */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Contatos de Emergência/Apoio</h3>
+              </div>
+              
+              <div className={cn(
+                "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100",
+                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+              )}>
+                <div className="space-y-6">
+                  {/* List existing contacts */}
+                  <div className="space-y-3">
+                    {settings.usefulContacts?.map((contact) => (
+                      <div key={contact.id} className={cn(
+                        "flex items-center gap-4 p-4 rounded-2xl border",
+                        settings.darkMode ? "bg-black/20 border-gray-800" : "bg-gray-50 border-gray-100"
+                      )}>
+                        <div 
+                          onClick={() => {
+                            setEditingContactId(contact.id);
+                            editContactPhotoRef.current?.click();
+                          }}
+                          className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden cursor-pointer active:scale-95 transition-all",
+                            settings.darkMode ? "bg-white/5" : "bg-white shadow-sm"
+                          )}
+                        >
+                          {contact.photo ? (
+                            <img src={contact.photo} className="w-full h-full object-cover" alt={contact.name} />
+                          ) : (
+                            <User className="w-5 h-5 text-gray-400" />
+                          )}
                         </div>
-                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500">Zona de Perigo</h4>
-                          <p className="text-[9px] text-gray-500 font-medium">Ações irreversíveis para sua conta</p>
+                        <div className="flex flex-col flex-1 truncate">
+                          <span className={cn("text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5", settings.darkMode ? "text-gray-400" : "text-brand-navy")}>
+                            {contact.name}
+                            {contact.isFixed && <span className="ml-2 text-[7px] text-brand-gold opacity-100">(FIXO)</span>}
+                          </span>
+                          <span className={cn("font-bold text-xs tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{contact.phone}</span>
+                        </div>
+                        {!contact.isFixed && (
+                          <button 
+                            onClick={() => removeContact(contact.id)}
+                            className="p-2 text-red-400 hover:text-red-500 active:scale-90 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <input 
+                      type="file" 
+                      ref={editContactPhotoRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={(e) => editingContactId && handleContactPhotoUpload(e, false, editingContactId)} 
+                    />
+                  </div>
+
+                  {/* Add new contact form */}
+                  <div className="pt-6 border-t border-gray-50 dark:border-white/5 space-y-4">
+                    <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Novo Contato</p>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Foto</label>
+                        <div 
+                          onClick={() => contactPhotoRef.current?.click()}
+                          className={cn(
+                            "w-16 h-16 rounded-[20px] border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer active:scale-95 transition-all",
+                            newContactPhoto ? "border-blue-500" : "border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/40"
+                          )}
+                        >
+                          {newContactPhoto ? (
+                            <img src={newContactPhoto} className="w-full h-full object-cover" />
+                          ) : (
+                            <Camera className="w-6 h-6 text-gray-300" />
+                          )}
+                        </div>
+                        <input 
+                          type="file" 
+                          ref={contactPhotoRef} 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={(e) => handleContactPhotoUpload(e, true)} 
+                        />
+                      </div>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Nome/Apelido</label>
+                          <input 
+                            type="text" 
+                            value={newContactName}
+                            onChange={(e) => setNewContactName(e.target.value)}
+                            placeholder="Ex: Mãe Maria"
+                            className={cn(
+                              "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-blue-500 transition-all",
+                              settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Telefone</label>
+                          <input 
+                            type="text" 
+                            value={newContactPhone}
+                            onChange={handlePhoneChange}
+                            placeholder="(00) 90000-0000"
+                            className={cn(
+                              "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-blue-500 transition-all",
+                              settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                            )}
+                          />
                         </div>
                       </div>
-                      
-                      <p className="text-[9px] text-gray-400 mb-6 leading-relaxed font-medium">
-                        Ao excluir sua conta, todos os seus dados personalizados, preferências e registros vinculados a este e-mail serão removidos permanentemente de nossos servidores.
-                      </p>
-
-                      <button
-                        onClick={() => setShowDeleteAccountConfirm(true)}
-                        className="w-full py-4 rounded-[20px] bg-transparent border-2 border-red-500/20 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                        <span>Encerrar Minha Jornada</span>
-                      </button>
                     </div>
+                    <button 
+                      onClick={addContact}
+                      disabled={!newContactName.trim() || newContactPhone.length < 14}
+                      className={cn(
+                        "w-full py-4 rounded-[24px] font-black text-[9px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
+                        (!newContactName.trim() || newContactPhone.length < 14)
+                          ? "bg-gray-100 text-gray-400 dark:bg-white/5"
+                          : "bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700"
+                      )}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Adicionar Contato</span>
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
             </section>
 
-            {/* Account Deletion Confirmation Modal */}
-            <AnimatePresence>
-              {showDeleteAccountConfirm && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.9, y: 20 }}
-                    className="bg-white dark:bg-[#1A1A1A] w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl"
-                  >
-                    <div className="p-8 text-center">
-                      <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-500" />
-                      </div>
-                      
-                      <h3 className="text-xl font-black text-gray-900 dark:text-white mb-3 uppercase tracking-tight">Tem certeza?</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                        Esta ação é <span className="text-red-600 font-bold">permanente</span>. Você perderá acesso a todos os seus dados e configurações do Terreiro.
-                      </p>
-
-                      <div className="flex flex-col gap-3">
-                        <button
-                          onClick={handleConfirmDeleteAccount}
-                          disabled={isDeletingAccount}
-                          className="w-full py-4 rounded-[20px] bg-red-600 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          {isDeletingAccount ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            "Sim, excluir permanentemente"
-                          )}
-                        </button>
-                        
-                        <button
-                          onClick={() => setShowDeleteAccountConfirm(false)}
-                          disabled={isDeletingAccount}
-                          className="w-full py-4 rounded-[20px] bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
-                        >
-                          Cancelar e voltar
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-
-            {/* Contato Institucional */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Contato & Registros</h3>
-                </div>
-                <Mail className="w-3.5 h-3.5 text-gray-300" />
+            {/* 3. Identidade Visual & Branding (Middle Tier) */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identidade Visual do Axé</h3>
               </div>
+
               <div className={cn(
-                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors",
+                "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 space-y-10",
                 settings.darkMode && "bg-[#1A1A1A] border-gray-800"
               )}>
+                {/* Institutional Email */}
                 <div className="space-y-2">
-                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">E-mail Institucional</label>
+                  <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">E-mail Institucional</label>
                   <div className="relative">
-                    <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
                       type="email" 
                       value={settings.email || ''}
                       onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-                      placeholder="exemplo@email.com"
+                      placeholder="terreiro@email.com"
                       className={cn(
-                        "w-full bg-gray-100/50 pl-11 pr-4 py-4 rounded-[20px] text-xs font-bold outline-none border border-transparent focus:border-brand-copper transition-all",
-                        settings.darkMode && "bg-black/40 border-gray-800 text-white placeholder:text-gray-700"
+                        "w-full bg-gray-50 pl-11 pr-4 py-4 rounded-[20px] text-xs font-bold outline-none border border-transparent focus:border-brand-copper transition-all",
+                        settings.darkMode && "bg-black/40 border-gray-800 text-white"
                       )}
                     />
                   </div>
                 </div>
-              </div>
-            </section>
 
-            {/* Identidade do Terreiro */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Identidade Visual do Axé</h3>
-                </div>
-                <ShieldCheck className="w-3.5 h-3.5 text-gray-300" />
-              </div>
-              <div className={cn(
-                "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 transition-colors space-y-8",
-                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
-              )}>
-                {/* Logo Principal */}
-                <div className="flex flex-col items-center gap-4 py-4 border-b border-gray-50 dark:border-white/5">
-                  <div className={cn(
-                    "w-32 h-32 rounded-full border-2 border-brand-copper/30 relative overflow-hidden bg-gray-50 flex items-center justify-center p-2 shadow-inner",
-                    settings.darkMode && "bg-black/40 border-brand-copper/20"
-                  )}>
-                    {settings.logoBase64 ? (
-                      <img src={settings.logoBase64} alt="Logo" className="w-full h-full object-contain" />
-                    ) : (
-                      <ImageIcon className="w-10 h-10 text-gray-200" />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoBase64')} />
+                {/* Primary Logo */}
+                <div className="space-y-4">
+                  <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Logo Oficial do Templo</p>
+                  <div className="flex flex-col items-center gap-6 p-8 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                    <div className="w-32 h-32 rounded-full bg-gray-50 dark:bg-black/20 flex items-center justify-center p-4 shadow-inner border border-gray-100 dark:border-gray-800 relative">
+                      {settings.logoBase64 ? (
+                        <img src={settings.logoBase64} className="w-full h-full object-contain" />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-gray-200" />
+                      )}
+                      {settings.logoBase64 && (
+                        <button onClick={removeLogo} className="absolute -top-1 -right-1 p-2 bg-red-500 text-white rounded-full shadow-lg active:scale-90 transition-all">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-[9px] bg-brand-navy text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-brand-navy/20 active:scale-95 transition-all"
+                      className="px-8 py-3 bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-navy/20 active:scale-95 transition-all"
                     >
-                      <Camera className="w-4 h-4" /> Alterar Logo
+                      Carregar Nova Logo
                     </button>
-                    {settings.logoBase64 && (
-                      <button 
-                        onClick={removeLogo} 
-                        className="p-3 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all border border-red-100 dark:border-red-500/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'logoBase64')} />
                   </div>
+                </div>
+
+                {/* Social Connects */}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'instagramLogo', label: 'Instagram', icon: Camera, color: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500', ref: instagramRef },
+                    { id: 'whatsappLogo', label: 'WhatsApp', icon: Smartphone, color: 'bg-[#25D366]', ref: whatsappRef },
+                    { id: 'tiktokLogo', label: 'TikTok', icon: Smartphone, color: 'bg-black', ref: tiktokRef }
+                  ].map(social => (
+                    <button 
+                      key={social.id}
+                      onClick={() => social.ref.current?.click()}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95",
+                        settings.darkMode ? "bg-black/40 border-gray-800" : "bg-gray-50",
+                        social.id === 'tiktokLogo' && "col-span-2 sm:col-span-1"
+                      )}
+                    >
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", social.color)}>
+                        <social.icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-widest">{social.label}</span>
+                      <input type="file" ref={social.ref} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, social.id as any)} />
+                    </button>
+                  ))}
                 </div>
 
                 {/* Fotos dos Orixás */}
-                <div className="space-y-4">
+                <div className="space-y-6 pt-4 border-t border-gray-50 dark:border-white/5">
                   <div className="flex items-center justify-between px-1">
-                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Registros Fotográficos (Orixás)</p>
-                    <Sparkles className="w-3 h-3 text-brand-copper opacity-50" />
+                    <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Registros de Orixás</p>
+                    <Sparkles className="w-3.5 h-3.5 text-brand-gold opacity-50" />
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                     {ORIXAS.map(orixa => (
                       <div key={orixa} className="flex flex-col items-center gap-2 group">
                         <div 
                           onClick={() => orixaRefs.current[orixa]?.click()}
                           className={cn(
-                            "w-20 h-20 rounded-[28px] border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black/20 cursor-pointer transition-all active:scale-90 group-hover:border-brand-copper group-hover:bg-brand-copper/5",
-                            settings.orixaPhotos?.[orixa] ? "border-brand-copper/50 border-solid" : "border-gray-200 dark:border-gray-800"
+                            "w-16 h-16 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-black/20 cursor-pointer transition-all active:scale-90 group-hover:border-brand-gold group-hover:bg-brand-gold/5 relative",
+                            settings.orixaPhotos?.[orixa] ? "border-brand-gold/50 border-solid" : "border-gray-200 dark:border-gray-800"
                           )}
                         >
                           {settings.orixaPhotos?.[orixa] ? (
@@ -642,8 +824,11 @@ export default function SettingsScreen() {
                           ) : (
                             <Fingerprint className="w-6 h-6 text-gray-200 dark:text-gray-700/50" />
                           )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="w-4 h-4 text-white" />
+                          </div>
                         </div>
-                        <p className="text-[7px] font-black uppercase tracking-widest text-center truncate w-full opacity-40">{orixa}</p>
+                        <p className="text-[7px] font-black uppercase tracking-tighter text-center truncate w-full opacity-40">{orixa}</p>
                         <input 
                           type="file" 
                           ref={el => { orixaRefs.current[orixa] = el; }} 
@@ -658,112 +843,97 @@ export default function SettingsScreen() {
               </div>
             </section>
 
-            {/* Presença Digital & Financeiro */}
-            <section className="space-y-4 pb-20">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" />
-                  <h3 className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Conexões & Redes</h3>
-                </div>
-                <Globe className="w-3.5 h-3.5 text-gray-300" />
+            {/* 4. Zona de Controle (Security Tier) */}
+            <section className="space-y-6 pt-10">
+              <div className="flex items-center gap-2 px-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <h3 className="text-[10px] font-black text-red-500/60 uppercase tracking-widest">Zona de Segurança</h3>
               </div>
+
               <div className={cn(
-                "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 transition-colors space-y-10",
-                settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+                "rounded-[40px] overflow-hidden border transition-all",
+                settings.darkMode ? "bg-black/20 border-red-500/10" : "bg-red-50/20 border-red-100"
               )}>
-                {/* Financeiro */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 px-1">
-                    <Wallet className="w-3 h-3 text-brand-navy dark:text-brand-copper" />
-                    <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Interface de Pagamentos (Logos)</p>
+                {/* Password Change */}
+                {user?.app_metadata?.provider === 'email' && (
+                  <div className="p-8 border-b border-red-500/5 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-600">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300">Alterar Credenciais</h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      {passwordStatus === 'error' && <div className="p-3 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-bold">{passwordErrorMessage}</div>}
+                      {passwordStatus === 'success' && <div className="p-3 rounded-xl bg-green-500/10 text-green-500 text-[10px] font-bold">Senha atualizada!</div>}
+
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Senha Atual</label>
+                        <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={cn("w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-gray-100", settings.darkMode && "bg-black/40 border-gray-800 text-white")} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Nova Senha</label>
+                          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={cn("w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-gray-100", settings.darkMode && "bg-black/40 border-gray-800 text-white")} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-wider">Confirmar</label>
+                          <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className={cn("w-full bg-white px-4 py-3 rounded-xl text-xs font-bold outline-none border border-gray-100", settings.darkMode && "bg-black/40 border-gray-800 text-white")} />
+                        </div>
+                      </div>
+                      <button onClick={handleChangePassword} disabled={isUpdatingPassword} className="w-full py-4 bg-brand-copper text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold transition-all">
+                        {isUpdatingPassword ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Confirmar Troca"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => caixaRef.current?.click()}
-                      className={cn(
-                        "flex flex-col items-center gap-4 p-5 rounded-[32px] border-2 border-dashed transition-all active:scale-95 group",
-                        settings.caixaLogo ? "border-brand-navy/30 bg-brand-navy/5" : "border-gray-50 dark:border-gray-800/50 hover:border-brand-navy/20"
-                      )}
-                    >
-                      <div className="w-14 h-14 bg-white dark:bg-white/5 rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden border border-gray-50 dark:border-white/5">
-                        {settings.caixaLogo ? <img src={settings.caixaLogo} className="w-full h-full object-cover" /> : <Plus className="w-4 h-4 text-gray-200" />}
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-brand-navy dark:text-white opacity-60">Caixa Logo</span>
-                      <input type="file" ref={caixaRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'caixaLogo')} />
-                    </button>
+                )}
 
-                    <button 
-                      onClick={() => nubankRef.current?.click()}
-                      className={cn(
-                        "flex flex-col items-center gap-4 p-5 rounded-[32px] border-2 border-dashed transition-all active:scale-95 group",
-                        settings.nubankLogo ? "border-[#8A05BE]/30 bg-[#8A05BE]/5" : "border-gray-50 dark:border-gray-800/50 hover:border-[#8A05BE]/20"
-                      )}
-                    >
-                      <div className="w-14 h-14 bg-white dark:bg-white/5 rounded-[20px] shadow-sm flex items-center justify-center overflow-hidden border border-gray-50 dark:border-white/5">
-                        {settings.nubankLogo ? <img src={settings.nubankLogo} className="w-full h-full object-cover" /> : <Plus className="w-4 h-4 text-gray-200" />}
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[#8A05BE] opacity-60">Nubank Logo</span>
-                      <input type="file" ref={nubankRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'nubankLogo')} />
-                    </button>
+                {/* Account Deletion */}
+                <div className="p-8 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                      <Trash2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-[11px] font-black uppercase tracking-widest text-red-600">Excluir Conta</h4>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Operação Irreversível</p>
+                    </div>
                   </div>
-                </div>
-
-                {/* Social */}
-                <div className="space-y-6">
-                  <p className="text-[8px] font-black uppercase text-gray-400 tracking-wider px-1">Presença Social</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => instagramRef.current?.click()}
-                      className={cn(
-                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95",
-                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-purple-500/30" : "bg-white hover:border-purple-500/20"
-                      )}
-                    >
-                      <div className="w-10 h-10 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/10">
-                        <Camera className="w-5 h-5" />
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">Instagram<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
-                      <input type="file" ref={instagramRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'instagramLogo')} />
-                    </button>
-
-                    <button 
-                      onClick={() => tiktokRef.current?.click()}
-                      className={cn(
-                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95",
-                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-white/30" : "bg-white hover:border-black/5"
-                      )}
-                    >
-                      <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shadow-lg shadow-black/10">
-                        <Smartphone className="w-5 h-5" />
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">TikTok<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
-                      <input type="file" ref={tiktokRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'tiktokLogo')} />
-                    </button>
-
-                    <button 
-                      onClick={() => whatsappRef.current?.click()}
-                      className={cn(
-                        "flex items-center gap-4 p-4 rounded-[24px] border border-gray-100 transition-all active:scale-95 col-span-2 sm:col-span-1",
-                        settings.darkMode ? "bg-black/40 border-gray-800 hover:border-green-500/30" : "bg-white hover:border-green-500/20"
-                      )}
-                    >
-                      <div className="w-10 h-10 bg-[#25D366] rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20">
-                        <Smartphone className="w-5 h-5" />
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-left leading-tight">WhatsApp<br/><span className="text-[7px] opacity-40 font-bold">Logo Oficial</span></span>
-                      <input type="file" ref={whatsappRef} className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, 'whatsappLogo')} />
-                    </button>
-                  </div>
+                  <button onClick={() => setShowDeleteAccountConfirm(true)} className="w-full py-4 bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                    Encerrar Minha Jornada
+                  </button>
                 </div>
               </div>
 
               {/* Informação Final */}
-              <div className="mt-8 p-6 rounded-[32px] bg-brand-navy/5 dark:bg-white/5 border border-dashed border-brand-navy/10 dark:border-white/10">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed text-center italic">
+              <div className="mt-8 p-6 rounded-[32px] bg-brand-navy/5 dark:bg-white/5 border border-dashed border-brand-navy/10 dark:border-white/10 text-center">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-relaxed italic px-4">
                   "As informações aqui contidas são fundamentais para o registro histórico e burocrático do templo. Mantenha seus dados sempre atualizados."
                 </p>
               </div>
             </section>
+
+            {/* Modal de Confirmação */}
+            <AnimatePresence>
+              {showDeleteAccountConfirm && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+                  <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white dark:bg-[#1A1A1A] w-full max-w-sm rounded-[32px] p-8 text-center shadow-2xl">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <AlertTriangle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white mb-3 uppercase">Excluir Conta?</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed font-medium">Você perderá o acesso definitivo aos seus registros e configurações.</p>
+                    <div className="flex flex-col gap-3">
+                      <button onClick={handleConfirmDeleteAccount} disabled={isDeletingAccount} className="w-full py-4 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-red-600/20 disabled:opacity-50">
+                        {isDeletingAccount ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" /> : "Confirmar Exclusão"}
+                      </button>
+                      <button onClick={() => setShowDeleteAccountConfirm(false)} className="w-full py-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-2xl">Voltar</button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         );
 

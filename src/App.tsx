@@ -283,6 +283,7 @@ function Navigation() {
 }
 
 const TopHeader = React.memo(function TopHeader() {
+  const { user } = useAuth();
   const [isGuest] = useStorage<boolean>('templo_guest', false);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -296,6 +297,23 @@ const TopHeader = React.memo(function TopHeader() {
     instagramLogo: '',
     orixaPhotos: {}
   });
+
+  const fullName = React.useMemo(() => {
+    if (isGuest) return "Modo Guest";
+    
+    // 1. Prefer explicitly set firstName + lastName from local settings (synced/manual)
+    const sName = [settings.firstName?.trim(), settings.lastName?.trim()].filter(Boolean).join(' ');
+    if (sName) return sName;
+    
+    // 2. Fallback to Supabase metadata (First/Last from manual signup or full_name from Google)
+    const metadata = user?.user_metadata;
+    const mFullName = [metadata?.first_name, metadata?.last_name].filter(Boolean).join(' ');
+    if (mFullName) return mFullName;
+    if (metadata?.full_name) return metadata.full_name;
+    if (metadata?.name) return metadata.name;
+    
+    return settings.nickname || "Guerreiro";
+  }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
 
   const leaves = React.useMemo(() => {
     return [...Array(60)].map((_, i) => ({
@@ -405,10 +423,16 @@ const TopHeader = React.memo(function TopHeader() {
           transition={{ delay: 0.3 }}
           className="flex flex-col items-center mb-8 gap-2"
         >
-          {isGuest && (
-            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-1.5">
-              <Ghost className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Modo Guest</span>
+          {fullName && (
+            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-2 focus-within:ring-2 ring-brand-gold/50">
+              {isGuest ? (
+                <Ghost className="w-3.5 h-3.5 text-white/80" />
+              ) : settings.profilePhoto ? (
+                <div className="w-5 h-5 rounded-full overflow-hidden border border-white/30">
+                  <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
+                </div>
+              ) : null}
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">{fullName}</span>
             </div>
           )}
           <h2 className="text-brand-copper font-serif text-[11px] sm:text-[13px] uppercase tracking-[0.4em] sm:tracking-[0.5em] font-black text-center px-2 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">

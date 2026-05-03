@@ -64,6 +64,14 @@ export interface HerbStock {
   inStock: boolean;
 }
 
+export interface UsefulContact {
+  id: string;
+  name: string;
+  phone: string;
+  photo?: string;
+  isFixed?: boolean;
+}
+
 export interface AppSettings {
   darkMode: boolean;
   immersiveMode?: boolean;
@@ -94,6 +102,8 @@ export interface AppSettings {
   email?: string;
   birthDate?: string;
   gender?: 'masculino' | 'feminino' | 'outro' | 'prefiro_nao_dizer';
+  profilePhoto?: string;
+  usefulContacts?: UsefulContact[];
 }
 
 export interface Bicho {

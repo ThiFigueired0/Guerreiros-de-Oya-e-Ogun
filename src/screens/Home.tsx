@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
@@ -741,67 +741,103 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* Contatos */}
+        {/* Contatos Úteis */}
         <div className={cn(
-          "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto",
+          "p-6 sm:p-8 rounded-[40px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto",
           settings.darkMode 
-            ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border border-gray-800 hover:border-gray-700 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)]" 
-            : "bg-gradient-to-br from-[#f4f7fb] to-white border border-[#e2e8f0] hover:border-[#cbd5e1] shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+            ? "bg-gradient-to-br from-[#1A1A1A] to-[#111111] border border-white/5 hover:border-blue-500/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+            : "bg-gradient-to-br from-[#f0f7ff] to-white border border-blue-100/50 hover:border-blue-200 shadow-[0_10px_40px_rgba(59,130,246,0.05)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.1)]"
         )}>
-          <div className="absolute -right-6 -bottom-6 opacity-[0.02] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
-            <Phone className="w-48 h-48 sm:w-56 sm:h-56 stroke-[1]" />
+          {/* Background Phone Decoration */}
+          <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">
+            <Phone className="w-56 h-56 stroke-[1]" />
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-5 mb-6 sm:mb-8 relative z-10">
+          <div className="flex items-center gap-5 mb-8 relative z-10">
             <div className={cn(
-              "w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-[24px] shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 shadow-sm",
-              settings.darkMode ? "bg-[#2A3F5B]/30 text-[#8ba3c7]" : "bg-gradient-to-br from-brand-navy to-[#102b4e] text-white shadow-brand-navy/20"
+              "w-16 h-16 flex items-center justify-center rounded-[28px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-lg",
+              settings.darkMode ? "bg-blue-500/20 text-blue-400 shadow-blue-500/10" : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/30"
             )}>
-              <Phone className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
+              <Phone className="w-7 h-7 stroke-[2.5]" />
             </div>
-            <p className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-[#8ba3c7]" : "text-brand-navy/80")}>
-              Contatos Úteis
-            </p>
+            <div>
+              <p className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-1", settings.darkMode ? "text-blue-400/80" : "text-blue-600")}>
+                Canais de Apoio
+              </p>
+              <h3 className={cn("text-xl sm:text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                Contatos Úteis
+              </h3>
+            </div>
           </div>
           
-          <div className="grid gap-3 sm:gap-4 relative z-10">
-            {[
-              { name: "Terreiro", phone: "(11) 98555-0847", raw: "11985550847", id: "terreiro_phone" },
-              { name: "Mãe Stela", phone: "(11) 98235-0614", raw: "11982350614", id: "stela_phone" }
-            ].map((contact, idx) => (
-              <div key={idx} className={cn(
-                "flex items-center justify-between p-4 sm:p-5 rounded-[24px] sm:rounded-[28px] transition-all border group/item hover:scale-[1.02]",
+          <div className="grid gap-4 relative z-10">
+            {(settings.usefulContacts && settings.usefulContacts.length > 0 ? settings.usefulContacts : [
+              { id: 'fixed-1', name: "Terreiro", phone: "(11) 98555-0847" },
+              { id: 'fixed-2', name: "Mãe Stela", phone: "(11) 98235-0614" }
+            ]).map((contact) => (
+              <div key={contact.id} className={cn(
+                "group/item relative flex items-center justify-between p-4.5 rounded-[32px] transition-all border",
                 settings.darkMode 
-                  ? "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10" 
-                  : "bg-white border-transparent hover:border-brand-navy/10 shadow-sm hover:shadow-md"
+                  ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 shadow-xl" 
+                  : "bg-white border-white hover:border-blue-200 shadow-sm hover:shadow-xl shadow-blue-900/5"
               )}>
-                <div className="flex flex-col truncate pr-3 sm:pr-4">
-                  <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] block mb-1", settings.darkMode ? "text-gray-400" : "text-brand-navy/60")}>{contact.name}</span>
-                  <span className={cn("font-bold text-[15px] sm:text-[19px] tracking-tight truncate", settings.darkMode ? "text-gray-100" : "text-brand-navy")}>{contact.phone}</span>
+                <div className="flex items-center gap-4 flex-1 truncate">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover/item:scale-110 shadow-inner overflow-hidden",
+                    settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-400"
+                  )}>
+                    {contact.photo ? (
+                      <img src={contact.photo} className="w-full h-full object-cover" alt={contact.name} />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-[0.2em] block mb-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity",
+                      settings.darkMode ? "text-gray-400" : "text-brand-navy"
+                    )}>
+                      {contact.name}
+                    </span>
+                    <span className={cn(
+                      "font-bold text-[16px] tracking-tight truncate",
+                      settings.darkMode ? "text-white" : "text-brand-navy"
+                    )}>
+                      {contact.phone}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                
+                <div className="flex items-center gap-2.5 shrink-0 ml-4 relative z-10">
                   <button 
-                    onClick={() => copyToClipboard(contact.raw, contact.id)}
+                    onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
                     className={cn(
-                      "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-[0.95]",
-                      copied === contact.id ? "bg-green-500 text-white shadow-sm shadow-green-500/20" : settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-white/20" : "bg-gray-50 text-brand-navy/60 hover:bg-brand-navy/5 hover:text-brand-navy"
+                      "w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
+                      copied === contact.id 
+                        ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
+                        : settings.darkMode 
+                          ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
+                          : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
                     )}
                   >
-                    {copied === contact.id ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />}
+                    {copied === contact.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
+                  
                   <a
-                    href={`https://wa.me/55${contact.raw}`}
+                    href={`https://wa.me/55${contact.phone.replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-[0.95] overflow-hidden group-hover/item:shadow-lg group-hover/item:-translate-y-0.5",
-                      settings.whatsappLogo ? "bg-transparent border border-gray-100 hover:border-gray-200 dark:border-gray-800 dark:hover:border-gray-700" : "bg-gradient-to-br from-[#25D366] to-[#1fac53] text-white shadow-[0_8px_20px_-4px_rgba(37,211,102,0.4)] hover:shadow-[0_12px_25px_-4px_rgba(37,211,102,0.5)]"
+                      "w-12 h-12 flex items-center justify-center rounded-2xl transition-all active:scale-[0.8] text-white shadow-lg overflow-hidden",
+                      settings.whatsappLogo 
+                        ? (settings.darkMode ? "bg-white/5" : "bg-gray-50")
+                        : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 hover:shadow-[#25D366]/40 hover:-translate-y-0.5"
                     )}
                   >
                     {settings.whatsappLogo ? (
-                      <img src={settings.whatsappLogo} alt="WhatsApp" className="w-full h-full object-cover" />
+                      <img src={settings.whatsappLogo} className="w-full h-full object-cover" alt="WA" />
                     ) : (
-                      <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7 fill-current stroke-none" />
+                      <MessageCircle className="w-5 h-5 fill-current stroke-none" />
                     )}
                   </a>
                 </div>
