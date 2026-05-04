@@ -11,10 +11,13 @@ import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { get, set, del } from 'idb-keyval';
 import { useUndo } from '../hooks/useUndo';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
 import { Greeting, StudyBook, AppSettings, StudyContent, GlossaryTerm } from '../types';
 import { DEFAULT_GLOSSARY } from '../data/glossaryData';
 import { askAI } from '../services/aiService';
 import { generateGlossaryTerm, refineGlossaryDefinition } from '../services/glossaryAiService';
+import { searchBooks, GoogleBook } from '../services/googleBooksService';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { PDFReader } from '../components/PDFReader';
 
@@ -176,6 +179,74 @@ export default function StudiesScreen() {
   });
 
   const [books, setBooks, isBooksLoading] = useIdbStorage<StudyBook[]>('templo_books', []);
+  const { user } = useAuth();
+  const [isFetchingSupabase, setIsFetchingSupabase] = useState(false);
+
+  // Load books from Supabase on mount
+  useEffect(() => {
+    const fetchBooksFromSupabase = async () => {
+      if (!user) return;
+      setIsFetchingSupabase(true);
+      try {
+        const { data, error } = await supabase
+          .from('studies_books')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('upload_date', { ascending: false });
+
+        if (error) throw error;
+        if (data) {
+          const transformedBooks: StudyBook[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            author: item.author,
+            uploadDate: item.upload_date,
+            isFavorite: item.is_favorite,
+            readingStatus: item.reading_status,
+            totalPages: item.total_pages,
+            coverImage: item.cover_image,
+            coverColor: item.cover_color,
+            pdfUrl: item.pdf_url // New field for Supabase link
+          }));
+          setBooks(transformedBooks);
+        }
+      } catch (error) {
+        console.error('Error fetching books from Supabase:', error);
+      } finally {
+        setIsFetchingSupabase(false);
+      }
+    };
+
+    fetchBooksFromSupabase();
+  }, [user, setBooks]);
+
+  const updateBookInSupabase = async (bookId: string, updates: Partial<StudyBook>) => {
+    if (!user) return;
+    
+    // Map StudyBook fields to DB fields
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.author !== undefined) dbUpdates.author = updates.author;
+    if (updates.isFavorite !== undefined) dbUpdates.is_favorite = updates.isFavorite;
+    if (updates.readingStatus !== undefined) dbUpdates.reading_status = updates.readingStatus;
+    if (updates.lastPage !== undefined) dbUpdates.last_page = updates.lastPage;
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+    if (updates.links !== undefined) dbUpdates.links = updates.links;
+    if (updates.attachments !== undefined) dbUpdates.attachments = updates.attachments;
+    if (updates.lastRead !== undefined) dbUpdates.last_read = updates.lastRead;
+
+    try {
+      const { error } = await supabase
+        .from('studies_books')
+        .update(dbUpdates)
+        .eq('id', bookId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating book in Supabase:', error);
+    }
+  };
   const [greetings, setGreetings] = useStorage<Greeting[]>('templo_greetings', INITIAL_GREETINGS);
   const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', INITIAL_STUDY_CONTENTS);
   const [glossaryTerms, setGlossaryTerms] = useStorage<GlossaryTerm[]>('templo_glossary', []);
@@ -249,6 +320,8 @@ export default function StudiesScreen() {
   const [bookSearch, setBookSearch] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
   const [bookCoverDraft, setBookCoverDraft] = useState<string | null>(null);
+  const [bookTitleDraft, setBookTitleDraft] = useState<string>('');
+  const [bookAuthorDraft, setBookAuthorDraft] = useState<string>('');
   const [bookColorDraft, setBookColorDraft] = useState<string>('#b8860b'); // Default copper
   const [bookPdfDraft, setBookPdfDraft] = useState<{name: string, tempId: string | null, totalPages: number} | null>(null);
   const [isProcessingBook, setIsProcessingBook] = useState<string | false>(false);
@@ -260,7 +333,50 @@ export default function StudiesScreen() {
   const [newBookLink, setNewBookLink] = useState('');
   const [viewingBook, setViewingBook] = useState<StudyBook | null>(null);
   const [viewingUrl, setViewingUrl] = useState<string | null>(null);
-  
+
+  // Google Books Search State
+  const [bookSearchQuery, setBookSearchQuery] = useState('');
+  const [googleBooksResults, setGoogleBooksResults] = useState<GoogleBook[]>([]);
+  const [isSearchingGoogleBooks, setIsSearchingGoogleBooks] = useState(false);
+
+  const performGoogleBooksSearch = async (query: string) => {
+    if (!query || query.length < 3) {
+      setGoogleBooksResults([]);
+      return;
+    }
+
+    setIsSearchingGoogleBooks(true);
+    try {
+      const results = await searchBooks(query);
+      setGoogleBooksResults(results);
+    } catch (error) {
+      console.error('Error searching Google Books:', error);
+    } finally {
+      setIsSearchingGoogleBooks(false);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (bookSearchQuery) {
+        performGoogleBooksSearch(bookSearchQuery);
+      } else {
+        setGoogleBooksResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [bookSearchQuery]);
+
+  const selectGoogleBook = (book: GoogleBook) => {
+    setBookTitleDraft(book.title);
+    setBookAuthorDraft(book.authors);
+    setBookCoverDraft(book.coverUrl);
+    setBookSearchQuery('');
+    setGoogleBooksResults([]);
+  };
+
   const { queueDelete } = useUndo();
 
   const addBookLink = () => {
@@ -459,9 +575,9 @@ export default function StudiesScreen() {
   };
 
   const saveNewBook = async () => {
-    if (!bookPdfDraft || !bookPdfDraft.tempId) return;
+    if (!bookPdfDraft || !bookPdfDraft.tempId || !user) return;
 
-    setIsProcessingBook("Salvando livro...");
+    setIsProcessingBook("Salvando no Supabase...");
     const bookId = Date.now().toString();
 
     try {
@@ -469,31 +585,75 @@ export default function StudiesScreen() {
       const blob = await getPdfBinary(bookPdfDraft.tempId);
       if (!blob) throw new Error("Documento temporário não encontrado.");
 
-      // Save binary to definitive key
-      await savePdfBinary(bookId, blob);
-      
-      // Delete temporary entry
-      await deletePdfBinary(bookPdfDraft.tempId);
+      // 1. Upload PDF to Supabase Storage
+      const fileName = `${user.id}/${bookId}.pdf`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('books')
+        .upload(fileName, blob, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
 
-      const newBook: StudyBook = {
-        id: bookId,
-        name: bookPdfDraft.name,
-        uploadDate: Date.now(),
-        isFavorite: false,
-        readingStatus: 'not_started',
-        totalPages: bookPdfDraft.totalPages,
-        coverImage: bookCoverDraft || undefined,
-        coverColor: bookColorDraft
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL for the PDF
+      const { data: { publicUrl } } = supabase.storage
+        .from('books')
+        .getPublicUrl(fileName);
+
+      // 3. Save metadata to Supabase DB
+      const newBookData = {
+        user_id: user.id,
+        name: bookTitleDraft || bookPdfDraft.name,
+        author: bookAuthorDraft,
+        upload_date: Date.now(),
+        is_favorite: false,
+        reading_status: 'not_started',
+        total_pages: bookPdfDraft.totalPages,
+        cover_image: bookCoverDraft,
+        cover_color: bookColorDraft,
+        pdf_url: publicUrl
       };
 
+      const { data: insertedData, error: dbError } = await supabase
+        .from('studies_books')
+        .insert([newBookData])
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      // 4. Update local state
+      const newBook: StudyBook = {
+        id: insertedData.id,
+        name: insertedData.name,
+        author: insertedData.author,
+        uploadDate: insertedData.upload_date,
+        isFavorite: insertedData.is_favorite,
+        readingStatus: insertedData.reading_status,
+        totalPages: insertedData.total_pages,
+        coverImage: insertedData.cover_image,
+        coverColor: insertedData.cover_color,
+        pdfUrl: insertedData.pdf_url
+      };
+
+      // Also save to local storage for quick access
       setBooks([newBook, ...books]);
+      
+      // Clean up temp IDB
+      await deletePdfBinary(bookPdfDraft.tempId);
+
       setShowBookModal(false);
       setBookPdfDraft(null);
+      setBookTitleDraft('');
+      setBookAuthorDraft('');
       setBookCoverDraft(null);
       setBookColorDraft('#b8860b');
+      setBookSearchQuery('');
+      setGoogleBooksResults([]);
     } catch (error) {
       console.error("Error saving book:", error);
-      alert("Erro ao salvar o livro. Tente novamente.");
+      alert("Erro ao sincronizar com o Supabase. Verifique se as tabelas e buckets 'books' e 'studies_books' estão criados.");
     } finally {
       setIsProcessingBook(false);
     }
@@ -529,6 +689,10 @@ export default function StudiesScreen() {
         tempId: tempId,
         totalPages
       });
+
+      if (!bookTitleDraft) {
+        setBookTitleDraft(file.name.replace('.pdf', ''));
+      }
     } catch(err) {
        console.error("Error on handlePdfPreview:", err);
        alert("Ocorreu um erro ao processar o arquivo.");
@@ -543,7 +707,11 @@ export default function StudiesScreen() {
       await deletePdfBinary(bookPdfDraft.tempId);
     }
     setBookPdfDraft(null);
+    setBookTitleDraft('');
+    setBookAuthorDraft('');
     setBookCoverDraft(null);
+    setBookSearchQuery('');
+    setGoogleBooksResults([]);
     setShowBookModal(false);
   };
 
@@ -552,9 +720,30 @@ export default function StudiesScreen() {
       id: book.id,
       label: book.name.replace('.pdf', ''),
       timestamp: Date.now(),
-      onConfirm: () => {
+      onConfirm: async () => {
+        // Delete locally
         setBooks((prev: StudyBook[]) => prev.filter(b => b.id !== book.id));
         deletePdfBinary(book.id);
+
+        // Delete from Supabase
+        if (user) {
+          try {
+            // 1. Delete from DB
+            await supabase
+              .from('studies_books')
+              .delete()
+              .eq('id', book.id)
+              .eq('user_id', user.id);
+
+            // 2. Delete from Storage
+            const fileName = `${user.id}/${book.id}.pdf`;
+            await supabase.storage
+              .from('books')
+              .remove([fileName]);
+          } catch (error) {
+            console.error('Error deleting from Supabase:', error);
+          }
+        }
       }
     });
   };
@@ -567,11 +756,13 @@ export default function StudiesScreen() {
       
       if (blob) {
         url = URL.createObjectURL(blob);
+      } else if (book.pdfUrl) {
+        // If not in local cache, use the Supabase public URL
+        url = book.pdfUrl;
       } else if (book.pdfBase64) {
-        // Fallback for legacy data not yet migrated or if IDB failed
         url = book.pdfBase64;
       } else {
-        alert("Arquivo não encontrado no armazenamento local.");
+        alert("Arquivo não encontrado. Tente baixar novamente.");
         setIsProcessingBook(false);
         return;
       }
@@ -691,12 +882,14 @@ export default function StudiesScreen() {
 
   const handleSaveBookNotes = () => {
     if (!selectedBookForAction) return;
-    setBooks(books.map(b => b.id === selectedBookForAction.id ? { 
-      ...b, 
+    const updates = { 
       notes: bookNotesDraft,
       links: bookLinksDraft,
       attachments: bookAttachmentsDraft
-    } : b));
+    };
+    setBooks(books.map(b => b.id === selectedBookForAction.id ? { ...b, ...updates } : b));
+    updateBookInSupabase(selectedBookForAction.id, updates);
+    
     setShowBookNotesModal(false);
     setSelectedBookForAction(null);
   };
@@ -733,31 +926,38 @@ export default function StudiesScreen() {
   };
 
   const toggleBookFavorite = (id: string) => {
-    setBooks(books.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
+    const book = books.find(b => b.id === id);
+    if (!book) return;
+
+    const newFavoriteStatus = !book.isFavorite;
+    setBooks(books.map(b => b.id === id ? { ...b, isFavorite: newFavoriteStatus } : b));
+    updateBookInSupabase(id, { isFavorite: newFavoriteStatus });
+
     if (selectedBookForAction && selectedBookForAction.id === id) {
-      setSelectedBookForAction({ ...selectedBookForAction, isFavorite: !selectedBookForAction.isFavorite });
+      setSelectedBookForAction({ ...selectedBookForAction, isFavorite: newFavoriteStatus });
     }
   };
 
   const updateBookStatus = (id: string, status: StudyBook['readingStatus'], lastPage?: number) => {
     const lastRead = Date.now();
-    setBooks(books.map(b => b.id === id ? { ...b, readingStatus: status, lastPage: lastPage ?? b.lastPage, lastRead } : b));
+    const updates = { readingStatus: status, lastPage: lastPage ?? undefined, lastRead };
+    
+    setBooks(books.map(b => b.id === id ? { ...b, ...updates, lastPage: lastPage ?? b.lastPage } : b));
+    updateBookInSupabase(id, updates);
     
     if (viewingBook && viewingBook.id === id) {
       setViewingBook({
         ...viewingBook,
-        readingStatus: status,
-        lastPage: lastPage ?? viewingBook.lastPage,
-        lastRead
+        ...updates,
+        lastPage: lastPage ?? viewingBook.lastPage
       });
     }
 
     if (selectedBookForAction && selectedBookForAction.id === id) {
       setSelectedBookForAction({ 
         ...selectedBookForAction, 
-        readingStatus: status, 
-        lastPage: lastPage ?? selectedBookForAction.lastPage,
-        lastRead
+        ...updates,
+        lastPage: lastPage ?? selectedBookForAction.lastPage
       });
     }
   };
@@ -773,6 +973,7 @@ export default function StudiesScreen() {
     
     setBooks(books.map(b => b.id === selectedBookForAction.id ? { ...b, name: newName } : b));
     setSelectedBookForAction({ ...selectedBookForAction, name: newName });
+    updateBookInSupabase(selectedBookForAction.id, { name: newName });
     setIsEditingName(false);
   };
 
@@ -1262,6 +1463,11 @@ export default function StudiesScreen() {
                                       )}>
                                         {book.name.replace('.pdf', '')}
                                       </h3>
+                                      {book.author && (
+                                        <p className="text-[8px] text-gray-400 font-bold uppercase truncate mt-0.5">
+                                          {book.author}
+                                        </p>
+                                      )}
                                       <div className="flex items-center gap-1.5 mt-1.5">
                                         <span className="text-[8px] font-bold text-gray-400 capitalize">
                                           {book.uploadDate ? new Date(book.uploadDate).toLocaleDateString() : ''}
@@ -1921,6 +2127,105 @@ export default function StudiesScreen() {
               <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-6">Personalize sua biblioteca digital</p>
 
               <div className="space-y-6">
+                {/* Google Books Search */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Buscar dados (Opcional)</label>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text"
+                      value={bookSearchQuery}
+                      onChange={(e) => setBookSearchQuery(e.target.value)}
+                      placeholder="Busque por título ou autor..."
+                      className={cn(
+                        "w-full bg-gray-50 border-0 py-3 pl-11 pr-10 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        settings.darkMode && "bg-black text-white"
+                      )}
+                    />
+                    {bookSearchQuery && !isSearchingGoogleBooks && (
+                      <button 
+                        onClick={() => {
+                          setBookSearchQuery('');
+                          setGoogleBooksResults([]);
+                        }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                    {isSearchingGoogleBooks && (
+                      <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-copper animate-spin" />
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {googleBooksResults.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={cn(
+                          "mt-2 max-h-48 overflow-y-auto rounded-2xl border border-gray-100 shadow-xl bg-white z-10 custom-scrollbar",
+                          settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+                        )}
+                      >
+                        {googleBooksResults.map((book) => (
+                          <button
+                            key={book.id}
+                            onClick={() => selectGoogleBook(book)}
+                            className={cn(
+                              "w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors",
+                              settings.darkMode && "hover:bg-white/5"
+                            )}
+                          >
+                            <div className="w-10 h-14 rounded bg-gray-100 flex-shrink-0 overflow-hidden border border-gray-100">
+                              {book.coverUrl ? (
+                                <img src={book.coverUrl} className="w-full h-full object-cover" />
+                              ) : (
+                                <Book className="w-4 h-4 m-auto text-gray-300" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={cn("text-[11px] font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{book.title}</p>
+                              <p className="text-[9px] text-gray-400 truncate">{book.authors}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Book Title */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Título do Livro</label>
+                  <input 
+                    type="text"
+                    value={bookTitleDraft}
+                    onChange={(e) => setBookTitleDraft(e.target.value)}
+                    placeholder="Ex: O Livro dos Espíritos"
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                  />
+                </div>
+
+                {/* Book Author */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Autor(a)</label>
+                  <input 
+                    type="text"
+                    value={bookAuthorDraft}
+                    onChange={(e) => setBookAuthorDraft(e.target.value)}
+                    placeholder="Ex: Allan Kardec"
+                    className={cn(
+                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      settings.darkMode && "bg-black text-white"
+                    )}
+                  />
+                </div>
+
                 {/* PDF Selection */}
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Arquivo PDF</label>
@@ -1954,10 +2259,16 @@ export default function StudiesScreen() {
                         "p-4 rounded-2xl bg-brand-navy/5 flex items-center justify-between border border-brand-navy/10",
                         settings.darkMode && "bg-brand-navy/20"
                       )}>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className={cn("text-xs font-bold truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{bookPdfDraft.name}</span>
                           </div>
+                          {bookPdfDraft.tempId && (
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <FileText className="w-3 h-3 text-brand-copper" />
+                              <span className="text-[10px] text-gray-400 font-medium">PDF vinculado</span>
+                            </div>
+                          )}
                         </div>
                         <button 
                           onClick={async () => {
@@ -2022,12 +2333,12 @@ export default function StudiesScreen() {
                 </div>
 
                 <button 
-                  disabled={!bookPdfDraft}
+                  disabled={!bookPdfDraft?.tempId}
                   onClick={saveNewBook}
                   className={cn(
                     "w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all",
-                    bookPdfDraft 
-                      ? "bg-brand-navy text-white active:scale-95" 
+                    bookPdfDraft?.tempId 
+                      ? "bg-brand-navy text-white active:scale-95 hover:bg-brand-navy/90" 
                       : "bg-gray-100 text-gray-300 cursor-not-allowed"
                   )}
                 >
@@ -2268,19 +2579,26 @@ export default function StudiesScreen() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-2 group">
-                      <h2 className={cn("text-lg font-black text-brand-navy leading-tight max-w-[200px] truncate", settings.darkMode && "text-white")}>
-                        {selectedBookForAction.name.replace('.pdf', '')}
-                      </h2>
-                      <button 
-                        onClick={() => setIsEditingName(true)}
-                        className="p-1.5 bg-gray-50 text-gray-400 rounded-lg active:text-brand-copper transition-colors"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
+                    <div className="flex flex-col items-center">
+                      <div className="flex items-center justify-center gap-2 group">
+                        <h2 className={cn("text-lg font-black text-brand-navy leading-tight max-w-[200px] truncate", settings.darkMode && "text-white")}>
+                          {selectedBookForAction.name.replace('.pdf', '')}
+                        </h2>
+                        <button 
+                          onClick={() => setIsEditingName(true)}
+                          className="p-1.5 bg-gray-50 text-gray-400 rounded-lg active:text-brand-copper transition-colors"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                      {selectedBookForAction.author && (
+                        <p className={cn("text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5", settings.darkMode && "text-gray-500")}>
+                          {selectedBookForAction.author}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-3 mb-4">Opções do Livro</p>
                     </div>
                   )}
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-1 mb-4">Opções do Livro</p>
                 </div>
               </div>
 

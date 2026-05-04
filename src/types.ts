@@ -162,6 +162,7 @@ export interface Trabalho {
 export interface StudyBook {
   id: string;
   name: string;
+  author?: string;
   pdfBase64?: string;
   uploadDate: number;
   notes?: string;
@@ -172,6 +173,7 @@ export interface StudyBook {
   }[];
   links?: string[];
   isFavorite?: boolean;
+  pdfUrl?: string;
   readingStatus?: 'not_started' | 'in_progress' | 'completed';
   lastPage?: number;
   totalPages?: number;

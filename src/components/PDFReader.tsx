@@ -35,12 +35,14 @@ import {
   Square,
   Eraser,
   Book,
-  UploadCloud
+  UploadCloud,
+  Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useStorage } from "../hooks/useStorage";
 import { AppSettings } from "../types";
+import { generateTocFromImage } from "../services/tocService";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -146,10 +148,47 @@ export function PDFReader({
   }
 
   const [hasOutline, setHasOutline] = useState<boolean | null>(null);
+  const [aiToc, setAiToc] = useState<{ capitulo: string; pagina: number }[] | null>(null);
+  const [isGeneratingToc, setIsGeneratingToc] = useState(false);
+  const [tocProgress, setTocProgress] = useState<'ocr' | 'ai' | 'done' | 'idle'>('idle');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setHasOutline(null);
+    setAiToc(null);
+    setTocProgress('idle');
   }, [pdfUrl]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsGeneratingToc(true);
+    setTocProgress('ocr');
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const base64 = await base64Promise;
+      const result = await generateTocFromImage(base64, (step) => setTocProgress(step));
+      setAiToc(result);
+    } catch (error: any) {
+      console.error("Error generating ToC:", error);
+      const msg = error.message || "";
+      if (msg.includes("Key not configured")) {
+        alert("Configuração Pendente: Você precisa configurar as chaves VITE_GOOGLE_SERVICES_KEY e VITE_GROQ_API_KEY no painel de configurações (Settings > Secrets) da plataforma.");
+      } else {
+        alert("Falha ao gerar sumário: " + (error.message || "Erro desconhecido"));
+      }
+    } finally {
+      setIsGeneratingToc(false);
+      setTocProgress('idle');
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const speechStateRef = useRef({
     speaking: false,
@@ -1819,8 +1858,109 @@ export function PDFReader({
                     {hasOutline === false && (
                       <div className="mt-4">
                         <div className="text-center py-8 px-4 flex flex-col items-center">
-                          <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                          <p className="text-xs opacity-50 font-bold mb-4">Este documento não possui um sumário interno.</p>
+                          {!aiToc && !isGeneratingToc && (
+                            <>
+                              <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                              <p className="text-xs opacity-50 font-bold mb-4">Este documento não possui um sumário interno.</p>
+                              
+                              <input 
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageUpload}
+                                accept="image/*"
+                                className="hidden"
+                              />
+
+                              <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className={cn(
+                                  "flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                  settings.darkMode 
+                                    ? "bg-white/10 text-white hover:bg-white/20" 
+                                    : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                                )}
+                              >
+                                <ImageIcon className="w-4 h-4" />
+                                Gerar Sumário via Imagem
+                              </button>
+                            </>
+                          )}
+
+                          {isGeneratingToc && (
+                            <div className="flex flex-col items-center w-full max-w-[240px] gap-6 py-10">
+                              <div className="relative w-16 h-16 flex items-center justify-center">
+                                <Loader2 className="w-16 h-16 text-brand-copper animate-spin absolute" />
+                                <div className="w-10 h-10 rounded-full bg-brand-copper/10 flex items-center justify-center">
+                                  <List className="w-5 h-5 text-brand-copper" />
+                                </div>
+                              </div>
+                              
+                              <div className="w-full text-center space-y-3">
+                                <p className="text-sm font-black text-brand-copper uppercase tracking-tighter">
+                                  {tocProgress === 'ocr' ? 'Lendo imagem...' : 'Estruturando com IA...'}
+                                </p>
+                                
+                                {/* Progress Bar */}
+                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden relative">
+                                  <motion.div 
+                                    className="absolute top-0 left-0 h-full bg-brand-copper"
+                                    initial={{ width: "0%" }}
+                                    animate={{ 
+                                      width: tocProgress === 'ocr' ? "40%" : "85%" 
+                                    }}
+                                    transition={{ duration: 0.5 }}
+                                  />
+                                </div>
+                                
+                                <p className="text-[10px] opacity-60 font-bold uppercase tracking-widest leading-relaxed">
+                                  {tocProgress === 'ocr' 
+                                    ? 'Extraindo caracteres via Google Vision' 
+                                    : 'Organizando capítulos via Groq LLM'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {aiToc && !isGeneratingToc && (
+                            <div className="w-full text-left">
+                              <div className="flex items-center justify-between mb-6">
+                                <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Sumário Gerado por IA</h3>
+                                <button 
+                                  onClick={() => setAiToc(null)}
+                                  className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase transition-opacity"
+                                >
+                                  Limpar
+                                </button>
+                              </div>
+                              <div className="space-y-1">
+                                {aiToc.map((item, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => {
+                                      if (item.pagina) handlePageSelect(item.pagina);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-start gap-3 p-3 rounded-xl transition-all hover:translate-x-1 text-left",
+                                      settings.darkMode ? "hover:bg-white/5" : "hover:bg-brand-navy/5"
+                                    )}
+                                  >
+                                    <div className={cn(
+                                      "w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-black",
+                                      settings.darkMode ? "bg-white/10 text-white" : "bg-brand-navy/10 text-brand-navy"
+                                    )}>
+                                      {item.pagina || "?"}
+                                    </div>
+                                    <span className={cn(
+                                      "text-xs font-bold leading-tight pt-1",
+                                      settings.darkMode ? "text-white/80" : "text-brand-navy/80"
+                                    )}>
+                                      {item.capitulo}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
