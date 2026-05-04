@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
@@ -1051,9 +1051,7 @@ export default function HomeScreen() {
             const mid = viewportWidth / 2;
             const side = info.point.x < mid ? 'left' : 'right';
             setFactTabSide(side);
-            // After drag, we snap to the edge. The absolute position is managed by framer motion during drag, 
-            // but for responsiveness we can track state if needed. 
-            // Simplest is to let motion handle the offset and we just record the final side.
+            setFactTabY(info.point.y);
           }}
           style={{ 
             x: factTabX, 
@@ -1064,47 +1062,80 @@ export default function HomeScreen() {
           }}
           animate={{ 
             x: factTabSide === 'left' 
-              ? (isFactTabCollapsed ? -135 : 0) 
-              : (isFactTabCollapsed ? window.innerWidth + 35 : window.innerWidth - 175),
-            transition: { type: "spring", stiffness: 300, damping: 30 }
+              ? (isFactTabCollapsed ? -2 : 0) 
+              : (isFactTabCollapsed ? window.innerWidth - 74 : window.innerWidth - 220),
+            transition: { type: "spring", stiffness: 350, damping: 30 }
           }}
           className={cn(
-            "pointer-events-auto flex items-center transition-opacity",
+            "pointer-events-auto flex items-center group/tabContainer",
             factTabSide === 'right' && "flex-row-reverse"
           )}
         >
           <motion.button
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => !isFactTabCollapsed && setShowDailyFactModal(true)}
             className={cn(
-              "flex items-center gap-3 py-3 shadow-2xl relative overflow-hidden group transition-all min-w-[175px]",
+              "flex items-center gap-3 py-3 shadow-2xl relative overflow-hidden group transition-all duration-500",
+              isFactTabCollapsed 
+                ? "w-[64px] min-w-0 px-0 justify-center h-[64px] rounded-full scale-90 hover:scale-100" 
+                : "min-w-[200px] pl-2 pr-6 h-auto",
               factTabSide === 'left' 
-                ? "pl-4 pr-6 rounded-r-3xl border-y border-r" 
-                : "pr-4 pl-6 rounded-l-3xl border-y border-l",
+                ? (isFactTabCollapsed ? "rounded-full ml-2 border" : "rounded-r-[28px] border-y border-r") 
+                : (isFactTabCollapsed ? "rounded-full mr-2 border" : "rounded-l-[28px] border-y border-l"),
               settings.darkMode 
-                ? "bg-[#1A1A1A] border-brand-gold/30 text-white" 
-                : "bg-white border-brand-gold/20 text-brand-navy"
+                ? "bg-gradient-to-br from-indigo-950/90 via-brand-navy/95 to-brand-navy border-brand-gold/30 text-white shadow-[0_0_25px_rgba(234,179,8,0.2)]" 
+                : "bg-gradient-to-br from-amber-50 via-white to-white border-brand-gold/20 text-brand-navy shadow-[0_0_25px_rgba(234,179,8,0.15)]"
             )}
           >
-            {/* Background shimmer */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-gold/5 to-transparent -translate-x-full group-hover:translate-x-full duration-1000 transition-transform" />
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-purple-500/5 to-brand-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-brand-gold/10 blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 blur-2xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            
+            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-brand-gold/50 to-transparent opacity-60" />
             
             <div className={cn(
-              "relative z-10 flex items-center gap-3 w-full",
+              "relative z-10 flex items-center gap-2",
               factTabSide === 'right' && "flex-row-reverse"
             )}>
-              <div className="w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold flex items-center justify-center border border-brand-gold/20 flex-shrink-0">
-                <Sparkles className={cn("w-4 h-4", isLoadingFact && "animate-pulse")} />
-              </div>
+              {/* Drag Handle (Visible only when expanded) */}
+              {!isFactTabCollapsed && (
+                <div className="text-brand-gold/30 px-1 cursor-grab active:cursor-grabbing">
+                  <GripVertical className="w-4 h-4" />
+                </div>
+              )}
+
               <div className={cn(
-                "flex flex-col flex-1 truncate",
-                factTabSide === 'left' ? "items-start text-left" : "items-end text-right"
+                "w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-500 shadow-inner",
+                settings.darkMode 
+                  ? "bg-brand-gold/20 text-brand-gold border-brand-gold/30 group-hover:bg-brand-gold group-hover:text-brand-navy" 
+                  : "bg-brand-gold text-white border-brand-gold/20 shadow-brand-gold/20 group-hover:scale-110"
               )}>
-                <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Sabedoria</span>
-                <span className="text-[10px] font-bold truncate w-full">
-                  {isLoadingFact ? 'Buscando...' : (dailyFact?.title || 'Você sabia?')}
-                </span>
+                <Sparkles className={cn("w-5 h-5", isLoadingFact && "animate-pulse")} />
               </div>
+              
+              <AnimatePresence mode="wait">
+                {!isFactTabCollapsed && (
+                  <motion.div 
+                    initial={{ opacity: 0, width: 0, x: -5 }}
+                    animate={{ opacity: 1, width: "auto", x: 0 }}
+                    exit={{ opacity: 0, width: 0, x: -5 }}
+                    className={cn(
+                      "flex flex-col flex-1 truncate",
+                      factTabSide === 'left' ? "items-start text-left" : "items-end text-right"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors",
+                      settings.darkMode ? "text-brand-gold" : "text-brand-copper"
+                    )}>Sabedoria</span>
+                    <span className="text-[11px] font-black truncate w-full tracking-tight">
+                      {isLoadingFact ? 'Sincronizando...' : (dailyFact?.title || 'Você sabia?')}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.button>
 
@@ -1115,15 +1146,22 @@ export default function HomeScreen() {
               setIsFactTabCollapsed(!isFactTabCollapsed);
             }}
             className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-transform duration-300 backdrop-blur-md z-20",
-              factTabSide === 'left' ? "ml-2" : "mr-2",
+              "w-8 h-12 flex items-center justify-center border shadow-xl transition-all duration-300 backdrop-blur-xl z-20 hover:scale-105 active:scale-95",
+              factTabSide === 'left' 
+                ? "ml-[-12px] rounded-r-xl border-l-0" 
+                : "mr-[-12px] rounded-l-xl border-r-0",
               settings.darkMode 
-                ? "bg-zinc-900/80 border-gray-800 text-gray-400" 
-                : "bg-white/80 border-gray-100 text-gray-400",
-              (isFactTabCollapsed && factTabSide === 'left') || (!isFactTabCollapsed && factTabSide === 'right') ? "rotate-180" : ""
+                ? "bg-brand-navy/90 border-brand-gold/20 text-brand-gold" 
+                : "bg-white/90 border-brand-gold/20 text-brand-gold",
+              isFactTabCollapsed && (factTabSide === 'left' ? "ml-1" : "mr-1")
             )}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <motion.div
+              animate={{ rotate: (isFactTabCollapsed && factTabSide === 'left') || (!isFactTabCollapsed && factTabSide === 'right') ? 180 : 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            >
+              <ChevronLeft className="w-4 h-4 shadow-sm" />
+            </motion.div>
           </button>
         </motion.div>
       </div>
