@@ -17,6 +17,7 @@ export interface HerbBath {
   observations: string;
   isFavorite: boolean;
   category?: string;
+  thermalProperty?: 'quente' | 'morna' | 'fria';
 }
 
 export interface Ponto {
@@ -65,6 +66,7 @@ export interface HerbStock {
   id: string;
   name: string;
   inStock: boolean;
+  classification?: 'quente' | 'morna' | 'fria';
 }
 
 export interface UsefulContact {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -8,25 +8,103 @@ import { HerbBath, AppSettings, ReadyBath, HerbStock, NotificationItem } from '.
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
-const SUGGESTED_HERBS = [
-  "Abre caminho", "Açoita cavalo", "Água de coco", "Alecrim", "Alfavaca", "Alfazema",
-  "Amor agarradinho", "Amor perfeito", "Amora", "Angico", "Anis estrelado", "Aroeira",
-  "Arroz (grão)", "Arruda", "Assa peixe", "Boldo", "Brinco de princesa", "Buchinha do norte",
-  "Cabelo de milho", "Calêndula", "Camomila", "Cana de brejo", "Canela", "Capim cidreira",
-  "Capim limão", "Carqueja", "Casca da laranja", "Casca de coco ralado", "Cavalinha",
-  "Cipó caboclo", "Coentro", "Colônia", "Comigo ninguém pode", "Cravo da Índia (ou Cravo)",
-  "Danda da costa", "Desata nó", "Erva cidreira", "Erva doce (ou Funcho)", "Espada de Santa Bárbara",
-  "Espada de São Jorge", "Espinheira santa", "Eucalipto", "Flor de girassol (ou Semente de girassol)",
-  "Folha Chapéu de couro", "Folha de abacateiro", "Folha de anil", "Folha de café", "Folha de caju",
-  "Folha de cana", "Folha de coqueiro", "Folha de fumo", "Folha de goiaba (ou Goiabeira)",
-  "Folha de Graviola", "Folha de groselha", "Folha de laranjeira", "Folha de limão", "Folha de louro",
-  "Folha de manga (ou Mangueira)", "Folha de milho", "Folha de pitanga (ou Pitanga)", "Folha de romã",
-  "Folha do fogo", "Guaco", "Guiné", "Hortelã", "Jasmim", "Jurema preta", "Lágrima de nossa senhora",
-  "Levante", "Lírio do brejo", "Losna", "Macaça", "Mamona", "Manjericão", "Melissa", "Para raio",
-  "Pata de vaca", "Pau resposta", "Pau tenente", "Peregum roxo", "Peregum verde", "Peregum vermelho",
-  "Picão preto", "Pimenta rosada", "Pinhão roxo", "Quebra demanda", "Rosas Brancas", "Rosas cor de rosa",
-  "Rosas vermelhas", "Salgueiro chorão", "Salsão", "Sálvia", "Samambaia", "Tomilho",
-  "Trevo (ou Trevo de quatro folhas)", "Verbena"
+const SUGGESTED_HERBS: { name: string; classification: 'quente' | 'morna' | 'fria' }[] = [
+  { name: "Abre caminho", classification: 'quente' },
+  { name: "Açoita cavalo", classification: 'quente' },
+  { name: "Água de coco", classification: 'fria' },
+  { name: "Alecrim", classification: 'morna' },
+  { name: "Alfavaca", classification: 'morna' },
+  { name: "Alfazema", classification: 'morna' },
+  { name: "Amor agarradinho", classification: 'morna' },
+  { name: "Amor perfeito", classification: 'morna' },
+  { name: "Amora", classification: 'quente' },
+  { name: "Angico", classification: 'quente' },
+  { name: "Anis estrelado", classification: 'morna' },
+  { name: "Aroeira", classification: 'quente' },
+  { name: "Arroz (grão)", classification: 'fria' },
+  { name: "Arruda", classification: 'quente' },
+  { name: "Assa peixe", classification: 'quente' },
+  { name: "Boldo", classification: 'morna' },
+  { name: "Brinco de princesa", classification: 'morna' },
+  { name: "Buchinha do norte", classification: 'quente' },
+  { name: "Cabelo de milho", classification: 'morna' },
+  { name: "Calêndula", classification: 'morna' },
+  { name: "Camomila", classification: 'fria' },
+  { name: "Cana de brejo", classification: 'quente' },
+  { name: "Canela", classification: 'morna' },
+  { name: "Capim cidreira", classification: 'morna' },
+  { name: "Capim limão", classification: 'morna' },
+  { name: "Carqueja", classification: 'quente' },
+  { name: "Casca da laranja", classification: 'morna' },
+  { name: "Casca de coco ralado", classification: 'fria' },
+  { name: "Cavalinha", classification: 'morna' },
+  { name: "Cipó caboclo", classification: 'quente' },
+  { name: "Coentro", classification: 'morna' },
+  { name: "Colônia", classification: 'fria' },
+  { name: "Comigo ninguém pode", classification: 'quente' },
+  { name: "Cravo da Índia (ou Cravo)", classification: 'morna' },
+  { name: "Danda da costa", classification: 'quente' },
+  { name: "Desata nó", classification: 'quente' },
+  { name: "Erva cidreira", classification: 'fria' },
+  { name: "Erva doce (ou Funcho)", classification: 'fria' },
+  { name: "Espada de Santa Bárbara", classification: 'quente' },
+  { name: "Espada de São Jorge", classification: 'quente' },
+  { name: "Espinheira santa", classification: 'morna' },
+  { name: "Eucalipto", classification: 'quente' },
+  { name: "Flor de girassol (ou Semente de girassol)", classification: 'morna' },
+  { name: "Folha Chapéu de couro", classification: 'morna' },
+  { name: "Folha de abacateiro", classification: 'quente' },
+  { name: "Folha de anil", classification: 'quente' },
+  { name: "Folha de café", classification: 'morna' },
+  { name: "Folha de caju", classification: 'morna' },
+  { name: "Folha de cana", classification: 'morna' },
+  { name: "Folha de coqueiro", classification: 'morna' },
+  { name: "Folha de fumo", classification: 'quente' },
+  { name: "Folha de goiaba (ou Goiabeira)", classification: 'morna' },
+  { name: "Folha de Graviola", classification: 'fria' },
+  { name: "Folha de groselha", classification: 'morna' },
+  { name: "Folha de laranjeira", classification: 'morna' },
+  { name: "Folha de limão", classification: 'morna' },
+  { name: "Folha de louro", classification: 'morna' },
+  { name: "Folha de manga (ou Mangueira)", classification: 'morna' },
+  { name: "Folha de milho", classification: 'morna' },
+  { name: "Folha de pitanga (ou Pitanga)", classification: 'morna' },
+  { name: "Folha de romã", classification: 'morna' },
+  { name: "Folha do fogo", classification: 'quente' },
+  { name: "Guaco", classification: 'morna' },
+  { name: "Guiné", classification: 'quente' },
+  { name: "Hortelã", classification: 'morna' },
+  { name: "Jasmim", classification: 'fria' },
+  { name: "Jurema preta", classification: 'quente' },
+  { name: "Lágrima de nossa senhora", classification: 'morna' },
+  { name: "Levante", classification: 'morna' },
+  { name: "Lírio do brejo", classification: 'fria' },
+  { name: "Losna", classification: 'quente' },
+  { name: "Macaça", classification: 'morna' },
+  { name: "Mamona", classification: 'quente' },
+  { name: "Manjericão", classification: 'morna' },
+  { name: "Melissa", classification: 'fria' },
+  { name: "Para raio", classification: 'quente' },
+  { name: "Pata de vaca", classification: 'fria' },
+  { name: "Pau resposta", classification: 'quente' },
+  { name: "Pau tenente", classification: 'quente' },
+  { name: "Peregum roxo", classification: 'morna' },
+  { name: "Peregum verde", classification: 'morna' },
+  { name: "Peregum vermelho", classification: 'morna' },
+  { name: "Picão preto", classification: 'quente' },
+  { name: "Pimenta rosada", classification: 'quente' },
+  { name: "Pinhão roxo", classification: 'quente' },
+  { name: "Quebra demanda", classification: 'quente' },
+  { name: "Rosas Brancas", classification: 'fria' },
+  { name: "Rosas cor de rosa", classification: 'fria' },
+  { name: "Rosas vermelhas", classification: 'morna' },
+  { name: "Salgueiro chorão", classification: 'morna' },
+  { name: "Salsão", classification: 'morna' },
+  { name: "Sálvia", classification: 'morna' },
+  { name: "Samambaia", classification: 'morna' },
+  { name: "Tomilho", classification: 'morna' },
+  { name: "Trevo (ou Trevo de quatro folhas)", classification: 'morna' },
+  { name: "Verbena", classification: 'morna' }
 ];
 
 const INITIAL_READY_BATHS: ReadyBath[] = [
@@ -40,6 +118,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'b1',
     title: 'Banho de descarrego',
     category: 'Gerais',
+    thermalProperty: 'quente',
     herbs: 'Alecrim\nArruda\nGuiné\nManjericão\nEspada de são Jorge\nFumo de corda\nCasca de alho\nCasca de cebola\nPinhão roxo\nFolha do fogo\nAroeira\nJurema preta\nAbre caminho\nQuebra demanda\nPara raio\nDanda da costa\nAssa peixe\nEspinheira santa\nAçoita cavalo\nErva do bicho\nBuchinha do norte\nEucalipto\nFolha de chorão\nPicão preto\nDesata nó',
     observations: 'Banho de descarrego é necessário antes de tomar qualquer outro banho, para que limpe o medium de energias baixas, negativas e assim permitindo que os banhos seguintes consigam trazer a energia, um exemplo; não consigo tomar um banho de oxalá e trazer tranquilidade caso a pessoa estiver carregada.',
     isFavorite: false
@@ -48,6 +127,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'b2',
     title: 'Banho de desenvolvimento',
     category: 'Gerais',
+    thermalProperty: 'morna',
     herbs: 'Casca de Jurema Preta\nPau Resposta\nCipó Caboclo\nFolha de Laranjeira\nFolha de Pitangueira\nSamambaia',
     observations: 'Todos esses elementos são para uma mistura específica assim como um resultado harmônico para sentirmos nossos espíritos e trazemos as nossas energias mais facilmente.\n\n* Como preparar esse banho?\nOs 3 primeiros ingredientes que são paus e cascas precisão ser comprados em casa de umbanda pois não conseguimos achar eles facilmente, eles precisão ser ralados, não tem necessidade nenhuma ferver o pedaço inteiro que é praticamente desperdício e não se usufrui de todo seu benefício assim, e as últimas 3 ervas caso tenham secas pode se ferver, se só tiverem frescas podem ser quinadas normalmente\n\nCaso ferverem as cascas já raladas e alguma das ervas que estiverem secas, e tiverem alguma dessas frescas já quinadas, vocês apenas fazem a fusão de ambos, que é misturar os fervidos com os quinados',
     isFavorite: false
@@ -56,6 +136,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'b3',
     title: 'Banho neutralizador',
     category: 'Gerais',
+    thermalProperty: 'morna',
     herbs: 'Folha de goiaba\nFolha de manga\nPitanga\nJabuticaba\nArruda',
     observations: '',
     isFavorite: false
@@ -64,6 +145,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'b4',
     title: 'Banho energizador',
     category: 'Gerais',
+    thermalProperty: 'morna',
     herbs: 'Alecrim\nLouro\nCapim limão\nErva doce\nCamomila',
     observations: '',
     isFavorite: false
@@ -72,6 +154,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'oxala',
     title: 'Banho de Oxalá',
     category: 'Orixás',
+    thermalProperty: 'fria',
     herbs: 'Guaco\nPitanga\nBoldo\nAlecrim\nFolha de laranjeira\nHortelã\nManjericão\nCapim cidreira',
     observations: '',
     isFavorite: false
@@ -80,6 +163,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'iemanja',
     title: 'Banho de Iemanja',
     category: 'Orixás',
+    thermalProperty: 'fria',
     herbs: 'Cavalinha\nColônia\nFolha de Graviola\nJasmim\nRosas Brancas\nAlfazema\nManjericão\nAnis Estrelado\nPata de vaca\nLírio do brejo',
     observations: '',
     isFavorite: false
@@ -88,6 +172,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'oxum',
     title: 'Banho de Oxum',
     category: 'Orixás',
+    thermalProperty: 'fria',
     herbs: 'Calêndula\nErva doce\nCamomila\nMacaça\nMelissa\nErva cidreira',
     observations: '',
     isFavorite: false
@@ -96,6 +181,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'iansa',
     title: 'Banho de Iansã/Oya',
     category: 'Orixás',
+    thermalProperty: 'quente',
     herbs: 'Buchinha do norte\nPara raio\nEspada de Santa Barbara\nPeregum vermelho\nAlfavaca\nCalêndula\nDanda da costa\nLosna\nFolha de fumo\nFolha de goiaba\nFolha de limão\nFolha de louro\nFolha de manga\nFolha de romã\nFolha de pitanga\nFlha do fogo\nGirassol (semente)',
     observations: '',
     isFavorite: false
@@ -104,6 +190,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'ogum',
     title: 'Banho de Ogum',
     category: 'Orixás',
+    thermalProperty: 'quente',
     herbs: 'Peregum verde\nLosna\nComigo ninguém pode\nEspada de são Jorge\nFolha de goiaba, aroeira\nAbre caminho\nCana de brejo\nQuebra demanda\nPicão preto\nPinhão roxo\nDanda da costa\nGuiné\nSálvia\nAssa peixe\nAngico',
     observations: '',
     isFavorite: false
@@ -112,6 +199,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'oxossi',
     title: 'Banho de Oxossi',
     category: 'Orixás',
+    thermalProperty: 'morna',
     herbs: 'Folha de goiabeira\nFolha de groselha\nFolha de mangueira\nQuebra demanda\nFolha de café\nFolha de abacateiro\nFolha de milho\nFolha Chapéu de couro\nSalgueiro chorão\nPicão preto\nJurema preta\nCipó caboclo\nPeregum verde\nSamambaia\nCabelo de milho',
     observations: '',
     isFavorite: false
@@ -120,6 +208,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'xango',
     title: 'Banho de Xangô',
     category: 'Orixás',
+    thermalProperty: 'quente',
     herbs: 'Aroeira\nPara raio',
     observations: '',
     isFavorite: false
@@ -128,6 +217,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'obaluae',
     title: 'Banho de Obaluaê',
     category: 'Orixás',
+    thermalProperty: 'quente',
     herbs: 'Pinhão roxo',
     observations: '',
     isFavorite: false
@@ -136,6 +226,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'exu',
     title: 'Banho de Exu',
     category: 'Entidades',
+    thermalProperty: 'quente',
     herbs: 'Mamona\nAmora\nAçoita cavalo\nFolha do fogo\ndesata nó\nPau tenente\nPeregum roxo',
     observations: '',
     isFavorite: false
@@ -144,6 +235,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'pombagira',
     title: 'Banho de Pombagira',
     category: 'Entidades',
+    thermalProperty: 'morna',
     herbs: 'Rosa vermelha\nCalêndula\nCanela\nCravo da Índia\nBrinco de princesa\nAmor agarradinho\nAmor perfeito',
     observations: '',
     isFavorite: false
@@ -152,6 +244,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'exu_mirim',
     title: 'Banho de Exu Mirim',
     category: 'Entidades',
+    thermalProperty: 'quente',
     herbs: 'Folha de laranjeira / Casca da laranja\nFolha de limão',
     observations: '',
     isFavorite: false
@@ -160,6 +253,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'malandros',
     title: 'Banho de Malandros',
     category: 'Entidades',
+    thermalProperty: 'morna',
     herbs: 'Alecrim\nTrevo de quarto folhas\nRosas vermelhas\nPimenta rosada\nCapim limão\nFolha de cana',
     observations: '',
     isFavorite: false
@@ -168,6 +262,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'baianos',
     title: 'Banho de Baianos',
     category: 'Entidades',
+    thermalProperty: 'morna',
     herbs: 'Folha de laranjeira\nErva cidreira\nCoentro\nFolha de coqueiro\nFolha de caju\nCasca de coco ralado\nÁgua de coco',
     observations: '',
     isFavorite: false
@@ -176,6 +271,7 @@ const INITIAL_BATHS: HerbBath[] = [
     id: 'ere',
     title: 'Banho de Erê',
     category: 'Entidades',
+    thermalProperty: 'fria',
     herbs: 'Levante\nVerbena\nRosas cor de rosa\nFuncho/erva doce\nAlecrim\nTrevo\nFolha de anil\nFolha de laranjeira\nAlfazema\nJasmim\nCalêndula',
     observations: 'Também pode utilizar ervas de Oxum, pois na umbanda é Oxum quem trás os erês. Além disso, pode adicionar ao banho um pouco de guaraná',
     isFavorite: false
@@ -261,10 +357,10 @@ export default function HerbsScreen() {
     const filteredAndUpdatedBaths = baths.filter(current => true).map(current => {
       const initial = INITIAL_BATHS.find(i => i.id === current.id);
       if (initial && (initial.category === 'Orixás' || initial.category === 'Entidades')) {
-        const isDifferent = current.herbs !== initial.herbs || current.title !== initial.title;
+        const isDifferent = current.herbs !== initial.herbs || current.title !== initial.title || current.thermalProperty !== initial.thermalProperty;
         if (isDifferent) {
           bathsChanged = true;
-          return { ...current, title: initial.title, herbs: initial.herbs, observations: initial.observations };
+          return { ...current, title: initial.title, herbs: initial.herbs, observations: initial.observations, thermalProperty: initial.thermalProperty };
         }
       }
       return current;
@@ -288,7 +384,8 @@ export default function HerbsScreen() {
     herbs: '',
     observations: '',
     isFavorite: false,
-    category: 'Gerais'
+    category: 'Gerais',
+    thermalProperty: 'morna'
   });
 
   const [selectedBathForDetails, setSelectedBathForDetails] = useState<HerbBath | null>(null);
@@ -456,13 +553,13 @@ export default function HerbsScreen() {
     });
   };
 
-  const addHerbToStock = (name: string) => {
+  const addHerbToStock = (name: string, classification?: 'quente' | 'morna' | 'fria') => {
     if (herbStock.some(h => h.name.toLowerCase() === name.toLowerCase())) {
       setShowHerbModal(false);
       setCustomHerbName('');
       return;
     }
-    setHerbStock([...herbStock, { id: Date.now().toString(), name, inStock: true }]);
+    setHerbStock([...herbStock, { id: Date.now().toString(), name, inStock: true, classification }]);
     setShowHerbModal(false);
     setCustomHerbName('');
   };
@@ -681,13 +778,28 @@ export default function HerbsScreen() {
                     )}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 pr-4" onClick={() => setSelectedBathForDetails(bath)}>
-                        <h4 className={cn(
-                          "font-black text-brand-navy text-xl leading-tight hover:text-brand-copper cursor-pointer transition-colors", 
-                          settings.darkMode && "text-white dark:hover:text-brand-gold"
-                        )}>
-                          {bath.title}
-                        </h4>
+                        <div className="flex-1 pr-4" onClick={() => setSelectedBathForDetails(bath)}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className={cn(
+                              "font-black text-brand-navy text-xl leading-tight hover:text-brand-copper cursor-pointer transition-colors", 
+                              settings.darkMode && "text-white dark:hover:text-brand-gold"
+                            )}>
+                              {bath.title}
+                            </h4>
+                            {bath.thermalProperty && (
+                              <span className={cn(
+                                "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md flex items-center gap-1",
+                                bath.thermalProperty === 'quente' ? "bg-red-500/10 text-red-500" :
+                                bath.thermalProperty === 'morna' ? "bg-amber-500/10 text-amber-500" :
+                                "bg-blue-500/10 text-blue-500"
+                              )}>
+                                {bath.thermalProperty === 'quente' && <Flame className="w-2.5 h-2.5" />}
+                                {bath.thermalProperty === 'morna' && <Sun className="w-2.5 h-2.5" />}
+                                {bath.thermalProperty === 'fria' && <Snowflake className="w-2.5 h-2.5" />}
+                                {bath.thermalProperty}
+                              </span>
+                            )}
+                          </div>
                         
                         {/* Preview of Herbs */}
                         <div className="mt-3 flex flex-wrap gap-1.5 line-clamp-1 pointer-events-none">
@@ -1212,13 +1324,28 @@ export default function HerbsScreen() {
                     >
                       {herb.inStock && <CheckCircle2 className="w-4 h-4" />}
                     </button>
-                    <span className={cn(
-                      "font-bold text-sm",
-                      settings.darkMode ? "text-white" : "text-brand-navy",
-                      !herb.inStock && "line-through text-gray-400"
-                    )}>
-                      {herb.name}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className={cn(
+                        "font-bold text-sm",
+                        settings.darkMode ? "text-white" : "text-brand-navy",
+                        !herb.inStock && "line-through text-gray-400"
+                      )}>
+                        {herb.name}
+                      </span>
+                      {herb.classification && (
+                        <span className={cn(
+                          "text-[8px] font-black uppercase tracking-widest flex items-center gap-1",
+                          herb.classification === 'quente' ? "text-red-500" :
+                          herb.classification === 'morna' ? "text-amber-500" :
+                          "text-blue-500"
+                        )}>
+                          {herb.classification === 'quente' && <Flame className="w-2 h-2" />}
+                          {herb.classification === 'morna' && <Sun className="w-2 h-2" />}
+                          {herb.classification === 'fria' && <Snowflake className="w-2 h-2" />}
+                          {herb.classification}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -1283,10 +1410,27 @@ export default function HerbsScreen() {
                 "p-6 border-b flex justify-between items-center",
                 settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50/50 border-gray-100"
               )}>
-                <h3 className={cn(
-                  "text-xl font-black pr-8",
-                  settings.darkMode ? "text-white" : "text-brand-navy"
-                )}>{selectedBathForDetails.title}</h3>
+                <div className="flex flex-col gap-1 pr-8">
+                  <h3 className={cn(
+                    "text-xl font-black",
+                    settings.darkMode ? "text-white" : "text-brand-navy"
+                  )}>{selectedBathForDetails.title}</h3>
+                  {selectedBathForDetails.thermalProperty && (
+                    <div className="flex">
+                      <span className={cn(
+                        "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg flex items-center gap-1.5",
+                        selectedBathForDetails.thermalProperty === 'quente' ? "bg-red-500/10 text-red-500" :
+                        selectedBathForDetails.thermalProperty === 'morna' ? "bg-amber-500/10 text-amber-500" :
+                        "bg-blue-500/10 text-blue-500"
+                      )}>
+                        {selectedBathForDetails.thermalProperty === 'quente' && <Flame className="w-3 h-3" />}
+                        {selectedBathForDetails.thermalProperty === 'morna' && <Sun className="w-3 h-3" />}
+                        {selectedBathForDetails.thermalProperty === 'fria' && <Snowflake className="w-3 h-3" />}
+                        Classificação: {selectedBathForDetails.thermalProperty}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <button 
                   onClick={() => setSelectedBathForDetails(null)}
                   className={cn(
@@ -1553,22 +1697,35 @@ export default function HerbsScreen() {
 
               <div className="flex-1 overflow-y-auto mb-4 space-y-1 custom-scrollbar">
                 {SUGGESTED_HERBS
-                  .filter(h => h.toLowerCase().includes(herbSearch.toLowerCase()))
+                  .filter(h => h.name.toLowerCase().includes(herbSearch.toLowerCase()))
                   .map((herb) => {
-                    const isAdded = herbStock.some(s => s.name === herb);
+                    const isAdded = herbStock.some(s => s.name === herb.name);
                     return (
                       <button
-                        key={herb}
-                        onClick={() => !isAdded && addHerbToStock(herb)}
+                        key={herb.name}
+                        onClick={() => !isAdded && addHerbToStock(herb.name, herb.classification)}
                         className={cn(
-                          "w-full text-left p-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between",
+                          "w-full text-left p-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between group",
                           isAdded 
                             ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-white/5" 
                             : "hover:bg-brand-copper hover:text-white"
                         )}
                         disabled={isAdded}
                       >
-                        <span>{herb}</span>
+                        <div className="flex flex-col">
+                          <span>{herb.name}</span>
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-widest flex items-center gap-1",
+                            herb.classification === 'quente' ? "text-red-500 group-hover:text-white" :
+                            herb.classification === 'morna' ? "text-amber-500 group-hover:text-white" :
+                            "text-blue-500 group-hover:text-white"
+                          )}>
+                            {herb.classification === 'quente' && <Flame className="w-2 h-2" />}
+                            {herb.classification === 'morna' && <Sun className="w-2 h-2" />}
+                            {herb.classification === 'fria' && <Snowflake className="w-2 h-2" />}
+                            {herb.classification}
+                          </span>
+                        </div>
                         {isAdded && <CheckCircle2 className="w-4 h-4" />}
                       </button>
                     );
@@ -1802,6 +1959,31 @@ export default function HerbsScreen() {
                         )}
                       >
                         {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase text-brand-copper tracking-widest px-2">Propriedade Térmica</p>
+                  <div className="flex gap-2">
+                    {(['quente', 'morna', 'fria'] as const).map(prop => (
+                      <button
+                        key={prop}
+                        onClick={() => setNewBath({...newBath, thermalProperty: prop})}
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-xs font-bold transition-all border capitalize flex flex-col items-center justify-center gap-1",
+                          newBath.thermalProperty === prop
+                            ? (prop === 'quente' ? "bg-red-500 border-red-500 text-white" : 
+                               prop === 'morna' ? "bg-amber-500 border-amber-500 text-white" : 
+                               "bg-blue-500 border-blue-500 text-white")
+                            : (settings.darkMode ? "bg-white/5 border-white/10 text-gray-400" : "bg-white border-gray-100 text-gray-500")
+                        )}
+                      >
+                        {prop === 'quente' && <Flame className="w-4 h-4 mb-0.5" />}
+                        {prop === 'morna' && <Sun className="w-4 h-4 mb-0.5" />}
+                        {prop === 'fria' && <Snowflake className="w-4 h-4 mb-0.5" />}
+                        {prop}
                       </button>
                     ))}
                   </div>

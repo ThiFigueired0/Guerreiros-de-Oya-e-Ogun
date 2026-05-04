@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
-  BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
-  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History, Settings
+  BookOpen, Plus, Trash2, Edit2, Save, X, Search, ChevronRight, ChevronDown, Check, GraduationCap, FileText, Upload, Download, Eye, ExternalLink, Star, CheckCircle2,
+  Book, MessageSquare, LayoutList, Sparkles, ScrollText, Flame, Bookmark, History, Settings, Bot, Loader2, Wand2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
@@ -12,6 +12,9 @@ import { useIdbStorage } from '../hooks/useIdbStorage';
 import { get, set, del } from 'idb-keyval';
 import { useUndo } from '../hooks/useUndo';
 import { Greeting, StudyBook, AppSettings, StudyContent, GlossaryTerm } from '../types';
+import { DEFAULT_GLOSSARY } from '../data/glossaryData';
+import { askAI } from '../services/aiService';
+import { generateGlossaryTerm, refineGlossaryDefinition } from '../services/glossaryAiService';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { PDFReader } from '../components/PDFReader';
 
@@ -176,6 +179,68 @@ export default function StudiesScreen() {
   const [greetings, setGreetings] = useStorage<Greeting[]>('templo_greetings', INITIAL_GREETINGS);
   const [studyContents, setStudyContents] = useStorage<StudyContent[]>('templo_study_docs', INITIAL_STUDY_CONTENTS);
   const [glossaryTerms, setGlossaryTerms] = useStorage<GlossaryTerm[]>('templo_glossary', []);
+  const [aiGlossaryResponses, setAiGlossaryResponses] = useState<Record<string, string>>({});
+  const [loadingAiTermId, setLoadingAiTermId] = useState<string | null>(null);
+
+  // Sync glossary with DEFAULT_GLOSSARY
+  useEffect(() => {
+    // If completely empty, initialize everything
+    if (glossaryTerms.length === 0) {
+      const initializedTerms = DEFAULT_GLOSSARY.map((term, index) => ({
+        ...term,
+        id: `default-${index}-${Date.now()}`
+      }));
+      setGlossaryTerms(initializedTerms);
+      return;
+    }
+
+    // Check for missing terms from the default set (by name)
+    const existingTermNames = new Set(glossaryTerms.map(t => t.term));
+    const missingTerms = DEFAULT_GLOSSARY.filter(t => !existingTermNames.has(t.term));
+
+    if (missingTerms.length > 0) {
+      const newTermsToAdd = missingTerms.map((term, index) => ({
+        ...term,
+        id: `default-sync-${index}-${Date.now()}`
+      }));
+      setGlossaryTerms(prev => [...prev, ...newTermsToAdd]);
+    }
+  }, [DEFAULT_GLOSSARY.length]);
+
+  const GLOSSARY_CATEGORIES = useMemo(() => [
+    'Orixás e Divindades',
+    'Entidades e Linhas',
+    'Fundamentos e Ritos',
+    'Ervas e Elementos',
+    'Tradição e História',
+    'Geral e Espiritualidade'
+  ], []);
+
+  // Helper to map old/various categories to the new 6 standard categories
+  const harmonizeCategory = useCallback((cat: string): string => {
+    const c = cat.toLowerCase().trim();
+    if (c.includes('orixá') || c.includes('divindade') || c.includes('inkice') || c.includes('vodun')) return 'Orixás e Divindades';
+    if (c.includes('entidade') || c.includes('linha') || c.includes('guia') || c.includes('falange') || c.includes('kiumba') || c.includes('cambono')) return 'Entidades e Linhas';
+    if (c.includes('fundamento') || c.includes('rito') || c.includes('ritual') || c.includes('axé') || c.includes('feitura') || c.includes('preceito')) return 'Fundamentos e Ritos';
+    if (c.includes('erva') || c.includes('elemento') || c.includes('natureza') || c.includes('banho')) return 'Ervas e Elementos';
+    if (c.includes('história') || c.includes('tradição') || c.includes('origem') || c.includes('revolta') || c.includes('quilombo') || c.includes('mestre')) return 'Tradição e História';
+    
+    // Default fallback
+    return 'Geral e Espiritualidade';
+  }, []);
+
+  // Harmonize categories in LocalStorage once
+  useEffect(() => {
+    if (glossaryTerms.length > 0) {
+      const needsHarmonization = glossaryTerms.some(t => !t.category || !GLOSSARY_CATEGORIES.includes(t.category));
+      if (needsHarmonization) {
+        setGlossaryTerms(prev => prev.map(t => ({
+          ...t,
+          category: (t.category && GLOSSARY_CATEGORIES.includes(t.category)) ? t.category : harmonizeCategory(t.category || '')
+        })));
+      }
+    }
+  }, [glossaryTerms.length, GLOSSARY_CATEGORIES, harmonizeCategory, setGlossaryTerms]);
 
   // UI state
   const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents' | 'glossary'>('library');
@@ -252,9 +317,66 @@ export default function StudiesScreen() {
   // Glossary State
   const [showGlossaryModal, setShowGlossaryModal] = useState(false);
   const [editingGlossaryTerm, setEditingGlossaryTerm] = useState<GlossaryTerm | null>(null);
-  const [glossaryForm, setGlossaryForm] = useState<Partial<GlossaryTerm>>({ term: '', definition: '', category: '' });
+  const [glossaryForm, setGlossaryForm] = useState<Partial<GlossaryTerm>>({ 
+    term: '', 
+    definition: '', 
+    category: 'Geral e Espiritualidade' 
+  });
   const [glossarySearch, setGlossarySearch] = useState('');
+  const [isGlossaryCategoryOpen, setIsGlossaryCategoryOpen] = useState(false);
+  const [duplicateError, setDuplicateError] = useState(false);
   const [selectedGlossaryTerm, setSelectedGlossaryTerm] = useState<GlossaryTerm | null>(null);
+  const [glossaryCategoryFilter, setGlossaryCategoryFilter] = useState('Tudo');
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isRefiningAi, setIsRefiningAi] = useState(false);
+
+  const filteredGlossaryTerms = useMemo(() => {
+    return glossaryTerms.filter(t => {
+      const matchesSearch = t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || 
+                          t.definition.toLowerCase().includes(glossarySearch.toLowerCase());
+      const matchesCategory = glossaryCategoryFilter === 'Tudo' || t.category === glossaryCategoryFilter;
+      return matchesSearch && matchesCategory;
+    }).sort((a, b) => a.term.localeCompare(b.term));
+  }, [glossaryTerms, glossarySearch, glossaryCategoryFilter]);
+
+  const groupedGlossary = useMemo(() => {
+    const groups: Record<string, GlossaryTerm[]> = {};
+    filteredGlossaryTerms.forEach(term => {
+      // Normalize to remove accents for the sorting key
+      const normalizedString = term.term.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const firstLetter = normalizedString.charAt(0).toUpperCase();
+      const groupKey = /^[A-Z]$/.test(firstLetter) ? firstLetter : '#';
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(term);
+    });
+    return groups;
+  }, [filteredGlossaryTerms]);
+
+  const glossaryCategories = useMemo(() => {
+    const catsAndCounts: Record<string, number> = { 'Tudo': glossaryTerms.length };
+    
+    // Initialize all standard categories with 0
+    GLOSSARY_CATEGORIES.forEach(cat => {
+      catsAndCounts[cat] = 0;
+    });
+
+    glossaryTerms.forEach(t => {
+      if (t.category && t.category in catsAndCounts) {
+        catsAndCounts[t.category]++;
+      } else if (t.category) {
+        // This case should be handled by migration, but just in case
+        catsAndCounts['Geral e Espiritualidade']++;
+      }
+    });
+
+    return Object.entries(catsAndCounts)
+      .sort(([a], [b]) => {
+        if (a === 'Tudo') return -1;
+        if (b === 'Tudo') return 1;
+        return a.localeCompare(b);
+      })
+      .map(([name, count]) => ({ name, count }));
+  }, [glossaryTerms, GLOSSARY_CATEGORIES]);
 
   const [newLink, setNewLink] = useState('');
   const addLink = () => {
@@ -677,13 +799,28 @@ export default function StudiesScreen() {
   };
 
   const handleSaveGlossaryTerm = () => {
-    if (!glossaryForm.term || !glossaryForm.definition) return;
+    const { term, definition, category } = glossaryForm;
+    if (!term || !definition) return;
     
+    const normalizedTerm = term.toLowerCase().trim();
+    
+    // Duplicity check
+    const isDuplicate = glossaryTerms.some(t => 
+      t.term.toLowerCase().trim() === normalizedTerm && 
+      (!editingGlossaryTerm || t.id !== editingGlossaryTerm.id)
+    );
+
+    if (isDuplicate) {
+      setDuplicateError(true);
+      setTimeout(() => setDuplicateError(false), 3000);
+      return;
+    }
+
     const newTerm: GlossaryTerm = {
       id: editingGlossaryTerm ? editingGlossaryTerm.id : Date.now().toString(),
-      term: glossaryForm.term,
-      definition: glossaryForm.definition,
-      category: glossaryForm.category
+      term,
+      definition,
+      category: category || 'Geral e Espiritualidade'
     };
 
     if (editingGlossaryTerm) {
@@ -694,7 +831,37 @@ export default function StudiesScreen() {
     
     setShowGlossaryModal(false);
     setEditingGlossaryTerm(null);
-    setGlossaryForm({ term: '', definition: '', category: '' });
+    setGlossaryForm({ term: '', definition: '', category: 'Geral e Espiritualidade' });
+  };
+
+  const handleAiGenerate = async () => {
+    if (!glossaryForm.term) return;
+    setIsGeneratingAi(true);
+    try {
+      const result = await generateGlossaryTerm(glossaryForm.term);
+      setGlossaryForm(prev => ({
+        ...prev,
+        definition: result.definition,
+        category: result.category || 'Geral e Espiritualidade'
+      }));
+    } catch (error) {
+      console.error("Erro ao gerar com IA:", error);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const handleAiRefine = async () => {
+    if (!glossaryForm.term || !glossaryForm.definition) return;
+    setIsRefiningAi(true);
+    try {
+      const refined = await refineGlossaryDefinition(glossaryForm.term, glossaryForm.definition);
+      setGlossaryForm(prev => ({ ...prev, definition: refined }));
+    } catch (error) {
+      console.error("Erro ao refinar com IA:", error);
+    } finally {
+      setIsRefiningAi(false);
+    }
   };
 
   const deleteContent = (item: StudyContent, e: React.MouseEvent) => {
@@ -1404,14 +1571,19 @@ export default function StudiesScreen() {
           >
             <section className="mb-10 px-2">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-brand-copper" />
-                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Glossário umbandista</h2>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-brand-copper" />
+                    <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Glossário umbandista</h2>
+                  </div>
+                  <span className="text-[10px] text-gray-400 mt-0.5">
+                    {filteredGlossaryTerms.length} de {glossaryTerms.length} termos
+                  </span>
                 </div>
                 <button 
                   onClick={() => {
                     setEditingGlossaryTerm(null);
-                    setGlossaryForm({ term: '', definition: '', category: '' });
+                    setGlossaryForm({ term: '', definition: '', category: 'Geral e Espiritualidade' });
                     setShowGlossaryModal(true);
                   }}
                   className="text-[10px] uppercase font-black tracking-widest text-brand-copper bg-brand-copper/10 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
@@ -1434,8 +1606,42 @@ export default function StudiesScreen() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                {glossaryTerms.filter(t => t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || t.definition.toLowerCase().includes(glossarySearch.toLowerCase())).length === 0 ? (
+              {/* Category Filter */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <LayoutList className="w-3 h-3 text-brand-copper" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Filtrar por Categoria</span>
+                </div>
+                <div className="flex overflow-x-auto gap-2 no-scrollbar pb-2">
+                  {glossaryCategories.map((cat) => (
+                    <button
+                      key={cat.name}
+                      onClick={() => setGlossaryCategoryFilter(cat.name)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all flex items-center gap-2",
+                        glossaryCategoryFilter === cat.name
+                          ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20 scale-105"
+                          : settings.darkMode 
+                            ? "bg-[#1A1A1A] text-gray-400 border border-gray-800" 
+                            : "bg-white text-gray-500 border border-gray-100 shadow-sm"
+                      )}
+                    >
+                      {cat.name}
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded-lg text-[8px]",
+                        glossaryCategoryFilter === cat.name
+                          ? "bg-white/20 text-white"
+                          : "bg-brand-copper/10 text-brand-copper"
+                      )}>
+                        {cat.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8">
+                {filteredGlossaryTerms.length === 0 ? (
                   <div className={cn(
                     "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
                     settings.darkMode && "border-gray-800"
@@ -1447,66 +1653,146 @@ export default function StudiesScreen() {
                     </div>
                   </div>
                 ) : (
-                  glossaryTerms
-                    .filter(t => t.term.toLowerCase().includes(glossarySearch.toLowerCase()) || t.definition.toLowerCase().includes(glossarySearch.toLowerCase()))
-                    .sort((a,b) => a.term.localeCompare(b.term))
-                    .map((term) => (
-                    <motion.div
-                      key={term.id}
-                      onClick={() => setSelectedGlossaryTerm(term)}
-                      className={cn(
-                        "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
-                        settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
-                      )}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-1">
-                          {term.category && (
-                            <span className={cn(
-                              "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit bg-brand-copper/10 text-brand-copper"
-                            )}>
-                              {term.category}
-                            </span>
-                          )}
-                          <h3 className={cn("text-sm font-black text-brand-navy mt-1", settings.darkMode && "text-white")}>
-                            {term.term}
-                          </h3>
+                  Object.entries(groupedGlossary)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([letter, terms]) => (
+                      <div key={letter} className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm border",
+                            settings.darkMode 
+                              ? "bg-brand-copper/10 border-brand-copper/20 text-brand-copper" 
+                              : "bg-white border-brand-copper/10 text-brand-copper shadow-brand-copper/5"
+                          )}>
+                            {letter}
+                          </div>
+                          <div className="h-px flex-1 bg-gradient-to-r from-brand-copper/10 to-transparent" />
                         </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingGlossaryTerm(term);
-                              setGlossaryForm({ ...term });
-                              setShowGlossaryModal(true);
-                            }}
-                            className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              queueDelete({
-                                id: term.id,
-                                label: term.term,
-                                timestamp: Date.now(),
-                                onConfirm: () => {
-                                  setGlossaryTerms((prev: GlossaryTerm[]) => prev.filter(t => t.id !== term.id));
-                                }
-                              });
-                            }}
-                            className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          {terms.map((term) => (
+                            <motion.div
+                              key={term.id}
+                              onClick={() => setSelectedGlossaryTerm(term)}
+                              className={cn(
+                                "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
+                                settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                              )}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex flex-col gap-1">
+                                  {term.category && (
+                                    <span className={cn(
+                                      "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit bg-brand-copper/10 text-brand-copper"
+                                    )}>
+                                      {term.category}
+                                    </span>
+                                  )}
+                                  <h3 className={cn("text-sm font-black text-brand-navy mt-1", settings.darkMode && "text-white")}>
+                                    {term.term}
+                                  </h3>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingGlossaryTerm(term);
+                                      setGlossaryForm({ ...term });
+                                      setShowGlossaryModal(true);
+                                    }}
+                                    className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      queueDelete({
+                                        id: term.id,
+                                        label: term.term,
+                                        timestamp: Date.now(),
+                                        onConfirm: () => {
+                                          setGlossaryTerms((prev: GlossaryTerm[]) => prev.filter(t => t.id !== term.id));
+                                        }
+                                      });
+                                    }}
+                                    className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className={cn("text-xs text-gray-500 leading-relaxed font-medium line-clamp-2", settings.darkMode && "text-gray-400")}>
+                                {term.definition}
+                              </p>
+
+                              <AnimatePresence>
+                                {aiGlossaryResponses[term.id] && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="mt-3 pt-3 border-t border-brand-copper/10"
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Sparkles className="w-3 h-3 text-brand-copper" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-copper">Insight do Assistente</span>
+                                    </div>
+                                    <p className={cn(
+                                      "text-[11px] font-bold leading-relaxed italic",
+                                      settings.darkMode ? "text-brand-copper/80" : "text-brand-navy"
+                                    )}>
+                                      {aiGlossaryResponses[term.id]}
+                                    </p>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
+                              <div className="mt-2 flex justify-end">
+                                <button
+                                  disabled={loadingAiTermId === term.id}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (aiGlossaryResponses[term.id]) {
+                                      setAiGlossaryResponses(prev => {
+                                        const next = { ...prev };
+                                        delete next[term.id];
+                                        return next;
+                                      });
+                                      return;
+                                    }
+                                    
+                                    setLoadingAiTermId(term.id);
+                                    try {
+                                      const prompt = `Como um guia de estudos umbandista, forneça uma explicação mais profunda e detalhada para o termo "${term.term}", contextualizando-o na Umbanda, Candomblé ou Quimbanda conforme apropriado. Seja conciso mas rico em fundamentos.`;
+                                      const response = await askAI(prompt);
+                                      setAiGlossaryResponses(prev => ({ ...prev, [term.id]: response }));
+                                    } catch (error) {
+                                      console.error('AI Error:', error);
+                                    } finally {
+                                      setLoadingAiTermId(null);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95",
+                                    aiGlossaryResponses[term.id] 
+                                      ? "bg-brand-copper text-white" 
+                                      : "bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20"
+                                  )}
+                                >
+                                  {loadingAiTermId === term.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Bot className="w-3 h-3" />
+                                  )}
+                                  {aiGlossaryResponses[term.id] ? 'Fechar Dúvida' : 'Tirar Dúvida com IA'}
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
                         </div>
                       </div>
-                      <p className={cn("text-xs text-gray-500 leading-relaxed font-medium line-clamp-2", settings.darkMode && "text-gray-400")}>
-                        {term.definition}
-                      </p>
-                    </motion.div>
-                  ))
+                    ))
                 )}
               </div>
             </section>
@@ -2653,7 +2939,32 @@ export default function StudiesScreen() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Termo</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1">Termo</label>
+                    {duplicateError && (
+                      <motion.span 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-[9px] font-bold text-red-500 uppercase tracking-wider"
+                      >
+                        Este termo já existe!
+                      </motion.span>
+                    )}
+                    {glossaryForm.term && !editingGlossaryTerm && !duplicateError && (
+                      <button 
+                        onClick={handleAiGenerate}
+                        disabled={isGeneratingAi}
+                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-copper hover:text-brand-navy transition-colors bg-brand-copper/5 px-2 py-1 rounded-full mr-2"
+                      >
+                        {isGeneratingAi ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3" />
+                        )}
+                        Gerar com IA
+                      </button>
+                    )}
+                  </div>
                   <input 
                     type="text"
                     value={glossaryForm.term}
@@ -2666,22 +2977,85 @@ export default function StudiesScreen() {
                   />
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Categoria (Opcional)</label>
-                  <input 
-                    type="text"
-                    value={glossaryForm.category}
-                    onChange={(e) => setGlossaryForm({ ...glossaryForm, category: e.target.value })}
+                <div className="relative">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Categoria</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsGlossaryCategoryOpen(!isGlossaryCategoryOpen)}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none",
-                      settings.darkMode && "bg-black text-white"
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none flex items-center justify-between group transition-all duration-300",
+                      settings.darkMode && "bg-black text-white",
+                      isGlossaryCategoryOpen && "ring-2 ring-brand-copper/20 bg-white shadow-sm",
+                      settings.darkMode && isGlossaryCategoryOpen && "bg-zinc-900"
                     )}
-                    placeholder="Ex: Rito, Ferramenta, Item..."
-                  />
+                  >
+                    <span className="truncate">{glossaryForm.category}</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 text-brand-copper transition-transform duration-300",
+                      isGlossaryCategoryOpen && "rotate-180"
+                    )} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isGlossaryCategoryOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-[60]" 
+                          onClick={() => setIsGlossaryCategoryOpen(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className={cn(
+                            "absolute top-full left-0 right-0 mt-2 bg-white rounded-[24px] shadow-xl border border-gray-100 overflow-hidden z-[70] py-2",
+                            settings.darkMode && "bg-zinc-900 border-zinc-800"
+                          )}
+                        >
+                          {GLOSSARY_CATEGORIES.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setGlossaryForm({ ...glossaryForm, category: cat });
+                                setIsGlossaryCategoryOpen(false);
+                              }}
+                              className={cn(
+                                "w-full text-left px-5 py-3 text-xs font-bold transition-all flex items-center justify-between",
+                                glossaryForm.category === cat 
+                                  ? "bg-brand-copper/10 text-brand-copper" 
+                                  : "text-gray-600 hover:bg-gray-50",
+                                settings.darkMode && glossaryForm.category !== cat && "text-gray-400 hover:bg-black"
+                              )}
+                            >
+                              {cat}
+                              {glossaryForm.category === cat && <Check className="w-3.5 h-3.5" />}
+                            </button>
+                          ))}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Definição / Significado</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1">Definição / Significado</label>
+                    {glossaryForm.definition && (
+                      <button 
+                        onClick={handleAiRefine}
+                        disabled={isRefiningAi}
+                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-copper hover:text-brand-navy transition-colors bg-brand-copper/5 px-2 py-1 rounded-full mr-2"
+                      >
+                        {isRefiningAi ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-3 h-3" />
+                        )}
+                        Melhorar com IA
+                      </button>
+                    )}
+                  </div>
                   <textarea 
                     value={glossaryForm.definition}
                     onChange={(e) => setGlossaryForm({ ...glossaryForm, definition: e.target.value })}

@@ -60,3 +60,66 @@ export const askAI = async (prompt: string): Promise<string> => {
     return 'Houve um problema ao processar sua pergunta. Verifique sua conexão.';
   }
 };
+
+export const getDailyKnowledge = async (): Promise<string> => {
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    return JSON.stringify({
+      title: "Sabedoria Oculta",
+      content: "A sabedoria do dia está guardada. Verifique a chave de acesso.",
+      category: "Aviso"
+    });
+  }
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `Você é um historiador e doutrinador de Umbanda e Candomblé. 
+            Gere uma pílula de conhecimento (um Itã, um Fundamento ou uma Tradição Histórica).
+            O tom deve ser educativo e respeitoso.
+            Responda APENAS em JSON no formato:
+            {
+              "title": "Título Curto",
+              "content": "Conteúdo educativo detalhado (até 450 caracteres)",
+              "category": "Itã | Fundamento | Tradição"
+            }`
+          },
+          {
+            role: 'user',
+            content: 'Gere o conhecimento estruturado de hoje.'
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) return JSON.stringify({
+      title: "Paciência",
+      content: "O conhecimento de hoje será revelado em breve. O tempo de Deus é perfeito.",
+      category: "Aviso"
+    });
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || "";
+    // Clean potential markdown code blocks
+    const jsonStr = content.replace(/```json|```/g, "").trim();
+    return jsonStr;
+  } catch (error) {
+    return JSON.stringify({
+      title: "Conexão",
+      content: "Conectando com as correntes de conhecimento... Tente novamente em breve.",
+      category: "Status"
+    });
+  }
+};

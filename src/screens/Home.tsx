@@ -2,14 +2,15 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2 } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
 import { cn } from '../lib/utils';
 import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { askAI } from '../services/aiService';
+import { askAI, getDailyKnowledge } from '../services/aiService';
+import { DID_YOU_KNOW_DATA } from '../data/didYouKnowData';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
@@ -36,6 +37,54 @@ export default function HomeScreen() {
   const [favFilter, setFavFilter] = React.useState<'all' | 'baths' | 'pontos' | 'books'>('all');
   const [aiResponse, setAiResponse] = React.useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = React.useState(false);
+  const [dailyFact, setDailyFact] = React.useState<{title: string, content: string, category: string} | null>(null);
+  const [isLoadingFact, setIsLoadingFact] = React.useState(false);
+  const [showDailyFactModal, setShowDailyFactModal] = React.useState(false);
+  const [isFactTabCollapsed, setIsFactTabCollapsed] = React.useState(false);
+  const [factTabSide, setFactTabSide] = React.useState<'left' | 'right'>('left');
+  const [factTabX, setFactTabX] = React.useState(0);
+  const [factTabY, setFactTabY] = React.useState(window.innerHeight * 0.25);
+  const factTabRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const fetchDailyFact = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const cachedFact = localStorage.getItem('templo_daily_fact_v2');
+      const cachedDate = localStorage.getItem('templo_daily_fact_date');
+
+      if (cachedFact && cachedDate === today) {
+        try {
+          setDailyFact(JSON.parse(cachedFact));
+          return;
+        } catch (e) {
+          // Fallback if parse fails
+        }
+      }
+
+      setIsLoadingFact(true);
+      try {
+        const factJsonStr = await getDailyKnowledge();
+        const factData = JSON.parse(factJsonStr);
+        
+        setDailyFact(factData);
+        
+        localStorage.setItem('templo_daily_fact_v2', factJsonStr);
+        localStorage.setItem('templo_daily_fact_date', today);
+      } catch (error) {
+        const randomIndex = Math.floor(Math.random() * DID_YOU_KNOW_DATA.length);
+        const randomItem = DID_YOU_KNOW_DATA[randomIndex];
+        setDailyFact({
+          title: randomItem.title,
+          content: randomItem.content,
+          category: randomItem.category
+        });
+      } finally {
+        setIsLoadingFact(false);
+      }
+    };
+
+    fetchDailyFact();
+  }, []);
 
   const handleAskAI = async () => {
     setIsLoadingAI(true);
@@ -255,15 +304,26 @@ export default function HomeScreen() {
         <div 
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
           className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98]",
-            settings.darkMode ? "bg-gradient-to-br from-[#1A1A1A] to-[#222] border-gray-800" : "bg-gradient-to-b from-white to-blue-50/20 border-gray-100 shadow-sm hover:border-gray-200"
+            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
+            settings.darkMode 
+              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border-gray-800 hover:border-brand-gold/30" 
+              : "bg-gradient-to-br from-brand-gold/5 to-white border-brand-gold/10 shadow-xl shadow-brand-gold/5 hover:border-brand-gold/20"
           )}
         >
-          <div className="flex items-center justify-between mb-3">
+          {/* Background Icon Decoration */}
+          <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 -rotate-12 transition-transform duration-700 pointer-events-none">
+            <BookOpen className="w-44 h-44 stroke-[1] text-brand-gold" />
+          </div>
+
+          <div className="flex items-center justify-between mb-3 relative z-10">
             <div 
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0", 
-                (!lastBook?.coverImage && !lastBook?.coverColor) && (settings.darkMode ? "bg-white/5" : "bg-gray-50")
+                "w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border transition-colors", 
+                (!lastBook?.coverImage && !lastBook?.coverColor) && (
+                  settings.darkMode 
+                  ? "bg-brand-gold/10 text-brand-gold border-brand-gold/20" 
+                  : "bg-brand-gold text-white border-brand-gold/40 shadow-lg shadow-brand-gold/20"
+                )
               )}
               style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}
             >
@@ -272,17 +332,17 @@ export default function HomeScreen() {
               ) : (
                 <GraduationCap className={cn(
                   "w-5 h-5", 
-                  lastBook?.coverColor ? "text-white" : (settings.darkMode ? "text-white" : "text-brand-navy")
+                  lastBook?.coverColor ? "text-white" : (settings.darkMode ? "text-brand-gold" : "text-white")
                 )} />
               )}
             </div>
-            {lastBook && <span className="text-[10px] font-black text-brand-copper">{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>}
+            {lastBook && <span className="text-[10px] font-black text-brand-gold">{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>}
           </div>
-          <div>
-            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Último Estudo</p>
+          <div className="relative z-10">
+            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-brand-gold/70" : "text-brand-gold/80")}>Último Estudo</p>
             <p className={cn(
               "font-bold text-xs leading-tight line-clamp-2",
-              settings.darkMode ? "text-gray-200" : "text-brand-navy"
+              settings.darkMode ? "text-white" : "text-brand-navy"
             )}>{lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}</p>
           </div>
         </div>
@@ -291,23 +351,38 @@ export default function HomeScreen() {
         <div 
           onClick={() => setShowPixMenu(true)}
           className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98]",
-            settings.darkMode ? "bg-[#1A1A1A] border-gray-800 hover:border-gray-700" : "bg-gradient-to-br from-brand-copper to-[#A07000] border-brand-copper shadow-xl shadow-brand-copper/20"
+            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
+            settings.darkMode 
+              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border-gray-800 hover:border-emerald-500/30" 
+              : "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-xl shadow-emerald-500/5 hover:border-emerald-200"
           )}
         >
-          <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          
+          {/* Background Icon Decoration */}
+          <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 -rotate-12 transition-transform duration-700 pointer-events-none">
+            <div className="relative">
+              <Banknote className="w-44 h-44 stroke-[1] text-emerald-600" />
+              <div className="absolute inset-0 flex items-center justify-center pt-2">
+                <DollarSign className="w-16 h-16 stroke-[2] text-emerald-600 opacity-40" />
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-3 relative z-10">
-            <div className={cn("p-2 rounded-xl backdrop-blur-sm border", settings.darkMode ? "bg-white/5 text-brand-copper border-white/5 shadow-sm" : "bg-white/15 text-white border-white/10 shadow-lg shadow-black/5")}>
+            <div className={cn(
+              "p-2 rounded-xl backdrop-blur-sm border transition-colors", 
+              settings.darkMode 
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                : "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20"
+            )}>
               <Wallet className="w-5 h-5" />
             </div>
-            <ChevronRight className={cn("w-4 h-4 opacity-50", settings.darkMode ? "text-gray-400" : "text-white")} />
+            <ChevronRight className={cn("w-4 h-4 opacity-50", settings.darkMode ? "text-gray-400" : "text-emerald-600")} />
           </div>
           <div className="relative z-10">
-            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-gray-400" : "text-white/60")}>Dados Bancários</p>
+            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/80")}>Dados Bancários</p>
             <p className={cn(
               "font-bold text-sm leading-tight",
-              settings.darkMode ? "text-white" : "text-white"
+              settings.darkMode ? "text-white" : "text-brand-navy"
             )}>PIX / Ajuda</p>
           </div>
         </div>
@@ -958,6 +1033,162 @@ export default function HomeScreen() {
           </div>
         </div>
       </section>
+      {/* Floating Daily Knowledge Tab */}
+      <div className="fixed inset-0 pointer-events-none z-50">
+        <motion.div
+          ref={factTabRef}
+          drag={!isFactTabCollapsed}
+          dragMomentum={false}
+          dragElastic={0.1}
+          dragConstraints={{
+            top: 60,
+            bottom: window.innerHeight - 180, // Prevent overlapping bottom menu
+            left: 0,
+            right: window.innerWidth - 60
+          }}
+          onDragEnd={(_, info) => {
+            const viewportWidth = window.innerWidth;
+            const mid = viewportWidth / 2;
+            const side = info.point.x < mid ? 'left' : 'right';
+            setFactTabSide(side);
+            // After drag, we snap to the edge. The absolute position is managed by framer motion during drag, 
+            // but for responsiveness we can track state if needed. 
+            // Simplest is to let motion handle the offset and we just record the final side.
+          }}
+          style={{ 
+            x: factTabX, 
+            y: factTabY,
+            position: 'absolute',
+            left: 0,
+            top: 0
+          }}
+          animate={{ 
+            x: factTabSide === 'left' 
+              ? (isFactTabCollapsed ? -135 : 0) 
+              : (isFactTabCollapsed ? window.innerWidth + 35 : window.innerWidth - 175),
+            transition: { type: "spring", stiffness: 300, damping: 30 }
+          }}
+          className={cn(
+            "pointer-events-auto flex items-center transition-opacity",
+            factTabSide === 'right' && "flex-row-reverse"
+          )}
+        >
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => !isFactTabCollapsed && setShowDailyFactModal(true)}
+            className={cn(
+              "flex items-center gap-3 py-3 shadow-2xl relative overflow-hidden group transition-all min-w-[175px]",
+              factTabSide === 'left' 
+                ? "pl-4 pr-6 rounded-r-3xl border-y border-r" 
+                : "pr-4 pl-6 rounded-l-3xl border-y border-l",
+              settings.darkMode 
+                ? "bg-[#1A1A1A] border-brand-gold/30 text-white" 
+                : "bg-white border-brand-gold/20 text-brand-navy"
+            )}
+          >
+            {/* Background shimmer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-gold/5 to-transparent -translate-x-full group-hover:translate-x-full duration-1000 transition-transform" />
+            
+            <div className={cn(
+              "relative z-10 flex items-center gap-3 w-full",
+              factTabSide === 'right' && "flex-row-reverse"
+            )}>
+              <div className="w-8 h-8 rounded-xl bg-brand-gold/10 text-brand-gold flex items-center justify-center border border-brand-gold/20 flex-shrink-0">
+                <Sparkles className={cn("w-4 h-4", isLoadingFact && "animate-pulse")} />
+              </div>
+              <div className={cn(
+                "flex flex-col flex-1 truncate",
+                factTabSide === 'left' ? "items-start text-left" : "items-end text-right"
+              )}>
+                <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Sabedoria</span>
+                <span className="text-[10px] font-bold truncate w-full">
+                  {isLoadingFact ? 'Buscando...' : (dailyFact?.title || 'Você sabia?')}
+                </span>
+              </div>
+            </div>
+          </motion.button>
+
+          {/* Toggle Tab */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsFactTabCollapsed(!isFactTabCollapsed);
+            }}
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-transform duration-300 backdrop-blur-md z-20",
+              factTabSide === 'left' ? "ml-2" : "mr-2",
+              settings.darkMode 
+                ? "bg-zinc-900/80 border-gray-800 text-gray-400" 
+                : "bg-white/80 border-gray-100 text-gray-400",
+              (isFactTabCollapsed && factTabSide === 'left') || (!isFactTabCollapsed && factTabSide === 'right') ? "rotate-180" : ""
+            )}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        </motion.div>
+      </div>
+
+      {/* Daily Fact Modal */}
+      <AnimatePresence>
+        {showDailyFactModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDailyFactModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-sm rounded-[40px] overflow-hidden shadow-2xl p-8 flex flex-col items-center text-center",
+                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white"
+              )}
+            >
+              <div className="w-20 h-20 bg-brand-gold/10 text-brand-gold rounded-[32px] flex items-center justify-center mb-6 relative">
+                <Sparkles className="w-10 h-10" />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-brand-gold/10 rounded-[32px] blur-xl"
+                />
+              </div>
+
+              <span className="px-4 py-1.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] font-black uppercase tracking-widest mb-4">
+                {dailyFact?.category || 'Sabedoria'}
+              </span>
+
+              <h3 className={cn("text-2xl font-black mb-4 leading-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                {dailyFact?.title || 'Você sabia?'}
+              </h3>
+
+              <div className="w-12 h-1 bg-brand-gold/20 rounded-full mb-6" />
+
+              <p className={cn(
+                "text-base font-medium leading-relaxed mb-8",
+                settings.darkMode ? "text-gray-300" : "text-gray-600"
+              )}>
+                {dailyFact?.content}
+              </p>
+
+              <button
+                onClick={() => setShowDailyFactModal(false)}
+                className={cn(
+                  "w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95",
+                  settings.darkMode 
+                    ? "bg-white text-black" 
+                    : "bg-brand-navy text-white shadow-xl shadow-brand-navy/20"
+                )}
+              >
+                Entendi, Axé!
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
