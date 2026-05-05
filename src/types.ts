@@ -180,6 +180,7 @@ export interface StudyBook {
   lastRead?: number;
   coverImage?: string;
   coverColor?: string;
+  toc?: { capitulo: string; pagina: number }[];
 }
 
 export interface Greeting {

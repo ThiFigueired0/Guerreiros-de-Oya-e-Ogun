@@ -189,24 +189,24 @@ export default function StudiesScreen() {
       setIsFetchingSupabase(true);
       try {
         const { data, error } = await supabase
-          .from('studies_books')
+          .from('books')
           .select('*')
           .eq('user_id', user.id)
-          .order('upload_date', { ascending: false });
+          .order('id', { ascending: false });
 
         if (error) throw error;
         if (data) {
           const transformedBooks: StudyBook[] = data.map(item => ({
             id: item.id,
-            name: item.name,
+            name: item.title,
             author: item.author,
-            uploadDate: item.upload_date,
-            isFavorite: item.is_favorite,
-            readingStatus: item.reading_status,
-            totalPages: item.total_pages,
-            coverImage: item.cover_image,
-            coverColor: item.cover_color,
-            pdfUrl: item.pdf_url // New field for Supabase link
+            uploadDate: Date.now(), // Fallback
+            isFavorite: false,
+            readingStatus: 'not_started',
+            totalPages: 0,
+            coverImage: item.cover_url,
+            pdfUrl: item.pdf_url,
+            toc: item.toc
           }));
           setBooks(transformedBooks);
         }
@@ -225,19 +225,15 @@ export default function StudiesScreen() {
     
     // Map StudyBook fields to DB fields
     const dbUpdates: any = {};
-    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.name !== undefined) dbUpdates.title = updates.name;
     if (updates.author !== undefined) dbUpdates.author = updates.author;
-    if (updates.isFavorite !== undefined) dbUpdates.is_favorite = updates.isFavorite;
-    if (updates.readingStatus !== undefined) dbUpdates.reading_status = updates.readingStatus;
-    if (updates.lastPage !== undefined) dbUpdates.last_page = updates.lastPage;
-    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-    if (updates.links !== undefined) dbUpdates.links = updates.links;
-    if (updates.attachments !== undefined) dbUpdates.attachments = updates.attachments;
-    if (updates.lastRead !== undefined) dbUpdates.last_read = updates.lastRead;
+    if (updates.coverImage !== undefined) dbUpdates.cover_url = updates.coverImage;
+    if (updates.pdfUrl !== undefined) dbUpdates.pdf_url = updates.pdfUrl;
+    if (updates.toc !== undefined) dbUpdates.toc = updates.toc;
 
     try {
       const { error } = await supabase
-        .from('studies_books')
+        .from('books')
         .update(dbUpdates)
         .eq('id', bookId)
         .eq('user_id', user.id);
@@ -575,74 +571,119 @@ export default function StudiesScreen() {
   };
 
   const saveNewBook = async () => {
-    if (!bookPdfDraft || !bookPdfDraft.tempId || !user) return;
+    console.log("=== INICIANDO PROCESSO DE SALVAMENTO ===");
+    console.log("PDF Draft:", bookPdfDraft);
+    
+    if (!bookPdfDraft || !bookPdfDraft.tempId) {
+      alert("Erro: Nenhum arquivo PDF selecionado ou processado corretamente.");
+      return;
+    }
 
-    setIsProcessingBook("Salvando no Supabase...");
-    const bookId = Date.now().toString();
-
+    setIsProcessingBook("Verificando login...");
+    
     try {
+      // 0. Verificação de Sessão (Obrigatória para o Preview)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+         console.error("Erro ao buscar sessão:", sessionError);
+         throw new Error(`Erro de Sessão: ${sessionError.message}`);
+      }
+
+      if (!session || !session.user) {
+        console.warn("Nenhum usuário detectado na sessão ativa.");
+        alert("Login obrigatório para salvar livros. Por favor, faça login no aplicativo para continuar.");
+        setIsProcessingBook(false);
+        return;
+      }
+
+      const currentUser = session.user;
+      console.log("Usuário autenticado:", currentUser.email, "(ID:", currentUser.id, ")");
+
+      setIsProcessingBook("Enviando arquivo...");
+      
       // Get the binary from temp storage
       const blob = await getPdfBinary(bookPdfDraft.tempId);
-      if (!blob) throw new Error("Documento temporário não encontrado.");
+      if (!blob) throw new Error("O arquivo PDF temporário sumiu do cache local. Tente selecionar o arquivo novamente.");
 
-      // 1. Upload PDF to Supabase Storage
-      const fileName = `${user.id}/${bookId}.pdf`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const bookId = Date.now().toString();
+      const fileName = `${currentUser.id}/${bookId}.pdf`;
+      
+      console.log(`Iniciando upload para Storage. Bucket: books, Caminho: ${fileName}`);
+      
+      // 1. Upload PDF
+      const { error: uploadError } = await supabase.storage
         .from('books')
         .upload(fileName, blob, {
           contentType: 'application/pdf',
           upsert: true
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Erro específico do Storage:", uploadError);
+        throw new Error(`Erro no Storage (Upload): ${uploadError.message}`);
+      }
 
-      // 2. Get Public URL for the PDF
+      // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('books')
         .getPublicUrl(fileName);
 
-      // 3. Save metadata to Supabase DB
+      // 3. Preparar dados para o Banco
       const newBookData = {
-        user_id: user.id,
-        name: bookTitleDraft || bookPdfDraft.name,
-        author: bookAuthorDraft,
-        upload_date: Date.now(),
-        is_favorite: false,
-        reading_status: 'not_started',
-        total_pages: bookPdfDraft.totalPages,
-        cover_image: bookCoverDraft,
-        cover_color: bookColorDraft,
-        pdf_url: publicUrl
+        user_id: currentUser.id,
+        title: bookTitleDraft || bookPdfDraft.name,
+        author: bookAuthorDraft || 'Desconhecido',
+        cover_url: bookCoverDraft || '',
+        pdf_url: publicUrl,
+        toc: []
       };
 
+      console.log("DADOS SENDO ENVIADOS PARA A TABELA 'books':", newBookData);
+
+      setIsProcessingBook("Cadastrando na estante...");
+      
+      // 4. Inserção na Tabela
       const { data: insertedData, error: dbError } = await supabase
-        .from('studies_books')
+        .from('books')
         .insert([newBookData])
         .select()
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Erro ao inserir na tabela 'books':", dbError);
+        throw new Error(`Erro no Banco de Dados: ${dbError.message}`);
+      }
 
-      // 4. Update local state
+      if (!insertedData) {
+        throw new Error("O livro foi salvo, mas não conseguimos recuperar os dados confirmados do banco.");
+      }
+
+      console.log("Sucesso! Livro inserido:", insertedData);
+
+      // 5. Atualizar estado local
       const newBook: StudyBook = {
         id: insertedData.id,
-        name: insertedData.name,
+        name: insertedData.title,
         author: insertedData.author,
-        uploadDate: insertedData.upload_date,
-        isFavorite: insertedData.is_favorite,
-        readingStatus: insertedData.reading_status,
-        totalPages: insertedData.total_pages,
-        coverImage: insertedData.cover_image,
-        coverColor: insertedData.cover_color,
-        pdfUrl: insertedData.pdf_url
+        uploadDate: Date.now(),
+        isFavorite: false,
+        readingStatus: 'not_started',
+        totalPages: bookPdfDraft.totalPages,
+        coverImage: insertedData.cover_url,
+        pdfUrl: insertedData.pdf_url,
+        toc: insertedData.toc || []
       };
 
-      // Also save to local storage for quick access
-      setBooks([newBook, ...books]);
+      setBooks(prev => [newBook, ...prev]);
       
-      // Clean up temp IDB
-      await deletePdfBinary(bookPdfDraft.tempId);
-
+      // 6. Limpeza e fechamento
+      try {
+        await deletePdfBinary(bookPdfDraft.tempId);
+      } catch (e) {
+        console.warn("Falha ao limpar cache temporário, mas o livro foi salvo.", e);
+      }
+      
       setShowBookModal(false);
       setBookPdfDraft(null);
       setBookTitleDraft('');
@@ -651,10 +692,21 @@ export default function StudiesScreen() {
       setBookColorDraft('#b8860b');
       setBookSearchQuery('');
       setGoogleBooksResults([]);
-    } catch (error) {
-      console.error("Error saving book:", error);
-      alert("Erro ao sincronizar com o Supabase. Verifique se as tabelas e buckets 'books' e 'studies_books' estão criados.");
+      
+      alert("Sucesso! Livro adicionado à sua estante.");
+
+    } catch (error: any) {
+      console.error("=== ERRO CRÍTICO NO SALVAMENTO ===");
+      console.error(error);
+      
+      // Alerta amigável com erro técnico
+      alert(
+        "FALHA AO SALVAR O LIVRO\n\n" + 
+        "Erro: " + (error.message || "Erro desconhecido") + "\n\n" +
+        "Verifique se você está logado e se as tabelas do Supabase estão configuradas corretamente conforme as instruções."
+      );
     } finally {
+      console.log("Processo finalizado. Resetando estado de loading.");
       setIsProcessingBook(false);
     }
   };
@@ -671,12 +723,15 @@ export default function StudiesScreen() {
       return;
     }
 
+    console.log("handlePdfPreview started");
     setIsProcessingBook("Processando documento...");
 
     try {
       const tempId = `temp_${Date.now()}`;
+      console.log("Saving temp PDF binary...", tempId);
       await savePdfBinary(tempId, file);
       
+      console.log("Loading PDF metadata...");
       const url = URL.createObjectURL(file);
       const loadingTask = pdfjsLib.getDocument(url);
       const pdf = await loadingTask.promise;
@@ -684,6 +739,7 @@ export default function StudiesScreen() {
       await pdf.destroy();
       URL.revokeObjectURL(url);
       
+      console.log("PDF processed. Pages:", totalPages);
       setBookPdfDraft({
         name: file.name,
         tempId: tempId,
@@ -730,7 +786,7 @@ export default function StudiesScreen() {
           try {
             // 1. Delete from DB
             await supabase
-              .from('studies_books')
+              .from('books')
               .delete()
               .eq('id', book.id)
               .eq('user_id', user.id);
@@ -1194,6 +1250,7 @@ export default function StudiesScreen() {
         {viewingBook && (
           <PDFReader
             key={viewingBook.id}
+            bookId={viewingBook.id}
             title={viewingBook.name.replace('.pdf', '')}
             pdfUrl={viewingUrl || ''}
             initialPage={viewingBook.lastPage || 1}
@@ -2333,16 +2390,27 @@ export default function StudiesScreen() {
                 </div>
 
                 <button 
-                  disabled={!bookPdfDraft?.tempId}
-                  onClick={saveNewBook}
+                  type="button"
+                  disabled={!bookPdfDraft?.tempId || !!isProcessingBook}
+                  onClick={(e) => {
+                    console.log("Button clicked!");
+                    saveNewBook();
+                  }}
                   className={cn(
-                    "w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all",
-                    bookPdfDraft?.tempId 
+                    "w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl transition-all flex items-center justify-center gap-3",
+                    (bookPdfDraft?.tempId && !isProcessingBook)
                       ? "bg-brand-navy text-white active:scale-95 hover:bg-brand-navy/90" 
                       : "bg-gray-100 text-gray-300 cursor-not-allowed"
                   )}
                 >
-                  Adicionar à Estante
+                  {isProcessingBook ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>{typeof isProcessingBook === 'string' ? isProcessingBook : 'Processando...'}</span>
+                    </>
+                  ) : (
+                    "Adicionar à Estante"
+                  )}
                 </button>
               </div>
             </motion.div>

@@ -43,6 +43,8 @@ import { cn } from "../lib/utils";
 import { useStorage } from "../hooks/useStorage";
 import { AppSettings } from "../types";
 import { generateTocFromImage } from "../services/tocService";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/AuthContext";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -50,6 +52,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFReaderProps {
+  bookId: string;
   pdfUrl: string;
   initialPage?: number;
   onPageChange: (page: number) => void;
@@ -72,6 +75,7 @@ interface Highlight {
 }
 
 export function PDFReader({
+  bookId,
   pdfUrl,
   initialPage = 1,
   onPageChange,
@@ -79,6 +83,7 @@ export function PDFReader({
   title,
   totalPages: initialTotalPages,
 }: PDFReaderProps) {
+  const { user } = useAuth();
   const [settings] = useStorage<AppSettings>("templo_settings", {
     darkMode: false,
     eventCategories: [],
@@ -175,6 +180,19 @@ export function PDFReader({
       const base64 = await base64Promise;
       const result = await generateTocFromImage(base64, (step) => setTocProgress(step));
       setAiToc(result);
+
+      // Save to Supabase
+      if (user) {
+        const { error } = await supabase
+          .from('books')
+          .update({ toc: result })
+          .eq('id', bookId)
+          .eq('user_id', user.id);
+        
+        if (error) {
+          console.error("Error saving ToC to Supabase:", error);
+        }
+      }
     } catch (error: any) {
       console.error("Error generating ToC:", error);
       const msg = error.message || "";
