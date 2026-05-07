@@ -52,7 +52,7 @@ export const generateTocFromImage = async (
         'Authorization': `Bearer ${groq}`
       },
       body: JSON.stringify({
-        model: 'llama-3.2-90b-vision-preview',
+        model: 'llama-3.2-11b-vision-preview',
         messages: [
           {
             role: 'user',
@@ -92,7 +92,7 @@ export const generateTocFromImage = async (
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Failed to parse Groq response as JSON:', jsonStr);
-      throw new Error('A IA não retornou um JSON válido. Tente outra foto mais nítida.');
+      throw new Error('A IA não retornou um JSON válido. Tente outra foto mais nítida.', { cause: e });
     }
   } catch (error) {
     console.error('Error in Groq Vision API:', error);

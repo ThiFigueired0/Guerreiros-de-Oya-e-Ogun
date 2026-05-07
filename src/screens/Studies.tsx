@@ -572,10 +572,15 @@ export default function StudiesScreen() {
 
   const saveNewBook = async () => {
     console.log("=== INICIANDO PROCESSO DE SALVAMENTO ===");
-    console.log("PDF Draft:", bookPdfDraft);
+    console.log("Iniciando salvamento...", { user, file: bookPdfDraft });
     
     if (!bookPdfDraft || !bookPdfDraft.tempId) {
       alert("Erro: Nenhum arquivo PDF selecionado ou processado corretamente.");
+      return;
+    }
+
+    if (!user) {
+      alert("Erro: Você precisa estar logado para adicionar livros. Por favor, faça login novamente.");
       return;
     }
 
@@ -583,22 +588,16 @@ export default function StudiesScreen() {
     
     try {
       // 0. Verificação de Sessão (Obrigatória para o Preview)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
       
-      if (sessionError) {
-         console.error("Erro ao buscar sessão:", sessionError);
-         throw new Error(`Erro de Sessão: ${sessionError.message}`);
+      if (authError || !currentUser) {
+         console.error("Erro ao verificar sessão ativa no servidor:", authError);
+         alert("Erro de autenticação com o servidor. Por favor, feche e abra o aplicativo, ou faça login novamente.");
+         setIsProcessingBook(false);
+         return;
       }
 
-      if (!session || !session.user) {
-        console.warn("Nenhum usuário detectado na sessão ativa.");
-        alert("Login obrigatório para salvar livros. Por favor, faça login no aplicativo para continuar.");
-        setIsProcessingBook(false);
-        return;
-      }
-
-      const currentUser = session.user;
-      console.log("Usuário autenticado:", currentUser.email, "(ID:", currentUser.id, ")");
+      console.log("Usuário autenticado no servidor:", currentUser.email, "(ID:", currentUser.id, ")");
 
       setIsProcessingBook("Enviando arquivo...");
       
