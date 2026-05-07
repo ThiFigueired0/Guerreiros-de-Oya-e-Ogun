@@ -6,6 +6,8 @@ interface TocItem {
 
 const GOOGLE_VISION_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
+console.log('Chave Google presente:', !!import.meta.env.VITE_GOOGLE_SERVICES_KEY);
+
 /**
  * Gets the API keys from environment variables.
  */
@@ -22,8 +24,9 @@ const getKeys = () => {
  */
 export const extractTextFromImage = async (base64Image: string): Promise<string> => {
   const { google } = getKeys();
+  
   if (!google) {
-    throw new Error('Google Services Key not configured.');
+    console.warn('VITE_GOOGLE_SERVICES_KEY is empty or undefined. Attempting call anyway...');
   }
 
   // Remove data:image/...;base64, prefix if present
@@ -68,8 +71,9 @@ export const extractTextFromImage = async (base64Image: string): Promise<string>
  */
 export const structureTocWithAi = async (rawText: string): Promise<TocItem[]> => {
   const { groq } = getKeys();
+  
   if (!groq) {
-    throw new Error('Groq API Key not configured.');
+    console.warn('VITE_GROQ_API_KEY is empty or undefined. Attempting call anyway...');
   }
 
   const prompt = `

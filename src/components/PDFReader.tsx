@@ -195,12 +195,7 @@ export function PDFReader({
       }
     } catch (error: any) {
       console.error("Error generating ToC:", error);
-      const msg = error.message || "";
-      if (msg.includes("Key not configured")) {
-        alert("Configuração Pendente: Você precisa configurar as chaves VITE_GOOGLE_SERVICES_KEY e VITE_GROQ_API_KEY no painel de configurações (Settings > Secrets) da plataforma.");
-      } else {
-        alert("Falha ao gerar sumário: " + (error.message || "Erro desconhecido"));
-      }
+      alert("Falha ao gerar sumário: " + (error.message || "Erro desconhecido"));
     } finally {
       setIsGeneratingToc(false);
       setTocProgress('idle');

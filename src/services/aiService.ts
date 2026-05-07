@@ -1,5 +1,6 @@
 // Tenta obter a chave de diferentes fontes, priorizando Vite (import.meta.env)
 const getApiKey = () => {
+  console.log('Chave Groq presente:', !!import.meta.env.VITE_GROQ_API_KEY);
   // 1. Prioridade absoluta para Vite
   if (import.meta.env && import.meta.env.VITE_GROQ_API_KEY) {
     return import.meta.env.VITE_GROQ_API_KEY;
