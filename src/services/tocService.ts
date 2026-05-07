@@ -4,87 +4,44 @@ interface TocItem {
   pagina: number;
 }
 
-const GOOGLE_VISION_URL = 'https://vision.googleapis.com/v1/images:annotate';
-
-console.log('Chave Google presente:', !!import.meta.env.VITE_GOOGLE_SERVICES_KEY);
-
 /**
- * Gets the API keys from environment variables.
+ * Gets the Groq API key from environment variables.
  */
-const getKeys = () => {
-  return {
-    google: import.meta.env.VITE_GOOGLE_SERVICES_KEY || '',
-    groq: import.meta.env.VITE_GROQ_API_KEY || ''
-  };
+const getGroqKey = () => {
+  return import.meta.env.VITE_GROQ_API_KEY || '';
 };
 
 /**
- * Extracts text from an image using Google Cloud Vision API.
- * @param base64Image Image in base64 format (with or without data prefix).
+ * Uses Groq's Vision model to read an image and structure it into a Table of Contents.
+ * @param base64Image Image in base64 format (handles both with and without data prefix).
  */
-export const extractTextFromImage = async (base64Image: string): Promise<string> => {
-  const { google } = getKeys();
-  
-  if (!google) {
-    console.warn('VITE_GOOGLE_SERVICES_KEY is empty or undefined. Attempting call anyway...');
-  }
-
-  // Remove data:image/...;base64, prefix if present
-  const content = base64Image.replace(/^data:image\/\w+;base64,/, '');
-
-  try {
-    const response = await fetch(`${GOOGLE_VISION_URL}?key=${google}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requests: [
-          {
-            image: { content },
-            features: [{ type: 'TEXT_DETECTION' }]
-          }
-        ]
-      })
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      const message = errorBody.error?.message || errorBody.message || response.statusText || "Erro desconhecido";
-      throw new Error(`Vision API error: ${message}`);
-    }
-
-    const data = await response.json();
-    const fullTextAnnotation = data.responses?.[0]?.fullTextAnnotation?.text;
-    
-    if (!fullTextAnnotation) {
-      throw new Error('Nenhum texto detectado na imagem.');
-    }
-
-    return fullTextAnnotation;
-  } catch (error) {
-    console.error('Error in Vision API:', error);
-    throw error;
-  }
-};
-
-/**
- * Uses Groq to structure raw text into a Table of Contents JSON array.
- */
-export const structureTocWithAi = async (rawText: string): Promise<TocItem[]> => {
-  const { groq } = getKeys();
+export const generateTocFromImage = async (
+  base64Image: string, 
+  onProgress: (step: 'ai' | 'done') => void
+): Promise<TocItem[]> => {
+  const groq = getGroqKey();
   
   if (!groq) {
     console.warn('VITE_GROQ_API_KEY is empty or undefined. Attempting call anyway...');
   }
 
+  // Remove data:image/...;base64, prefix for the API call
+  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+  // Re-add prefix in the format Groq expects if needed, or send as pure data
+  const imageUrl = `data:image/jpeg;base64,${cleanBase64}`;
+
+  onProgress('ai');
+
   const prompt = `
-    Abaixo está um texto extraído via OCR de uma imagem de um sumário/índice de um livro.
-    Sua tarefa é extrair os capítulos e seus respectivos números de página.
-    Retorne APENAS um array JSON válido no formato: [ { "capitulo": "Nome do Capitulo", "pagina": numero_da_pagina } ].
-    Não inclua explicações, markdown ou qualquer outro texto fora do JSON.
-    Se não encontrar páginas, atribua null ou 0 conforme fizer mais sentido, mas prefira números reais se disponíveis.
+    Analise a imagem enviada, que é o sumário/índice de um livro.
+    Extraia todos os capítulos e seus respectivos números de página.
     
-    TEXTO EXTRAÍDO:
-    ${rawText}
+    Regras:
+    1. Retorne APENAS um array JSON válido.
+    2. Formato: [ { "capitulo": "Nome do Capítulo", "pagina": numero_da_pagina } ].
+    3. Não inclua Markdown (como \`\`\`json), nem explicações ou outros textos.
+    4. Se houver subcapítulos, inclua-os também.
+    5. Se uma página não estiver clara, use 0.
   `;
 
   try {
@@ -95,24 +52,32 @@ export const structureTocWithAi = async (rawText: string): Promise<TocItem[]> =>
         'Authorization': `Bearer ${groq}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.2-90b-vision-preview',
         messages: [
           {
-            role: 'system',
-            content: 'Você é um assistente especializado em extração de dados estruturados. Você deve responder APENAS com o JSON solicitado.'
-          },
-          {
             role: 'user',
-            content: prompt
+            content: [
+              {
+                type: 'text',
+                text: prompt
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
           }
         ],
-        temperature: 0.1, // Low temperature for consistent JSON output
-        max_tokens: 2048
+        temperature: 0.1,
+        max_tokens: 1024
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Groq API error: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Groq Vision Error: ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
@@ -123,30 +88,14 @@ export const structureTocWithAi = async (rawText: string): Promise<TocItem[]> =>
     
     try {
       const parsed = JSON.parse(jsonStr);
+      onProgress('done');
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Failed to parse Groq response as JSON:', jsonStr);
-      throw new Error('Resposta da IA não está em formato JSON válido.', { cause: e });
+      throw new Error('A IA não retornou um JSON válido. Tente outra foto mais nítida.');
     }
   } catch (error) {
-    console.error('Error in Groq API:', error);
+    console.error('Error in Groq Vision API:', error);
     throw error;
   }
-};
-
-/**
- * Complete flow: Image -> OCR -> Structured JSON.
- */
-export const generateTocFromImage = async (
-  base64Image: string, 
-  onProgress: (step: 'ocr' | 'ai' | 'done') => void
-): Promise<TocItem[]> => {
-  onProgress('ocr');
-  const rawText = await extractTextFromImage(base64Image);
-  
-  onProgress('ai');
-  const result = await structureTocWithAi(rawText);
-  
-  onProgress('done');
-  return result;
 };

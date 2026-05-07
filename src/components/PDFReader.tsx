@@ -155,7 +155,7 @@ export function PDFReader({
   const [hasOutline, setHasOutline] = useState<boolean | null>(null);
   const [aiToc, setAiToc] = useState<{ capitulo: string; pagina: number }[] | null>(null);
   const [isGeneratingToc, setIsGeneratingToc] = useState(false);
-  const [tocProgress, setTocProgress] = useState<'ocr' | 'ai' | 'done' | 'idle'>('idle');
+  const [tocProgress, setTocProgress] = useState<'ai' | 'done' | 'idle'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export function PDFReader({
     if (!file) return;
 
     setIsGeneratingToc(true);
-    setTocProgress('ocr');
+    setTocProgress('ai');
     try {
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve) => {
@@ -1910,7 +1910,7 @@ export function PDFReader({
                               
                               <div className="w-full text-center space-y-3">
                                 <p className="text-sm font-black text-brand-copper uppercase tracking-tighter">
-                                  {tocProgress === 'ocr' ? 'Lendo imagem...' : 'Estruturando com IA...'}
+                                  {tocProgress === 'ai' ? 'Analisando sumário...' : 'Sumário pronto!'}
                                 </p>
                                 
                                 {/* Progress Bar */}
@@ -1919,16 +1919,16 @@ export function PDFReader({
                                     className="absolute top-0 left-0 h-full bg-brand-copper"
                                     initial={{ width: "0%" }}
                                     animate={{ 
-                                      width: tocProgress === 'ocr' ? "40%" : "85%" 
+                                      width: tocProgress === 'ai' ? "85%" : "100%" 
                                     }}
                                     transition={{ duration: 0.5 }}
                                   />
                                 </div>
                                 
                                 <p className="text-[10px] opacity-60 font-bold uppercase tracking-widest leading-relaxed">
-                                  {tocProgress === 'ocr' 
-                                    ? 'Extraindo caracteres via Google Vision' 
-                                    : 'Organizando capítulos via Groq LLM'}
+                                  {tocProgress === 'ai' 
+                                    ? 'Lendo imagem e organizando capítulos com Groq Vision' 
+                                    : 'Processo concluído com sucesso'}
                                 </p>
                               </div>
                             </div>
