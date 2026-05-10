@@ -2076,12 +2076,12 @@ export function PDFReader({
                                               setManualTocLines(newLines);
                                             }}
                                             className={cn(
-                                              "flex-1 rounded-xl px-3 h-[44px] text-xs transition-shadow outline-none",
+                                              "flex-1 min-w-0 rounded-xl px-3 h-[44px] text-xs transition-shadow outline-none",
                                               settings.darkMode ? "bg-white/5 text-white border border-white/5 focus:bg-white/10 focus:shadow-sm" : "bg-white text-brand-navy shadow-sm border border-brand-navy/5 focus:shadow"
                                             )}
                                           />
                                           <div className={cn(
-                                            "flex items-center justify-end rounded-xl px-2 h-[44px] min-w-[70px] w-auto max-w-[90px] flex-shrink-0 transition-shadow",
+                                            "flex items-center justify-end rounded-xl px-2 h-[44px] w-[70px] flex-shrink-0 transition-shadow",
                                             settings.darkMode ? "bg-white/5 text-white border border-white/5 focus-within:bg-white/10 focus-within:shadow-sm" : "bg-white text-brand-navy shadow-sm border border-brand-navy/5 focus-within:shadow"
                                           )}>
                                             <input
@@ -2104,7 +2104,7 @@ export function PDFReader({
                                                   }
                                                 }
                                               }}
-                                              className="w-full bg-transparent text-xs text-right font-mono outline-none"
+                                              className="w-full bg-transparent text-xs text-right font-mono outline-none min-w-0"
                                             />
                                           </div>
                                           <button
@@ -2112,7 +2112,7 @@ export function PDFReader({
                                               const newLines = manualTocLines.filter((_, i) => i !== idx);
                                               setManualTocLines(newLines);
                                             }}
-                                            className="w-8 h-[44px] flex items-center justify-center opacity-30 hover:opacity-100 hover:text-red-500 transition-opacity"
+                                            className="w-6 sm:w-8 h-[44px] flex-shrink-0 flex items-center justify-center opacity-30 hover:opacity-100 hover:text-red-500 transition-opacity"
                                             disabled={manualTocLines.length <= 1}
                                           >
                                             <X className="w-4 h-4" />
