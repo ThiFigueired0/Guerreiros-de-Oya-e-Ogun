@@ -53,35 +53,53 @@ export const generateTocFromImage = async (
     console.log('Enviando texto extraído para a Groq...');
     const prompt = `Abaixo está um texto extraído de um sumário. Organize-o em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON.\n\nTexto do Sumário:\n${text}`;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 1024
-      })
-    });
+    const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'llama3-70b-8192'];
+    let successContent: string | null = null;
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Groq API Error: ${errorData.error?.message || response.statusText}`);
+    for (const model of GROQ_MODELS) {
+      try {
+        console.log(`Tentando processar com o modelo: ${model}...`);
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.1,
+            max_tokens: 1024
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Groq API Error (${model}): ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        successContent = data.choices?.[0]?.message?.content || '[]';
+        console.log('Modelo vencedor:', model);
+        break; // Sucesso, sai do loop
+      } catch (err: any) {
+        console.warn(`Falha ao usar o modelo ${model}:`, err.message);
+        lastError = err;
+      }
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '[]';
-    
+    if (!successContent) {
+      throw lastError || new Error("Todos os modelos de fallback falharam ao processar o texto.");
+    }
+
     // Clean up potential markdown blocks from AI response
-    const jsonStr = content.replace(/```json|```/g, '').trim();
+    const jsonStr = successContent.replace(/```json|```/g, '').trim();
     
     try {
       const parsed = JSON.parse(jsonStr);
