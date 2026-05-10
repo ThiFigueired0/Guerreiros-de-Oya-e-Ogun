@@ -160,13 +160,55 @@ export function PDFReader({
   const [aiToc, setAiToc] = useState<{ capitulo: string; pagina: number }[] | null>(initialToc || null);
   const [isGeneratingToc, setIsGeneratingToc] = useState(false);
   const [tocProgress, setTocProgress] = useState<'ai' | 'done' | 'idle'>('idle');
+  const [isCheckingDbToc, setIsCheckingDbToc] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    // Verificação Única ao abrir
+    const checkSupabaseToc = async () => {
+      setIsCheckingDbToc(true);
+      try {
+        const fetchPromise = supabase
+          .from('books')
+          .select('toc')
+          .eq('id', bookId)
+          .single();
+          
+        // Timeout de Segurança de 5 segundos
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 5000)
+        );
+        
+        const response = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        
+        if (isMounted && response?.data?.toc) {
+          setAiToc(response.data.toc);
+          onTocChange?.(response.data.toc);
+        }
+      } catch (err) {
+        console.warn("Falha ou timeout ao verificar sumário no Supabase:", err);
+      } finally {
+        // Finalização Obrigatória
+        if (isMounted) {
+          setIsCheckingDbToc(false);
+        }
+      }
+    };
+
+    checkSupabaseToc();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookId]);
+
+  useEffect(() => {
     setHasOutline(null);
-    setAiToc(initialToc || null);
     setTocProgress('idle');
-  }, [pdfUrl, initialToc]);
+    // Clear pdf state on url change
+  }, [pdfUrl]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -881,11 +923,22 @@ export function PDFReader({
     setLoading(false);
     
     try {
-      const outline = await pdf.getOutline();
-      setHasOutline(Boolean(outline && outline.length > 0));
+      const outlinePromise = pdf.getOutline();
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 5000));
+      const outline: any = await Promise.race([outlinePromise, timeoutPromise]);
+      
+      if (outline) {
+        setHasOutline(Boolean(outline.length > 0));
+      } else {
+        setHasOutline(false);
+      }
     } catch (err) {
       console.error("Error fetching outline", err);
       setHasOutline(false);
+    } finally {
+      if (hasOutline === null) {
+        setHasOutline(false);
+      }
     }
   }
 
@@ -1863,17 +1916,17 @@ export function PDFReader({
                     )}
 
                     {/* Pending check */}
-                    {hasOutline === null && (
+                    {(isCheckingDbToc || (hasOutline === null && !aiToc)) && !isGeneratingToc && (
                       <div className="text-center py-8 px-4 flex flex-col items-center gap-3">
                         <Loader2 className="w-5 h-5 opacity-50 animate-spin" />
                         <p className="text-xs opacity-50 font-medium">Verificando sumário existente...</p>
                       </div>
                     )}
 
-                    {hasOutline === false && (
+                    {!isCheckingDbToc && (hasOutline === false || aiToc) && (
                       <div className="mt-4">
                         <div className="text-center py-8 px-4 flex flex-col items-center">
-                          {!aiToc && !isGeneratingToc && (
+                          {(!aiToc || aiToc.length === 0) && !isGeneratingToc && (
                             <>
                               <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
                               <p className="text-xs opacity-50 font-bold mb-4">Este documento não possui um sumário interno.</p>
