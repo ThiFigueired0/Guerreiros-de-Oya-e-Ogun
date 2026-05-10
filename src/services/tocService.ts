@@ -18,6 +18,55 @@ const getGroqKey = () => {
  * Uses Tesseract.js (OCR) to read an image text and Groq to structure it into a Table of Contents.
  * @param base64Image Image in base64 format (handles both with and without data prefix).
  */
+export const generateTocFromText = async (text: string): Promise<TocItem[]> => {
+  const apiKey = getGroqKey();
+  
+  if (!apiKey) {
+    throw new Error('VITE_GROQ_API_KEY is not defined.');
+  }
+
+  const prompt = `Abaixo está um texto copiado de um sumário. Identifique os capítulos e suas respectivas páginas. Organize os dados em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON, sem nenhum texto ao redor.\n\nTexto do Sumário:\n${text}`;
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 1024
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Erro ao processar texto com Groq API.');
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '[]';
+  
+  let jsonStr = content.replace(/```json|```/g, '').trim();
+  const arrayMatch = jsonStr.match(/\[([\s\S]*?)\]/);
+  if (arrayMatch && arrayMatch[0]) {
+    jsonStr = arrayMatch[0];
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    throw new Error('Formato de texto não compreendido.');
+  }
+};
+
 export const generateTocFromImage = async (
   base64Image: string, 
   onProgress: (step: 'ai' | 'done') => void
