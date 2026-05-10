@@ -196,18 +196,22 @@ export default function StudiesScreen() {
 
         if (error) throw error;
         if (data) {
-          const transformedBooks: StudyBook[] = data.map(item => ({
+          const transformedBooks: StudyBook[] = data.map(item => {
+            const rp = item.reading_progress || {};
+            return {
             id: item.id,
             name: item.title,
             author: item.author,
             uploadDate: Date.now(), // Fallback
-            isFavorite: false,
-            readingStatus: 'not_started',
-            totalPages: 0,
+            isFavorite: item.is_favorite || false,
+            readingStatus: rp.status || 'not_started',
+            totalPages: rp.total_pages || 0,
+            lastPage: rp.last_page || undefined,
+            lastYPercent: rp.y_position_percent || undefined,
             coverImage: item.cover_url,
             pdfUrl: item.pdf_url,
             toc: item.toc
-          }));
+          }});
           setBooks(transformedBooks);
         }
       } catch (error) {
@@ -230,6 +234,18 @@ export default function StudiesScreen() {
     if (updates.coverImage !== undefined) dbUpdates.cover_url = updates.coverImage;
     if (updates.pdfUrl !== undefined) dbUpdates.pdf_url = updates.pdfUrl;
     if (updates.toc !== undefined) dbUpdates.toc = updates.toc;
+    if (updates.isFavorite !== undefined) dbUpdates.is_favorite = updates.isFavorite;
+
+    if (updates.readingStatus !== undefined || updates.lastPage !== undefined || updates.lastYPercent !== undefined || updates.totalPages !== undefined) {
+      // Find current book to avoid overwriting existing properties if unspecified
+      const currentBook = books.find((b: { id: string }) => b.id === bookId);
+      dbUpdates.reading_progress = {
+        status: updates.readingStatus ?? currentBook?.readingStatus,
+        last_page: updates.lastPage ?? currentBook?.lastPage,
+        y_position_percent: updates.lastYPercent ?? currentBook?.lastYPercent,
+        total_pages: updates.totalPages ?? currentBook?.totalPages,
+      };
+    }
 
     try {
       const { error } = await supabase
@@ -993,6 +1009,28 @@ export default function StudiesScreen() {
     }
   };
 
+  const updateBookPosition = (id: string, lastPage: number, lastYPercent: number) => {
+    const lastRead = Date.now();
+    const updates = { readingStatus: 'in_progress' as const, lastPage, lastYPercent, lastRead };
+    
+    setBooks(books.map(b => b.id === id ? { ...b, ...updates } : b));
+    updateBookInSupabase(id, updates);
+    
+    if (viewingBook && viewingBook.id === id) {
+      setViewingBook({
+        ...viewingBook,
+        ...updates
+      });
+    }
+
+    if (selectedBookForAction && selectedBookForAction.id === id) {
+      setSelectedBookForAction({ 
+        ...selectedBookForAction, 
+        ...updates
+      });
+    }
+  };
+
   const updateBookStatus = (id: string, status: StudyBook['readingStatus'], lastPage?: number) => {
     const lastRead = Date.now();
     const updates = { readingStatus: status, lastPage: lastPage ?? undefined, lastRead };
@@ -1253,9 +1291,13 @@ export default function StudiesScreen() {
             title={viewingBook.name.replace('.pdf', '')}
             pdfUrl={viewingUrl || ''}
             initialPage={viewingBook.lastPage || 1}
+            initialYPercent={viewingBook.lastYPercent}
             totalPages={viewingBook.totalPages}
             initialToc={viewingBook.toc}
             onClose={closeBook}
+            onPositionSave={(page, yPercent) => {
+              updateBookPosition(viewingBook.id, page, yPercent);
+            }}
             onTocChange={(toc) => {
               // Mantém persistência na interface sem duplicar a chamada DB que já ocorre no PDFReader
               setBooks(prev => prev.map(b => b.id === viewingBook.id ? { ...b, toc } : b));

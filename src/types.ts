@@ -176,6 +176,7 @@ export interface StudyBook {
   pdfUrl?: string;
   readingStatus?: 'not_started' | 'in_progress' | 'completed';
   lastPage?: number;
+  lastYPercent?: number;
   totalPages?: number;
   lastRead?: number;
   coverImage?: string;

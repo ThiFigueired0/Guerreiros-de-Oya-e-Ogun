@@ -55,7 +55,9 @@ interface PDFReaderProps {
   bookId: string;
   pdfUrl: string;
   initialPage?: number;
+  initialYPercent?: number;
   onPageChange: (page: number) => void;
+  onPositionSave?: (page: number, yPercent: number) => void;
   onClose: () => void;
   title: string;
   totalPages?: number;
@@ -80,7 +82,9 @@ export function PDFReader({
   bookId,
   pdfUrl,
   initialPage = 1,
+  initialYPercent,
   onPageChange,
+  onPositionSave,
   onClose,
   title,
   totalPages: initialTotalPages,
@@ -167,6 +171,17 @@ export function PDFReader({
   const [pastedTocText, setPastedTocText] = useState('');
   const [isProcessingPastedToc, setIsProcessingPastedToc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Precision Bookmark States
+  const [longPressContext, setLongPressContext] = useState<{ x: number; y: number; pageX: number; pageY: number } | null>(null);
+  const [savedPosition, setSavedPosition] = useState<{ page: number; yPercent: number } | null>(
+    initialYPercent ? { page: initialPage, yPercent: initialYPercent } : null
+  );
+  const [showFadingMarker, setShowFadingMarker] = useState(false);
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wasLongPressed = useRef(false);
+  const hasAutoScrolledRef = useRef(false);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -1075,6 +1090,12 @@ export function PDFReader({
   const [touchStartPos, setTouchStartPos] = useState<{x: number, y: number, time: number} | null>(null);
 
   const handleTouchStartRaw = (e: React.TouchEvent) => {
+    // Dismiss long-press context menu if active
+    if (longPressContext) {
+      setLongPressContext(null);
+    }
+    wasLongPressed.current = false;
+
     if (activeHighlightColor) {
       // Prevent default to avoid scrolling while painting
       // Note: passive: false is required in the actual listener, but onTouchStart prop is usually passive by default
@@ -1083,17 +1104,44 @@ export function PDFReader({
     }
 
     if (e.touches.length === 1) {
+      const touch = e.touches[0];
       setTouchStartPos({
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
+        x: touch.clientX,
+        y: touch.clientY,
         time: Date.now()
       });
+
+      // Long press setup
+      const target = e.target as HTMLElement;
+      const pageNode = target.closest(".react-pdf__Page") as HTMLElement;
+      if (pageNode) {
+        longPressTimeoutRef.current = setTimeout(() => {
+          wasLongPressed.current = true;
+          const rect = pageNode.getBoundingClientRect();
+          setLongPressContext({
+            x: touch.clientX,
+            y: touch.clientY,
+            pageX: touch.clientX - rect.left,
+            pageY: touch.clientY - rect.top,
+          });
+          // Haptic feedback if supported
+          if (navigator.vibrate) navigator.vibrate(50);
+        }, 500);
+      }
     } else {
       setTouchStartPos(null);
+      if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
     }
   };
 
+  const clearLongPressMode = () => {
+    if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
+  };
+
   const handleTouchEndRaw = (e: React.TouchEvent) => {
+    clearLongPressMode();
+    if (wasLongPressed.current) return; // Prevent swipe if it was a long press
+
     if (isPainting) {
       setIsPainting(false);
       paintHighlightIdRef.current = null;
@@ -1145,12 +1193,16 @@ export function PDFReader({
   const themeFilter = "none";
 
   return (
-    <motion.div
+      <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       ref={containerRef}
       onTouchStart={handleTouchStartRaw}
+      onTouchMove={() => {
+        // Se usuário começar a rolar antes de dar o tempo do longPress, cancela
+        if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
+      }}
       onTouchEnd={handleTouchEndRaw}
       onWheel={(e) => {
         // Prevent default scrolling to handle custom gesture if needed?
@@ -1589,7 +1641,64 @@ export function PDFReader({
                     {bookmarkedPages.includes(pageNumber) && (
                       <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
                     )}
-                    <Page
+                    
+                    {/* Precision Bookmark Visual Marker */}
+                    {savedPosition?.page === pageNumber && (
+                      <div
+                        className={cn(
+                          "absolute left-0 w-1.5 h-8 bg-brand-copper shadow-xl z-[100] rounded-r-md transition-opacity duration-1000 flex items-center justify-start",
+                          showFadingMarker ? "opacity-100" : "opacity-80"
+                        )}
+                        style={{ top: `calc(${savedPosition.yPercent}% - 16px)` }}
+                        title="Retomar leitura"
+                      >
+                        <div className="absolute top-1/2 -mt-3 -left-3 w-6 h-6 bg-brand-copper rounded-full blur-md opacity-40 animate-pulse" />
+                      </div>
+                    )}
+
+                    {/* Precision Bookmark Context Menu */}
+                    <AnimatePresence>
+                      {longPressContext && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                          className="absolute z-[200] flex flex-col p-1 bg-[#050B14]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 pointer-events-auto"
+                          style={{
+                            left: longPressContext.pageX,
+                            top: longPressContext.pageY,
+                            transform: "translate(-50%, -100%)",
+                            marginTop: "-16px" // offset above finger
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onTouchEnd={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              const pageNode = viewerRef.current?.querySelector(".react-pdf__Page") as HTMLElement;
+                              if (!pageNode) return;
+                              const rect = pageNode.getBoundingClientRect();
+                              const yPercent = (longPressContext.pageY / rect.height) * 100;
+                              
+                              setSavedPosition({ page: pageNumber, yPercent });
+                              setShowFadingMarker(true);
+                              
+                              if (onPositionSave) onPositionSave(pageNumber, yPercent);
+                              setLongPressContext(null);
+
+                              // Esconde o pulse mais forte após alguns segundos
+                              setTimeout(() => setShowFadingMarker(false), 3000);
+                            }}
+                            className="flex items-center gap-2 px-4 py-3 sm:py-2.5 text-white/90 hover:text-white rounded-lg hover:bg-white/10 transition-colors text-sm font-medium"
+                          >
+                            <span className="text-lg leading-none mb-0.5">🔖</span>
+                            <span>Marcar leitura aqui</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                      <Page
                       pageNumber={pageNumber}
                       scale={scale || undefined}
                       width={!scale ? containerWidth : undefined}
@@ -1600,6 +1709,24 @@ export function PDFReader({
                         }
                         // Small delay to ensure text layer is rendered
                         setTimeout(updateTextItemBounds, 500);
+
+                        // Auto-scroll para Precision Bookmark
+                        if (!hasAutoScrolledRef.current && savedPosition?.page === pageNumber && savedPosition?.yPercent) {
+                          hasAutoScrolledRef.current = true;
+                          setTimeout(() => {
+                            if (viewerRef.current) {
+                              const pageNode = viewerRef.current.querySelector(".react-pdf__Page") as HTMLElement;
+                              if (pageNode) {
+                                const yPx = (pageNode.offsetHeight * savedPosition.yPercent) / 100;
+                                // Scrolla para deixar a marca mais ou menos no centro/terço superior
+                                const targetScrollTop = pageNode.offsetTop + yPx - (viewerRef.current.offsetHeight / 3);
+                                viewerRef.current.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                                setShowFadingMarker(true);
+                                setTimeout(() => setShowFadingMarker(false), 4000);
+                              }
+                            }
+                          }, 300); // small delay to allow render
+                        }
                       }}
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
