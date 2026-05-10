@@ -1944,18 +1944,21 @@ export function PDFReader({
                                 className="hidden"
                               />
 
-                              <div className="flex flex-col gap-3 w-full max-w-[200px]">
+                              <div className="flex flex-col gap-3 w-full px-2">
                                 <button
                                   onClick={() => fileInputRef.current?.click()}
                                   className={cn(
-                                    "flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all border",
                                     settings.darkMode 
-                                      ? "bg-white/10 text-white hover:bg-white/20" 
-                                      : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                                      ? "bg-white/5 border-white/10 text-white hover:bg-white/10" 
+                                      : "bg-brand-navy/5 border-brand-navy/10 text-brand-navy hover:bg-brand-navy/10"
                                   )}
                                 >
-                                  <ImageIcon className="w-4 h-4" />
-                                  Usar Imagem
+                                  <ImageIcon className="w-5 h-5 opacity-60" />
+                                  <div className="space-y-1">
+                                    <span className="block text-[11px] font-black uppercase tracking-widest">Extrair de Imagem</span>
+                                    <span className="block text-[9px] opacity-60 font-medium">Use a IA para ler a página do índice</span>
+                                  </div>
                                 </button>
                                 
                                 <button
@@ -1964,14 +1967,17 @@ export function PDFReader({
                                     setManualTocLines([{ capitulo: '', pagina: '' }]);
                                   }}
                                   className={cn(
-                                    "flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                    "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all border",
                                     settings.darkMode 
-                                      ? "border-white/10 text-white hover:bg-white/5" 
-                                      : "border-brand-navy/20 text-brand-navy hover:bg-brand-navy/5"
+                                      ? "bg-white/5 border-white/10 text-white hover:bg-white/10" 
+                                      : "bg-brand-navy/5 border-brand-navy/10 text-brand-navy hover:bg-brand-navy/10"
                                   )}
                                 >
-                                  <List className="w-4 h-4" />
-                                  Inserir Manualmente
+                                  <List className="w-5 h-5 opacity-60" />
+                                  <div className="space-y-1">
+                                    <span className="block text-[11px] font-black uppercase tracking-widest">Criar Manualmente</span>
+                                    <span className="block text-[9px] opacity-60 font-medium">Digite ou cole o sumário texto</span>
+                                  </div>
                                 </button>
                               </div>
                             </>
@@ -2193,7 +2199,7 @@ export function PDFReader({
                             </div>
                           )}
 
-                          {aiToc && !isGeneratingToc && !isEditingManualToc && (
+                          {aiToc && aiToc.length > 0 && !isGeneratingToc && !isEditingManualToc && (
                             <div className="w-full text-left">
                               <div className="flex items-center justify-between mb-6">
                                 <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Sumário Personalizado</h3>
