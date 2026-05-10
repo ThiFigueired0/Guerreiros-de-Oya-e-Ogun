@@ -1,82 +1,80 @@
 
 
+import Tesseract from 'tesseract.js';
+
 interface TocItem {
   capitulo: string;
   pagina: number;
 }
 
 /**
- * Gets the OpenRouter API key from environment variables.
+ * Gets the Groq API key from environment variables.
  */
-const getOpenRouterKey = () => {
-  return import.meta.env.VITE_OPENROUTER_API_KEY || '';
+const getGroqKey = () => {
+  return import.meta.env.VITE_GROQ_API_KEY || '';
 };
 
 /**
- * Uses OpenRouter (Gemini 1.5 Flash 8B) to read an image and structure it into a Table of Contents.
+ * Uses Tesseract.js (OCR) to read an image text and Groq to structure it into a Table of Contents.
  * @param base64Image Image in base64 format (handles both with and without data prefix).
  */
 export const generateTocFromImage = async (
   base64Image: string, 
   onProgress: (step: 'ai' | 'done') => void
 ): Promise<TocItem[]> => {
-  const apiKey = getOpenRouterKey();
+  const apiKey = getGroqKey();
   
   if (!apiKey) {
-    console.warn('VITE_OPENROUTER_API_KEY is empty or undefined. Attempting call anyway...');
+    console.warn('VITE_GROQ_API_KEY is empty or undefined. Attempting call anyway...');
   }
 
-  // Ensure image has correctly formatted data prefix
-  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
-  const imageUrl = `data:image/jpeg;base64,${cleanBase64}`;
+  // Ensure image has correctly formatted data prefix for Tesseract
+  let imageUrl = base64Image;
+  if (!imageUrl.startsWith('data:image')) {
+    imageUrl = `data:image/jpeg;base64,${base64Image}`;
+  }
 
   onProgress('ai');
 
-  const prompt = `
-    Leia este sumário e retorne apenas um array JSON com os campos capitulo e pagina.
-    
-    Regras:
-    1. Retorne APENAS um array JSON válido.
-    2. Formato: [ { "capitulo": "Nome do Capítulo", "pagina": numero_da_pagina } ].
-    3. Não inclua Markdown (como \`\`\`json), nem explicações ou outros textos.
-    4. Se houver subcapítulos, inclua-os também.
-    5. Se uma página não estiver clara, use 0.
-  `;
-
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Step 1: Local OCR using Tesseract.js
+    console.log('Iniciando OCR local com Tesseract...');
+    const { data: { text } } = await Tesseract.recognize(imageUrl, 'por', {
+      logger: m => console.log('Tesseract progress:', m)
+    });
+    
+    console.log('Texto extraído:', text);
+
+    if (!text || text.trim().length === 0) {
+      throw new Error("Nenhum texto pôde ser lido da imagem. Tente uma foto mais nítida.");
+    }
+
+    // Step 2: Structure Text using Groq's text model
+    console.log('Enviando texto extraído para a Groq...');
+    const prompt = `Abaixo está um texto extraído de um sumário. Organize-o em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON.\n\nTexto do Sumário:\n${text}`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'Templo Oya Ogum'
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5-8b:free',
+        model: 'llama-3.1-70b-versatile',
         messages: [
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
+            content: prompt
           }
-        ]
+        ],
+        temperature: 0.1,
+        max_tokens: 1024
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenRouter Error: ${errorData.error?.message || response.statusText}`);
+      throw new Error(`Groq API Error: ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
@@ -91,10 +89,10 @@ export const generateTocFromImage = async (
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error('Failed to parse AI response as JSON:', jsonStr);
-      throw new Error('A IA não retornou um JSON válido. Tente outra foto mais nítida.', { cause: e });
+      throw new Error('A IA não retornou um JSON válido. Verifique se o sumário estava legível.', { cause: e });
     }
   } catch (error) {
-    console.error('Error in OpenRouter API:', error);
+    console.error('Error processing ToC:', error);
     throw error;
   }
 };
