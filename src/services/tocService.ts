@@ -25,7 +25,7 @@ export const generateTocFromText = async (text: string): Promise<TocItem[]> => {
     throw new Error('VITE_GROQ_API_KEY is not defined.');
   }
 
-  const prompt = `Abaixo está um texto copiado de um sumário. Identifique os capítulos e suas respectivas páginas. Organize os dados em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON, sem nenhum texto ao redor.\n\nTexto do Sumário:\n${text}`;
+  const prompt = `Abaixo está um texto copiado de um sumário (índice), que pode estar muito desformatado. Identifique os títulos/capítulos e suas respectivas páginas (ex: "Introdução....5", "1. Introdução - 5" ou apenas "Introdução 5"). Organize os dados extraídos em um array JSON com os campos "capitulo" (string) e "pagina" (number). Aja inteligentemente e filtre sujeiras. Retorne estritamente o JSON válido e NADA MAIS, sem introduções ou explicações.\n\nTexto do Sumário:\n${text}`;
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',

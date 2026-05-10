@@ -1930,7 +1930,7 @@ export function PDFReader({
 
                     {!isCheckingDbToc && (hasOutline === false || aiToc) && (
                       <div className="mt-4">
-                        <div className="text-center py-8 px-4 flex flex-col items-center">
+                        <div className="text-center py-6 px-6 sm:px-8 flex flex-col items-center">
                           {(!aiToc || aiToc.length === 0) && !isGeneratingToc && !isEditingManualToc && (
                             <>
                               <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
@@ -1944,7 +1944,7 @@ export function PDFReader({
                                 className="hidden"
                               />
 
-                              <div className="flex flex-col gap-3 w-full px-2">
+                              <div className="flex flex-col gap-3 w-full px-0">
                                 <button
                                   onClick={() => fileInputRef.current?.click()}
                                   className={cn(
@@ -2024,7 +2024,7 @@ export function PDFReader({
                                   <textarea
                                     value={pastedTocText}
                                     onChange={(e) => setPastedTocText(e.target.value)}
-                                    placeholder="Cole aqui o sumário completo com títulos e páginas (ex: Introdução 5 \n Capítulo 1 12)..."
+                                    placeholder="Cole o sumário como preferir. Nossa IA identificará os títulos e páginas automaticamente."
                                     className={cn(
                                       "w-full h-32 rounded-xl p-3 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-copper",
                                       settings.darkMode ? "bg-white/5 border border-white/10 text-white" : "bg-brand-navy/5 border border-brand-navy/10 text-brand-navy"
@@ -2068,7 +2068,7 @@ export function PDFReader({
                                           <input
                                             id={`capitulo-${idx}`}
                                             type="text"
-                                            placeholder="Ex: Introdução"
+                                            placeholder="Ex: Prefácio"
                                             value={line.capitulo}
                                             onChange={(e) => {
                                               const newLines = [...manualTocLines];
@@ -2081,13 +2081,13 @@ export function PDFReader({
                                             )}
                                           />
                                           <div className={cn(
-                                            "flex items-center justify-end rounded-xl px-2 h-[44px] w-[60px] flex-shrink-0 transition-shadow",
+                                            "flex items-center justify-end rounded-xl px-2 h-[44px] min-w-[70px] w-auto max-w-[90px] flex-shrink-0 transition-shadow",
                                             settings.darkMode ? "bg-white/5 text-white border border-white/5 focus-within:bg-white/10 focus-within:shadow-sm" : "bg-white text-brand-navy shadow-sm border border-brand-navy/5 focus-within:shadow"
                                           )}>
                                             <input
                                               type="number"
                                               min="1"
-                                              placeholder="Pg."
+                                              placeholder="Pág."
                                               value={line.pagina}
                                               onChange={(e) => {
                                                 const newLines = [...manualTocLines];
