@@ -1,40 +1,39 @@
 
+
 interface TocItem {
   capitulo: string;
   pagina: number;
 }
 
 /**
- * Gets the Groq API key from environment variables.
+ * Gets the OpenRouter API key from environment variables.
  */
-const getGroqKey = () => {
-  return import.meta.env.VITE_GROQ_API_KEY || '';
+const getOpenRouterKey = () => {
+  return import.meta.env.VITE_OPENROUTER_API_KEY || '';
 };
 
 /**
- * Uses Groq's Vision model to read an image and structure it into a Table of Contents.
+ * Uses OpenRouter (Gemini 1.5 Flash 8B) to read an image and structure it into a Table of Contents.
  * @param base64Image Image in base64 format (handles both with and without data prefix).
  */
 export const generateTocFromImage = async (
   base64Image: string, 
   onProgress: (step: 'ai' | 'done') => void
 ): Promise<TocItem[]> => {
-  const groq = getGroqKey();
+  const apiKey = getOpenRouterKey();
   
-  if (!groq) {
-    console.warn('VITE_GROQ_API_KEY is empty or undefined. Attempting call anyway...');
+  if (!apiKey) {
+    console.warn('VITE_OPENROUTER_API_KEY is empty or undefined. Attempting call anyway...');
   }
 
-  // Remove data:image/...;base64, prefix for the API call
+  // Ensure image has correctly formatted data prefix
   const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
-  // Re-add prefix in the format Groq expects if needed, or send as pure data
   const imageUrl = `data:image/jpeg;base64,${cleanBase64}`;
 
   onProgress('ai');
 
   const prompt = `
-    Analise a imagem enviada, que é o sumário/índice de um livro.
-    Extraia todos os capítulos e seus respectivos números de página.
+    Leia este sumário e retorne apenas um array JSON com os campos capitulo e pagina.
     
     Regras:
     1. Retorne APENAS um array JSON válido.
@@ -44,15 +43,17 @@ export const generateTocFromImage = async (
     5. Se uma página não estiver clara, use 0.
   `;
 
-  const makeRequest = async (model: string) => {
-    return fetch('https://api.groq.com/openai/v1/chat/completions', {
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groq}`
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Templo Oya Ogum'
       },
       body: JSON.stringify({
-        model,
+        model: 'google/gemini-flash-1.5-8b:free',
         messages: [
           {
             role: 'user',
@@ -69,35 +70,13 @@ export const generateTocFromImage = async (
               }
             ]
           }
-        ],
-        temperature: 0.1,
-        max_tokens: 1024
+        ]
       })
     });
-  };
-
-  try {
-    let response = await makeRequest('llama-3.2-11b-vision');
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || response.statusText;
-      
-      const isDecommissioned = errorMessage.toLowerCase().includes('decommissioned') || 
-                               errorMessage.toLowerCase().includes('not found') || 
-                               response.status === 404;
-
-      if (isDecommissioned) {
-        console.warn('llama-3.2-11b-vision failed or decommissioned. Trying llava-v1.5-7b-4096...');
-        response = await makeRequest('llava-v1.5-7b-4096');
-        
-        if (!response.ok) {
-          const fallbackErrorData = await response.json().catch(() => ({}));
-          throw new Error(`Groq Vision Error (Fallback): ${fallbackErrorData.error?.message || response.statusText}`);
-        }
-      } else {
-        throw new Error(`Groq Vision Error: ${errorMessage}`);
-      }
+      throw new Error(`OpenRouter Error: ${errorData.error?.message || response.statusText}`);
     }
 
     const data = await response.json();
@@ -111,11 +90,11 @@ export const generateTocFromImage = async (
       onProgress('done');
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error('Failed to parse Groq response as JSON:', jsonStr);
+      console.error('Failed to parse AI response as JSON:', jsonStr);
       throw new Error('A IA não retornou um JSON válido. Tente outra foto mais nítida.', { cause: e });
     }
   } catch (error) {
-    console.error('Error in Groq Vision API:', error);
+    console.error('Error in OpenRouter API:', error);
     throw error;
   }
 };
