@@ -161,6 +161,8 @@ export function PDFReader({
   const [isGeneratingToc, setIsGeneratingToc] = useState(false);
   const [tocProgress, setTocProgress] = useState<'ai' | 'done' | 'idle'>('idle');
   const [isCheckingDbToc, setIsCheckingDbToc] = useState(true);
+  const [isEditingManualToc, setIsEditingManualToc] = useState(false);
+  const [manualTocLines, setManualTocLines] = useState<{capitulo: string, pagina: string}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1926,7 +1928,7 @@ export function PDFReader({
                     {!isCheckingDbToc && (hasOutline === false || aiToc) && (
                       <div className="mt-4">
                         <div className="text-center py-8 px-4 flex flex-col items-center">
-                          {(!aiToc || aiToc.length === 0) && !isGeneratingToc && (
+                          {(!aiToc || aiToc.length === 0) && !isGeneratingToc && !isEditingManualToc && (
                             <>
                               <List className="w-8 h-8 mx-auto mb-3 opacity-20" />
                               <p className="text-xs opacity-50 font-bold mb-4">Este documento não possui um sumário interno.</p>
@@ -1939,19 +1941,140 @@ export function PDFReader({
                                 className="hidden"
                               />
 
+                              <div className="flex flex-col gap-3 w-full max-w-[200px]">
+                                <button
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className={cn(
+                                    "flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    settings.darkMode 
+                                      ? "bg-white/10 text-white hover:bg-white/20" 
+                                      : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                                  )}
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                  Usar Imagem
+                                </button>
+                                
+                                <button
+                                  onClick={() => {
+                                    setIsEditingManualToc(true);
+                                    setManualTocLines([{ capitulo: '', pagina: '' }]);
+                                  }}
+                                  className={cn(
+                                    "flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                    settings.darkMode 
+                                      ? "border-white/10 text-white hover:bg-white/5" 
+                                      : "border-brand-navy/20 text-brand-navy hover:bg-brand-navy/5"
+                                  )}
+                                >
+                                  <List className="w-4 h-4" />
+                                  Inserir Manualmente
+                                </button>
+                              </div>
+                            </>
+                          )}
+
+                          {isEditingManualToc && (
+                            <div className="w-full text-left flex flex-col gap-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Sumário Manual</h3>
+                                <button
+                                  onClick={() => setIsEditingManualToc(false)}
+                                  className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase transition-opacity flex items-center gap-1"
+                                >
+                                  <X className="w-3 h-3" /> Cancelar
+                                </button>
+                              </div>
+                              
+                              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 pt-1 pb-1">
+                                {manualTocLines.map((line, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Capítulo..."
+                                      value={line.capitulo}
+                                      onChange={(e) => {
+                                        const newLines = [...manualTocLines];
+                                        newLines[idx].capitulo = e.target.value;
+                                        setManualTocLines(newLines);
+                                      }}
+                                      className={cn(
+                                        "flex-1 rounded-lg px-3 py-2 text-xs",
+                                        settings.darkMode ? "bg-white/5 text-white border border-white/10 focus:border-brand-copper focus:outline-none" : "bg-brand-navy/5 text-brand-navy border border-brand-navy/10 focus:border-brand-copper focus:outline-none"
+                                      )}
+                                    />
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      placeholder="Pág."
+                                      value={line.pagina}
+                                      onChange={(e) => {
+                                        const newLines = [...manualTocLines];
+                                        newLines[idx].pagina = e.target.value;
+                                        setManualTocLines(newLines);
+                                      }}
+                                      className={cn(
+                                        "w-[70px] rounded-lg px-3 py-2 text-xs",
+                                        settings.darkMode ? "bg-white/5 text-white border border-white/10 focus:border-brand-copper focus:outline-none" : "bg-brand-navy/5 text-brand-navy border border-brand-navy/10 focus:border-brand-copper focus:outline-none"
+                                      )}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const newLines = manualTocLines.filter((_, i) => i !== idx);
+                                        setManualTocLines(newLines);
+                                      }}
+                                      className="p-2 opacity-50 hover:opacity-100 text-red-500 transition-opacity"
+                                      disabled={manualTocLines.length <= 1}
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                              
                               <button
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={() => setManualTocLines([...manualTocLines, { capitulo: '', pagina: '' }])}
                                 className={cn(
-                                  "flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-                                  settings.darkMode 
-                                    ? "bg-white/10 text-white hover:bg-white/20" 
-                                    : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                                  "w-full py-2 rounded-lg text-xs font-bold transition-colors border border-dashed",
+                                  settings.darkMode ? "border-white/20 text-white/50 hover:bg-white/5" : "border-brand-navy/20 text-brand-navy/50 hover:bg-brand-navy/5"
                                 )}
                               >
-                                <ImageIcon className="w-4 h-4" />
-                                Gerar Sumário via Imagem
+                                + Adicionar Linha
                               </button>
-                            </>
+                              
+                              <button
+                                onClick={async () => {
+                                  // Filtrar as linhas vazias e formatar
+                                  const validLines = manualTocLines
+                                    .filter(l => l.capitulo.trim() && l.pagina)
+                                    .map(l => ({ capitulo: l.capitulo.trim(), pagina: parseInt(l.pagina, 10) }));
+                                    
+                                  if (validLines.length > 0) {
+                                    setAiToc(validLines);
+                                    onTocChange?.(validLines);
+                                    
+                                    // Save to DB
+                                    const { error } = await supabase
+                                      .from('books')
+                                      .update({ toc: validLines })
+                                      .eq('id', bookId);
+                                      
+                                    if (error) {
+                                      console.error("Error saving manual ToC to DB:", error);
+                                    }
+                                  }
+                                  setIsEditingManualToc(false);
+                                }}
+                                className={cn(
+                                  "w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-navy shadow-lg",
+                                  "bg-brand-copper hover:bg-brand-copper/90 transition-all",
+                                  manualTocLines.every(l => !l.capitulo.trim() || !l.pagina) && "opacity-50 cursor-not-allowed"
+                                )}
+                                disabled={manualTocLines.every(l => !l.capitulo.trim() || !l.pagina)}
+                              >
+                                Guardar Sumário
+                              </button>
+                            </div>
                           )}
 
                           {isGeneratingToc && (
@@ -1989,16 +2112,35 @@ export function PDFReader({
                             </div>
                           )}
 
-                          {aiToc && !isGeneratingToc && (
+                          {aiToc && !isGeneratingToc && !isEditingManualToc && (
                             <div className="w-full text-left">
                               <div className="flex items-center justify-between mb-6">
-                                <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Sumário Gerado por IA</h3>
-                                <button 
-                                  onClick={() => setAiToc(null)}
-                                  className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase transition-opacity"
-                                >
-                                  Limpar
-                                </button>
+                                <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Sumário Personalizado</h3>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={() => {
+                                      setManualTocLines(aiToc.map(l => ({ capitulo: l.capitulo, pagina: String(l.pagina) })));
+                                      setIsEditingManualToc(true);
+                                    }}
+                                    className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase transition-opacity flex items-center gap-1"
+                                  >
+                                    <List className="w-3 h-3" /> Editar
+                                  </button>
+                                  <button 
+                                    onClick={async () => {
+                                      setAiToc(null);
+                                      onTocChange?.([]);
+                                      const { error } = await supabase
+                                        .from('books')
+                                        .update({ toc: null })
+                                        .eq('id', bookId);
+                                      if (error) console.error("Error clearing ToC:", error);
+                                    }}
+                                    className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase transition-opacity"
+                                  >
+                                    Limpar
+                                  </button>
+                                </div>
                               </div>
                               <div className="space-y-1">
                                 {aiToc.map((item, idx) => (
