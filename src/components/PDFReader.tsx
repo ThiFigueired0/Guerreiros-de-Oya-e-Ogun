@@ -2063,8 +2063,8 @@ export function PDFReader({
                                 <>
                                   <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                                     {manualTocLines.map((line, idx) => (
-                                      <div key={idx} className="flex flex-col gap-1 relative group">
-                                        <div className="flex items-center gap-2">
+                                      <div key={idx} className="flex flex-col gap-1 relative group w-full">
+                                        <div className="grid grid-cols-[1fr_80px_32px] sm:grid-cols-[1fr_80px_32px] items-center gap-2 w-full">
                                           <input
                                             id={`capitulo-${idx}`}
                                             type="text"
@@ -2076,18 +2076,19 @@ export function PDFReader({
                                               setManualTocLines(newLines);
                                             }}
                                             className={cn(
-                                              "flex-1 min-w-0 rounded-xl px-3 h-[44px] text-xs transition-shadow outline-none",
+                                              "w-full min-w-0 rounded-xl px-3 h-[44px] text-xs transition-shadow outline-none",
                                               settings.darkMode ? "bg-white/5 text-white border border-white/5 focus:bg-white/10 focus:shadow-sm" : "bg-white text-brand-navy shadow-sm border border-brand-navy/5 focus:shadow"
                                             )}
                                           />
                                           <div className={cn(
-                                            "flex items-center justify-end rounded-xl px-2 h-[44px] w-[70px] flex-shrink-0 transition-shadow",
+                                            "flex items-center justify-between rounded-xl px-2 h-[44px] w-full transition-shadow overflow-hidden",
                                             settings.darkMode ? "bg-white/5 text-white border border-white/5 focus-within:bg-white/10 focus-within:shadow-sm" : "bg-white text-brand-navy shadow-sm border border-brand-navy/5 focus-within:shadow"
                                           )}>
+                                            <span className="text-[10px] font-bold opacity-40 select-none mr-1">Pág</span>
                                             <input
                                               type="number"
                                               min="1"
-                                              placeholder="Pág."
+                                              placeholder=""
                                               value={line.pagina}
                                               onChange={(e) => {
                                                 const newLines = [...manualTocLines];
@@ -2104,7 +2105,7 @@ export function PDFReader({
                                                   }
                                                 }
                                               }}
-                                              className="w-full bg-transparent text-xs text-right font-mono outline-none min-w-0"
+                                              className="flex-1 w-full bg-transparent text-xs text-right font-mono outline-none min-w-0"
                                             />
                                           </div>
                                           <button
@@ -2112,7 +2113,7 @@ export function PDFReader({
                                               const newLines = manualTocLines.filter((_, i) => i !== idx);
                                               setManualTocLines(newLines);
                                             }}
-                                            className="w-6 sm:w-8 h-[44px] flex-shrink-0 flex items-center justify-center opacity-30 hover:opacity-100 hover:text-red-500 transition-opacity"
+                                            className="w-full h-[44px] flex items-center justify-center opacity-30 hover:opacity-100 hover:text-red-500 transition-opacity"
                                             disabled={manualTocLines.length <= 1}
                                           >
                                             <X className="w-4 h-4" />

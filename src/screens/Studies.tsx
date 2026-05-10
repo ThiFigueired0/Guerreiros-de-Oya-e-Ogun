@@ -1366,9 +1366,9 @@ export default function StudiesScreen() {
                             <span className="text-[7px] font-black text-brand-copper uppercase tracking-widest">
                               {book.lastPage || 0}/{book.totalPages || '?'}
                             </span>
-                            {book.totalPages && book.totalPages > 0 && (
+                            {(book.totalPages || 0) > 0 && (
                               <span className="text-[7px] font-black opacity-40">
-                                {Math.round(((book.lastPage || 0) / book.totalPages) * 100)}%
+                                {Math.round(((book.lastPage || 0) / (book.totalPages || 1)) * 100)}%
                               </span>
                             )}
                           </div>
@@ -2773,23 +2773,23 @@ export default function StudiesScreen() {
                           )}
                           placeholder="0"
                         />
-                        {selectedBookForAction.totalPages && (
+                        {(selectedBookForAction.totalPages || 0) > 0 && (
                           <span className="text-[10px] font-bold text-gray-400">/ {selectedBookForAction.totalPages}</span>
                         )}
                       </div>
                       
-                      {selectedBookForAction.totalPages && (
+                      {(selectedBookForAction.totalPages || 0) > 0 && (
                         <div className="px-2">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[9px] font-black text-brand-copper uppercase tracking-widest">Progresso</span>
                             <span className="text-[9px] font-black text-brand-navy">
-                              {Math.round(((selectedBookForAction.lastPage || 0) / selectedBookForAction.totalPages) * 100)}%
+                              {Math.round(((selectedBookForAction.lastPage || 0) / (selectedBookForAction.totalPages || 1)) * 100)}%
                             </span>
                           </div>
                           <div className="h-1.5 bg-white rounded-full overflow-hidden border border-gray-100">
                             <motion.div 
                               initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, ((selectedBookForAction.lastPage || 0) / selectedBookForAction.totalPages) * 100)}%` }}
+                              animate={{ width: `${Math.min(100, ((selectedBookForAction.lastPage || 0) / (selectedBookForAction.totalPages || 1)) * 100)}%` }}
                               className="h-full bg-brand-copper shadow-[0_0_8px_rgba(184,134,11,0.3)]"
                             />
                           </div>
