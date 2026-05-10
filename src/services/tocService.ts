@@ -44,15 +44,15 @@ export const generateTocFromImage = async (
     5. Se uma página não estiver clara, use 0.
   `;
 
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const makeRequest = async (model: string) => {
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${groq}`
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-instruct',
+        model,
         messages: [
           {
             role: 'user',
@@ -74,10 +74,30 @@ export const generateTocFromImage = async (
         max_tokens: 1024
       })
     });
+  };
+
+  try {
+    let response = await makeRequest('llama-3.2-11b-vision-preview');
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Groq Vision Error: ${errorData.error?.message || response.statusText}`);
+      const errorMessage = errorData.error?.message || response.statusText;
+      
+      const isDecommissioned = errorMessage.toLowerCase().includes('decommissioned') || 
+                               errorMessage.toLowerCase().includes('not found') || 
+                               response.status === 404;
+
+      if (isDecommissioned) {
+        console.warn('llama-3.2-11b-vision-preview failed or decommissioned. Trying llama-3.2-90b-vision-preview...');
+        response = await makeRequest('llama-3.2-90b-vision-preview');
+        
+        if (!response.ok) {
+          const fallbackErrorData = await response.json().catch(() => ({}));
+          throw new Error(`Groq Vision Error (Fallback): ${fallbackErrorData.error?.message || response.statusText}`);
+        }
+      } else {
+        throw new Error(`Groq Vision Error: ${errorMessage}`);
+      }
     }
 
     const data = await response.json();
