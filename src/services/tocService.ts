@@ -77,7 +77,7 @@ export const generateTocFromImage = async (
   };
 
   try {
-    let response = await makeRequest('llama-3.2-11b-vision-preview');
+    let response = await makeRequest('llama-3.2-11b-vision');
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -88,8 +88,8 @@ export const generateTocFromImage = async (
                                response.status === 404;
 
       if (isDecommissioned) {
-        console.warn('llama-3.2-11b-vision-preview failed or decommissioned. Trying llama-3.2-90b-vision-preview...');
-        response = await makeRequest('llama-3.2-90b-vision-preview');
+        console.warn('llama-3.2-11b-vision failed or decommissioned. Trying llava-v1.5-7b-4096...');
+        response = await makeRequest('llava-v1.5-7b-4096');
         
         if (!response.ok) {
           const fallbackErrorData = await response.json().catch(() => ({}));
