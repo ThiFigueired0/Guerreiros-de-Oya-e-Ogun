@@ -59,6 +59,8 @@ interface PDFReaderProps {
   onClose: () => void;
   title: string;
   totalPages?: number;
+  initialToc?: { capitulo: string; pagina: number }[];
+  onTocChange?: (toc: { capitulo: string; pagina: number }[]) => void;
 }
 
 interface HighlightRect {
@@ -82,6 +84,8 @@ export function PDFReader({
   onClose,
   title,
   totalPages: initialTotalPages,
+  initialToc,
+  onTocChange,
 }: PDFReaderProps) {
   const { user } = useAuth();
   const [settings] = useStorage<AppSettings>("templo_settings", {
@@ -153,16 +157,16 @@ export function PDFReader({
   }
 
   const [hasOutline, setHasOutline] = useState<boolean | null>(null);
-  const [aiToc, setAiToc] = useState<{ capitulo: string; pagina: number }[] | null>(null);
+  const [aiToc, setAiToc] = useState<{ capitulo: string; pagina: number }[] | null>(initialToc || null);
   const [isGeneratingToc, setIsGeneratingToc] = useState(false);
   const [tocProgress, setTocProgress] = useState<'ai' | 'done' | 'idle'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setHasOutline(null);
-    setAiToc(null);
+    setAiToc(initialToc || null);
     setTocProgress('idle');
-  }, [pdfUrl]);
+  }, [pdfUrl, initialToc]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -180,18 +184,16 @@ export function PDFReader({
       const base64 = await base64Promise;
       const result = await generateTocFromImage(base64, (step) => setTocProgress(step));
       setAiToc(result);
+      onTocChange?.(result);
 
       // Save to Supabase
-      if (user) {
-        const { error } = await supabase
-          .from('books')
-          .update({ toc: result })
-          .eq('id', bookId)
-          .eq('user_id', user.id);
-        
-        if (error) {
-          console.error("Error saving ToC to Supabase:", error);
-        }
+      const { error } = await supabase
+        .from('books')
+        .update({ toc: result })
+        .eq('id', bookId);
+      
+      if (error) {
+        console.error("Error saving ToC to Supabase:", error);
       }
     } catch (error: any) {
       console.error("Error generating ToC:", error);

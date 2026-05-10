@@ -51,7 +51,7 @@ export const generateTocFromImage = async (
 
     // Step 2: Structure Text using Groq's text model
     console.log('Enviando texto extraído para a Groq...');
-    const prompt = `Abaixo está um texto extraído de um sumário. Organize-o em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON.\n\nTexto do Sumário:\n${text}`;
+    const prompt = `Analise o OCR deste sumário ignorando erros ou artefatos confusos gerados pelo OCR. Foque apenas em padrões que pareçam 'Capítulo' e 'Página'. Organize os dados em um array JSON com os campos capitulo (string) e pagina (number). Retorne apenas o JSON, sem nenhum texto ao redor.\n\nTexto do Sumário:\n${text}`;
 
     const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'llama3-70b-8192'];
     let successContent: string | null = null;
@@ -99,7 +99,13 @@ export const generateTocFromImage = async (
     }
 
     // Clean up potential markdown blocks from AI response
-    const jsonStr = successContent.replace(/```json|```/g, '').trim();
+    let jsonStr = successContent.replace(/```json|```/g, '').trim();
+    
+    // Extract array content robustly
+    const arrayMatch = jsonStr.match(/\[([\s\S]*?)\]/);
+    if (arrayMatch && arrayMatch[0]) {
+      jsonStr = arrayMatch[0];
+    }
     
     try {
       const parsed = JSON.parse(jsonStr);

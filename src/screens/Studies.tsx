@@ -1254,7 +1254,13 @@ export default function StudiesScreen() {
             pdfUrl={viewingUrl || ''}
             initialPage={viewingBook.lastPage || 1}
             totalPages={viewingBook.totalPages}
+            initialToc={viewingBook.toc}
             onClose={closeBook}
+            onTocChange={(toc) => {
+              // Mantém persistência na interface sem duplicar a chamada DB que já ocorre no PDFReader
+              setBooks(prev => prev.map(b => b.id === viewingBook.id ? { ...b, toc } : b));
+              setViewingBook(prev => prev ? { ...prev, toc } : null);
+            }}
             onPageChange={(page) => {
               const status = (viewingBook.totalPages && page >= viewingBook.totalPages) ? 'completed' : 'in_progress';
               updateBookStatus(viewingBook.id, status, page);
