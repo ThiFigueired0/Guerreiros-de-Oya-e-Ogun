@@ -913,9 +913,9 @@ export function PDFReader({
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
-        // Leave some padding for best fit
-        setContainerWidth(entry.contentRect.width - 48);
-        setContainerHeight(entry.contentRect.height - 48);
+        // Leave some padding for best fit (10px each side = 20px)
+        setContainerWidth(Math.floor(entry.contentRect.width) - 20);
+        setContainerHeight(Math.floor(entry.contentRect.height) - 40);
         // Update text bounds when container size changes
         setTimeout(updateTextItemBounds, 500);
       }
@@ -1585,6 +1585,7 @@ export function PDFReader({
           className={cn(
             "flex-1 overflow-auto relative transition-all duration-300",
             !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
+            activeSidebarTab && !isFocusMode ? "lg:mr-[340px]" : "",
             "bg-[#0A192F]",
             (activeHighlightColor || isEraserActive) && "no-select touch-none",
             activeHighlightColor && "cursor-crosshair",
@@ -1602,8 +1603,8 @@ export function PDFReader({
             setIsFocusMode(!isFocusMode);
           }}
         >
-          <div className="w-max min-w-full h-max min-h-full p-4 flex items-center justify-center">
-            <div className="w-fit">
+          <div className="w-full flex flex-col items-center justify-start min-h-full py-2 shrink-0">
+            <div className="w-fit flex flex-col items-center justify-center">
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
