@@ -63,7 +63,7 @@ export const generateTocFromText = async (text: string): Promise<TocItem[]> => {
     const parsed = JSON.parse(jsonStr);
     return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    throw new Error('Formato de texto não compreendido.');
+    throw new Error('Formato de texto não compreendido.', { cause: e });
   }
 };
 

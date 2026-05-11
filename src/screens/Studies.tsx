@@ -164,6 +164,120 @@ const INITIAL_GREETINGS: Greeting[] = [
 
 const INITIAL_STUDY_CONTENTS: StudyContent[] = [];
 
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
+
+function AlphabetScroller({ 
+  availableLetters, 
+  onLetterPress,
+  darkMode 
+}: { 
+  availableLetters: string[], 
+  onLetterPress: (letter: string) => void,
+  darkMode: boolean
+}) {
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const handleInteraction = useCallback((e: any) => {
+    // Determine the interaction point
+    const touch = e.touches ? e.touches[0] : e;
+    
+    // Find the element at the point
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const letter = element?.getAttribute('data-letter');
+    
+    if (letter && availableLetters.includes(letter)) {
+      if (letter !== activeLetter) {
+        setActiveLetter(letter);
+        onLetterPress(letter);
+        
+        // Haptic feedback if available
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate(5); } catch(e) { /* ignore */ }
+        }
+      }
+    }
+  }, [availableLetters, onLetterPress, activeLetter]);
+
+  const handleEnd = () => setActiveLetter(null);
+
+  return (
+    <div 
+      className="fixed right-0 top-[220px] bottom-24 flex items-center z-[50]"
+      onTouchStart={(e) => {
+        // Only prevent default if touching a letter to avoid blocking page scroll
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element?.getAttribute('data-letter')) {
+          e.preventDefault();
+        }
+        handleInteraction(e);
+      }}
+      onTouchMove={(e) => {
+        e.preventDefault();
+        handleInteraction(e);
+      }}
+      onTouchEnd={handleEnd}
+      onMouseDown={(e) => {
+        handleInteraction(e);
+      }}
+      onMouseMove={(e) => {
+        if (e.buttons === 1) {
+          handleInteraction(e);
+        }
+      }}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+    >
+      <div 
+        ref={containerRef}
+        className={cn(
+          "flex flex-col items-center py-2 px-1 gap-0.5 rounded-l-2xl shadow-xl border-y border-l transition-all duration-300",
+          darkMode 
+            ? "bg-[#1A1A1A]/80 border-gray-800 shadow-black/40 backdrop-blur-md" 
+            : "bg-white/80 border-gray-100 shadow-brand-copper/10 backdrop-blur-md"
+        )}
+      >
+        {ALPHABET.map((letter) => {
+          const isAvailable = availableLetters.includes(letter);
+          const isActive = activeLetter === letter;
+          
+          return (
+            <div
+              key={letter}
+              data-letter={letter}
+              className={cn(
+                "relative flex items-center justify-center w-5 h-4 sm:w-6 sm:h-5 text-[9px] font-black transition-all select-none rounded-md",
+                isAvailable 
+                  ? darkMode ? "text-brand-copper" : "text-brand-copper"
+                  : "text-gray-300 opacity-30",
+                isActive && "bg-brand-copper text-white scale-110 shadow-lg shadow-brand-copper/30 z-10"
+              )}
+            >
+              {letter}
+              
+              {/* Active Indicator Ballot */}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, scale: 0.5 }}
+                    animate={{ opacity: 1, x: -50, scale: 1 }}
+                    exit={{ opacity: 0, x: 20, scale: 0.5 }}
+                    className="absolute right-full mr-4 w-12 h-12 rounded-full bg-brand-copper text-white flex items-center justify-center text-xl font-black shadow-2xl border-4 border-white dark:border-[#1A1A1A]"
+                  >
+                    {letter}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-full w-4 h-4 bg-brand-copper rotate-45 -ml-2 -z-10 shadow-2xl" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function StudiesScreen() {
   const location = useLocation();
   const [settings] = useStorage<AppSettings>('templo_settings', {
@@ -479,6 +593,20 @@ export default function StudiesScreen() {
     });
     return groups;
   }, [filteredGlossaryTerms]);
+
+  const scrollToGlossarySection = useCallback((letter: string) => {
+    const element = document.getElementById(`glossary-section-${letter}`);
+    if (element) {
+      const headerOffset = 150; // Adjust for tabs and search bar
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
   const glossaryCategories = useMemo(() => {
     const catsAndCounts: Record<string, number> = { 'Tudo': glossaryTerms.length };
@@ -1950,7 +2078,7 @@ export default function StudiesScreen() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-8">
+              <div className="grid grid-cols-1 gap-8 relative px-2">
                 {filteredGlossaryTerms.length === 0 ? (
                   <div className={cn(
                     "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
@@ -1966,7 +2094,7 @@ export default function StudiesScreen() {
                   Object.entries(groupedGlossary)
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([letter, terms]) => (
-                      <div key={letter} className="space-y-4">
+                      <div key={letter} id={`glossary-section-${letter}`} className="space-y-4 pt-4 -mt-4">
                         <div className="flex items-center gap-4">
                           <div className={cn(
                             "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm border",
@@ -2103,6 +2231,14 @@ export default function StudiesScreen() {
                         </div>
                       </div>
                     ))
+                )}
+
+                {filteredGlossaryTerms.length > 0 && (
+                  <AlphabetScroller 
+                    availableLetters={Object.keys(groupedGlossary).sort()}
+                    onLetterPress={scrollToGlossarySection}
+                    darkMode={settings.darkMode}
+                  />
                 )}
               </div>
             </section>
