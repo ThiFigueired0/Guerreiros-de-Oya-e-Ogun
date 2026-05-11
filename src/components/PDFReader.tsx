@@ -1600,12 +1600,12 @@ export function PDFReader({
             setIsFocusMode(!isFocusMode);
           }}
         >
-        <div style={{ flex: 1, height: '100%', width: '100%', backgroundColor: settings.darkMode ? '#050B14' : '#f4f5f0', overflow: 'hidden' }}>
+        <div style={{ flex: 1, minHeight: window.innerHeight, height: '100%', width: '100%', backgroundColor: settings.darkMode ? '#050B14' : '#ffffff', overflow: 'hidden' }}>
           <Document
             key={`doc-focus-${isFocusMode}`}
             file={pdfUrl}
             onLoadSuccess={onDocumentLoadSuccess}
-            {...{ singlePage: true, enablePaging: true, horizontal: false, fitPolicy: 0 } as any}
+            onLoadError={(error) => { console.log('Erro no PDF:', error); alert('Erro ao carregar PDF: ' + error.message); }}
             loading={
               <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-10 h-10 text-brand-copper animate-spin" />
@@ -1622,7 +1622,7 @@ export function PDFReader({
             className="w-full h-full flex flex-col flex-1"
           >
             <div
-              style={{ filter: themeFilter, height: '100%', width: '100%', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', alignItems: 'center', justifyContent: containerHeight > (pdfPageWidth || 0) * 1.5 ? 'center' : 'flex-start' }}
+              style={{ filter: themeFilter, flex: 1, minHeight: window.innerHeight, height: '100%', width: '100%', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', alignItems: 'center', justifyContent: 'center' }}
               ref={viewerRef}
               onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
               className="custom-scrollbar"
@@ -1696,9 +1696,7 @@ export function PDFReader({
 
                         <Page
                           pageNumber={currentPageNum}
-                          scale={scale || undefined}
-                          width={!scale && containerWidth > 0 ? containerWidth : undefined}
-                          {...{ fitPolicy: 0 } as any}
+                          width={containerWidth > 0 ? containerWidth : window.innerWidth}
                           onLoadSuccess={(page) => {
                             console.log('Página atual:', pageNumber);
                             if (page.originalWidth && currentPageNum === 1) {
@@ -1721,8 +1719,7 @@ export function PDFReader({
                           renderAnnotationLayer={true}
                           renderTextLayer={true}
                           customTextRenderer={textRenderer}
-                          className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${currentPageNum}`, "!border-r-0 !m-0 !p-0 block max-w-full overflow-hidden")}
-                          style={{ margin: 0, padding: 0 }}
+                          className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${currentPageNum}`, "!border-r-0 block max-w-full overflow-hidden self-center !m-0 !p-0")}
                           loading={
                             <div className="w-full flex items-center justify-center p-10 bg-white/5">
                               <Loader2 className="w-6 h-6 animate-spin text-brand-copper/50" />
