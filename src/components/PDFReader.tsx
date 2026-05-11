@@ -1134,6 +1134,28 @@ export function PDFReader({
     }
   };
 
+  const handleTouchMoveRaw = (e: React.TouchEvent) => {
+    if (wasLongPressed.current && e.touches.length === 1) {
+      const touch = e.touches[0];
+      const target = e.target as HTMLElement;
+      const pageNode = target.closest(".react-pdf__Page") as HTMLElement;
+      if (pageNode) {
+        const rect = pageNode.getBoundingClientRect();
+        setLongPressContext({
+          x: touch.clientX,
+          y: touch.clientY,
+          pageX: Math.max(0, touch.clientX - rect.left),
+          pageY: Math.max(0, touch.clientY - rect.top),
+        });
+      }
+      return; 
+    }
+
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+  };
+
   const clearLongPressMode = () => {
     if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
   };
@@ -1199,10 +1221,7 @@ export function PDFReader({
       exit={{ opacity: 0 }}
       ref={containerRef}
       onTouchStart={handleTouchStartRaw}
-      onTouchMove={() => {
-        // Se usuário começar a rolar antes de dar o tempo do longPress, cancela
-        if (longPressTimeoutRef.current) clearTimeout(longPressTimeoutRef.current);
-      }}
+      onTouchMove={handleTouchMoveRaw}
       onTouchEnd={handleTouchEndRaw}
       onWheel={(e) => {
         // Prevent default scrolling to handle custom gesture if needed?
@@ -1646,54 +1665,61 @@ export function PDFReader({
                     {savedPosition?.page === pageNumber && (
                       <div
                         className={cn(
-                          "absolute left-0 w-1.5 h-8 bg-brand-copper shadow-xl z-[100] rounded-r-md transition-opacity duration-1000 flex items-center justify-start",
-                          showFadingMarker ? "opacity-100" : "opacity-80"
+                          "absolute left-0 z-[50] transition-opacity duration-1000",
+                          showFadingMarker ? "opacity-100" : "opacity-70"
                         )}
-                        style={{ top: `calc(${savedPosition.yPercent}% - 16px)` }}
+                        style={{ top: `calc(${savedPosition.yPercent}%)` }}
                         title="Retomar leitura"
                       >
-                        <div className="absolute top-1/2 -mt-3 -left-3 w-6 h-6 bg-brand-copper rounded-full blur-md opacity-40 animate-pulse" />
+                        {/* Triângulo na margem esquerda */}
+                        <div className="absolute left-0 -top-[6px] w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-brand-copper drop-shadow-sm" />
+                        
+                        {/* Linha que pulsa ao recuperar posição */}
+                        {showFadingMarker && (
+                          <div className="absolute left-0 -top-[1px] h-[2px] bg-brand-copper/40 shadow-[0_0_8px_rgba(184,134,11,0.5)] animate-pulse" style={{ width: '4000px' }} />
+                        )}
                       </div>
                     )}
 
-                    {/* Precision Bookmark Context Menu */}
+                    {/* Precision Bookmark Context Menu & Guideline */}
                     <AnimatePresence>
                       {longPressContext && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                          className="absolute z-[200] flex flex-col p-1 bg-[#050B14]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 pointer-events-auto"
-                          style={{
-                            left: longPressContext.pageX,
-                            top: longPressContext.pageY,
-                            transform: "translate(-50%, -100%)",
-                            marginTop: "-16px" // offset above finger
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          onTouchEnd={(e) => e.stopPropagation()}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute z-[200] left-0 w-full pointer-events-none"
+                          style={{ top: longPressContext.pageY }}
                         >
-                          <button
-                            onClick={() => {
-                              const pageNode = viewerRef.current?.querySelector(".react-pdf__Page") as HTMLElement;
-                              if (!pageNode) return;
-                              const rect = pageNode.getBoundingClientRect();
-                              const yPercent = (longPressContext.pageY / rect.height) * 100;
-                              
-                              setSavedPosition({ page: pageNumber, yPercent });
-                              setShowFadingMarker(true);
-                              
-                              if (onPositionSave) onPositionSave(pageNumber, yPercent);
-                              setLongPressContext(null);
+                          {/* Guideline */}
+                          <div className="w-[4000px] h-[2px] bg-brand-copper/60 shadow-[0_0_4px_rgba(184,134,11,0.6)] -mt-[1px]" />
+                          
+                          {/* Confirmation Pill */}
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-auto">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const pageNode = viewerRef.current?.querySelector(".react-pdf__Page") as HTMLElement;
+                                if (!pageNode) return;
+                                const rect = pageNode.getBoundingClientRect();
+                                const yPercent = (longPressContext.pageY / rect.height) * 100;
+                                
+                                setSavedPosition({ page: pageNumber, yPercent });
+                                setShowFadingMarker(true);
+                                
+                                if (onPositionSave) onPositionSave(pageNumber, yPercent);
+                                setLongPressContext(null);
 
-                              // Esconde o pulse mais forte após alguns segundos
-                              setTimeout(() => setShowFadingMarker(false), 3000);
-                            }}
-                            className="flex items-center gap-2 px-4 py-3 sm:py-2.5 text-white/90 hover:text-white rounded-lg hover:bg-white/10 transition-colors text-sm font-medium"
-                          >
-                            <span className="text-lg leading-none mb-0.5">🔖</span>
-                            <span>Marcar leitura aqui</span>
-                          </button>
+                                setTimeout(() => setShowFadingMarker(false), 3000);
+                              }}
+                              onTouchStart={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1.5 px-4 py-2 bg-[#050B14]/95 text-brand-copper backdrop-blur-xl rounded-full shadow-2xl border border-brand-copper/30 hover:bg-[#050B14] transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
+                              Fixar aqui
+                            </button>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
