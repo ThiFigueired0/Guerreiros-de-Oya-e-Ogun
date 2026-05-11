@@ -915,8 +915,8 @@ export function PDFReader({
       const entry = entries[0];
       if (entry) {
         // Leave some padding for best fit (10px each side = 20px)
-        setContainerWidth(Math.floor(entry.contentRect.width) - 20);
-        setContainerHeight(Math.floor(entry.contentRect.height) - 40);
+        setContainerWidth(Math.floor(entry.contentRect.width));
+        setContainerHeight(Math.floor(entry.contentRect.height));
         // Update text bounds when container size changes
         setTimeout(updateTextItemBounds, 500);
       }
@@ -1203,14 +1203,6 @@ export function PDFReader({
       : false;
 
     if (canScrollX) return; // if document can scroll horizontally naturally, do not swipe
-
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50 && deltaTime < 500) {
-      if (deltaX < 0) {
-        changePage(1); // Swipe left -> Next Page
-      } else {
-        changePage(-1); // Swipe right -> Prev Page
-      }
-    }
   };
 
   const toggleBookmark = () => {
@@ -1232,41 +1224,6 @@ export function PDFReader({
       onTouchStart={handleTouchStartRaw}
       onTouchMove={handleTouchMoveRaw}
       onTouchEnd={handleTouchEndRaw}
-      onWheel={(e) => {
-        // Prevent default scrolling to handle custom gesture if needed?
-        // No, let's just make sure we only change page if we aren't zooming.
-        if (
-          e.ctrlKey ||
-          e.metaKey ||
-          window.getSelection()?.toString().trim().length
-        )
-          return;
-
-        if (wheelTimeout.current) return;
-
-        const canScrollX = viewerRef.current
-          ? viewerRef.current.scrollWidth > viewerRef.current.clientWidth
-          : false;
-        const canScrollY = viewerRef.current
-          ? viewerRef.current.scrollHeight > viewerRef.current.clientHeight
-          : false;
-
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-          if (!canScrollX && Math.abs(e.deltaX) > 20) {
-            changePage(e.deltaX > 0 ? 1 : -1);
-            wheelTimeout.current = setTimeout(() => {
-              wheelTimeout.current = null;
-            }, 500);
-          }
-        } else {
-          if (!canScrollY && Math.abs(e.deltaY) > 20) {
-            changePage(e.deltaY > 0 ? 1 : -1);
-            wheelTimeout.current = setTimeout(() => {
-              wheelTimeout.current = null;
-            }, 500);
-          }
-        }
-      }}
       className={cn(
         "fixed inset-0 z-[150] flex flex-col backdrop-blur-md touch-pan-y transition-colors duration-500 overflow-hidden",
         isFullScreen ? "p-0" : "",
@@ -1594,7 +1551,7 @@ export function PDFReader({
             "flex-1 overflow-hidden relative transition-all duration-300 flex flex-col",
             !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
             activeSidebarTab && !isFocusMode ? "lg:mr-[340px]" : "",
-            "bg-[#0A192F]",
+            "bg-transparent",
             (activeHighlightColor || isEraserActive) && "no-select touch-none",
             activeHighlightColor && "cursor-crosshair",
             isEraserActive && "cursor-alias"
@@ -1654,9 +1611,8 @@ export function PDFReader({
                     itemContent={(index) => {
                       const currentPageNum = index + 1;
                       return (
-                        <div className="flex flex-col items-center justify-center w-full py-4 px-2 sm:px-4">
-                          <div className="shadow-[0_0_50px_rgba(0,0,0,0.3)] bg-white overflow-hidden relative w-fit">
-                            {bookmarkedPages.includes(currentPageNum) && (
+                        <div className="bg-white relative w-full flex justify-center">
+                          {bookmarkedPages.includes(currentPageNum) && (
                               <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
                             )}
                             
@@ -1725,7 +1681,6 @@ export function PDFReader({
                               pageNumber={currentPageNum}
                               scale={scale || undefined}
                               width={!scale ? containerWidth : undefined}
-                              height={!scale ? containerHeight : undefined}
                               onLoadSuccess={(page) => {
                                 if (page.originalWidth && currentPageNum === 1) {
                                   setPdfPageWidth(page.originalWidth);
@@ -1943,7 +1898,6 @@ export function PDFReader({
                       )}
                     </AnimatePresence>
                           </div>
-                        </div>
                       );
                     }}
                   />
