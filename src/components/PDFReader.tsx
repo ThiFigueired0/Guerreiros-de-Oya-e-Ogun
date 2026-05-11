@@ -1625,7 +1625,7 @@ export function PDFReader({
                 className="w-full h-full flex flex-col flex-1"
                 onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
               >
-                {numPages > 0 && containerWidth > 0 && (
+                {numPages > 0 && (
                   <div ref={viewerRef} className="w-full h-full flex-1 custom-scrollbar overflow-y-auto" style={{ margin: 0, padding: 0 }}>
                     <div className="w-full min-h-max flex flex-col m-0 p-0 bg-transparent">
                       {!isFocusMode && <div className="w-full transition-all duration-300 h-20 shrink-0 bg-transparent" />}
@@ -1696,9 +1696,10 @@ export function PDFReader({
                             <Page
                               pageNumber={currentPageNum}
                               scale={scale || undefined}
-                              width={!scale ? window.innerWidth : undefined}
+                              width={!scale && containerWidth > 0 ? containerWidth : undefined}
                               {...{ fitPolicy: 0 } as any}
                               onLoadSuccess={(page) => {
+                                console.log('Página atual:', pageNumber);
                                 if (page.originalWidth && currentPageNum === 1) {
                                   setPdfPageWidth(page.originalWidth);
                                 }
