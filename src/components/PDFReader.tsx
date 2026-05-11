@@ -951,6 +951,7 @@ export function PDFReader({
   }, [pageNumber, scale, updateTextItemBounds]);
 
   async function onDocumentLoadSuccess(pdf: any) {
+    console.log('PDF Carregado');
     setNumPages(pdf.numPages);
     parsedPdfRef.current = pdf;
     setLoading(false);
@@ -1599,10 +1600,11 @@ export function PDFReader({
             setIsFocusMode(!isFocusMode);
           }}
         >
-          <div className="flex-1 w-full relative">
+          <div className="flex-1 w-full relative" style={{ height: '100%', flex: 1, padding: 0, margin: 0 }}>
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
+              {...{ singlePage: true, enablePaging: true, horizontal: false, spacing: 0 } as any}
               loading={
                 <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                   <Loader2 className="w-10 h-10 text-brand-copper animate-spin" />
@@ -1619,7 +1621,7 @@ export function PDFReader({
               className="w-full h-full flex flex-col flex-1"
             >
               <div
-                style={{ filter: themeFilter }}
+                style={{ filter: themeFilter, height: '100%', padding: 0, margin: 0 }}
                 className="w-full h-full flex flex-col flex-1"
                 onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
               >
@@ -1695,6 +1697,7 @@ export function PDFReader({
                               pageNumber={currentPageNum}
                               scale={scale || undefined}
                               width={!scale ? window.innerWidth : undefined}
+                              {...{ fitPolicy: 0 } as any}
                               onLoadSuccess={(page) => {
                                 if (page.originalWidth && currentPageNum === 1) {
                                   setPdfPageWidth(page.originalWidth);
