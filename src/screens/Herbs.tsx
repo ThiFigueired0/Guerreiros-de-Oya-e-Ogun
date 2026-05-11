@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, ChevronRight, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake, Calendar, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -787,8 +787,11 @@ export default function HerbsScreen() {
                       settings.darkMode ? "bg-[#1A1A1A] shadow-none border border-white/5" : "bg-white"
                     )}
                   >
-                    <div className="w-12 h-12 rounded-[20px] bg-brand-copper/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <Folder className="w-6 h-6 text-brand-copper fill-brand-copper/20" />
+                    <div className={cn(
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform",
+                      settings.darkMode ? "bg-gradient-to-br from-[#102b4e] to-[#1a365d]" : "bg-gradient-to-br from-[#0B1E36] via-[#102b4e] to-[#1a365d] shadow-[0_4px_10px_rgba(15,32,59,0.3)]"
+                    )}>
+                      <Folder className="w-6 h-6 text-white fill-white/20" />
                     </div>
                     <h3 className={cn("font-black text-sm tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{cat}</h3>
                     <p className="text-[10px] text-gray-400 mt-1.5 font-black uppercase tracking-widest">{count} {count === 1 ? 'Banho' : 'Banhos'}</p>
@@ -1635,70 +1638,147 @@ export default function HerbsScreen() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
-                "bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl relative overflow-hidden",
+                "bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl relative overflow-hidden group",
                 settings.darkMode && "bg-[#1A1A1A]"
               )}
               onClick={e => e.stopPropagation()}
             >
-              <div className="absolute top-0 right-0 p-4">
+              {/* Background Icon Decoration */}
+              <div className="absolute -right-12 -bottom-12 opacity-[0.03] pointer-events-none z-0 group-hover:scale-105 group-hover:-rotate-6 transition-transform duration-700">
+                <CalendarDays className={cn("w-64 h-64 stroke-[1]", settings.darkMode ? "text-white" : "text-brand-navy")} />
+              </div>
+
+              {/* Contorno interno duplo azul com margem lateral */}
+              <div className={cn(
+                "absolute inset-[6px] rounded-[26px] border-2 pointer-events-none z-10",
+                settings.darkMode ? "border-[#152e51]" : "border-brand-navy/10"
+              )}>
+                <div className={cn(
+                  "absolute inset-[2px] rounded-[22px] border pointer-events-none",
+                  settings.darkMode ? "border-[#152e51]/50" : "border-brand-navy/5"
+                )} />
+              </div>
+
+              <div className="absolute top-0 right-0 p-4 z-20">
                  <button onClick={() => setShowRoutineModal(false)} className="p-2 text-gray-400 active:text-gray-600 transition-colors">
                     <X className="w-6 h-6" />
                  </button>
               </div>
 
               <div className="flex flex-col items-center mb-8">
-                 <div className="w-16 h-16 bg-brand-gold/10 rounded-2xl flex items-center justify-center mb-4">
-                    <CalendarClock className="w-8 h-8 text-brand-gold" />
-                 </div>
-                 <h3 className={cn("text-xl font-bold text-brand-navy text-center", settings.darkMode && "text-white")}>Semana de Gira</h3>
-                 <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mt-1">Cronograma Sagrado</p>
-              </div>
+                 <motion.div 
+                    animate={{ rotateY: [-8, 8, -8], y: [-4, 4, -4], rotateX: [2, -2, 2] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-20 h-20 p-1.5 bg-gradient-to-br from-brand-gold-light via-brand-gold-medium to-brand-gold-dark rounded-[24px] flex items-center justify-center mb-6 relative shadow-[0_12px_24px_rgba(192,150,35,0.4),inset_0_2px_6px_rgba(255,255,255,0.6),inset_0_-4px_8px_rgba(0,0,0,0.3)] border border-brand-gold-dark"
+                 >
+                    {/* Reflexo exterior */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent mix-blend-overlay outline-none rounded-[24px] pointer-events-none"></div>
+                    {/* Ponto de luz detalhe dourado */}
+                    <div className="absolute top-1 right-1 w-6 h-6 bg-white/40 rounded-full blur-md pointer-events-none"></div>
 
-              <div className="space-y-3">
-                {[
-                  { day: 'Segunda-feira', bath: 'Banho de descarrego', id: 'b1' },
-                  { day: 'Terça-feira', bath: 'Banho de descarrego', id: 'b1' },
-                  { day: 'Quarta-feira', bath: 'Banho de descarrego', id: 'b1' },
-                  { day: 'Quinta-feira', bath: 'Banho de desenvolvimento', id: 'b2' },
-                  { day: 'Sexta-feira', bath: 'Banho energizador', id: 'b4' },
-                  { day: 'Sábado', bath: 'Banho da gira' },
-                ].map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    onClick={() => {
-                      if (item.id) {
-                        const bath = baths.find(b => b.id === item.id);
-                        if (bath) {
-                          setSelectedBathForDetails(bath);
-                          setShowRoutineModal(false);
-                        }
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-xl border border-gray-50 bg-gray-50/30 transition-all",
-                      item.id && "cursor-pointer hover:border-brand-copper/30 active:scale-[0.98]",
-                      settings.darkMode && "border-gray-800 bg-white/5"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={cn("text-[11px] font-black uppercase tracking-tight text-brand-navy/60", settings.darkMode && "text-gray-400")}>
-                        {item.day}
-                      </span>
-                      {item.id && <Droplet className="w-3 h-3 text-brand-copper/40" />}
+                    {/* Fundo interno azul */}
+                    <div className="w-full h-full bg-gradient-to-br from-[#0B1E36] via-[#102b4e] to-[#1a365d] rounded-[18px] shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),inset_0_-4px_6px_rgba(0,0,0,0.4),0_2px_4px_rgba(0,0,0,0.2)] flex items-center justify-center relative overflow-hidden z-10 border border-[#1a365d]">
+                        {/* Reflexo interno */}
+                       <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent mix-blend-overlay outline-none pointer-events-none"></div>
+                       <CalendarClock className="w-8 h-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] relative z-20" strokeWidth={1.5} />
                     </div>
-                    <span className={cn("text-xs font-bold text-brand-copper", settings.darkMode && "text-brand-gold")}>
-                      {item.bath}
-                    </span>
-                  </div>
-                ))}
+                 </motion.div>
+                 <h3 className={cn("text-xl font-bold text-brand-navy text-center", settings.darkMode && "text-white")}>Semana de Gira</h3>
               </div>
 
-              <button 
-                onClick={() => setShowRoutineModal(false)}
-                className="w-full mt-8 p-4 rounded-xl bg-brand-navy text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-navy/20 active:scale-95 transition-all"
-              >
-                Entendido
-              </button>
+              <div className="space-y-3 mt-6">
+                {[
+                  { 
+                    shortDay: ['SEG', 'TER', 'QUA'], 
+                    bath: 'Banho de Descarrego', 
+                    id: 'b1', 
+                    hoverColor: settings.darkMode ? "group-hover:text-brand-gold" : "group-hover:text-brand-navy",
+                    hoverBorder: settings.darkMode ? "hover:border-[#2A2A2A]" : "hover:border-brand-navy/30",
+                    theme: 'navy'
+                  },
+                  { 
+                    shortDay: 'QUIN', 
+                    bath: 'Banho de Desenvolvimento', 
+                    id: 'b2', 
+                    hoverColor: settings.darkMode ? "group-hover:text-white" : "group-hover:text-brand-gold",
+                    hoverBorder: settings.darkMode ? "hover:border-brand-gold/30" : "hover:border-brand-gold/50",
+                    theme: 'gold'
+                  },
+                  { 
+                    shortDay: 'SEX', 
+                    bath: 'Banho Energizador', 
+                    id: 'b4', 
+                    hoverColor: settings.darkMode ? "group-hover:text-brand-gold" : "group-hover:text-brand-navy",
+                    hoverBorder: settings.darkMode ? "hover:border-[#2A2A2A]" : "hover:border-brand-navy/30",
+                    theme: 'navy'
+                  },
+                  { 
+                    shortDay: 'SAB', 
+                    bath: 'Banho da Gira', 
+                    id: undefined, 
+                    hoverColor: settings.darkMode ? "group-hover:text-white" : "group-hover:text-brand-gold",
+                    hoverBorder: settings.darkMode ? "hover:border-brand-gold/30" : "hover:border-brand-gold/50",
+                    theme: 'gold'
+                  },
+                ].map((item, idx) => {
+                  return (
+                    <motion.div 
+                      key={idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05, duration: 0.3, ease: "easeOut" }}
+                      onClick={() => {
+                        if (item.id) {
+                          const bath = baths.find(b => b.id === item.id);
+                          if (bath) {
+                            setSelectedBathForDetails(bath);
+                            setShowRoutineModal(false);
+                          }
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-4 p-3 sm:p-4 rounded-2xl border shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden group",
+                        !settings.darkMode && item.theme === 'navy' && "bg-[#F0F4F8] border-brand-navy/10",
+                        !settings.darkMode && item.theme === 'gold' && "bg-[#FFFDF5] border-brand-gold/20",
+                        item.id && cn("cursor-pointer active:opacity-70 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:border-black/10", item.hoverBorder),
+                        settings.darkMode && cn("bg-[#252528] border-gray-800 shadow-none", item.id && item.hoverBorder)
+                      )}
+                    >
+                      <div className={cn(
+                        "rounded-2xl flex items-center justify-center shrink-0 transition-transform overflow-hidden relative",
+                        Array.isArray(item.shortDay) ? "w-12 h-auto py-2.5 flex-col gap-1.5" : "w-12 h-12",
+                        item.theme === 'navy' && (settings.darkMode ? "bg-gradient-to-br from-[#102b4e] to-[#1a365d] text-white border border-[#1a365d]" : "bg-gradient-to-br from-[#0B1E36] via-[#102b4e] to-[#1a365d] text-white shadow-[0_4px_10px_rgba(15,32,59,0.4)]"),
+                        item.theme === 'gold' && (settings.darkMode ? "bg-gradient-to-br from-brand-gold-medium to-brand-gold-dark text-white border border-brand-gold/30" : "bg-gradient-to-br from-brand-gold-light to-brand-gold-medium text-brand-navy shadow-[0_4px_10px_rgba(192,150,35,0.4)]"),
+                      )}>
+                        {Array.isArray(item.shortDay) ? (
+                          item.shortDay.map((day, dIdx) => (
+                            <span key={dIdx} className="relative z-10 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight">{day}</span>
+                          ))
+                        ) : (
+                          <span className="relative z-10 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight">{item.shortDay}</span>
+                        )}
+                        {/* Overlay brilho */}
+                        {!settings.darkMode && <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-50"></div>}
+                      </div>
+                      <div className="flex-1 min-w-0 pr-4">
+                        <p className={cn("text-sm sm:text-base font-bold truncate transition-colors", item.id && item.hoverColor, settings.darkMode ? "text-white" : "text-brand-navy")}>
+                          {item.bath}
+                        </p>
+                      </div>
+                      
+                      {item.id && (
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                          "text-gray-400 group-hover:text-brand-navy group-hover:translate-x-1 cursor-pointer",
+                          settings.darkMode ? "bg-white/5 group-hover:bg-white/10 group-hover:text-white" : "bg-gray-50 group-hover:bg-gray-100"
+                        )}>
+                          <ChevronRight className="w-5 h-5" />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </motion.div>
           </motion.div>
         )}

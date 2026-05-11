@@ -621,6 +621,10 @@ function NotificationCenter({
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const handleDeleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   // Mark all as read ONLY WHEN panel is closed (transitioning from true to false)
   const previousShowNotifications = React.useRef(showNotifications);
   React.useEffect(() => {
@@ -842,9 +846,11 @@ function NotificationCenter({
                             </div>
                           </div>
                           <div className="space-y-3">
-                            {unreadNotifications.map((notif: NotificationItem) => (
-                              <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} isUnread onClick={() => handleNotificationClick(notif)} module={getNotificationModule(notif)} />
-                            ))}
+                            <AnimatePresence>
+                              {unreadNotifications.map((notif: NotificationItem) => (
+                                <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} isUnread onClick={() => handleNotificationClick(notif)} onDelete={() => handleDeleteNotification(notif.id)} module={getNotificationModule(notif)} />
+                              ))}
+                            </AnimatePresence>
                           </div>
                         </div>
                       )}
@@ -864,9 +870,11 @@ function NotificationCenter({
                             )}
                           </div>
                           <div className="space-y-3">
-                            {readNotifications.map((notif: NotificationItem) => (
-                              <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} onClick={() => handleNotificationClick(notif)} module={getNotificationModule(notif)} />
-                            ))}
+                            <AnimatePresence>
+                              {readNotifications.map((notif: NotificationItem) => (
+                                <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} onClick={() => handleNotificationClick(notif)} onDelete={() => handleDeleteNotification(notif.id)} module={getNotificationModule(notif)} />
+                              ))}
+                            </AnimatePresence>
                           </div>
                         </div>
                       )}
@@ -882,90 +890,63 @@ function NotificationCenter({
   );
 }
 
-function NotificationCard({ notif, darkMode, isUnread, onClick, module }: { notif: NotificationItem, darkMode: boolean, isUnread?: boolean, onClick?: () => void, module: string }) {
+function NotificationCard({ notif, darkMode, isUnread, onClick, onDelete, module }: { notif: NotificationItem, darkMode: boolean, isUnread?: boolean, onClick?: () => void, onDelete?: () => void, module: string }) {
   const getStyles = () => {
     switch (module) {
       case 'calendar':
         return {
-          bg: darkMode ? 'bg-amber-500/10' : 'bg-white',
-          border: darkMode ? 'border-amber-500/20' : 'border-amber-100',
-          iconBg: 'bg-amber-500/10',
-          iconColor: 'text-amber-600 dark:text-amber-400',
+          iconBg: darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-600',
           dot: 'bg-amber-500',
-          hoverTitle: 'Abrir Calendário'
         };
       case 'finance':
         return {
-          bg: darkMode ? 'bg-emerald-500/10' : 'bg-white',
-          border: darkMode ? 'border-emerald-500/20' : 'border-emerald-100',
-          iconBg: 'bg-emerald-500/10',
-          iconColor: 'text-emerald-600 dark:text-emerald-400',
+          iconBg: darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600',
           dot: 'bg-emerald-500',
-          hoverTitle: 'Abrir Finanças'
         };
       case 'stock':
         return {
-          bg: darkMode ? 'bg-green-600/10' : 'bg-white',
-          border: darkMode ? 'border-green-600/20' : 'border-green-100',
-          iconBg: 'bg-green-600/10',
-          iconColor: 'text-green-600 dark:text-green-400',
+          iconBg: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-100 text-green-600',
           dot: 'bg-green-600',
-          hoverTitle: 'Abrir Estoque'
         };
       case 'points':
         return {
-          bg: darkMode ? 'bg-purple-500/10' : 'bg-white',
-          border: darkMode ? 'border-purple-500/20' : 'border-purple-100',
-          iconBg: 'bg-purple-500/10',
-          iconColor: 'text-purple-600 dark:text-purple-400',
+          iconBg: darkMode ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-600',
           dot: 'bg-purple-500',
-          hoverTitle: 'Abrir Pontos'
         };
       case 'work':
         return {
-          bg: darkMode ? 'bg-orange-500/10' : 'bg-white',
-          border: darkMode ? 'border-orange-500/20' : 'border-orange-100',
-          iconBg: 'bg-orange-500/10',
-          iconColor: 'text-orange-600 dark:text-orange-400',
+          iconBg: darkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-100 text-orange-600',
           dot: 'bg-orange-500',
-          hoverTitle: 'Abrir Trabalhos'
         };
       case 'system':
       default:
         return {
-          bg: darkMode ? 'bg-blue-500/10' : 'bg-white',
-          border: darkMode ? 'border-blue-500/20' : 'border-blue-100',
-          iconBg: 'bg-blue-500/10',
-          iconColor: 'text-blue-600 dark:text-blue-400',
+          iconBg: darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600',
           dot: 'bg-blue-500',
-          hoverTitle: ''
         };
     }
   };
 
   const styles = getStyles();
-  const titleColor = isUnread 
-    ? (darkMode ? "text-white" : "text-slate-950") 
-    : (darkMode ? "text-slate-400" : "text-slate-800");
 
   const getIcon = () => {
     switch (module) {
-      case 'calendar': return <Calendar className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'finance': return <Wallet className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'stock': return <Leaf className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'points': return <Music className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'work': return <Flame className={cn("w-5 h-5", styles.iconColor)} />;
-      default: return <HistoryIcon className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'calendar': return <Calendar className="w-5 h-5" />;
+      case 'finance': return <Wallet className="w-5 h-5" />;
+      case 'stock': return <Leaf className="w-5 h-5" />;
+      case 'points': return <Music className="w-5 h-5" />;
+      case 'work': return <Flame className="w-5 h-5" />;
+      default: return <HistoryIcon className="w-5 h-5" />;
     }
   };
 
   const getTitleText = () => {
     if (notif.category === 'adição') return "Novo Item";
     if (notif.category === 'edição') return "Atualização";
-    if (notif.category === 'remoção' || notif.category === 'exclusão') return "Item Removido";
+    if (notif.category === 'remoção' || notif.category === 'exclusão') return "Removido";
     switch (module) {
       case 'calendar': return "Evento";
-      case 'finance': return "Finanças";
+      case 'finance': return "Finança";
       case 'stock': return "Estoque";
       case 'points': return "Pontos";
       case 'work': return "Trabalhos";
@@ -975,53 +956,74 @@ function NotificationCard({ notif, darkMode, isUnread, onClick, module }: { noti
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      onClick={onClick}
-      title={styles.hoverTitle}
-      className={cn(
-        "cursor-pointer p-4 rounded-[28px] border flex items-center gap-4 transition-all relative overflow-hidden",
-        styles.bg,
-        styles.border,
-        isUnread && "ring-2 ring-inset " + (darkMode ? "ring-white/10" : "ring-brand-gold/10 shadow-lg shadow-brand-gold/5")
-      )}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, overflow: 'hidden' }}
+      transition={{ duration: 0.2 }}
+      className="relative group w-full"
     >
-      {isUnread && (
-        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", styles.dot)} />
-      )}
-      
-      <div className={cn(
-        "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-transparent shadow-sm",
-        styles.iconBg,
-        isUnread && "animate-pulse"
-      )}>
-        {getIcon()}
+      <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+         <div 
+           className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500 cursor-pointer active:scale-95 transition-transform" 
+           onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+         >
+            <Trash2 className="w-5 h-5" />
+         </div>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <p className={cn("text-[9px] uppercase font-black tracking-[0.2em]", isUnread ? styles.iconColor : (darkMode ? "text-slate-500" : "text-slate-400"))}>
-            {getTitleText()}
-          </p>
-          {isUnread && <div className={cn("w-1.5 h-1.5 rounded-full", styles.dot)} />}
-        </div>
-        <p className={cn(
-          "text-[13px] leading-tight transition-colors break-words font-bold",
-          titleColor
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -70, right: 0 }}
+        dragElastic={0.1}
+        onDragEnd={(e, info) => {
+          if (info.offset.x < -40) onDelete?.();
+        }}
+        onClick={onClick}
+        className={cn(
+          "cursor-pointer p-4 rounded-[24px] border flex items-center gap-4 transition-all relative shadow-sm hover:shadow-md h-full z-10 w-full",
+          darkMode 
+            ? "bg-[#1C1C1C] border-white/5 hover:border-white/10" 
+            : "bg-white border-slate-100 hover:border-slate-200",
+          isUnread && (darkMode ? "bg-[#252525]" : "bg-slate-50/80")
+        )}
+      >
+        <div className={cn(
+          "relative w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+          styles.iconBg
         )}>
-          {notif.title}
-        </p>
-      </div>
+          {getIcon()}
+          {isUnread && (
+            <div className={cn("absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2", styles.dot, darkMode ? "border-[#1C1C1C]" : "border-white")} />
+          )}
+        </div>
 
-      <div className="text-right shrink-0 flex flex-col items-end gap-1">
-        <span className={cn("text-[10px] font-bold whitespace-nowrap", darkMode ? "text-slate-500" : "text-slate-400")}>
-          {new Date(notif.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-        </span>
-        <span className={cn("text-[10px] font-black", darkMode ? "text-slate-600" : "text-slate-500")}>
-          {new Date(notif.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      </div>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+           <div className="flex items-center gap-2 mb-1">
+             <span className={cn(
+               "text-[10px] uppercase font-black tracking-widest",
+               darkMode ? "text-slate-400" : "text-slate-500"
+             )}>{getTitleText()}</span>
+             {isUnread && <div className={cn("w-1.5 h-1.5 rounded-full", styles.dot)} />}
+           </div>
+           <p className={cn(
+             "text-[13px] font-bold leading-tight line-clamp-2",
+             isUnread 
+               ? (darkMode ? "text-white" : "text-slate-900")
+               : (darkMode ? "text-slate-300" : "text-slate-700")
+           )}>
+             {notif.title}
+           </p>
+        </div>
+
+        <div className="text-right shrink-0 flex flex-col items-end gap-1 pointer-events-none">
+          <span className={cn("text-[10px] font-semibold", darkMode ? "text-slate-500" : "text-slate-400")}>
+            {new Date(notif.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+          </span>
+          <span className={cn("text-[11px] font-black", darkMode ? "text-slate-400" : "text-slate-500")}>
+            {new Date(notif.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
