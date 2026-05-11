@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { Document, Page, Outline, pdfjs } from "react-pdf";
 import {
   ChevronLeft,
@@ -1601,6 +1602,7 @@ export function PDFReader({
           }}
         >
         <div style={{ flex: 1, minHeight: window.innerHeight, height: '100%', width: '100%', backgroundColor: settings.darkMode ? '#050B14' : '#ffffff', overflow: 'hidden' }}>
+          <ErrorBoundary>
           <Document
             key={`doc-focus-${isFocusMode}`}
             file={pdfUrl}
@@ -1718,7 +1720,6 @@ export function PDFReader({
                           }}
                           renderAnnotationLayer={true}
                           renderTextLayer={true}
-                          customTextRenderer={textRenderer}
                           className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${currentPageNum}`, "!border-r-0 block max-w-full overflow-hidden self-center !m-0 !p-0")}
                           loading={
                             <div className="w-full flex items-center justify-center p-10 bg-white/5">
@@ -1917,6 +1918,7 @@ export function PDFReader({
               )}
             </div>
           </Document>
+          </ErrorBoundary>
         </div>
         </main>
 
@@ -2024,6 +2026,7 @@ export function PDFReader({
                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pointer-events-auto">
                     {/* Official Outline */}
                     {hasOutline === true && (
+                    <ErrorBoundary>
                       <div className="flex flex-col gap-4">
                         <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando sumário...</div>}>
                           <Outline 
@@ -2037,6 +2040,7 @@ export function PDFReader({
                           />
                         </Document>
                       </div>
+                    </ErrorBoundary>
                     )}
 
                     {/* Pending check */}
@@ -2386,6 +2390,7 @@ export function PDFReader({
 
                 {activeSidebarTab === "thumbnails" && (
                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pointer-events-auto">
+                    <ErrorBoundary>
                     <Document file={pdfUrl} loading={<div className="text-center py-4 text-sm opacity-50">Carregando miniaturas...</div>}>
                       <div className="grid grid-cols-3 gap-2 pb-4">
                         {Array.from({ length: numPages || 0 }).map((_, i) => (
@@ -2414,6 +2419,7 @@ export function PDFReader({
                         ))}
                       </div>
                     </Document>
+                    </ErrorBoundary>
                   </div>
                 )}
 
