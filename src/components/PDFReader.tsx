@@ -39,6 +39,7 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { cn } from "../lib/utils";
 import { useStorage } from "../hooks/useStorage";
 import { AppSettings } from "../types";
@@ -405,7 +406,7 @@ export function PDFReader({
     // First try DOM extraction for instant text
     let text = "";
     let spanData: SpanInfo[] = [];
-    const textLayer = viewerRef.current?.querySelector(".react-pdf__Page__textContent") || document.querySelector(".react-pdf__Page__textContent");
+    const textLayer = viewerRef.current?.querySelector(`.page-marker-${pageNumber} .react-pdf__Page__textContent`) || document.querySelector(`.page-marker-${pageNumber} .react-pdf__Page__textContent`);
     
     if (textLayer) {
       const spans = textLayer.querySelectorAll("span");
@@ -545,6 +546,7 @@ export function PDFReader({
   const [selectionPopupPos, setSelectionPopupPos] = useState<{
     x: number;
     y: number;
+    page: number;
   } | null>(null);
 
   const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null);
@@ -652,48 +654,59 @@ export function PDFReader({
   };
 
   const updateTextItemBounds = useCallback(() => {
-    const textLayer = viewerRef.current?.querySelector(".react-pdf__Page__textContent");
-    if (textLayer) {
-      const spans = Array.from(textLayer.children).filter(el => el.tagName === "SPAN");
+    const textLayers = viewerRef.current?.querySelectorAll(".react-pdf__Page__textContent");
+    if (textLayers) {
+      const allBounds: { rect: DOMRect; text: string }[] = [];
 
-      spans.forEach(span => {
-        if (span.querySelector(".pdf-word") || span.classList.contains("pdf-word-processed")) return;
-        span.classList.add("pdf-word-processed");
+      textLayers.forEach((textLayer) => {
+        const spans = Array.from(textLayer.children).filter(el => el.tagName === "SPAN");
 
-        // Iterate backwards or make a copy of childNodes because we are modifying the DOM
-        const childNodes = Array.from(span.childNodes);
+        spans.forEach(span => {
+          if (span.querySelector(".pdf-word") || span.classList.contains("pdf-word-processed")) return;
+          span.classList.add("pdf-word-processed");
+
+          // Iterate backwards or make a copy of childNodes because we are modifying the DOM
+          const childNodes = Array.from(span.childNodes);
+          
+          childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent || "";
+              if (!text.trim()) return;
+              const words = text.split(/(\s+)/);
+              
+              const fragment = document.createDocumentFragment();
+              words.forEach(word => {
+                if (word.trim()) {
+                  const wordSpan = document.createElement('span');
+                  wordSpan.textContent = word;
+                  wordSpan.className = "pdf-word";
+                  fragment.appendChild(wordSpan);
+                } else if (word) {
+                  fragment.appendChild(document.createTextNode(word));
+                }
+              });
+              node.parentNode?.replaceChild(fragment, node);
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              el.classList.add("pdf-word");
+            }
+          });
+        });
+
+        const wordSpans = textLayer.querySelectorAll(".pdf-word");
         
-        childNodes.forEach(node => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent || "";
-            if (!text.trim()) return;
-            const words = text.split(/(\s+)/);
-            
-            const fragment = document.createDocumentFragment();
-            words.forEach(word => {
-              if (word.trim()) {
-                const wordSpan = document.createElement('span');
-                wordSpan.textContent = word;
-                wordSpan.className = "pdf-word";
-                fragment.appendChild(wordSpan);
-              } else if (word) {
-                fragment.appendChild(document.createTextNode(word));
-              }
+        Array.from(wordSpans).forEach(span => {
+          const rect = span.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            allBounds.push({
+              rect,
+              text: span.textContent || ""
             });
-            node.parentNode?.replaceChild(fragment, node);
-          } else if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as Element;
-            el.classList.add("pdf-word");
           }
         });
       });
 
-      const wordSpans = textLayer.querySelectorAll(".pdf-word");
-      
-      textItemsBoundsRef.current = Array.from(wordSpans).map(span => ({
-        rect: span.getBoundingClientRect(),
-        text: span.textContent || ""
-      })).filter(item => item.rect.width > 0 && item.rect.height > 0);
+      textItemsBoundsRef.current = allBounds;
     }
   }, []);
 
@@ -701,7 +714,8 @@ export function PDFReader({
     if (!activeHighlightColor) return;
     
     const touch = e.touches[0];
-    const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
+    const targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
+    const pageNode = targetElem?.closest(".react-pdf__Page") as HTMLElement;
     if (!pageNode) return;
 
     const pageRect = pageNode.getBoundingClientRect();
@@ -737,7 +751,8 @@ export function PDFReader({
     if (!isPainting || !paintHighlightIdRef.current || !activeHighlightColor || paintStartIndexRef.current === null) return;
 
     const touch = e.touches[0];
-    const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
+    const targetElem = document.elementFromPoint(touch.clientX, touch.clientY);
+    const pageNode = targetElem?.closest(".react-pdf__Page") as HTMLElement;
     if (!pageNode) return;
 
     const pageRect = pageNode.getBoundingClientRect();
@@ -803,12 +818,12 @@ export function PDFReader({
     }
   };
 
-  const addHighlight = (color: string, rectsToUse?: DOMRect[]) => {
+  const addHighlight = (color: string, pageNum?: number, rectsToUse?: DOMRect[]) => {
     const rectsTarget = rectsToUse || selectionRects;
     if (!rectsTarget || rectsTarget.length === 0) return;
 
-    // Find the page container
-    const pageNode = document.querySelector(".react-pdf__Page") as HTMLElement;
+    const targetPage = pageNum || pageNumberRef.current;
+    const pageNode = document.querySelector(`.page-marker-${targetPage}`) as HTMLElement;
     if (!pageNode) return;
 
     const pageRect = pageNode.getBoundingClientRect();
@@ -824,7 +839,7 @@ export function PDFReader({
       ...prev,
       {
         id: Math.random().toString(36).substring(2, 9),
-        page: pageNumberRef.current,
+        page: targetPage,
         color,
         rects,
       },
@@ -862,9 +877,7 @@ export function PDFReader({
       if (rects.length > 0) {
         setSelectionRects(rects);
 
-        const pageNode = document.querySelector(
-          ".react-pdf__Page",
-        ) as HTMLElement;
+        const pageNode = range.startContainer.parentElement?.closest(".react-pdf__Page") as HTMLElement || document.querySelector(".page-marker-" + pageNumberRef.current) as HTMLElement;
         if (pageNode) {
           const pageRect = pageNode.getBoundingClientRect();
           const mappedRects: HighlightRect[] = rects.map((r) => ({
@@ -882,6 +895,7 @@ export function PDFReader({
                 pageRect.width) *
               100,
             y: ((firstRect.top - pageRect.top - 50) / pageRect.height) * 100,
+            page: pageNumberRef.current,
           });
         }
         return;
@@ -986,10 +1000,13 @@ export function PDFReader({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [numPages]);
 
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+
   const goToPage = (page: number) => {
     if (page === pageNumber) return;
     setPageDirection(page > pageNumber ? 1 : -1);
     setPageNumber(page);
+    virtuosoRef.current?.scrollToIndex({ index: page - 1, align: "start", behavior: "smooth" });
   };
 
   const handlePageSelect = (page: number) => {
@@ -1552,7 +1569,6 @@ export function PDFReader({
         <main
           className={cn(
             "flex-1 overflow-hidden relative transition-all duration-300 flex flex-col",
-            !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
             activeSidebarTab && !isFocusMode ? "lg:mr-[340px]" : "",
             "bg-transparent",
             (activeHighlightColor || isEraserActive) && "no-select touch-none",
@@ -1590,215 +1606,216 @@ export function PDFReader({
                   <p>Falha ao carregar o PDF.</p>
                 </div>
               }
-              className="w-full h-full"
+              className="w-full h-full flex flex-col flex-1"
             >
               <div
                 style={{ filter: themeFilter }}
-                className="w-full h-full"
+                className="w-full h-full flex flex-col flex-1"
                 onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
               >
-                <div className="w-full h-full overflow-y-auto custom-scrollbar relative flex flex-col items-center">
-                  <AnimatePresence mode="wait" custom={pageDirection}>
-                    <motion.div
-                      key={pageNumber}
-                      custom={pageDirection}
-                      variants={{
-                        initial: (dir: number) => ({
-                          opacity: 0,
-                          x: dir > 0 ? 50 : -50,
-                        }),
-                        animate: { opacity: 1, x: 0 },
-                        exit: (dir: number) => ({
-                          opacity: 0,
-                          x: dir > 0 ? -50 : 50,
-                        }),
-                      }}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="bg-white relative w-full flex justify-center max-w-full mt-2 mb-2"
-                    >
-                      {bookmarkedPages.includes(pageNumber) && (
-                        <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
-                      )}
-                      
-                      {/* Precision Bookmark Visual Marker */}
-                      {savedPosition?.page === pageNumber && (
-                        <div
-                          id={`marker-page-${pageNumber}`}
-                          className={cn(
-                            "absolute left-0 z-[50] transition-opacity duration-1000",
-                            showFadingMarker ? "opacity-100" : "opacity-70"
+                {numPages > 0 && containerWidth > 0 && (
+                  <Virtuoso
+                    ref={virtuosoRef}
+                    className="w-full h-full flex-1 custom-scrollbar bg-white"
+                    totalCount={numPages}
+                    components={{
+                      Header: () => <div className={cn("w-full transition-all duration-300 bg-white", !isFocusMode ? "h-20" : "h-0")} />,
+                      Footer: () => <div className={cn("w-full transition-all duration-300 bg-white", !isFocusMode ? "h-[100px]" : "h-0")} />
+                    }}
+                    initialTopMostItemIndex={initialPage - 1}
+                    rangeChanged={({ startIndex, endIndex }) => {
+                      const visiblePages = endIndex - startIndex + 1;
+                      const focalPage = Math.min(numPages, Math.max(1, startIndex + 1 + Math.floor(visiblePages / 2)));
+                      if (focalPage !== pageNumber) {
+                        setPageNumber(focalPage);
+                      }
+                    }}
+                    itemContent={(index) => {
+                      const currentPageNum = index + 1;
+                      return (
+                        <div className="bg-white relative w-full flex flex-col max-w-full m-0 p-0">
+                          {bookmarkedPages.includes(currentPageNum) && (
+                            <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
                           )}
-                          style={{ top: `calc(${savedPosition.yPercent}%)` }}
-                          title="Retomar leitura"
-                        >
-                          <div className="absolute left-0 -top-[6px] w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-brand-copper drop-shadow-sm" />
-                          {showFadingMarker && (
-                            <div className="absolute left-0 -top-[1px] h-[2px] bg-brand-copper/40 shadow-[0_0_8px_rgba(184,134,11,0.5)] animate-pulse" style={{ width: '4000px' }} />
-                          )}
-                        </div>
-                      )}
-
-                      {/* Precision Bookmark Context Menu & Guideline */}
-                      <AnimatePresence>
-                        {longPressContext && longPressContext.page === pageNumber && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute z-[200] left-0 w-full pointer-events-none"
-                            style={{ top: longPressContext.pageY }}
-                          >
-                            <div className="w-[4000px] h-[2px] bg-brand-copper/60 shadow-[0_0_4px_rgba(184,134,11,0.6)] -mt-[1px]" />
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-auto">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const yPercent = (longPressContext.pageY / longPressContext.rectHeight) * 100;
-                                  setSavedPosition({ page: pageNumber, yPercent });
-                                  setShowFadingMarker(true);
-                                  if (onPositionSave) onPositionSave(pageNumber, yPercent);
-                                  setLongPressContext(null);
-                                  setTimeout(() => setShowFadingMarker(false), 3000);
-                                }}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-[#050B14]/95 text-brand-copper backdrop-blur-xl rounded-full shadow-2xl border border-brand-copper/30 hover:bg-[#050B14] transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap"
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
-                                Fixar aqui
-                              </button>
+                          
+                          {/* Precision Bookmark Visual Marker */}
+                          {savedPosition?.page === currentPageNum && (
+                            <div
+                              id={`marker-page-${currentPageNum}`}
+                              className={cn(
+                                "absolute left-0 z-[50] transition-opacity duration-1000",
+                                showFadingMarker ? "opacity-100" : "opacity-70"
+                              )}
+                              style={{ top: `calc(${savedPosition.yPercent}%)` }}
+                              title="Retomar leitura"
+                            >
+                              <div className="absolute left-0 -top-[6px] w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-brand-copper drop-shadow-sm" />
+                              {showFadingMarker && (
+                                <div className="absolute left-0 -top-[1px] h-[2px] bg-brand-copper/40 shadow-[0_0_8px_rgba(184,134,11,0.5)] animate-pulse" style={{ width: '4000px' }} />
+                              )}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          )}
 
-                      <Page
-                        pageNumber={pageNumber}
-                        scale={scale || undefined}
-                        width={!scale ? containerWidth : undefined}
-                        onLoadSuccess={(page) => {
-                          if (page.originalWidth) {
-                            setPdfPageWidth(page.originalWidth);
-                          }
-                          setTimeout(updateTextItemBounds, 500);
-                          if (!hasAutoScrolledRef.current && savedPosition?.page === pageNumber && savedPosition?.yPercent) {
-                            hasAutoScrolledRef.current = true;
-                            setTimeout(() => {
-                              const marker = document.getElementById(`marker-page-${pageNumber}`);
-                              if (marker) {
-                                marker.scrollIntoView({ behavior: "smooth", block: "center" });
-                                setShowFadingMarker(true);
-                                setTimeout(() => setShowFadingMarker(false), 4000);
+                          {/* Precision Bookmark Context Menu & Guideline */}
+                          <AnimatePresence>
+                            {longPressContext && longPressContext.page === currentPageNum && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute z-[200] left-0 w-full pointer-events-none"
+                                style={{ top: longPressContext.pageY }}
+                              >
+                                <div className="w-[4000px] h-[2px] bg-brand-copper/60 shadow-[0_0_4px_rgba(184,134,11,0.6)] -mt-[1px]" />
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-auto">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const yPercent = (longPressContext.pageY / longPressContext.rectHeight) * 100;
+                                      
+                                      setSavedPosition({ page: currentPageNum, yPercent });
+                                      setShowFadingMarker(true);
+                                      
+                                      if (onPositionSave) onPositionSave(currentPageNum, yPercent);
+                                      setLongPressContext(null);
+
+                                      setTimeout(() => setShowFadingMarker(false), 3000);
+                                    }}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[#050B14]/95 text-brand-copper backdrop-blur-xl rounded-full shadow-2xl border border-brand-copper/30 hover:bg-[#050B14] transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
+                                    Fixar aqui
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          <Page
+                            pageNumber={currentPageNum}
+                            scale={scale || undefined}
+                            width={!scale ? containerWidth : undefined}
+                            onLoadSuccess={(page) => {
+                              if (page.originalWidth && currentPageNum === 1) {
+                                setPdfPageWidth(page.originalWidth);
                               }
-                            }, 300);
-                          }
-                        }}
-                        renderAnnotationLayer={true}
-                        renderTextLayer={true}
-                        customTextRenderer={textRenderer}
-                        className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${pageNumber}`)}
-                        loading={
-                          <div className="w-full flex items-center justify-center p-10 bg-white/5">
-                            <Loader2 className="w-6 h-6 animate-spin text-brand-copper/50" />
-                          </div>
-                        }
-                      />
-                      {highlights
-                        .filter((h) => h.page === pageNumber)
-                        .map((h) => (
-                          <div
-                            key={h.id}
-                            className="absolute inset-0 pointer-events-none"
-                          >
-                            {h.rects.map((r, i) => (
-                              <div
-                                key={i}
-                                title={isEraserActive ? "Apagar" : "Clique para selecionar"}
-                                className={cn(
-                                  "absolute mix-blend-multiply z-40 pointer-events-auto transition-colors",
-                                  isEraserActive ? "cursor-alias" : "cursor-pointer",
-                                  activeHighlightId === h.id ? "ring-2 ring-red-400 outline-none" : ""
-                                )}
-                                onTouchStart={(e) => {
-                                  e.stopPropagation();
-                                  if (isEraserActive) {
-                                    setHighlights(prev => prev.filter(x => x.id !== h.id));
-                                    setActiveHighlightId(null);
-                                  }
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (isEraserActive && e.buttons === 1) {
-                                    setHighlights(prev => prev.filter(x => x.id !== h.id));
-                                    setActiveHighlightId(null);
-                                  }
-                                }}
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                }}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (activeHighlightColor) return;
-                                  if (isEraserActive) {
-                                    setHighlights(prev => prev.filter(x => x.id !== h.id));
-                                    setActiveHighlightId(null);
-                                    return;
-                                  }
-                                  const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
-                                  if (!pageRect) return;
-                                  
-                                  setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
-                                  if (h.id !== activeHighlightId) {
-                                    setHighlightPopupPos({
-                                      x: ((e.clientX - pageRect.left) / pageRect.width) * 100,
-                                      y: ((e.clientY - pageRect.top) / pageRect.height) * 100,
-                                      page: pageNumber
-                                    });
-                                  } else {
-                                    setHighlightPopupPos(null);
-                                  }
-                                }}
-                                onTouchEnd={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (activeHighlightColor || isEraserActive) return;
-                                  const touch = e.changedTouches[0];
-                                  const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
-                                  if (!pageRect || !touch) return;
-                                  
-                                  setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
-                                  if (h.id !== activeHighlightId) {
-                                    setHighlightPopupPos({
-                                      x: ((touch.clientX - pageRect.left) / pageRect.width) * 100,
-                                      y: ((touch.clientY - pageRect.top) / pageRect.height) * 100,
-                                      page: pageNumber
-                                    });
-                                  } else {
-                                    setHighlightPopupPos(null);
-                                  }
-                                }}
-                                style={{
-                                  left: `${r.x}%`,
-                                  top: `${r.y}%`,
-                                  width: `${r.width}%`,
-                                  height: `${r.height}%`,
-                                  backgroundColor: h.color,
-                                }}
-                              ></div>
-                            ))}
-                          </div>
-                        ))}
+                              setTimeout(updateTextItemBounds, 500);
 
-                      {/* Active transparent browser selection render overlay */}
-                      {activeSelectionPercentRects && (
-                        <div className="absolute inset-0 pointer-events-none z-30">
-                          {activeSelectionPercentRects.map((r, i) => (
+                              if (!hasAutoScrolledRef.current && savedPosition?.page === currentPageNum && savedPosition?.yPercent) {
+                                hasAutoScrolledRef.current = true;
+                                setTimeout(() => {
+                                  const marker = document.getElementById(`marker-page-${currentPageNum}`);
+                                  if (marker) {
+                                    marker.scrollIntoView({ behavior: "smooth", block: "center" });
+                                    setShowFadingMarker(true);
+                                    setTimeout(() => setShowFadingMarker(false), 4000);
+                                  }
+                                }, 300);
+                              }
+                            }}
+                            renderAnnotationLayer={true}
+                            renderTextLayer={true}
+                            customTextRenderer={textRenderer}
+                            className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${currentPageNum}`, "!m-0 !p-0 block")}
+                            loading={
+                              <div className="w-full flex items-center justify-center p-10 bg-white/5">
+                                <Loader2 className="w-6 h-6 animate-spin text-brand-copper/50" />
+                              </div>
+                            }
+                          />
+                          {highlights
+                            .filter((h) => h.page === currentPageNum)
+                            .map((h) => (
+                              <div
+                                key={h.id}
+                                className="absolute inset-0 pointer-events-none"
+                              >
+                                {h.rects.map((r, i) => (
+                                  <div
+                                    key={i}
+                                    title={isEraserActive ? "Apagar" : "Clique para selecionar"}
+                                    className={cn(
+                                      "absolute mix-blend-multiply z-40 pointer-events-auto transition-colors",
+                                      isEraserActive ? "cursor-alias" : "cursor-pointer",
+                                      activeHighlightId === h.id ? "ring-2 ring-red-400 outline-none" : ""
+                                    )}
+                                    onTouchStart={(e) => {
+                                      e.stopPropagation();
+                                      if (isEraserActive) {
+                                        setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                        setActiveHighlightId(null);
+                                      }
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (isEraserActive && e.buttons === 1) {
+                                        setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                        setActiveHighlightId(null);
+                                      }
+                                    }}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                    }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (activeHighlightColor) return;
+                                      if (isEraserActive) {
+                                        setHighlights(prev => prev.filter(x => x.id !== h.id));
+                                        setActiveHighlightId(null);
+                                        return;
+                                      }
+                                      const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
+                                      if (!pageRect) return;
+                                      
+                                      setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
+                                      if (h.id !== activeHighlightId) {
+                                        setHighlightPopupPos({
+                                          x: ((e.clientX - pageRect.left) / pageRect.width) * 100,
+                                          y: ((e.clientY - pageRect.top) / pageRect.height) * 100,
+                                          page: currentPageNum
+                                        });
+                                      } else {
+                                        setHighlightPopupPos(null);
+                                      }
+                                    }}
+                                    onTouchEnd={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (activeHighlightColor || isEraserActive) return;
+                                      const touch = e.changedTouches[0];
+                                      const pageRect = (e.currentTarget.closest(".react-pdf__Page") as HTMLElement)?.getBoundingClientRect();
+                                      if (!pageRect || !touch) return;
+                                      
+                                      setActiveHighlightId(h.id === activeHighlightId ? null : h.id);
+                                      if (h.id !== activeHighlightId) {
+                                        setHighlightPopupPos({
+                                          x: ((touch.clientX - pageRect.left) / pageRect.width) * 100,
+                                          y: ((touch.clientY - pageRect.top) / pageRect.height) * 100,
+                                          page: currentPageNum
+                                        });
+                                      } else {
+                                        setHighlightPopupPos(null);
+                                      }
+                                    }}
+                                    style={{
+                                      left: `${r.x}%`,
+                                      top: `${r.y}%`,
+                                      width: `${r.width}%`,
+                                      height: `${r.height}%`,
+                                      backgroundColor: h.color,
+                                    }}
+                                  ></div>
+                                ))}
+                              </div>
+                            ))}
+
+                          {/* Active transparent browser selection render overlay */}
+                          {activeSelectionPercentRects && activeSelectionPercentRects.map((r, i) => (
                             <div
                               key={`acts-${i}`}
-                              className="absolute mix-blend-multiply pointer-events-none"
+                              className="absolute mix-blend-multiply pointer-events-none z-30"
                               style={{
                                 left: `${r.x}%`,
                                 top: `${r.y}%`,
@@ -1808,93 +1825,93 @@ export function PDFReader({
                               }}
                             />
                           ))}
+
+                          {/* Highlight Delete Popup */}
+                          <AnimatePresence>
+                            {activeHighlightId && highlightPopupPos && highlightPopupPos.page === currentPageNum && !activeHighlightColor && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                className="absolute z-[200] flex items-center gap-2 p-1.5 bg-[#050B14]/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 pointer-events-auto"
+                                style={{
+                                  left: `${highlightPopupPos.x}%`,
+                                  top: `calc(${highlightPopupPos.y}% - 48px)`,
+                                  transform: "translateX(-50%)",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onTouchEnd={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={() => {
+                                    setHighlights((prev) => prev.filter((x) => x.id !== activeHighlightId));
+                                    setActiveHighlightId(null);
+                                    setHighlightPopupPos(null);
+                                  }}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-red-400 rounded-lg hover:bg-red-400/10 transition-colors"
+                                >
+                                  <Trash className="w-3.5 h-3.5" />
+                                  <span className="text-xs font-semibold">Remover</span>
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {/* Selection Popup */}
+                          <AnimatePresence>
+                            {selectionPopupPos && selectionPopupPos.page === currentPageNum && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                className="absolute z-[200] flex items-center gap-2 p-2 bg-[#050B14]/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 pointer-events-auto"
+                                style={{
+                                  left: `${selectionPopupPos.x}%`,
+                                  top: `${selectionPopupPos.y}%`,
+                                  transform: "translateX(-50%)",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onTouchEnd={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2 pr-2 border-r border-white/10">
+                                  <Highlighter className="w-4 h-4 text-white/50" />
+                                </div>
+                                <button
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    addHighlight("rgba(252, 211, 77, 0.4)", currentPageNum);
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-amber-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                                />
+                                <button
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    addHighlight("rgba(134, 239, 172, 0.4)", currentPageNum);
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-green-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                                />
+                                <button
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    addHighlight("rgba(147, 197, 253, 0.4)", currentPageNum);
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-blue-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                                />
+                                <button
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    addHighlight("rgba(249, 168, 212, 0.4)", currentPageNum);
+                                  }}
+                                  className="w-6 h-6 rounded-full bg-pink-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                      )}
-
-                      {/* Highlight Delete Popup */}
-                      <AnimatePresence>
-                        {activeHighlightId && highlightPopupPos && highlightPopupPos.page === pageNumber && !activeHighlightColor && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                            className="absolute z-[200] flex items-center gap-2 p-1.5 bg-[#050B14]/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 pointer-events-auto"
-                            style={{
-                              left: `${highlightPopupPos.x}%`,
-                              top: `calc(${highlightPopupPos.y}% - 48px)`,
-                              transform: "translateX(-50%)",
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => {
-                                setHighlights((prev) => prev.filter((x) => x.id !== activeHighlightId));
-                                setActiveHighlightId(null);
-                                setHighlightPopupPos(null);
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-red-400 rounded-lg hover:bg-red-400/10 transition-colors"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                              <span className="text-xs font-semibold">Remover</span>
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* Selection Popup */}
-                      <AnimatePresence>
-                        {selectionPopupPos && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                            className="absolute z-[200] flex items-center gap-2 p-2 bg-[#050B14]/90 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 pointer-events-auto"
-                            style={{
-                              left: `${selectionPopupPos.x}%`,
-                              top: `${selectionPopupPos.y}%`,
-                              transform: "translateX(-50%)",
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center gap-2 pr-2 border-r border-white/10">
-                              <Highlighter className="w-4 h-4 text-white/50" />
-                            </div>
-                            <button
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                addHighlight("rgba(252, 211, 77, 0.4)");
-                              }}
-                              className="w-6 h-6 rounded-full bg-amber-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
-                            />
-                            <button
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                addHighlight("rgba(134, 239, 172, 0.4)");
-                              }}
-                              className="w-6 h-6 rounded-full bg-green-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
-                            />
-                            <button
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                addHighlight("rgba(147, 197, 253, 0.4)");
-                              }}
-                              className="w-6 h-6 rounded-full bg-blue-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
-                            />
-                            <button
-                              onPointerDown={(e) => {
-                                e.preventDefault();
-                                addHighlight("rgba(249, 168, 212, 0.4)");
-                              }}
-                              className="w-6 h-6 rounded-full bg-pink-300 border border-black/10 hover:scale-110 transition-transform shadow-sm"
-                            />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+                      );
+                    }}
+                  />
+                )}
               </div>
             </Document>
           </div>
