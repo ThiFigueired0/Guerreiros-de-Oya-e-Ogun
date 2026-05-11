@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
@@ -581,7 +581,22 @@ function NotificationCenter({
   setNotifications: (val: NotificationItem[] | ((prev: NotificationItem[]) => NotificationItem[])) => void 
 }) {
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [filter, setFilter] = React.useState<'all' | 'calendar' | 'finance' | 'stock' | 'points' | 'work' | 'system'>('all');
+  const [isGuest] = useStorage<boolean>('templo_guest', false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const generateMockNotifications = () => {
+    const mocks: NotificationItem[] = [
+      { id: `mock_calendar_event_${Date.now()}_1`, title: 'Evento: Gira de Desenvolvimento Iniciada', timestamp: Date.now(), category: 'calendário', read: false },
+      { id: `mock_finance_${Date.now()}_2`, title: 'Finanças: Mensalidade recebida de João', timestamp: Date.now() - 1000, category: 'adição', read: false },
+      { id: `mock_herb_stock_${Date.now()}_3`, title: 'Estoque: Alecrim adicionado', timestamp: Date.now() - 2000, category: 'adição', read: false },
+      { id: `mock_ponto_${Date.now()}_4`, title: 'Pontos: Novo ponto de Oxóssi cadastrado', timestamp: Date.now() - 3000, category: 'adição', read: false },
+      { id: `mock_bicho_${Date.now()}_5`, title: 'Trabalhos: Novo Bicho registrado', timestamp: Date.now() - 4000, category: 'adição', read: false },
+      { id: `mock_system_${Date.now()}_6`, title: 'Sistema: Teste de Notificação', timestamp: Date.now() - 5000, category: 'sistema', read: false },
+    ];
+    setNotifications(prev => [...mocks, ...prev].slice(0, 100));
+  };
 
   // Close notifications on route change
   React.useEffect(() => {
@@ -620,13 +635,62 @@ function NotificationCenter({
     previousShowNotifications.current = showNotifications;
   }, [showNotifications, setNotifications]);
 
+  const getNotificationModule = (notif: NotificationItem) => {
+    if (notif.id.includes('finance')) return 'finance';
+    if (notif.id.includes('_event_') || notif.id.startsWith('event_')) return 'calendar';
+    if (notif.id.includes('_herb_') || notif.id.includes('_ready_bath')) return 'stock';
+    if (notif.id.includes('_ponto_') || notif.id.includes('_folder_')) return 'points';
+    if (notif.id.includes('_bicho_') || notif.id.includes('_candle_') || notif.id.includes('_offering_') || notif.id.startsWith('precept_')) return 'work';
+    if (notif.category === 'calendário') return 'calendar';
+    if (notif.category === 'preceito') return 'work';
+    return 'system';
+  };
+
+  const getRouteForModule = (module: string) => {
+    switch (module) {
+      case 'calendar': return '/calendar';
+      case 'finance': return '/financeiro';
+      case 'stock': return '/herbs';
+      case 'points': return '/points';
+      case 'work': return '/trabalhos';
+      default: return null;
+    }
+  };
+
+  const handleNotificationClick = (notif: NotificationItem) => {
+    if (!notif.read) {
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+    }
+    
+    const module = getNotificationModule(notif);
+    const route = getRouteForModule(module);
+    
+    if (route && location.pathname !== route) {
+      navigate(route);
+      setShowNotifications(false);
+    }
+  };
+
   const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp);
-  const unreadNotifications = sortedNotifications.filter((n: NotificationItem) => !n.read);
-  const readNotifications = sortedNotifications.filter((n: NotificationItem) => n.read);
+  const filteredNotifications = filter === 'all' 
+    ? sortedNotifications 
+    : sortedNotifications.filter(n => getNotificationModule(n) === filter);
+
+  const unreadNotifications = filteredNotifications.filter((n: NotificationItem) => !n.read);
+  const readNotifications = filteredNotifications.filter((n: NotificationItem) => n.read);
   
   // Badge count: Só mostra se houver não-lidas e o painel estiver fechado
-  const showBadge = !showNotifications && unreadNotifications.length > 0;
-  const unreadCount = unreadNotifications.length;
+  const showBadge = !showNotifications && notifications.some(n => !n.read);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const FILTERS = [
+    { id: 'all', label: 'Todas' },
+    { id: 'calendar', label: 'Eventos' },
+    { id: 'finance', label: 'Finanças' },
+    { id: 'stock', label: 'Estoque' },
+    { id: 'work', label: 'Trabalhos' },
+    { id: 'points', label: 'Pontos' },
+  ] as const;
 
   return (
     <>
@@ -688,7 +752,15 @@ function NotificationCenter({
                     <Bell className="w-6 h-6 text-brand-gold" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black tracking-tight">Notificações</h2>
+                    <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+                       Notificações
+                       {isGuest && (
+                          <button onClick={generateMockNotifications} className="ml-2 text-[10px] bg-brand-navy/10 text-brand-navy dark:bg-brand-gold/20 dark:text-brand-gold px-2 py-1 rounded-lg hover:bg-brand-navy/20 dark:hover:bg-brand-gold/30 transition-colors uppercase tracking-widest font-black flex items-center gap-1" title="Adicionar notificações de teste (Apenas Visitante)">
+                             <Zap className="w-3 h-3" />
+                             Simular
+                          </button>
+                       )}
+                    </h2>
                   </div>
                 </div>
                 <button 
@@ -701,72 +773,106 @@ function NotificationCenter({
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                <div className="mb-6 p-4 bg-brand-gold/5 dark:bg-white/5 rounded-[24px] border border-brand-gold/10 dark:border-white/5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-brand-gold/10 flex items-center justify-center shrink-0">
-                    <Info className="w-4 h-4 text-brand-gold" />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-6 pt-6 shrink-0">
+                  <div className="mb-4 p-4 bg-brand-gold/5 dark:bg-white/5 rounded-[24px] border border-brand-gold/10 dark:border-white/5 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-brand-gold/10 flex items-center justify-center shrink-0">
+                      <Info className="w-4 h-4 text-brand-gold" />
+                    </div>
+                    <p className="text-[11px] font-medium leading-tight opacity-70">
+                      Limpeza automática: as notificações expiram após 7 dias corridos.
+                    </p>
                   </div>
-                  <p className="text-[11px] font-medium leading-tight opacity-70">
-                    Limpeza automática: as notificações expiram após 7 dias corridos.
-                  </p>
+
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x mb-2">
+                    {FILTERS.map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setFilter(f.id as any)}
+                        className={cn(
+                          "snap-start px-4 py-2 rounded-full whitespace-nowrap text-[11px] font-bold tracking-wider transition-all border",
+                          filter === f.id
+                            ? "bg-brand-gold text-white border-transparent shadow-md"
+                            : darkMode
+                              ? "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10"
+                              : "bg-gray-50 text-slate-600 border-gray-200 hover:bg-gray-100"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {notifications.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center py-12 text-center opacity-40">
-                    <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                      <BellOff className="w-8 h-8" />
+                <div className="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
+                  {filteredNotifications.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center py-12 text-center opacity-40">
+                      <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
+                        <BellOff className="w-8 h-8" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">{filter === 'all' ? 'Céu Limpo' : 'Nenhuma notificação'}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1">{filter === 'all' ? 'Sem notificações' : `Na categoria ${FILTERS.find(f => f.id === filter)?.label}`}</p>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em]">Céu Limpo</p>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1">Sem notificações</p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {unreadNotifications.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy dark:text-brand-gold">Recentes</span>
-                            <span className="px-2 py-0.5 rounded-full bg-brand-gold text-[9px] font-black text-white">{unreadNotifications.length}</span>
+                  ) : (
+                    <div className="space-y-8">
+                      {unreadNotifications.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy dark:text-brand-gold">Recentes</span>
+                              <span className="px-2 py-0.5 rounded-full bg-brand-gold text-[9px] font-black text-white">{unreadNotifications.length}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={markAllAsRead}
+                                className="flex items-center gap-2 px-3 py-1.5 text-brand-navy dark:text-brand-gold bg-brand-navy/5 dark:bg-brand-gold/10 rounded-xl hover:bg-brand-navy hover:text-white dark:hover:bg-brand-gold transition-all active:scale-95 group border border-brand-navy/10 dark:border-brand-gold/20 shadow-sm"
+                              >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+                                <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Lidas</span>
+                              </button>
+                              {filter === 'all' && (
+                                <button 
+                                  onClick={clearHistory}
+                                  className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Limpar</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <button 
-                            onClick={clearHistory}
-                            className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
-                          </button>
+                          <div className="space-y-3">
+                            {unreadNotifications.map((notif: NotificationItem) => (
+                              <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} isUnread onClick={() => handleNotificationClick(notif)} module={getNotificationModule(notif)} />
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          {unreadNotifications.map((notif: NotificationItem) => (
-                            <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} isUnread />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    {readNotifications.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Anteriores</span>
-                          {!unreadNotifications.length && (
-                             <button 
-                               onClick={clearHistory}
-                               className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
-                             >
-                               <Trash2 className="w-3.5 h-3.5" />
-                               <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
-                             </button>
-                          )}
+                      {readNotifications.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Anteriores</span>
+                            {!unreadNotifications.length && filter === 'all' && (
+                               <button 
+                                 onClick={clearHistory}
+                                 className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                               >
+                                 <Trash2 className="w-3.5 h-3.5" />
+                                 <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
+                               </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            {readNotifications.map((notif: NotificationItem) => (
+                              <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} onClick={() => handleNotificationClick(notif)} module={getNotificationModule(notif)} />
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-3">
-                          {readNotifications.map((notif: NotificationItem) => (
-                            <NotificationCard key={notif.id} notif={notif} darkMode={darkMode} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -776,48 +882,63 @@ function NotificationCenter({
   );
 }
 
-function NotificationCard({ notif, darkMode, isUnread }: { notif: NotificationItem, darkMode: boolean, isUnread?: boolean }) {
+function NotificationCard({ notif, darkMode, isUnread, onClick, module }: { notif: NotificationItem, darkMode: boolean, isUnread?: boolean, onClick?: () => void, module: string }) {
   const getStyles = () => {
-    switch (notif.category) {
-      case 'edição':
+    switch (module) {
+      case 'calendar':
+        return {
+          bg: darkMode ? 'bg-amber-500/10' : 'bg-white',
+          border: darkMode ? 'border-amber-500/20' : 'border-amber-100',
+          iconBg: 'bg-amber-500/10',
+          iconColor: 'text-amber-600 dark:text-amber-400',
+          dot: 'bg-amber-500',
+          hoverTitle: 'Abrir Calendário'
+        };
+      case 'finance':
+        return {
+          bg: darkMode ? 'bg-emerald-500/10' : 'bg-white',
+          border: darkMode ? 'border-emerald-500/20' : 'border-emerald-100',
+          iconBg: 'bg-emerald-500/10',
+          iconColor: 'text-emerald-600 dark:text-emerald-400',
+          dot: 'bg-emerald-500',
+          hoverTitle: 'Abrir Finanças'
+        };
+      case 'stock':
+        return {
+          bg: darkMode ? 'bg-green-600/10' : 'bg-white',
+          border: darkMode ? 'border-green-600/20' : 'border-green-100',
+          iconBg: 'bg-green-600/10',
+          iconColor: 'text-green-600 dark:text-green-400',
+          dot: 'bg-green-600',
+          hoverTitle: 'Abrir Estoque'
+        };
+      case 'points':
+        return {
+          bg: darkMode ? 'bg-purple-500/10' : 'bg-white',
+          border: darkMode ? 'border-purple-500/20' : 'border-purple-100',
+          iconBg: 'bg-purple-500/10',
+          iconColor: 'text-purple-600 dark:text-purple-400',
+          dot: 'bg-purple-500',
+          hoverTitle: 'Abrir Pontos'
+        };
+      case 'work':
+        return {
+          bg: darkMode ? 'bg-orange-500/10' : 'bg-white',
+          border: darkMode ? 'border-orange-500/20' : 'border-orange-100',
+          iconBg: 'bg-orange-500/10',
+          iconColor: 'text-orange-600 dark:text-orange-400',
+          dot: 'bg-orange-500',
+          hoverTitle: 'Abrir Trabalhos'
+        };
+      case 'system':
+      default:
         return {
           bg: darkMode ? 'bg-blue-500/10' : 'bg-white',
           border: darkMode ? 'border-blue-500/20' : 'border-blue-100',
           iconBg: 'bg-blue-500/10',
           iconColor: 'text-blue-600 dark:text-blue-400',
-          dot: 'bg-blue-500'
-        };
-      case 'calendário':
-        return {
-          bg: darkMode ? 'bg-brand-gold/5' : 'bg-white',
-          border: darkMode ? 'border-brand-gold/20' : 'border-amber-200',
-          iconBg: 'bg-brand-gold/10',
-          iconColor: 'text-brand-gold',
-          dot: 'bg-brand-gold'
-        };
-      case 'preceito':
-        return {
-          bg: darkMode ? 'bg-brand-copper/5' : 'bg-white',
-          border: darkMode ? 'border-brand-copper/20' : 'border-emerald-200',
-          iconBg: 'bg-brand-copper/10',
-          iconColor: 'text-brand-copper',
-          dot: 'bg-brand-copper'
-        };
-      case 'exclusão':
-        return {
-          bg: darkMode ? 'bg-brand-red/5' : 'bg-white',
-          border: darkMode ? 'border-brand-red/20' : 'border-red-200',
-          iconBg: 'bg-brand-red/10',
-          iconColor: 'text-brand-red',
-          dot: 'bg-brand-red'
-        };
-      default:
-        return {
-          bg: darkMode ? 'bg-white/5' : 'bg-white',
-          border: darkMode ? 'border-white/10' : 'border-gray-200',
-          iconBg: 'bg-gray-100 dark:bg-white/10',
-          iconColor: 'text-gray-500 dark:text-gray-400',
-          dot: 'bg-gray-500'
+          dot: 'bg-blue-500',
+          hoverTitle: ''
         };
     }
   };
@@ -828,21 +949,27 @@ function NotificationCard({ notif, darkMode, isUnread }: { notif: NotificationIt
     : (darkMode ? "text-slate-400" : "text-slate-800");
 
   const getIcon = () => {
-    switch (notif.category) {
-      case 'edição': return <PenTool className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'calendário': return <Calendar className={cn("w-5 h-5", styles.iconColor)} />;
-      case 'preceito': return <Shield className={cn("w-5 h-5", styles.iconColor)} />;
+    switch (module) {
+      case 'calendar': return <Calendar className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'finance': return <Wallet className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'stock': return <Leaf className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'points': return <Music className={cn("w-5 h-5", styles.iconColor)} />;
+      case 'work': return <Flame className={cn("w-5 h-5", styles.iconColor)} />;
       default: return <HistoryIcon className={cn("w-5 h-5", styles.iconColor)} />;
     }
   };
 
   const getTitleText = () => {
-    switch (notif.category) {
-      case 'edição': return "Atualização";
-      case 'calendário': return "Lembrete";
-      case 'preceito': return "Aviso Importante";
-      case 'exclusão': return "Item Removido";
-      default: return "Notificação";
+    if (notif.category === 'adição') return "Novo Item";
+    if (notif.category === 'edição') return "Atualização";
+    if (notif.category === 'remoção' || notif.category === 'exclusão') return "Item Removido";
+    switch (module) {
+      case 'calendar': return "Evento";
+      case 'finance': return "Finanças";
+      case 'stock': return "Estoque";
+      case 'points': return "Pontos";
+      case 'work': return "Trabalhos";
+      default: return "Sistema";
     }
   };
 
@@ -851,8 +978,10 @@ function NotificationCard({ notif, darkMode, isUnread }: { notif: NotificationIt
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
+      onClick={onClick}
+      title={styles.hoverTitle}
       className={cn(
-        "p-4 rounded-[28px] border flex items-center gap-4 transition-all relative overflow-hidden",
+        "cursor-pointer p-4 rounded-[28px] border flex items-center gap-4 transition-all relative overflow-hidden",
         styles.bg,
         styles.border,
         isUnread && "ring-2 ring-inset " + (darkMode ? "ring-white/10" : "ring-brand-gold/10 shadow-lg shadow-brand-gold/5")

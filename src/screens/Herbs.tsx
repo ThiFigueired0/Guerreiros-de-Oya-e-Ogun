@@ -495,6 +495,14 @@ export default function HerbsScreen() {
       timestamp: Date.now(),
       onConfirm: () => {
         setReadyBaths(prev => prev.filter(r => r.id !== bath.id));
+        const newNotif: NotificationItem = {
+          id: `delete_ready_bath_${Date.now()}`,
+          title: `Banho Pronto "${bath.title}" removido`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -515,6 +523,14 @@ export default function HerbsScreen() {
         setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setReadyBaths([...readyBaths, { id: Date.now().toString(), title: readyForm.title, quantity: readyForm.quantity, price: settings.bathPackagePrice || 17, category: readyForm.category, notes: readyForm.notes, isFixed: false }]);
+        const newNotif: NotificationItem = {
+          id: `add_ready_bath_${Date.now()}`,
+          title: `Banho Pronto "${readyForm.title}" adicionado`,
+          timestamp: Date.now(),
+          category: 'adição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
       setShowReadyModal(false);
       setEditingReadyBath(null);
@@ -539,7 +555,19 @@ export default function HerbsScreen() {
   };
 
   const toggleHerbInStock = (id: string) => {
+    const herb = herbStock.find(h => h.id === id);
     setHerbStock(herbStock.map(h => h.id === id ? { ...h, inStock: !h.inStock } : h));
+    if (herb) {
+      const isNowInStock = !herb.inStock;
+      const newNotif: NotificationItem = {
+        id: `toggle_herb_stock_${Date.now()}`,
+        title: `A erva "${herb.name}" foi marcada como ${isNowInStock ? 'disponível' : 'esgotada'}`,
+        timestamp: Date.now(),
+        category: 'edição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
+    }
   };
 
   const removeHerbFromStock = (herb: HerbStock) => {
@@ -549,6 +577,14 @@ export default function HerbsScreen() {
       timestamp: Date.now(),
       onConfirm: () => {
         setHerbStock(prev => prev.filter(h => h.id !== herb.id));
+        const newNotif: NotificationItem = {
+          id: `delete_herb_stock_${Date.now()}`,
+          title: `A erva "${herb.name}" foi removida do estoque`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -560,6 +596,16 @@ export default function HerbsScreen() {
       return;
     }
     setHerbStock([...herbStock, { id: Date.now().toString(), name, inStock: true, classification }]);
+    
+    const newNotif: NotificationItem = {
+      id: `add_herb_stock_${Date.now()}`,
+      title: `A erva "${name}" foi adicionada ao estoque`,
+      timestamp: Date.now(),
+      category: 'adição',
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev].slice(0, 100));
+
     setShowHerbModal(false);
     setCustomHerbName('');
   };

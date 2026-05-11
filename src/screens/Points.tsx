@@ -145,6 +145,14 @@ export default function PointsScreen() {
         setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setPontos([...pontos, { ...newPonto, id: Date.now().toString(), folderId: currentFolderId || undefined } as Ponto]);
+        const newNotif: NotificationItem = {
+          id: `add_ponto_${Date.now()}`,
+          title: `Nova letra de ponto "${newPonto.title}" adicionada`,
+          timestamp: Date.now(),
+          category: 'adição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
       closeModal();
     }
@@ -177,6 +185,14 @@ export default function PointsScreen() {
         // Optionally re-assign items to parent folder
         setPontos(pontos => pontos.map(p => p.folderId === folder.id ? { ...p, folderId: currentFolderId || undefined } : p));
         setFolders(folders => folders.map(f => f.parentId === folder.id ? { ...f, parentId: currentFolderId || undefined } : f));
+        const newNotif: NotificationItem = {
+          id: `delete_folder_${Date.now()}`,
+          title: `Pasta "${folder.name}" removida`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -203,6 +219,14 @@ export default function PointsScreen() {
       onConfirm: () => {
         setPontos(pontos => pontos.filter(p => p.id !== ponto.id));
         if (selectedPonto?.id === ponto.id) setSelectedPonto(null);
+        const newNotif: NotificationItem = {
+          id: `delete_ponto_${Date.now()}`,
+          title: `Letra de ponto "${ponto.title}" removida`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };

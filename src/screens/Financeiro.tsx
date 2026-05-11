@@ -8,7 +8,7 @@ import {
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
-import { AppSettings, FinancialRecord, Event } from '../types';
+import { AppSettings, FinancialRecord, Event, NotificationItem } from '../types';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
 export default function Financeiro() {
@@ -29,11 +29,13 @@ export default function Financeiro() {
 
   const [records, setRecords] = useStorage<FinancialRecord[]>('templo_finance', []);
   const [events] = useStorage<Event[]>('templo_events', []);
+  const [, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab ] = useState<'mensalidade' | 'extra' | 'oga'>('mensalidade');
   const [showAddModal, setShowAddModal ] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [isManageModeGastosExtras, setIsManageModeGastosExtras] = useState(false);
   
   const [selectedCycleIdx, setSelectedCycleIdx] = useState(0);
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
@@ -364,6 +366,15 @@ export default function Financeiro() {
         dueDate: newRecord.dueDate!,
         paymentAccount: newRecord.paymentAccount
       } : r));
+
+      const newNotif = {
+        id: `update_finance_${Date.now()}`,
+        title: `Registro financeiro atualizado: ${newRecord.description}`,
+        timestamp: Date.now(),
+        category: 'edição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     } else {
       const count = newRecord.type === 'extra' ? (newRecord.installmentCount || 1) : 1;
       const masterId = Date.now().toString();
@@ -413,6 +424,15 @@ export default function Financeiro() {
         }
       }
       setRecords(prev => [...prev, ...newRecordsList]);
+
+      const newNotif = {
+        id: `add_finance_${Date.now()}`,
+        title: `Novo(s) registro(s) financeiro(s) adicionado(s): ${newRecord.description}`,
+        timestamp: Date.now(),
+        category: 'adição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     }
 
     setShowAddModal(false);
@@ -426,6 +446,14 @@ export default function Financeiro() {
       timestamp: Date.now(),
       onConfirm: () => {
         setRecords(prev => prev.filter(r => r.id !== record.id));
+        const newNotif = {
+          id: `delete_finance_${Date.now()}`,
+          title: `Registro financeiro removido: ${record.description}`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -808,6 +836,17 @@ export default function Financeiro() {
                 <h3 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-white/40" : "text-brand-navy/40")}>
                   Gastos Extras
                 </h3>
+                <button 
+                  onClick={() => setIsManageModeGastosExtras(!isManageModeGastosExtras)}
+                  className={cn(
+                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all",
+                    isManageModeGastosExtras 
+                      ? (settings.darkMode ? "bg-white/10 text-white" : "bg-gray-100 text-brand-navy")
+                      : (settings.darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-brand-navy")
+                  )}
+                >
+                  {isManageModeGastosExtras ? 'Concluído' : 'Gerenciar'}
+                </button>
               </div>
               
               <div className="space-y-3">
@@ -877,24 +916,28 @@ export default function Financeiro() {
 
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingRecord(record);
-                              setShowAddModal(true);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-brand-navy dark:hover:text-white transition-colors"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteRecord(record);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isManageModeGastosExtras && (
+                            <button
+                              onClick={() => {
+                                setEditingRecord(record);
+                                setShowAddModal(true);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-brand-navy dark:hover:text-white transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {isManageModeGastosExtras && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteRecord(record);
+                              }}
+                              className="p-1.5 text-red-400 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.9 }}

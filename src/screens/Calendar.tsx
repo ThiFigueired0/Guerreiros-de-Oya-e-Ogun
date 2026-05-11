@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
-import { Event, AppSettings } from '../types';
+import { Event, AppSettings, NotificationItem } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 
@@ -24,6 +24,7 @@ export default function CalendarScreen() {
     }
   }, [location.state]);
   const [events, setEvents] = useStorage<Event[]>('templo_events', []);
+  const [, setNotifications] = useStorage<NotificationItem[]>('templo_history', []);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte', 'Lembrete'],
@@ -145,8 +146,24 @@ export default function CalendarScreen() {
 
       if (editingId) {
         setEvents(events.map(e => e.id === editingId ? finalEvent : e));
+        const newNotif = {
+          id: `update_event_${Date.now()}`,
+          title: `Evento atualizado: ${finalEvent.title || finalEvent.reminder}`,
+          timestamp: Date.now(),
+          category: 'edição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       } else {
         setEvents([...events, finalEvent]);
+        const newNotif = {
+          id: `add_event_${Date.now()}`,
+          title: `Novo evento agendado: ${finalEvent.title || finalEvent.reminder}`,
+          timestamp: Date.now(),
+          category: 'adição',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
       closeModal();
     }
@@ -173,6 +190,15 @@ export default function CalendarScreen() {
         const updatedEvents = events.filter(e => e.id !== event.id);
         setEvents(updatedEvents);
         
+        const newNotif = {
+          id: `delete_event_${Date.now()}`,
+          title: `Evento removido: ${event.title || event.reminder}`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
+
         if (selectedDay) {
           const remainingOnDay = updatedEvents.filter(e => isSameDay(parseEventDate(e.date), selectedDay)).length;
           if (remainingOnDay === 0) {

@@ -571,6 +571,7 @@ export default function StudiesScreen() {
   const [glossaryCategoryFilter, setGlossaryCategoryFilter] = useState('Tudo');
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isRefiningAi, setIsRefiningAi] = useState(false);
+  const [isManageModeGlossary, setIsManageModeGlossary] = useState(false);
 
   const filteredGlossaryTerms = useMemo(() => {
     return glossaryTerms.filter(t => {
@@ -2018,16 +2019,32 @@ export default function StudiesScreen() {
                     {filteredGlossaryTerms.length} de {glossaryTerms.length} termos
                   </span>
                 </div>
-                <button 
-                  onClick={() => {
-                    setEditingGlossaryTerm(null);
-                    setGlossaryForm({ term: '', definition: '', category: 'Geral e Espiritualidade' });
-                    setShowGlossaryModal(true);
-                  }}
-                  className="text-[10px] uppercase font-black tracking-widest text-brand-copper bg-brand-copper/10 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
-                >
-                  Adicionar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsManageModeGlossary(!isManageModeGlossary)}
+                    className={cn(
+                      "text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform",
+                      isManageModeGlossary 
+                        ? (settings.darkMode ? "bg-white/10 text-white" : "bg-gray-100 text-brand-navy")
+                        : (settings.darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-brand-navy")
+                    )}
+                  >
+                    {isManageModeGlossary ? 'Pronto' : 'Gerenciar'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setEditingGlossaryTerm(null);
+                      setGlossaryForm({ term: '', definition: '', category: 'Geral e Espiritualidade' });
+                      setShowGlossaryModal(true);
+                    }}
+                    className={cn(
+                      "text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform",
+                      settings.darkMode ? "text-brand-copper bg-brand-copper/10" : "text-brand-copper bg-brand-copper/10"
+                    )}
+                  >
+                    Adicionar
+                  </button>
+                </div>
               </div>
 
               <div className="relative mb-6">
@@ -2130,35 +2147,37 @@ export default function StudiesScreen() {
                                     {term.term}
                                   </h3>
                                 </div>
-                                <div className="flex gap-2">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingGlossaryTerm(term);
-                                      setGlossaryForm({ ...term });
-                                      setShowGlossaryModal(true);
-                                    }}
-                                    className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </button>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      queueDelete({
-                                        id: term.id,
-                                        label: term.term,
-                                        timestamp: Date.now(),
-                                        onConfirm: () => {
-                                          setGlossaryTerms((prev: GlossaryTerm[]) => prev.filter(t => t.id !== term.id));
-                                        }
-                                      });
-                                    }}
-                                    className="p-2 bg-red-50/50 text-red-400 rounded-xl hover:text-brand-red transition-colors"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
+                                {isManageModeGlossary && (
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingGlossaryTerm(term);
+                                        setGlossaryForm({ ...term });
+                                        setShowGlossaryModal(true);
+                                      }}
+                                      className="p-2.5 bg-white dark:bg-white/10 text-gray-400 hover:text-brand-copper rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        queueDelete({
+                                          id: term.id,
+                                          label: term.term,
+                                          timestamp: Date.now(),
+                                          onConfirm: () => {
+                                            setGlossaryTerms((prev: GlossaryTerm[]) => prev.filter(t => t.id !== term.id));
+                                          }
+                                        });
+                                      }}
+                                      className="p-2.5 bg-red-50 text-brand-red active:bg-red-100 rounded-xl shadow-sm border border-red-100/50 transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                               <p className={cn("text-xs text-gray-500 leading-relaxed font-medium line-clamp-2", settings.darkMode && "text-gray-400")}>
                                 {term.definition}

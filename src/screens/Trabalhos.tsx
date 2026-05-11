@@ -138,6 +138,14 @@ export default function TrabalhosScreen() {
         ? { ...o, name: offeringForm.name, sections: offeringForm.sections }
         : o
     ));
+    const newNotif: NotificationItem = {
+      id: `update_offering_${Date.now()}`,
+      title: `Oferenda "${offeringForm.name}" atualizada`,
+      timestamp: Date.now(),
+      category: 'edição',
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     setShowOfferingModal(false);
   };
 
@@ -188,6 +196,14 @@ export default function TrabalhosScreen() {
 
     if (editingBicho) {
       setBichos(bichos.map(b => b.id === editingBicho.id ? { ...b, ...form } as Bicho : b));
+      const newNotif: NotificationItem = {
+        id: `update_bicho_${Date.now()}`,
+        title: `Bicho "${form.name}" atualizado`,
+        timestamp: Date.now(),
+        category: 'edição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     } else {
       const newBicho: Bicho = {
         id: Date.now().toString(),
@@ -196,6 +212,14 @@ export default function TrabalhosScreen() {
         serviceCost: Number(form.serviceCost) || 0
       };
       setBichos([...bichos, newBicho]);
+      const newNotif: NotificationItem = {
+        id: `add_bicho_${Date.now()}`,
+        title: `Bicho "${form.name}" adicionado`,
+        timestamp: Date.now(),
+        category: 'adição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     }
     closeModal();
   };
@@ -219,6 +243,14 @@ export default function TrabalhosScreen() {
       timestamp: Date.now(),
       onConfirm: () => {
         setBichos(prev => prev.filter(b => b.id !== bicho.id));
+        const newNotif: NotificationItem = {
+          id: `delete_bicho_${Date.now()}`,
+          title: `Bicho "${bicho.name}" removido`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -256,6 +288,14 @@ export default function TrabalhosScreen() {
       timestamp: Date.now(),
       onConfirm: () => {
         setCandles(prev => prev.filter(c => c.id !== candle.id));
+        const newNotif: NotificationItem = {
+          id: `delete_candle_${Date.now()}`,
+          title: `Vela "${candle.color} ${candle.type}" removida`,
+          timestamp: Date.now(),
+          category: 'remoção',
+          read: false
+        };
+        setNotifications(prev => [newNotif, ...prev].slice(0, 100));
       }
     });
   };
@@ -286,6 +326,14 @@ export default function TrabalhosScreen() {
         observations: candleForm.observations
       };
       setCandles([...candles, newCandle]);
+      const newNotif: NotificationItem = {
+        id: `add_candle_${Date.now()}`,
+        title: `Vela "${newCandle.color} ${newCandle.type}" adicionada`,
+        timestamp: Date.now(),
+        category: 'adição',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 100));
     }
     setShowCandleModal(false);
     setEditingCandle(null);
