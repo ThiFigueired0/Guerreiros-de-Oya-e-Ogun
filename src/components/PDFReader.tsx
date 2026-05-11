@@ -39,6 +39,7 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { cn } from "../lib/utils";
 import { useStorage } from "../hooks/useStorage";
 import { AppSettings } from "../types";
@@ -116,7 +117,7 @@ export function PDFReader({
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [containerHeight, setContainerHeight] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<HTMLElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const wheelTimeout = useRef<any>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [inputPage, setInputPage] = useState(String(initialPage));
@@ -173,7 +174,7 @@ export function PDFReader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Precision Bookmark States
-  const [longPressContext, setLongPressContext] = useState<{ x: number; y: number; pageX: number; pageY: number } | null>(null);
+  const [longPressContext, setLongPressContext] = useState<{ x: number; y: number; pageX: number; pageY: number; page: number; rectHeight: number } | null>(null);
   const [savedPosition, setSavedPosition] = useState<{ page: number; yPercent: number } | null>(
     initialYPercent ? { page: initialPage, yPercent: initialYPercent } : null
   );
@@ -963,11 +964,8 @@ export function PDFReader({
   }
 
   const changePage = (offset: number) => {
-    setPageDirection(offset > 0 ? 1 : -1);
-    setPageNumber((prevPageNumber) => {
-      const next = prevPageNumber + offset;
-      return Math.min(Math.max(1, next), numPages || 1);
-    });
+    const next = pageNumber + offset;
+    goToPage(Math.min(Math.max(1, next), numPages || 1));
   };
 
   useEffect(() => {
@@ -989,10 +987,14 @@ export function PDFReader({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [numPages]);
 
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
+
   const goToPage = (page: number) => {
+    // If it's continuous scroll, we just scroll Virtuoso to the index (page - 1)
     if (page === pageNumber) return;
     setPageDirection(page > pageNumber ? 1 : -1);
     setPageNumber(page);
+    virtuosoRef.current?.scrollToIndex({ index: page - 1, align: "start", behavior: "smooth" });
   };
 
   const handlePageSelect = (page: number) => {
@@ -1070,8 +1072,7 @@ export function PDFReader({
     e.preventDefault();
     const val = parseInt(inputPage);
     if (!isNaN(val) && val >= 1 && val <= (numPages || 1000)) {
-      setPageDirection(val > pageNumber ? 1 : -1);
-      setPageNumber(val);
+      goToPage(val);
     } else {
       setInputPage(String(pageNumber));
     }
@@ -1115,6 +1116,8 @@ export function PDFReader({
       const target = e.target as HTMLElement;
       const pageNode = target.closest(".react-pdf__Page") as HTMLElement;
       if (pageNode) {
+        const _pageNumberStr = pageNode.getAttribute("data-page-number");
+        const pageOfNode = _pageNumberStr ? parseInt(_pageNumberStr, 10) : pageNumber;
         longPressTimeoutRef.current = setTimeout(() => {
           wasLongPressed.current = true;
           const rect = pageNode.getBoundingClientRect();
@@ -1122,7 +1125,9 @@ export function PDFReader({
             x: touch.clientX,
             y: touch.clientY,
             pageX: touch.clientX - rect.left,
-            pageY: touch.clientY - rect.top,
+            pageY: Math.max(0, touch.clientY - rect.top),
+            page: pageOfNode,
+            rectHeight: rect.height,
           });
           // Haptic feedback if supported
           if (navigator.vibrate) navigator.vibrate(50);
@@ -1140,12 +1145,16 @@ export function PDFReader({
       const target = e.target as HTMLElement;
       const pageNode = target.closest(".react-pdf__Page") as HTMLElement;
       if (pageNode) {
+        const _pageNumberStr = pageNode.getAttribute("data-page-number");
+        const pageOfNode = _pageNumberStr ? parseInt(_pageNumberStr, 10) : pageNumber;
         const rect = pageNode.getBoundingClientRect();
         setLongPressContext({
           x: touch.clientX,
           y: touch.clientY,
           pageX: Math.max(0, touch.clientX - rect.left),
           pageY: Math.max(0, touch.clientY - rect.top),
+          page: pageOfNode,
+          rectHeight: rect.height,
         });
       }
       return; 
@@ -1581,9 +1590,8 @@ export function PDFReader({
 
         {/* Main Viewport */}
         <main
-          ref={viewerRef}
           className={cn(
-            "flex-1 overflow-auto relative transition-all duration-300",
+            "flex-1 overflow-hidden relative transition-all duration-300 flex flex-col",
             !isFocusMode ? "pt-16 pb-20 lg:pb-0" : "",
             activeSidebarTab && !isFocusMode ? "lg:mr-[340px]" : "",
             "bg-[#0A192F]",
@@ -1591,8 +1599,7 @@ export function PDFReader({
             activeHighlightColor && "cursor-crosshair",
             isEraserActive && "cursor-alias"
           )}
-          onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
-          onClick={() => {
+          onClick={(e) => {
             if (activeHighlightColor || isEraserActive) return;
             if (window.getSelection()?.toString().trim().length) return;
             if (activeHighlightId) {
@@ -1600,23 +1607,20 @@ export function PDFReader({
               setHighlightPopupPos(null);
               return;
             }
+            // Ignore clicks on buttons/interactive elements
+            const target = e.target as HTMLElement;
+            if (target.closest('button') || target.closest('textarea') || target.closest('input')) return;
             setIsFocusMode(!isFocusMode);
           }}
         >
-          <div className="w-full flex flex-col items-center justify-start min-h-full py-2 shrink-0">
-            <div className="w-fit flex flex-col items-center justify-center">
+          <div className="flex-1 w-full relative" ref={viewerRef}>
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
               loading={
-                <div className="flex flex-col items-center justify-center gap-4">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                   <Loader2 className="w-10 h-10 text-brand-copper animate-spin" />
-                  <p
-                    className={cn(
-                      "text-[10px] font-black uppercase tracking-widest",
-                      "text-white/40",
-                    )}
-                  >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
                     Preparando páginas...
                   </p>
                 </div>
@@ -1626,143 +1630,134 @@ export function PDFReader({
                   <p>Falha ao carregar o PDF.</p>
                 </div>
               }
+              className="w-full h-full"
             >
               <div
-                style={{ filter: themeFilter, perspective: "2000px" }}
-                className="transition-none"
+                style={{ filter: themeFilter }}
+                className="w-full h-full"
+                onTouchMove={activeHighlightColor ? handlePaintMove : undefined}
               >
-                <AnimatePresence mode="wait" custom={pageDirection}>
-                  <motion.div
-                    key={pageNumber}
-                    custom={pageDirection}
-                    variants={{
-                      initial: (dir: number) => ({
-                        opacity: 0,
-                        rotateY: dir > 0 ? 90 : -90,
-                        x: dir > 0 ? 20 : -20,
-                      }),
-                      animate: { opacity: 1, rotateY: 0, x: 0 },
-                      exit: (dir: number) => ({
-                        opacity: 0,
-                        rotateY: dir > 0 ? -90 : 90,
-                        x: dir > 0 ? -20 : 20,
-                      }),
+                {numPages > 0 && containerWidth > 0 && (
+                  <Virtuoso
+                    ref={virtuosoRef}
+                    className="w-full h-full custom-scrollbar"
+                    totalCount={numPages}
+                    initialTopMostItemIndex={initialPage - 1} // Scroll to initial page on mount
+                    rangeChanged={({ startIndex, endIndex }) => {
+                      // Obter a página focal
+                      const visiblePages = endIndex - startIndex + 1;
+                      const focalPage = Math.min(numPages, Math.max(1, startIndex + 1 + Math.floor(visiblePages / 2)));
+                      if (focalPage !== pageNumber) {
+                        setPageNumber(focalPage);
+                      }
                     }}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className="shadow-[0_0_50px_rgba(0,0,0,0.3)] bg-white overflow-hidden relative"
-                    style={{
-                      transformOrigin:
-                        pageDirection > 0 ? "right center" : "left center",
-                    }}
-                  >
-                    {bookmarkedPages.includes(pageNumber) && (
-                      <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
-                    )}
-                    
-                    {/* Precision Bookmark Visual Marker */}
-                    {savedPosition?.page === pageNumber && (
-                      <div
-                        className={cn(
-                          "absolute left-0 z-[50] transition-opacity duration-1000",
-                          showFadingMarker ? "opacity-100" : "opacity-70"
-                        )}
-                        style={{ top: `calc(${savedPosition.yPercent}%)` }}
-                        title="Retomar leitura"
-                      >
-                        {/* Triângulo na margem esquerda */}
-                        <div className="absolute left-0 -top-[6px] w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-brand-copper drop-shadow-sm" />
-                        
-                        {/* Linha que pulsa ao recuperar posição */}
-                        {showFadingMarker && (
-                          <div className="absolute left-0 -top-[1px] h-[2px] bg-brand-copper/40 shadow-[0_0_8px_rgba(184,134,11,0.5)] animate-pulse" style={{ width: '4000px' }} />
-                        )}
-                      </div>
-                    )}
-
-                    {/* Precision Bookmark Context Menu & Guideline */}
-                    <AnimatePresence>
-                      {longPressContext && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute z-[200] left-0 w-full pointer-events-none"
-                          style={{ top: longPressContext.pageY }}
-                        >
-                          {/* Guideline */}
-                          <div className="w-[4000px] h-[2px] bg-brand-copper/60 shadow-[0_0_4px_rgba(184,134,11,0.6)] -mt-[1px]" />
-                          
-                          {/* Confirmation Pill */}
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-auto">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const pageNode = viewerRef.current?.querySelector(".react-pdf__Page") as HTMLElement;
-                                if (!pageNode) return;
-                                const rect = pageNode.getBoundingClientRect();
-                                const yPercent = (longPressContext.pageY / rect.height) * 100;
+                    itemContent={(index) => {
+                      const currentPageNum = index + 1;
+                      return (
+                        <div className="flex flex-col items-center justify-center w-full py-4 px-2 sm:px-4">
+                          <div className="shadow-[0_0_50px_rgba(0,0,0,0.3)] bg-white overflow-hidden relative w-fit">
+                            {bookmarkedPages.includes(currentPageNum) && (
+                              <Bookmark className="absolute top-0 right-8 w-8 h-12 text-brand-copper fill-brand-copper z-50 drop-shadow-md" />
+                            )}
+                            
+                            {/* Precision Bookmark Visual Marker */}
+                            {savedPosition?.page === currentPageNum && (
+                              <div
+                                id={`marker-page-${currentPageNum}`}
+                                className={cn(
+                                  "absolute left-0 z-[50] transition-opacity duration-1000",
+                                  showFadingMarker ? "opacity-100" : "opacity-70"
+                                )}
+                                style={{ top: `calc(${savedPosition.yPercent}%)` }}
+                                title="Retomar leitura"
+                              >
+                                {/* Triângulo na margem esquerda */}
+                                <div className="absolute left-0 -top-[6px] w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-brand-copper drop-shadow-sm" />
                                 
-                                setSavedPosition({ page: pageNumber, yPercent });
-                                setShowFadingMarker(true);
-                                
-                                if (onPositionSave) onPositionSave(pageNumber, yPercent);
-                                setLongPressContext(null);
+                                {/* Linha que pulsa ao recuperar posição */}
+                                {showFadingMarker && (
+                                  <div className="absolute left-0 -top-[1px] h-[2px] bg-brand-copper/40 shadow-[0_0_8px_rgba(184,134,11,0.5)] animate-pulse" style={{ width: '4000px' }} />
+                                )}
+                              </div>
+                            )}
 
-                                setTimeout(() => setShowFadingMarker(false), 3000);
+                            {/* Precision Bookmark Context Menu & Guideline */}
+                            <AnimatePresence>
+                              {longPressContext && longPressContext.page === currentPageNum && (
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  className="absolute z-[200] left-0 w-full pointer-events-none"
+                                  style={{ top: longPressContext.pageY }}
+                                >
+                                  {/* Guideline */}
+                                  <div className="w-[4000px] h-[2px] bg-brand-copper/60 shadow-[0_0_4px_rgba(184,134,11,0.6)] -mt-[1px]" />
+                                  
+                                  {/* Confirmation Pill */}
+                                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 pointer-events-auto">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const yPercent = (longPressContext.pageY / longPressContext.rectHeight) * 100;
+                                        
+                                        setSavedPosition({ page: currentPageNum, yPercent });
+                                        setShowFadingMarker(true);
+                                        
+                                        if (onPositionSave) onPositionSave(currentPageNum, yPercent);
+                                        setLongPressContext(null);
+
+                                        setTimeout(() => setShowFadingMarker(false), 3000);
+                                      }}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-1.5 px-4 py-2 bg-[#050B14]/95 text-brand-copper backdrop-blur-xl rounded-full shadow-2xl border border-brand-copper/30 hover:bg-[#050B14] transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                                    >
+                                      <span className="w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
+                                      Fixar aqui
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
+                            <Page
+                              pageNumber={currentPageNum}
+                              scale={scale || undefined}
+                              width={!scale ? containerWidth : undefined}
+                              height={!scale ? containerHeight : undefined}
+                              onLoadSuccess={(page) => {
+                                if (page.originalWidth && currentPageNum === 1) {
+                                  setPdfPageWidth(page.originalWidth);
+                                }
+                                // Small delay to ensure text layer is rendered
+                                setTimeout(updateTextItemBounds, 500);
+
+                                // Auto-scroll para Precision Bookmark
+                                if (!hasAutoScrolledRef.current && savedPosition?.page === currentPageNum && savedPosition?.yPercent) {
+                                  hasAutoScrolledRef.current = true;
+                                  setTimeout(() => {
+                                    const marker = document.getElementById(`marker-page-${currentPageNum}`);
+                                    if (marker) {
+                                      marker.scrollIntoView({ behavior: "smooth", block: "center" });
+                                      setShowFadingMarker(true);
+                                      setTimeout(() => setShowFadingMarker(false), 4000);
+                                    }
+                                  }, 300); // small delay to allow render
+                                }
                               }}
-                              onTouchStart={(e) => e.stopPropagation()}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              className="flex items-center gap-1.5 px-4 py-2 bg-[#050B14]/95 text-brand-copper backdrop-blur-xl rounded-full shadow-2xl border border-brand-copper/30 hover:bg-[#050B14] transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-copper animate-pulse" />
-                              Fixar aqui
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                      <Page
-                      pageNumber={pageNumber}
-                      scale={scale || undefined}
-                      width={!scale ? containerWidth : undefined}
-                      height={!scale ? containerHeight : undefined}
-                      onLoadSuccess={(page) => {
-                        if (page.originalWidth) {
-                          setPdfPageWidth(page.originalWidth);
-                        }
-                        // Small delay to ensure text layer is rendered
-                        setTimeout(updateTextItemBounds, 500);
-
-                        // Auto-scroll para Precision Bookmark
-                        if (!hasAutoScrolledRef.current && savedPosition?.page === pageNumber && savedPosition?.yPercent) {
-                          hasAutoScrolledRef.current = true;
-                          setTimeout(() => {
-                            if (viewerRef.current) {
-                              const pageNode = viewerRef.current.querySelector(".react-pdf__Page") as HTMLElement;
-                              if (pageNode) {
-                                const yPx = (pageNode.offsetHeight * savedPosition.yPercent) / 100;
-                                // Scrolla para deixar a marca mais ou menos no centro/terço superior
-                                const targetScrollTop = pageNode.offsetTop + yPx - (viewerRef.current.offsetHeight / 3);
-                                viewerRef.current.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                                setShowFadingMarker(true);
-                                setTimeout(() => setShowFadingMarker(false), 4000);
+                              renderAnnotationLayer={true}
+                              renderTextLayer={true}
+                              customTextRenderer={textRenderer}
+                              className={cn(activeHighlightColor || isEraserActive ? "no-select" : "", `page-marker-${currentPageNum}`)}
+                              loading={
+                                <div className="w-full flex items-center justify-center p-10 bg-white/5">
+                                  <Loader2 className="w-6 h-6 animate-spin text-brand-copper/50" />
+                                </div>
                               }
-                            }
-                          }, 300); // small delay to allow render
-                        }
-                      }}
-                      renderAnnotationLayer={true}
-                      renderTextLayer={true}
-                      customTextRenderer={textRenderer}
-                      className={activeHighlightColor || isEraserActive ? "no-select" : ""}
-                      loading={null}
-                    />
-                    {highlights
-                      .filter((h) => h.page === pageNumber)
+                            />
+                            {highlights
+                              .filter((h) => h.page === currentPageNum)
                       .map((h) => (
                         <div
                           key={h.id}
@@ -1868,7 +1863,7 @@ export function PDFReader({
 
                     {/* Highlight Delete Popup */}
                     <AnimatePresence>
-                      {activeHighlightId && highlightPopupPos && highlightPopupPos.page === pageNumber && !activeHighlightColor && (
+                      {activeHighlightId && highlightPopupPos && highlightPopupPos.page === currentPageNum && !activeHighlightColor && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1947,11 +1942,14 @@ export function PDFReader({
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.div>
-                </AnimatePresence>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                )}
               </div>
             </Document>
-            </div>
           </div>
         </main>
 
