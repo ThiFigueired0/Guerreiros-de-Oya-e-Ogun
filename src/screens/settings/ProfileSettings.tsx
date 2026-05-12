@@ -33,37 +33,22 @@ export default function ProfileSettings() {
     }
   };
 
+  // GUARDRAIL: NÃO ALTERAR ESTA LÓGICA DE PERSISTÊNCIA LOCAL.
   const handleCustomLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && user) {
+    if (file) {
       setIsUploadingLogo(true);
       try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('company_logos')
-          .upload(filePath, file, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('company_logos')
-          .getPublicUrl(filePath);
-
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ custom_logo_url: publicUrl })
-          .eq('id', user.id);
-
-        if (updateError) throw updateError;
-        
-        alert('Logo personalizada atualizada com sucesso!');
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSettings({ ...settings, customLogoUrl: reader.result as string });
+          setIsUploadingLogo(false);
+          alert('Logo personalizada atualizada localmente!');
+        };
+        reader.readAsDataURL(file);
       } catch (err) {
-        console.error("Erro ao subir logo:", err);
-        alert('Erro ao subir logo. Tente novamente.');
-      } finally {
+        console.error("Erro ao processar logo:", err);
+        alert('Erro ao processar logo. Tente novamente.');
         setIsUploadingLogo(false);
       }
     }

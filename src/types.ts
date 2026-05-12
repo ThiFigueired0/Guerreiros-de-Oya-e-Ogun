@@ -92,6 +92,7 @@ export interface AppSettings {
   bathCategories?: string[];
   pushNotifications: boolean;
   logoBase64?: string;
+  customLogoUrl?: string;
   caixaLogo?: string;
   nubankLogo?: string;
   tiktokLogo?: string;
