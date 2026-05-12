@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, X, Trash2, Search, FileText, ChevronRight, Save, Camera, Image as ImageIcon, Trash } from 'lucide-react';
+import { Search, Plus, Filter, SortDesc, FileText, X, Save, Trash2, Camera, Image as ImageIcon, Link as LinkIcon, PlusCircle, Trash, Copy as CopyIcon, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -196,42 +196,65 @@ export default function NotesScreen() {
         />
       </div>
 
-      <div className="grid gap-3">
+      <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
         {filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 opacity-30">
-            <FileText className="w-16 h-16 mb-4 text-brand-navy" strokeWidth={1} />
-            <p className="font-bold text-sm uppercase tracking-widest">Nenhuma nota encontrada</p>
+          <div className="flex flex-col items-center justify-center py-20 opacity-30 break-inside-avoid">
+            <FileText className="w-16 h-16 mb-4 text-brand-navy dark:text-white" strokeWidth={1} />
+            <p className="font-bold text-sm uppercase tracking-widest dark:text-gray-400">Nenhuma nota encontrada</p>
           </div>
-        ) : filteredNotes.map(note => (
-          <div 
+        ) : filteredNotes.map((note, idx) => (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05, duration: 0.4, ease: "easeOut" }}
             key={note.id} 
             onClick={() => { setSelectedNote(note); setNoteForm(note); setIsEditing(false); }}
             className={cn(
-              "bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition-all text-left",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+              "break-inside-avoid w-full mb-4 p-5 sm:p-6 rounded-[28px] relative overflow-hidden transition-all duration-300 group cursor-pointer border",
+              settings.darkMode 
+                ? "bg-gradient-to-b from-[#1a2333] to-[#111827] border-[#2d3748] hover:border-brand-gold/50 shadow-xl" 
+                : "bg-white border-brand-gold/10 hover:border-brand-gold/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(192,150,35,0.1)] hover:-translate-y-1"
             )}
           >
-            <div className="flex-1 overflow-hidden pr-4">
-               <h4 className={cn("font-bold text-brand-navy truncate", settings.darkMode && "text-white")}>{note.title}</h4>
-               <p className="text-xs text-gray-400 truncate mb-2">{note.content}</p>
-               <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex items-center gap-3">
-                    <span className={cn("text-[8px] font-black text-brand-copper uppercase tracking-wider")}>
-                      Criada: {new Date(note.createdAt || note.lastEdited).toLocaleDateString()}
-                    </span>
-                    <span className={cn("text-[8px] font-black text-gray-400 uppercase tracking-wider")}>
-                      Editada: {new Date(note.lastEdited).toLocaleDateString()}
+            {/* Top decorative gradient or shine */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-brand-gold/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="flex flex-col h-full">
+               <h4 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>{note.title}</h4>
+               <p className={cn("text-sm line-clamp-5 leading-relaxed mb-4", settings.darkMode ? "text-gray-400" : "text-gray-600")}>{note.content}</p>
+               
+               <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <span className={cn("text-[8px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-brand-gold/70" : "text-brand-copper")}>
+                      {new Date(note.createdAt || note.lastEdited).toLocaleDateString()}
                     </span>
                   </div>
-                  {note.images && note.images.length > 0 && (
-                    <div className="flex items-center gap-1 text-[8px] font-black text-gray-400 uppercase tracking-wider">
-                      <ImageIcon className="w-3 h-3" /> {note.images.length}
-                    </div>
-                  )}
+                  
+                  <div className="flex text-gray-400 gap-3">
+                    {note.images && note.images.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
+                        <ImageIcon className="w-4 h-4" strokeWidth={2} />
+                        <span className="opacity-80">{note.images.length}</span>
+                      </div>
+                    )}
+                    {note.attachments && note.attachments.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
+                        <FileText className="w-4 h-4" strokeWidth={2} />
+                        <span className="opacity-80">{note.attachments.length}</span>
+                      </div>
+                    )}
+                  </div>
                </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-200" />
-          </div>
+            
+            {/* Subtle edit hint overlay strictly for large screens if needed, otherwise rely on normal tap on mobile. */}
+            <div className="absolute inset-0 bg-brand-navy/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex items-center justify-center p-8 pointer-events-none">
+              <div className="bg-white/95 dark:bg-black/95 backdrop-blur-md px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                <Search className="w-4 h-4 text-brand-navy dark:text-white" strokeWidth={2.5} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-navy dark:text-white">Abrir Nota</span>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
 
@@ -254,18 +277,44 @@ export default function NotesScreen() {
                      <Save className="w-4 h-4" /> Salvar
                   </button>
                ) : (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    {selectedNote && navigator.share && (
+                      <button 
+                        onClick={() => {
+                          navigator.share({
+                            title: selectedNote.title,
+                            text: selectedNote.content,
+                          }).catch(() => {});
+                        }}
+                        className={cn(
+                          "w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-brand-navy shadow-sm active:scale-95 transition-all text-xs",
+                          settings.darkMode && "bg-[#1A1A1A] text-white"
+                        )}
+                        title="Compartilhar"
+                      >
+                         <Share2 className="w-5 h-5" />
+                      </button>
+                    )}
+                    {selectedNote && (
+                      <button 
+                         onClick={() => {
+                           navigator.clipboard.writeText(`${selectedNote.title}\n\n${selectedNote.content}`);
+                         }}
+                         className={cn(
+                          "w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-brand-navy shadow-sm active:scale-95 transition-all text-xs",
+                          settings.darkMode && "bg-[#1A1A1A] text-white"
+                        )}
+                        title="Copiar Texto"
+                      >
+                         <CopyIcon className="w-5 h-5" />
+                      </button>
+                    )}
                     <button onClick={() => setIsEditing(true)} className={cn(
                       "font-black text-xs uppercase tracking-widest bg-gray-50 px-6 py-2.5 rounded-xl text-brand-navy shadow-sm active:scale-95 transition-all",
                       settings.darkMode && "bg-[#1A1A1A] text-white"
                     )}>
                        Editar
                     </button>
-                    {!isEditing && selectedNote && (
-                      <p className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter opacity-70">
-                        Edição: {new Date(selectedNote.lastEdited).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    )}
                   </div>
                )}
             </div>
@@ -297,28 +346,48 @@ export default function NotesScreen() {
                     </div>
                     
                     <div className="space-y-4">
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Anexos e Documentos</p>
+                       <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-brand-copper/10 flex items-center justify-center">
+                            <PlusCircle className="w-4 h-4 text-brand-copper" />
+                          </div>
+                          <p className="text-[10px] font-black text-brand-navy dark:text-white uppercase tracking-[0.2em]">Adicionar Mídias</p>
+                       </div>
                        <div className="grid grid-cols-3 gap-3">
                           <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
                           >
-                            <ImageIcon className="w-6 h-6 text-brand-copper" />
-                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Galeria</span>
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
+                              <ImageIcon className="w-4 h-4 text-brand-copper" />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-black uppercase tracking-widest">Galeria</span>
+                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">Fotos/Imagens</span>
+                            </div>
                           </button>
                           <button 
                             onClick={() => cameraInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
                           >
-                            <Camera className="w-6 h-6 text-brand-copper" />
-                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Câmera</span>
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
+                              <Camera className="w-4 h-4 text-brand-copper" />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-black uppercase tracking-widest">Câmera</span>
+                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">Tirar Foto</span>
+                            </div>
                           </button>
                           <button 
                             onClick={() => pdfInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
                           >
-                            <FileText className="w-6 h-6 text-brand-copper" />
-                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">PDF</span>
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4 text-brand-copper" />
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-black uppercase tracking-widest">Arquivo</span>
+                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">PDFs/Docs</span>
+                            </div>
                           </button>
                        </div>
 
@@ -364,13 +433,18 @@ export default function NotesScreen() {
                     </div>
 
                     <div className="space-y-4">
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Links Úteis</p>
+                       <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                            <LinkIcon className="w-4 h-4 text-blue-500" />
+                          </div>
+                          <p className="text-[10px] font-black text-brand-navy dark:text-white uppercase tracking-[0.2em]">Adicionar Link</p>
+                       </div>
                        <div className="flex gap-2">
                           <input 
                              type="text"
                              className={cn(
-                               "flex-1 p-4 rounded-2xl border border-gray-100 outline-none text-xs font-bold bg-white placeholder:text-gray-300",
-                               settings.darkMode && "bg-black border-gray-800 text-white"
+                               "flex-1 p-4 rounded-[20px] border border-gray-100 outline-none text-xs font-bold bg-white placeholder:text-gray-300 focus:border-brand-copper/30 transition-colors",
+                               settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white focus:border-brand-copper/50"
                              )}
                              placeholder="Cole um link aqui..."
                              value={newLink}
@@ -437,9 +511,9 @@ export default function NotesScreen() {
                            <div className="flex items-center gap-2">
                               <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Documentos ({selectedNote.attachments.length})</p>
-                              <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
+                              <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800/60" />
                            </div>
-                           <div className="grid gap-3">
+                           <div className="grid gap-3 sm:grid-cols-2">
                               {selectedNote.attachments.map((att, idx) => (
                                  <a 
                                     key={idx}

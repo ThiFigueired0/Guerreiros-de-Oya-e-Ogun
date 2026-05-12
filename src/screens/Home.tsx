@@ -45,6 +45,7 @@ export default function HomeScreen() {
   const [factTabX, setFactTabX] = React.useState(0);
   const [factTabY, setFactTabY] = React.useState(window.innerHeight * 0.25);
   const factTabRef = React.useRef<HTMLDivElement>(null);
+  const factClickTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     const fetchDailyFact = async () => {
@@ -1037,13 +1038,13 @@ export default function HomeScreen() {
       <div className="fixed inset-0 pointer-events-none z-50">
         <motion.div
           ref={factTabRef}
-          drag={!isFactTabCollapsed}
+          drag
           dragMomentum={false}
           dragElastic={0.1}
           dragConstraints={{
             top: 60,
-            bottom: window.innerHeight - 180, // Prevent overlapping bottom menu
-            left: 0,
+            bottom: window.innerHeight - 180,
+            left: 16,
             right: window.innerWidth - 60
           }}
           onDragEnd={(_, info) => {
@@ -1062,107 +1063,86 @@ export default function HomeScreen() {
           }}
           animate={{ 
             x: factTabSide === 'left' 
-              ? (isFactTabCollapsed ? -2 : 0) 
-              : (isFactTabCollapsed ? window.innerWidth - 74 : window.innerWidth - 220),
-            transition: { type: "spring", stiffness: 350, damping: 30 }
+              ? (isFactTabCollapsed ? -16 : 16) 
+              : (isFactTabCollapsed ? window.innerWidth - 48 : window.innerWidth - 260),
+            transition: { type: "spring", stiffness: 350, damping: 25 }
           }}
           className={cn(
-            "pointer-events-auto flex items-center group/tabContainer",
-            factTabSide === 'right' && "flex-row-reverse"
+            "pointer-events-auto flex items-center group/tabContainer drop-shadow-2xl",
           )}
         >
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => !isFactTabCollapsed && setShowDailyFactModal(true)}
-            className={cn(
-              "flex items-center gap-3 py-3 shadow-2xl relative overflow-hidden group transition-all duration-500",
-              isFactTabCollapsed 
-                ? "w-[64px] min-w-0 px-0 justify-center h-[64px] rounded-full scale-90 hover:scale-100" 
-                : "min-w-[200px] pl-2 pr-6 h-auto",
-              factTabSide === 'left' 
-                ? (isFactTabCollapsed ? "rounded-full ml-2 border" : "rounded-r-[28px] border-y border-r") 
-                : (isFactTabCollapsed ? "rounded-full mr-2 border" : "rounded-l-[28px] border-y border-l"),
-              settings.darkMode 
-                ? "bg-gradient-to-br from-indigo-950/90 via-brand-navy/95 to-brand-navy border-brand-gold/30 text-white shadow-[0_0_25px_rgba(234,179,8,0.2)]" 
-                : "bg-gradient-to-br from-amber-50 via-white to-white border-brand-gold/20 text-brand-navy shadow-[0_0_25px_rgba(234,179,8,0.15)]"
-            )}
-          >
-            {/* Background Effects */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-purple-500/5 to-brand-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="absolute top-0 right-0 w-24 h-24 bg-brand-gold/10 blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-500/10 blur-2xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-            
-            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-brand-gold/50 to-transparent opacity-60" />
-            
-            <div className={cn(
-              "relative z-10 flex items-center gap-2",
-              factTabSide === 'right' && "flex-row-reverse"
-            )}>
-              {/* Drag Handle (Visible only when expanded) */}
-              {!isFactTabCollapsed && (
-                <div className="text-brand-gold/30 px-1 cursor-grab active:cursor-grabbing">
-                  <GripVertical className="w-4 h-4" />
-                </div>
-              )}
-
-              <div className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-500 shadow-inner",
-                settings.darkMode 
-                  ? "bg-brand-gold/20 text-brand-gold border-brand-gold/30 group-hover:bg-brand-gold group-hover:text-brand-navy" 
-                  : "bg-brand-gold text-white border-brand-gold/20 shadow-brand-gold/20 group-hover:scale-110"
-              )}>
-                <Sparkles className={cn("w-5 h-5", isLoadingFact && "animate-pulse")} />
-              </div>
-              
-              <AnimatePresence mode="wait">
-                {!isFactTabCollapsed && (
-                  <motion.div 
-                    initial={{ opacity: 0, width: 0, x: -5 }}
-                    animate={{ opacity: 1, width: "auto", x: 0 }}
-                    exit={{ opacity: 0, width: 0, x: -5 }}
-                    className={cn(
-                      "flex flex-col flex-1 truncate",
-                      factTabSide === 'left' ? "items-start text-left" : "items-end text-right"
-                    )}
-                  >
-                    <span className={cn(
-                      "text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 transition-colors",
-                      settings.darkMode ? "text-brand-gold" : "text-brand-copper"
-                    )}>Sabedoria</span>
-                    <span className="text-[11px] font-black truncate w-full tracking-tight">
-                      {isLoadingFact ? 'Sincronizando...' : (dailyFact?.title || 'Você sabia?')}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.button>
-
-          {/* Toggle Tab */}
-          <button
             onClick={(e) => {
-              e.stopPropagation();
-              setIsFactTabCollapsed(!isFactTabCollapsed);
+              if (isFactTabCollapsed) {
+                setIsFactTabCollapsed(false);
+                return;
+              }
+              if (factClickTimeoutRef.current) {
+                clearTimeout(factClickTimeoutRef.current);
+                factClickTimeoutRef.current = null;
+                setIsFactTabCollapsed(true);
+              } else {
+                factClickTimeoutRef.current = setTimeout(() => {
+                  factClickTimeoutRef.current = null;
+                  setShowDailyFactModal(true);
+                }, 250);
+              }
             }}
             className={cn(
-              "w-8 h-12 flex items-center justify-center border shadow-xl transition-all duration-300 backdrop-blur-xl z-20 hover:scale-105 active:scale-95",
-              factTabSide === 'left' 
-                ? "ml-[-12px] rounded-r-xl border-l-0" 
-                : "mr-[-12px] rounded-l-xl border-r-0",
+              "flex items-center gap-4 p-2 relative overflow-hidden group transition-all duration-500 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border",
+              isFactTabCollapsed 
+                ? "w-[64px] h-[64px] justify-center rounded-full" 
+                : "min-w-[240px] pr-6 rounded-[32px] cursor-pointer",
               settings.darkMode 
-                ? "bg-brand-navy/90 border-brand-gold/20 text-brand-gold" 
-                : "bg-white/90 border-brand-gold/20 text-brand-gold",
-              isFactTabCollapsed && (factTabSide === 'left' ? "ml-1" : "mr-1")
+                ? "bg-gradient-to-br from-[#1a2333]/95 to-[#111827]/95 border-[#2d3748]/50 text-white backdrop-blur-xl" 
+                : "bg-white/95 border-brand-gold/20 text-brand-navy backdrop-blur-xl hover:border-brand-gold/40"
             )}
           >
-            <motion.div
-              animate={{ rotate: (isFactTabCollapsed && factTabSide === 'left') || (!isFactTabCollapsed && factTabSide === 'right') ? 180 : 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            >
-              <ChevronLeft className="w-4 h-4 shadow-sm" />
-            </motion.div>
-          </button>
+            {/* Pulsing glow behind the icon */}
+            <motion.div 
+              animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.9, 1.1, 0.9] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className={cn(
+                "absolute opacity-50 blur-xl rounded-full",
+                isFactTabCollapsed ? "w-full h-full" : "w-16 h-16 left-0",
+                settings.darkMode ? "bg-indigo-500/30" : "bg-brand-gold/30"
+              )} 
+            />
+
+            <div className={cn(
+              "relative z-10 w-12 h-12 shrink-0 rounded-full flex items-center justify-center transition-all duration-500 shadow-inner",
+              settings.darkMode 
+                ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30 group-hover:from-indigo-500/40 group-hover:to-purple-500/40" 
+                : "bg-gradient-to-tr from-brand-gold via-brand-gold-medium to-brand-gold-light text-white border border-brand-gold-dark shadow-[0_4px_12px_rgba(192,150,35,0.3)] group-hover:shadow-[0_4px_16px_rgba(192,150,35,0.5)]"
+            )}>
+              <Sparkles className={cn("w-6 h-6", isLoadingFact && "animate-spin")} strokeWidth={1.5} />
+            </div>
+            
+            <AnimatePresence mode="wait">
+              {!isFactTabCollapsed && (
+                <motion.div 
+                  initial={{ opacity: 0, width: 0, x: -10 }}
+                  animate={{ opacity: 1, width: "auto", x: 0 }}
+                  exit={{ opacity: 0, width: 0, x: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="flex flex-col items-start truncate pb-0.5"
+                >
+                  <span className={cn(
+                    "text-[9px] font-black uppercase tracking-[0.2em] mb-1 transition-colors",
+                    settings.darkMode ? "text-indigo-400" : "text-brand-gold-dark"
+                  )}>Pílula do Conhecimento</span>
+                  <span className={cn(
+                    "text-[13px] font-bold truncate w-full tracking-tight",
+                    settings.darkMode ? "text-white" : "text-brand-navy"
+                  )}>
+                    {isLoadingFact ? 'Consultando sabedoria...' : (dailyFact?.title || 'Sabedoria Diária')}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.button>
         </motion.div>
       </div>
 
