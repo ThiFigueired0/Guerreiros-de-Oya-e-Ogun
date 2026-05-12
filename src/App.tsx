@@ -300,14 +300,6 @@ const TopHeader = React.memo(function TopHeader() {
     orixaPhotos: {}
   });
 
-  const [logoSource, setLogoSource] = React.useState<string>(window.localStorage.getItem('@logo_customizada') || settings.customLogoUrl || settings.logoBase64 || '');
-
-  // GUARDRAIL: NÃO ALTERAR ESTA LÓGICA DE PERSISTÊNCIA LOCAL.
-  React.useEffect(() => {
-    const customLogo = window.localStorage.getItem('@logo_customizada') || settings.customLogoUrl || settings.logoBase64 || '';
-    setLogoSource(customLogo);
-  }, [settings.customLogoUrl, settings.logoBase64]);
-
   const fullName = React.useMemo(() => {
     if (isGuest) return "Modo Guest";
     
@@ -495,9 +487,9 @@ const TopHeader = React.memo(function TopHeader() {
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
             
-            {logoSource && (
+            {settings.logoBase64 && (
               <img 
-                src={logoSource} 
+                src={settings.logoBase64} 
                 alt="Logo Templo" 
                 className="w-full h-full object-contain filter drop-shadow-md"
               />
