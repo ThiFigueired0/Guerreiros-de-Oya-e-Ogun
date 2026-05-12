@@ -300,6 +300,29 @@ const TopHeader = React.memo(function TopHeader() {
     orixaPhotos: {}
   });
 
+  const [logoSource, setLogoSource] = React.useState<string>(settings.logoBase64 || '');
+
+  React.useEffect(() => {
+    async function fetchCustomLogo() {
+      if (user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('custom_logo_url')
+            .eq('id', user.id)
+            .single();
+
+          if (data && data.custom_logo_url) {
+            setLogoSource(data.custom_logo_url);
+          }
+        } catch (err) {
+          console.error('Erro ao buscar logo personalizada:', err);
+        }
+      }
+    }
+    fetchCustomLogo();
+  }, [user]);
+
   const fullName = React.useMemo(() => {
     if (isGuest) return "Modo Guest";
     
@@ -487,9 +510,9 @@ const TopHeader = React.memo(function TopHeader() {
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
             
-            {settings.logoBase64 && (
+            {logoSource && (
               <img 
-                src={settings.logoBase64} 
+                src={logoSource} 
                 alt="Logo Templo" 
                 className="w-full h-full object-contain filter drop-shadow-md"
               />
