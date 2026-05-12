@@ -1,15 +1,50 @@
 import React, { useState, useRef } from 'react';
-import { Search, Plus, Filter, SortDesc, FileText, X, Save, Trash2, Camera, Image as ImageIcon, Link as LinkIcon, PlusCircle, Trash, Copy as CopyIcon, Share2 } from 'lucide-react';
+import { Plus, X, Trash2, Search, FileText, ChevronRight, Save, Camera, Image as ImageIcon, Trash, Tag, Pin, LayoutGrid, List as ListIcon, Database, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
+import { useAuth } from '../lib/AuthContext';
 import { Note, AppSettings } from '../types';
 import { cn } from '../lib/utils';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { RichTextEditor } from '../components/RichTextEditor';
+
+const PRESET_TAGS = ['Estudos', 'Giras', 'Sonhos', 'Insights', 'Consultas', 'Geral'];
+
+const TAG_COLORS: Record<string, string> = {
+  'Estudos': 'border-t-blue-500',
+  'Giras': 'border-t-purple-500',
+  'Sonhos': 'border-t-indigo-500',
+  'Insights': 'border-t-emerald-500',
+  'Consultas': 'border-t-orange-500',
+  'Geral': 'border-t-gray-400',
+};
+
+const getTagColor = (tags: string[] = []) => {
+  const firstTag = tags[0];
+  return TAG_COLORS[firstTag] || 'border-t-gray-300';
+};
 
 export default function NotesScreen() {
   const [notes, setNotes] = useStorage<Note[]>('templo_notes', []);
+  const { user } = useAuth();
   
+  const generateTestData = () => {
+    const testNotes = PRESET_TAGS.map((tag, i) => ({
+      id: Date.now().toString() + i,
+      title: `Nota Teste - ${tag}`,
+      content: `Conteúdo de exemplo para a categoria ${tag}. Organização e visualização sendo testadas.`,
+      tags: [tag],
+      createdAt: Date.now(),
+      lastEdited: Date.now()
+    } as Note));
+    setNotes(prev => [...testNotes, ...prev]);
+  };
+
+  const clearAllNotes = () => {
+    setNotes([]);
+  };
+
   // Cleanup test data from storage
   React.useEffect(() => {
     if (notes.some(n => n.id === '1' || n.id === '2')) {
@@ -25,10 +60,12 @@ export default function NotesScreen() {
   });
 
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useStorage<'grid' | 'list'>('templo_notes_viewmode', 'grid');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [noteForm, setNoteForm] = useState<Partial<Note>>({ title: '', content: '', images: [], links: [], attachments: [] });
+  const [noteForm, setNoteForm] = useState<Partial<Note>>({ title: '', content: '', images: [], links: [], attachments: [], tags: [] });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +79,8 @@ export default function NotesScreen() {
         setNotes(notes.map(n => n.id === selectedNote.id ? { 
           ...n, 
           title: noteForm.title!, 
-          content: noteForm.content!, 
+          content: noteForm.content || '', 
+          tags: noteForm.tags || [],
           images: noteForm.images || [],
           attachments: noteForm.attachments || [],
           links: noteForm.links || [],
@@ -53,7 +91,8 @@ export default function NotesScreen() {
         setNotes([{ 
           id: now.toString(), 
           title: noteForm.title!, 
-          content: noteForm.content!, 
+          content: noteForm.content || '', 
+          tags: noteForm.tags || [],
           images: noteForm.images || [],
           attachments: noteForm.attachments || [],
           links: noteForm.links || [],
@@ -63,12 +102,12 @@ export default function NotesScreen() {
       }
       setIsEditing(false);
       setSelectedNote(null);
-      setNoteForm({ title: '', content: '', images: [], links: [], attachments: [] });
+      setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: [] });
     }
   };
 
   const handleOpenNew = () => {
-    setNoteForm({ title: '', content: '', images: [], links: [], attachments: [] });
+    setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: selectedTag ? [selectedTag] : ['Geral'] });
     setIsEditing(true);
     setSelectedNote(null);
   };
@@ -161,11 +200,41 @@ export default function NotesScreen() {
     }
   };
 
-  const filteredNotes = notes.filter(n => 
-    n.title.toLowerCase().includes(search.toLowerCase()) || 
-    n.content.toLowerCase().includes(search.toLowerCase()) ||
-    (n.links || []).some(link => link.toLowerCase().includes(search.toLowerCase()))
-  );
+  const allTags = Array.from(new Set([
+    ...PRESET_TAGS,
+    ...notes.flatMap(n => n.tags || [])
+  ]));
+
+  const toggleTag = (tag: string) => {
+    const currentTags = noteForm.tags || [];
+    setNoteForm(prev => ({
+      ...prev,
+      tags: currentTags.includes(tag) 
+        ? currentTags.filter(t => t !== tag)
+        : [...currentTags, tag]
+    }));
+  };
+
+  const togglePin = (noteId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setNotes(notes.map(n => n.id === noteId ? { ...n, isPinned: !n.isPinned } : n));
+  };
+
+  const filteredNotes = notes.filter(n => {
+    const matchesSearch = n.title.toLowerCase().includes(search.toLowerCase()) || 
+                          n.content.toLowerCase().includes(search.toLowerCase()) ||
+                          (n.links || []).some(link => link.toLowerCase().includes(search.toLowerCase()));
+    
+    if (selectedTag) {
+      return matchesSearch && (n.tags || []).includes(selectedTag);
+    }
+    
+    return matchesSearch;
+  }).sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return (b.lastEdited || 0) - (a.lastEdited || 0);
+  });
 
   return (
     <motion.div className={cn(
@@ -174,12 +243,24 @@ export default function NotesScreen() {
     )}>
       <div className="flex items-center justify-between mb-6 px-1">
         <h2 className={cn("text-2xl font-bold text-brand-navy", settings.darkMode && "text-white")}>Bloco de Notas</h2>
-        <button onClick={handleOpenNew} className={cn(
-          "w-12 h-12 flex items-center justify-center bg-brand-copper text-white rounded-2xl shadow-xl active:scale-95 transition-all",
-          settings.darkMode && "shadow-brand-copper/20"
-        )}>
-          <Plus className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          {!user && (
+            <>
+              <button onClick={generateTestData} title="Gerar Notas Teste" className="p-3 text-brand-copper bg-brand-copper/10 rounded-2xl active:scale-95 transition-all">
+                <Database className="w-5 h-5" />
+              </button>
+              <button onClick={clearAllNotes} title="Limpar Todas" className="p-3 text-red-500 bg-red-500/10 rounded-2xl active:scale-95 transition-all">
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </>
+          )}
+          <button onClick={handleOpenNew} className={cn(
+            "w-12 h-12 flex items-center justify-center bg-brand-copper text-white rounded-2xl shadow-xl active:scale-95 transition-all",
+            settings.darkMode && "shadow-brand-copper/20"
+          )}>
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       <div className="relative mb-6">
@@ -190,15 +271,70 @@ export default function NotesScreen() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={cn(
-            "w-full bg-white border-none rounded-2xl p-4 pl-12 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none",
+            "w-full bg-white border-none rounded-2xl p-4 pl-12 pr-24 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none",
             settings.darkMode && "bg-[#1A1A1A] text-white"
           )}
         />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={cn(
+              "p-1.5 rounded-md transition-all",
+              viewMode === 'grid' 
+                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-navy dark:text-white" 
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            )}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={cn(
+              "p-1.5 rounded-md transition-all",
+              viewMode === 'list' 
+                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-navy dark:text-white" 
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            )}
+          >
+            <ListIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+      <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-6 px-1">
+        <button
+          onClick={() => setSelectedTag(null)}
+          className={cn(
+            "px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border",
+            !selectedTag 
+              ? "bg-brand-navy border-brand-navy text-white shadow-md dark:bg-brand-gold dark:border-brand-gold dark:text-brand-navy"
+              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-[#1A1A1A] dark:border-gray-800 dark:text-gray-300"
+          )}
+        >
+          Todas
+        </button>
+        {allTags.map(tag => (
+          <button
+            key={tag}
+            onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
+            className={cn(
+              "px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border flex items-center gap-1.5",
+              tag === selectedTag
+                ? "bg-brand-navy border-brand-navy text-white shadow-md dark:bg-brand-gold dark:border-brand-gold dark:text-brand-navy"
+                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-[#1A1A1A] dark:border-gray-800 dark:text-gray-300"
+            )}
+          >
+            <Tag className="w-3 h-3" />
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      <div className={cn(
+        viewMode === 'grid' ? "columns-2 lg:columns-3 gap-3 sm:gap-4" : "flex flex-col gap-4"
+      )}>
         {filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 opacity-30 break-inside-avoid">
+          <div className="flex flex-col items-center justify-center py-20 opacity-30 break-inside-avoid w-full">
             <FileText className="w-16 h-16 mb-4 text-brand-navy dark:text-white" strokeWidth={1} />
             <p className="font-bold text-sm uppercase tracking-widest dark:text-gray-400">Nenhuma nota encontrada</p>
           </div>
@@ -210,20 +346,56 @@ export default function NotesScreen() {
             key={note.id} 
             onClick={() => { setSelectedNote(note); setNoteForm(note); setIsEditing(false); }}
             className={cn(
-              "break-inside-avoid w-full mb-4 p-5 sm:p-6 rounded-[28px] relative overflow-hidden transition-all duration-300 group cursor-pointer border",
+              "break-inside-avoid w-full relative overflow-hidden transition-all duration-300 group cursor-pointer border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_40px_rgba(0,0,0,0.1)]",
+              viewMode === 'grid' ? "p-4 sm:p-6 rounded-2xl sm:rounded-[28px] mb-3 sm:mb-4" : "p-4 sm:p-5 rounded-2xl mb-0",
+              getTagColor(note.tags),
               settings.darkMode 
-                ? "bg-gradient-to-b from-[#1a2333] to-[#111827] border-[#2d3748] hover:border-brand-gold/50 shadow-xl" 
-                : "bg-white border-brand-gold/10 hover:border-brand-gold/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(192,150,35,0.1)] hover:-translate-y-1"
+                ? "bg-gradient-to-b from-[#1a2333] to-[#111827] border-[#2d3748]" 
+                : "bg-white"
             )}
           >
             {/* Top decorative gradient or shine */}
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-brand-gold/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
             <div className="flex flex-col h-full">
-               <h4 className={cn("font-bold text-lg leading-tight mb-2 line-clamp-2", settings.darkMode ? "text-white" : "text-brand-navy")}>{note.title}</h4>
-               <p className={cn("text-sm line-clamp-5 leading-relaxed mb-4", settings.darkMode ? "text-gray-400" : "text-gray-600")}>{note.content}</p>
+               <div className={cn("flex justify-between items-start gap-1 sm:gap-2", viewMode === 'grid' ? "mb-2 sm:mb-3" : "mb-1")}>
+                 <div className="flex-1">
+                   {note.tags && note.tags.length > 0 && (
+                     <div className={cn("flex flex-wrap", viewMode === 'grid' ? "gap-1 sm:gap-1.5 mb-2" : "gap-1 mb-1")}>
+                       {note.tags.slice(0, 2).map(tag => (
+                         <span key={tag} className={cn("rounded-md bg-gray-100 dark:bg-gray-800 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate max-w-[80px] sm:max-w-none", viewMode === 'grid' ? "px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px]" : "px-1.5 py-0.5 whitespace-nowrap text-[8px]")}>
+                           {tag}
+                         </span>
+                       ))}
+                       {note.tags.length > 2 && (
+                         <span className={cn("rounded-md font-bold text-gray-400", viewMode === 'grid' ? "px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px]" : "px-1.5 py-0.5 text-[8px]")}>+{note.tags.length - 2}</span>
+                       )}
+                     </div>
+                   )}
+                 </div>
+                 <button 
+                   onClick={(e) => togglePin(note.id, e)}
+                   className={cn(
+                     "p-2 -mr-2 -mt-2 rounded-full transition-all focus:outline-none flex-shrink-0",
+                     note.isPinned 
+                       ? "text-brand-gold hover:bg-brand-gold/10 opacity-100" 
+                       : "text-gray-300 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                   )}
+                 >
+                   <Pin className={cn("w-4 h-4", note.isPinned && "fill-current")} />
+                 </button>
+               </div>
                
-               <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+               <div className={cn(viewMode === 'list' && "flex items-start justify-between gap-4")}>
+                 <div className="flex-1">
+                   <h4 className={cn("font-bold leading-snug tracking-tight", viewMode === 'grid' ? "text-lg sm:text-xl mb-2 sm:mb-3 line-clamp-2" : "text-lg mb-1 truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>{note.title}</h4>
+                   <p className={cn("text-gray-600 dark:text-gray-400", viewMode === 'grid' ? "text-xs sm:text-sm leading-relaxed sm:leading-loose mb-4 sm:mb-6 line-clamp-5 sm:line-clamp-6" : "text-xs leading-relaxed mb-3 line-clamp-2")}>
+                     {note.content.replace(/<[^>]*>?/gm, '')}
+                   </p>
+                 </div>
+               </div>
+               
+               <div className={cn("mt-auto border-t border-gray-100 dark:border-gray-800 flex items-center justify-between", viewMode === 'grid' ? "pt-3 sm:pt-4" : "pt-3")}>
                   <div className="flex flex-col gap-0.5">
                     <span className={cn("text-[8px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-brand-gold/70" : "text-brand-copper")}>
                       {new Date(note.createdAt || note.lastEdited).toLocaleDateString()}
@@ -269,7 +441,7 @@ export default function NotesScreen() {
             )}
           >
             <div className={cn("p-4 pt-12 flex items-center justify-between border-b border-gray-100", settings.darkMode && "border-gray-800")}>
-               <button onClick={() => { setSelectedNote(null); setIsEditing(false); setNoteForm({ title: '', content: '', images: [], links: [], attachments: [] }); }} className="p-3 text-gray-400 active:scale-90 transition-all">
+               <button onClick={() => { setSelectedNote(null); setIsEditing(false); setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: [] }); }} className="p-3 text-gray-400 active:scale-90 transition-all">
                   <X className="w-7 h-7" />
                </button>
                {isEditing ? (
@@ -277,44 +449,18 @@ export default function NotesScreen() {
                      <Save className="w-4 h-4" /> Salvar
                   </button>
                ) : (
-                  <div className="flex items-center gap-2">
-                    {selectedNote && navigator.share && (
-                      <button 
-                        onClick={() => {
-                          navigator.share({
-                            title: selectedNote.title,
-                            text: selectedNote.content,
-                          }).catch(() => {});
-                        }}
-                        className={cn(
-                          "w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-brand-navy shadow-sm active:scale-95 transition-all text-xs",
-                          settings.darkMode && "bg-[#1A1A1A] text-white"
-                        )}
-                        title="Compartilhar"
-                      >
-                         <Share2 className="w-5 h-5" />
-                      </button>
-                    )}
-                    {selectedNote && (
-                      <button 
-                         onClick={() => {
-                           navigator.clipboard.writeText(`${selectedNote.title}\n\n${selectedNote.content}`);
-                         }}
-                         className={cn(
-                          "w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-brand-navy shadow-sm active:scale-95 transition-all text-xs",
-                          settings.darkMode && "bg-[#1A1A1A] text-white"
-                        )}
-                        title="Copiar Texto"
-                      >
-                         <CopyIcon className="w-5 h-5" />
-                      </button>
-                    )}
+                  <div className="flex flex-col items-end gap-1">
                     <button onClick={() => setIsEditing(true)} className={cn(
                       "font-black text-xs uppercase tracking-widest bg-gray-50 px-6 py-2.5 rounded-xl text-brand-navy shadow-sm active:scale-95 transition-all",
                       settings.darkMode && "bg-[#1A1A1A] text-white"
                     )}>
                        Editar
                     </button>
+                    {!isEditing && selectedNote && (
+                      <p className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter opacity-70">
+                        Edição: {new Date(selectedNote.lastEdited).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
                   </div>
                )}
             </div>
@@ -332,62 +478,78 @@ export default function NotesScreen() {
                        onChange={e => setNoteForm({...noteForm, title: e.target.value})}
                     />
                     
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Categorias / Tags</p>
+                       <div className="flex flex-wrap gap-2">
+                         {allTags.map(tag => (
+                           <button
+                             key={tag}
+                             onClick={() => toggleTag(tag)}
+                             className={cn(
+                               "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                               noteForm.tags?.includes(tag)
+                                 ? "bg-brand-gold text-white"
+                                 : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
+                             )}
+                           >
+                             {tag}
+                           </button>
+                         ))}
+                         {/* Input for new tag */}
+                         <div className="flex items-center">
+                           <input
+                             type="text"
+                             placeholder="+ Nova tag"
+                             className={cn(
+                               "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider outline-none w-28",
+                               settings.darkMode ? "bg-black text-white border border-gray-800" : "bg-white border border-gray-200"
+                             )}
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter') {
+                                 e.preventDefault();
+                                 const val = e.currentTarget.value.trim();
+                                 if (val && !noteForm.tags?.includes(val)) {
+                                   setNoteForm(prev => ({ ...prev, tags: [...(prev.tags || []), val] }));
+                                 }
+                                 e.currentTarget.value = '';
+                               }
+                             }}
+                           />
+                         </div>
+                       </div>
+                    </div>
+
                     <div className="space-y-2">
                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Conteúdo da Anotação</p>
-                       <textarea 
-                          className={cn(
-                            "w-full min-h-[200px] p-4 rounded-2xl border border-gray-100 outline-none text-gray-600 leading-relaxed resize-none bg-white placeholder:text-gray-300",
-                            settings.darkMode && "bg-black border-gray-800 text-gray-300"
-                          )}
-                          placeholder="Escreva algo especial..."
-                          value={noteForm.content}
-                          onChange={e => setNoteForm({...noteForm, content: e.target.value})}
+                       <RichTextEditor 
+                         content={noteForm.content || ''} 
+                         onChange={(html) => setNoteForm({...noteForm, content: html})} 
                        />
                     </div>
                     
                     <div className="space-y-4">
-                       <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-brand-copper/10 flex items-center justify-center">
-                            <PlusCircle className="w-4 h-4 text-brand-copper" />
-                          </div>
-                          <p className="text-[10px] font-black text-brand-navy dark:text-white uppercase tracking-[0.2em]">Adicionar Mídias</p>
-                       </div>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Anexos e Documentos</p>
                        <div className="grid grid-cols-3 gap-3">
                           <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
+                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
                           >
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
-                              <ImageIcon className="w-4 h-4 text-brand-copper" />
-                            </div>
-                            <div className="flex flex-col text-left">
-                              <span className="text-[11px] font-black uppercase tracking-widest">Galeria</span>
-                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">Fotos/Imagens</span>
-                            </div>
+                            <ImageIcon className="w-6 h-6 text-brand-copper" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Galeria</span>
                           </button>
                           <button 
                             onClick={() => cameraInputRef.current?.click()}
-                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
+                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
                           >
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
-                              <Camera className="w-4 h-4 text-brand-copper" />
-                            </div>
-                            <div className="flex flex-col text-left">
-                              <span className="text-[11px] font-black uppercase tracking-widest">Câmera</span>
-                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">Tirar Foto</span>
-                            </div>
+                            <Camera className="w-6 h-6 text-brand-copper" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Câmera</span>
                           </button>
                           <button 
                             onClick={() => pdfInputRef.current?.click()}
-                            className={cn("p-4 rounded-[20px] flex items-center gap-3 border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer", settings.darkMode && "bg-white/5 border-white/5 text-white")}
+                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
                           >
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm flex items-center justify-center shrink-0">
-                              <FileText className="w-4 h-4 text-brand-copper" />
-                            </div>
-                            <div className="flex flex-col text-left">
-                              <span className="text-[11px] font-black uppercase tracking-widest">Arquivo</span>
-                              <span className="text-[9px] text-gray-400 font-bold hidden sm:block">PDFs/Docs</span>
-                            </div>
+                            <FileText className="w-6 h-6 text-brand-copper" />
+                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none">PDF</span>
                           </button>
                        </div>
 
@@ -433,26 +595,26 @@ export default function NotesScreen() {
                     </div>
 
                     <div className="space-y-4">
-                       <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                            <LinkIcon className="w-4 h-4 text-blue-500" />
-                          </div>
-                          <p className="text-[10px] font-black text-brand-navy dark:text-white uppercase tracking-[0.2em]">Adicionar Link</p>
-                       </div>
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Links Úteis</p>
                        <div className="flex gap-2">
                           <input 
                              type="text"
                              className={cn(
-                               "flex-1 p-4 rounded-[20px] border border-gray-100 outline-none text-xs font-bold bg-white placeholder:text-gray-300 focus:border-brand-copper/30 transition-colors",
-                               settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white focus:border-brand-copper/50"
+                               "flex-1 p-4 rounded-2xl border border-gray-100 outline-none text-xs font-bold bg-white placeholder:text-gray-300",
+                               settings.darkMode && "bg-black border-gray-800 text-white"
                              )}
                              placeholder="Cole um link aqui..."
                              value={newLink}
                              onChange={e => setNewLink(e.target.value)}
-                             onKeyDown={e => e.key === 'Enter' && addLink()}
+                             onKeyDown={e => {
+                               if (e.key === 'Enter') {
+                                 e.preventDefault();
+                                 addLink();
+                               }
+                             }}
                           />
                           <button 
-                            onClick={addLink}
+                            onClick={(e) => { e.preventDefault(); addLink(); }}
                             className="bg-brand-navy dark:bg-brand-copper text-white px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all"
                           >
                             Adicionar
@@ -464,7 +626,7 @@ export default function NotesScreen() {
                            {noteForm.links.map((link, idx) => (
                              <div key={idx} className={cn("flex items-center justify-between p-3 rounded-xl bg-gray-50", settings.darkMode && "bg-white/5")}>
                                <span className={cn("text-[10px] font-bold truncate pr-4 text-brand-navy", settings.darkMode && "text-gray-400")}>{link}</span>
-                               <button onClick={() => removeLink(idx)} className="text-red-500 p-1">
+                               <button onClick={(e) => { e.preventDefault(); removeLink(idx); }} className="text-red-500 p-1">
                                  <Trash className="w-4 h-4" />
                                </button>
                              </div>
@@ -476,6 +638,15 @@ export default function NotesScreen() {
                ) : (
                  <div className="max-w-lg mx-auto pb-10 space-y-8">
                   <div className="space-y-1">
+                    {selectedNote?.tags && selectedNote.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {selectedNote.tags.map(tag => (
+                          <span key={tag} className="px-3 py-1 rounded-full bg-brand-gold/20 text-brand-gold text-[10px] font-bold uppercase tracking-widest">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <h2 className={cn("text-4xl font-black text-brand-navy mb-2 tracking-tight", settings.darkMode && "text-white")}>{selectedNote?.title}</h2>
                     <div className="flex items-center gap-4 mb-6">
                       <div className="flex flex-col">
@@ -488,7 +659,10 @@ export default function NotesScreen() {
                         <span className="text-[10px] font-bold text-gray-400">{new Date(selectedNote?.lastEdited || Date.now()).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
-                    <p className={cn("text-lg text-gray-700 leading-relaxed whitespace-pre-wrap font-medium", settings.darkMode && "text-gray-200")}>{selectedNote?.content}</p>
+                    
+                    <div className={cn("text-lg text-gray-700 leading-relaxed font-medium -mx-4 sm:mx-0", settings.darkMode && "text-gray-200")}>
+                      <RichTextEditor content={selectedNote?.content || ''} readOnly={true} onChange={() => {}} />
+                    </div>
                   </div>
                     
                      {selectedNote?.images && selectedNote.images.length > 0 && (
@@ -511,9 +685,9 @@ export default function NotesScreen() {
                            <div className="flex items-center gap-2">
                               <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Documentos ({selectedNote.attachments.length})</p>
-                              <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800/60" />
+                              <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
                            </div>
-                           <div className="grid gap-3 sm:grid-cols-2">
+                           <div className="grid gap-3">
                               {selectedNote.attachments.map((att, idx) => (
                                  <a 
                                     key={idx}
