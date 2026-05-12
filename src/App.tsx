@@ -302,6 +302,13 @@ const TopHeader = React.memo(function TopHeader() {
 
   const [logoSource, setLogoSource] = React.useState<string>(settings.logoBase64 || '');
 
+  // Sync when settings change
+  React.useEffect(() => {
+    if (!user) {
+      setLogoSource(settings.logoBase64 || '');
+    }
+  }, [settings.logoBase64, user]);
+
   React.useEffect(() => {
     async function fetchCustomLogo() {
       if (user?.id) {
@@ -314,14 +321,20 @@ const TopHeader = React.memo(function TopHeader() {
 
           if (data && data.custom_logo_url) {
             setLogoSource(data.custom_logo_url);
+          } else {
+            // If no profile logo, revert to settings.logoBase64
+            setLogoSource(settings.logoBase64 || '');
           }
         } catch (err) {
           console.error('Erro ao buscar logo personalizada:', err);
+          setLogoSource(settings.logoBase64 || '');
         }
+      } else {
+        setLogoSource(settings.logoBase64 || '');
       }
     }
     fetchCustomLogo();
-  }, [user]);
+  }, [user, settings.logoBase64]);
 
   const fullName = React.useMemo(() => {
     if (isGuest) return "Modo Guest";
