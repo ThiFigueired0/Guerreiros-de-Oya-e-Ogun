@@ -41,7 +41,10 @@ export default function ProfileSettings() {
       try {
         const reader = new FileReader();
         reader.onloadend = () => {
-          setSettings({ ...settings, customLogoUrl: reader.result as string });
+          const base64 = reader.result as string;
+          window.localStorage.setItem('@logo_customizada', base64);
+          // Also update settings optionally for sync
+          setSettings({ ...settings, customLogoUrl: base64 });
           setIsUploadingLogo(false);
           alert('Logo personalizada atualizada localmente!');
         };

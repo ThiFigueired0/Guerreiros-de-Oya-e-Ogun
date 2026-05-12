@@ -300,11 +300,12 @@ const TopHeader = React.memo(function TopHeader() {
     orixaPhotos: {}
   });
 
-  const [logoSource, setLogoSource] = React.useState<string>(settings.customLogoUrl || settings.logoBase64 || '');
+  const [logoSource, setLogoSource] = React.useState<string>(window.localStorage.getItem('@logo_customizada') || settings.customLogoUrl || settings.logoBase64 || '');
 
   // GUARDRAIL: NÃO ALTERAR ESTA LÓGICA DE PERSISTÊNCIA LOCAL.
   React.useEffect(() => {
-    setLogoSource(settings.customLogoUrl || settings.logoBase64 || '');
+    const customLogo = window.localStorage.getItem('@logo_customizada') || settings.customLogoUrl || settings.logoBase64 || '';
+    setLogoSource(customLogo);
   }, [settings.customLogoUrl, settings.logoBase64]);
 
   const fullName = React.useMemo(() => {
