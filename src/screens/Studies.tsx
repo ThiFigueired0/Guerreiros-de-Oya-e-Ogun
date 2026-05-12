@@ -2222,7 +2222,7 @@ export default function StudiesScreen() {
                                     setLoadingAiTermId(term.id);
                                     try {
                                       const prompt = `Como um guia de estudos umbandista, forneça uma explicação mais profunda e detalhada para o termo "${term.term}", contextualizando-o na Umbanda, Candomblé ou Quimbanda conforme apropriado. Seja conciso mas rico em fundamentos.`;
-                                      const response = await askAI(prompt);
+                                      const response = await askAI([{ role: 'user', content: prompt }]);
                                       setAiGlossaryResponses(prev => ({ ...prev, [term.id]: response }));
                                     } catch (error) {
                                       console.error('AI Error:', error);

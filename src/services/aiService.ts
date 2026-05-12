@@ -14,11 +14,9 @@ const getApiKey = () => {
   return undefined;
 };
 
-export const askAI = async (prompt: string): Promise<string> => {
+export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', content: string }[]): Promise<string> => {
   const apiKey = getApiKey();
   
-  console.log('Tentando conectar com a Groq...');
-
   if (!apiKey) {
     console.error('Erro: Chave API GROQ não encontrada nos ambientes compatíveis.');
     return 'Erro de configuração no servidor. Tente novamente em instantes';
@@ -33,32 +31,20 @@ export const askAI = async (prompt: string): Promise<string> => {
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente prestativo para um Terreiro de Umbanda. Responda de forma respeitosa e acolhedora.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
+        messages,
         temperature: 0.7,
         max_tokens: 1024
       })
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Erro na resposta da Groq:', errorData);
-      return 'O assistente está temporariamente indisponível. Por favor, tente mais tarde.';
+      return 'O assistente está temporariamente indisponível.';
     }
 
     const data = await response.json();
-    return data.choices[0]?.message?.content || 'Sem resposta do assistente.';
+    return data.choices[0]?.message?.content || 'Sem resposta.';
   } catch (error) {
-    console.error('Falha na comunicação com a IA:', error);
-    return 'Houve um problema ao processar sua pergunta. Verifique sua conexão.';
+    return 'Houve um problema ao processar sua pergunta.';
   }
 };
 

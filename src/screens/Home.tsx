@@ -2,10 +2,10 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
-import { AppSettings, HerbBath, Ponto, Event, StudyBook } from '../types';
+import { AppSettings, HerbBath, Ponto, Event, StudyBook, Note } from '../types';
 import { cn } from '../lib/utils';
 import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -39,13 +39,40 @@ export default function HomeScreen() {
   const [isLoadingAI, setIsLoadingAI] = React.useState(false);
   const [dailyFact, setDailyFact] = React.useState<{title: string, content: string, category: string} | null>(null);
   const [isLoadingFact, setIsLoadingFact] = React.useState(false);
+  const [showAssistantModal, setShowAssistantModal] = React.useState(false);
   const [showDailyFactModal, setShowDailyFactModal] = React.useState(false);
   const [isFactTabCollapsed, setIsFactTabCollapsed] = React.useState(false);
   const [factTabSide, setFactTabSide] = React.useState<'left' | 'right'>('left');
   const [factTabX, setFactTabX] = React.useState(0);
   const [factTabY, setFactTabY] = React.useState(window.innerHeight * 0.25);
+  const [activeTab, setActiveTab] = React.useState<'chat' | 'note'>('chat');
+  const [noteTitle, setNoteTitle] = React.useState('');
+  const [noteContent, setNoteContent] = React.useState('');
+  const [chatInput, setChatInput] = React.useState('');
+  const [messages, setMessages] = React.useState<{ role: 'user' | 'assistant', content: string }[]>([
+    { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?' }
+  ]);
+  const [isChatLoading, setIsChatLoading] = React.useState(false);
+  const [notes, setNotes] = useStorage<Note[]>('templo_notes', []);
   const factTabRef = React.useRef<HTMLDivElement>(null);
   const factClickTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleChatSend = async () => {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: 'user' as const, content: chatInput };
+    setMessages(prev => [...prev, userMsg]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await askAI([...messages.map(m => ({ role: m.role, content: m.content })), userMsg]);
+      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, não consegui processar sua mensagem.' }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   React.useEffect(() => {
     const fetchDailyFact = async () => {
@@ -91,7 +118,7 @@ export default function HomeScreen() {
     setIsLoadingAI(true);
     setAiResponse(null);
     try {
-      const response = await askAI('Olá, qual é o seu nome e como você pode me ajudar?');
+      const response = await askAI([{ role: 'user', content: 'Olá, qual é o seu nome e como você pode me ajudar?' }]);
       setAiResponse(response);
     } catch (error) {
       setAiResponse('Ocorreu um erro ao conectar com o assistente. Verifique se a chave API está configurada.');
@@ -116,6 +143,21 @@ export default function HomeScreen() {
   const toggleFavBook = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setBooks(books.map(b => b.id === id ? { ...b, isFavorite: false } : b));
+  };
+
+  const handleSaveNote = () => {
+    if (!noteTitle.trim()) return;
+    const newNote: Note = {
+      id: Date.now().toString(),
+      title: noteTitle,
+      content: noteContent,
+      createdAt: Date.now(),
+      lastEdited: Date.now(),
+    };
+    setNotes(prev => [newNote, ...prev]);
+    setNoteTitle('');
+    setNoteContent('');
+    setShowAssistantModal(false);
   };
 
   // Próximos eventos (hoje ou no futuro)
@@ -189,17 +231,16 @@ export default function HomeScreen() {
           </h2>
         </div>
         <button 
-          onClick={handleAskAI}
-          disabled={isLoadingAI}
+          onClick={() => setShowDailyFactModal(true)}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
             settings.darkMode 
-              ? "bg-brand-copper/20 text-brand-copper border border-brand-copper/30 shadow-brand-copper/10" 
-              : "bg-brand-copper text-white shadow-brand-copper/20"
+              ? "bg-brand-gold/20 text-brand-gold border border-brand-gold/30 shadow-brand-gold/10" 
+              : "bg-brand-gold text-white shadow-brand-gold/20"
           )}
         >
-          {isLoadingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-          Assistente
+          <Sparkles className="w-4 h-4" />
+          Mensagem Diária
         </button>
       </header>
 
@@ -1074,27 +1115,9 @@ export default function HomeScreen() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.95 }}
-            onClick={(e) => {
-              if (isFactTabCollapsed) {
-                setIsFactTabCollapsed(false);
-                return;
-              }
-              if (factClickTimeoutRef.current) {
-                clearTimeout(factClickTimeoutRef.current);
-                factClickTimeoutRef.current = null;
-                setIsFactTabCollapsed(true);
-              } else {
-                factClickTimeoutRef.current = setTimeout(() => {
-                  factClickTimeoutRef.current = null;
-                  setShowDailyFactModal(true);
-                }, 250);
-              }
-            }}
+            onClick={() => setShowAssistantModal(true)}
             className={cn(
-              "flex items-center gap-4 p-2 relative overflow-hidden group transition-all duration-500 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border",
-              isFactTabCollapsed 
-                ? "w-[64px] h-[64px] justify-center rounded-full" 
-                : "min-w-[240px] pr-6 rounded-[32px] cursor-pointer",
+              "flex items-center p-2 relative overflow-hidden transition-all duration-500 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border rounded-full w-[64px] h-[64px] justify-center",
               settings.darkMode 
                 ? "bg-gradient-to-br from-[#1a2333]/95 to-[#111827]/95 border-[#2d3748]/50 text-white backdrop-blur-xl" 
                 : "bg-white/95 border-brand-gold/20 text-brand-navy backdrop-blur-xl hover:border-brand-gold/40"
@@ -1106,7 +1129,7 @@ export default function HomeScreen() {
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               className={cn(
                 "absolute opacity-50 blur-xl rounded-full",
-                isFactTabCollapsed ? "w-full h-full" : "w-16 h-16 left-0",
+                "w-16 h-16 left-0",
                 settings.darkMode ? "bg-indigo-500/30" : "bg-brand-gold/30"
               )} 
             />
@@ -1117,34 +1140,143 @@ export default function HomeScreen() {
                 ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30 group-hover:from-indigo-500/40 group-hover:to-purple-500/40" 
                 : "bg-gradient-to-tr from-brand-gold via-brand-gold-medium to-brand-gold-light text-white border border-brand-gold-dark shadow-[0_4px_12px_rgba(192,150,35,0.3)] group-hover:shadow-[0_4px_16px_rgba(192,150,35,0.5)]"
             )}>
-              <Sparkles className={cn("w-6 h-6", isLoadingFact && "animate-spin")} strokeWidth={1.5} />
+              <Bot className="w-6 h-6" strokeWidth={1.5} />
             </div>
-            
-            <AnimatePresence mode="wait">
-              {!isFactTabCollapsed && (
-                <motion.div 
-                  initial={{ opacity: 0, width: 0, x: -10 }}
-                  animate={{ opacity: 1, width: "auto", x: 0 }}
-                  exit={{ opacity: 0, width: 0, x: -10 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="flex flex-col items-start truncate pb-0.5"
-                >
-                  <span className={cn(
-                    "text-[9px] font-black uppercase tracking-[0.2em] mb-1 transition-colors",
-                    settings.darkMode ? "text-indigo-400" : "text-brand-gold-dark"
-                  )}>Pílula do Conhecimento</span>
-                  <span className={cn(
-                    "text-[13px] font-bold truncate w-full tracking-tight",
-                    settings.darkMode ? "text-white" : "text-brand-navy"
-                  )}>
-                    {isLoadingFact ? 'Consultando sabedoria...' : (dailyFact?.title || 'Sabedoria Diária')}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.button>
         </motion.div>
       </div>
+
+      {/* Assistant Modal */}
+      <AnimatePresence>
+        {showAssistantModal && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAssistantModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative w-full max-w-lg rounded-[48px] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center",
+                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white"
+              )}
+            >
+              <div className="flex items-center justify-between w-full mb-8">
+                <h3 className={cn("text-2xl font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                  {activeTab === 'chat' ? 'Assistente Virtual' : 'Nova Nota'}
+                </h3>
+                <button onClick={() => setShowAssistantModal(false)} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                  <X className={cn("w-6 h-6", settings.darkMode ? "text-white" : "text-brand-navy")} />
+                </button>
+              </div>
+
+              {activeTab === 'chat' ? (
+                <div className="w-full flex-1 flex flex-col min-h-0 relative">
+                  <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4">
+                    {messages.map((m, i) => (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "p-4 rounded-2xl text-sm max-w-[90%] shadow-sm", 
+                          m.role === 'assistant' 
+                            ? (settings.darkMode ? "bg-slate-700 text-slate-100" : "bg-slate-200 text-slate-900") 
+                            : "bg-brand-copper text-white self-end"
+                        )}
+                      >
+                        {m.content}
+                      </div>
+                    ))}
+                    {isChatLoading && <div className="text-xs text-slate-500 dark:text-slate-400 italic">IA esta pensando...</div>}
+                  </div>
+                  
+                  {/* Floating Toggle for Quick Note */}
+                  <button 
+                    onClick={() => setActiveTab('note')}
+                    className="mb-2 self-start text-[10px] uppercase tracking-widest font-black text-brand-copper flex items-center gap-1 hover:underline"
+                  >
+                    <Copy className="w-3 h-3" /> Adicionar Nota Rápida
+                  </button>
+
+                  <div className="flex gap-2">
+                    <input 
+                      value={chatInput} 
+                      onChange={e => setChatInput(e.target.value)} 
+                      onKeyPress={e => e.key === 'Enter' && handleChatSend()}
+                      placeholder="Sua mensagem..." 
+                      className={cn(
+                        "flex-1 p-4 rounded-2xl text-sm font-medium border-2 transition-colors", 
+                        settings.darkMode 
+                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
+                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
+                      )}
+                    />
+                    <button
+                      className={cn("p-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-500")}
+                      title="Microfone (em breve)"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleChatSend}
+                      className={cn("p-4 rounded-2xl bg-brand-navy text-white px-6")}
+                    >
+                      Enviar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full space-y-4 flex flex-col flex-1">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block px-1">Título</label>
+                    <input 
+                      value={noteTitle} 
+                      onChange={e => setNoteTitle(e.target.value)} 
+                      placeholder="Nome da nota..." 
+                      className={cn(
+                        "w-full p-4 rounded-2xl text-sm font-bold border-2 transition-colors", 
+                        settings.darkMode 
+                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
+                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
+                      )}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block px-1">Conteúdo</label>
+                    <textarea 
+                      value={noteContent} 
+                      onChange={e => setNoteContent(e.target.value)} 
+                      placeholder="Escreva algo aqui..." 
+                      className={cn(
+                        "w-full h-48 p-5 rounded-3xl text-sm font-medium border-2 transition-colors", 
+                        settings.darkMode 
+                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
+                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
+                      )}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                      <button onClick={() => setActiveTab('chat')} className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-gray-200 text-gray-600">Cancelar</button>
+                      <button
+                        onClick={handleSaveNote}
+                        className={cn(
+                          "flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+                          settings.darkMode ? "bg-white text-black hover:bg-gray-200" : "bg-brand-copper text-white hover:bg-brand-copper/90 shadow-brand-copper/20"
+                        )}
+                      >
+                        Salvar
+                      </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Daily Fact Modal */}
       <AnimatePresence>
