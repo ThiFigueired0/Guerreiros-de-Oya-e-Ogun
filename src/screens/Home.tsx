@@ -1170,8 +1170,8 @@ export default function HomeScreen() {
                 <h3 className={cn("text-2xl font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>
                   {activeTab === 'chat' ? 'Assistente Virtual' : 'Nova Nota'}
                 </h3>
-                <button onClick={() => setShowAssistantModal(false)} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                  <X className={cn("w-6 h-6", settings.darkMode ? "text-white" : "text-brand-navy")} />
+                <button onClick={() => setShowAssistantModal(false)} className="p-3 bg-slate-900 rounded-full hover:bg-slate-700 transition-colors">
+                  <X className={cn("w-6 h-6 text-white")} />
                 </button>
               </div>
 
