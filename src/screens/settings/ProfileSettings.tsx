@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Camera, AtSign, Loader2, Phone, Plus, Trash2 } from 'lucide-react';
+import { User, Camera, AtSign, Loader2, Phone, Plus, Trash2, Upload } from 'lucide-react';
 import { useStorage } from '../../hooks/useStorage';
 import { AppSettings } from '../../types';
 import { cn } from '../../lib/utils';
@@ -12,7 +12,9 @@ export default function ProfileSettings() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {} as AppSettings);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const profilePhotoRef = useRef<HTMLInputElement>(null);
+  const logoPhotoRef = useRef<HTMLInputElement>(null);
   const contactPhotoRef = useRef<HTMLInputElement>(null);
   const editContactPhotoRef = useRef<HTMLInputElement>(null);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
@@ -28,6 +30,42 @@ export default function ProfileSettings() {
         setSettings({ ...settings, [field]: reader.result as string });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCustomLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && user) {
+      setIsUploadingLogo(true);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('company_logos')
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('company_logos')
+          .getPublicUrl(filePath);
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ custom_logo_url: publicUrl })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+        
+        alert('Logo personalizada atualizada com sucesso!');
+      } catch (err) {
+        console.error("Erro ao subir logo:", err);
+        alert('Erro ao subir logo. Tente novamente.');
+      } finally {
+        setIsUploadingLogo(false);
+      }
     }
   };
 
@@ -175,6 +213,31 @@ export default function ProfileSettings() {
           settings.darkMode && "bg-[#1A1A1A] border-gray-800"
         )}>
           <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Logo Personalizada</label>
+                <button
+                  onClick={() => logoPhotoRef.current?.click()}
+                  className={cn(
+                    "w-full bg-gray-50 px-4 py-3.5 rounded-[20px] text-xs font-bold outline-none border border-gray-100 focus:border-brand-copper transition-all flex items-center justify-between",
+                    settings.darkMode && "bg-black/40 border-gray-800 text-white"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    {isUploadingLogo ? 'Enviando...' : 'Subir Logo Personalizada'}
+                  </span>
+                  {isUploadingLogo && <Loader2 className="w-4 h-4 animate-spin" />}
+                </button>
+                <input 
+                  type="file" 
+                  ref={logoPhotoRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleCustomLogoUpload} 
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest px-1">Primeiro Nome</label>

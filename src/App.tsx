@@ -313,11 +313,19 @@ const TopHeader = React.memo(function TopHeader() {
     async function fetchCustomLogo() {
       if (user?.id) {
         try {
+          console.log('Fetching custom logo for user:', user.id);
           const { data, error } = await supabase
             .from('profiles')
             .select('custom_logo_url')
             .eq('id', user.id)
             .single();
+
+          if (error) {
+            console.error('Erro na consulta Supabase:', error);
+            throw error;
+          }
+
+          console.log('Dados recebidos do perfil:', data);
 
           if (data && data.custom_logo_url) {
             setLogoSource(data.custom_logo_url);
