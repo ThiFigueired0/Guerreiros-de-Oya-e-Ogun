@@ -8,7 +8,7 @@
   --color-brand-gold: var(--brand-gold, #D4AF37);
   --color-brand-gold-light: var(--brand-gold-light, #FFE082);
   --color-brand-gold-medium: var(--brand-gold-medium, #D4AF37);
-  --color-brand-gold-dark: var(--brand-gold-dark: #B8860B);
+  --color-brand-gold-dark: var(--brand-gold-dark, #B8860B);
   --color-brand-brown: #3E2723;
   --color-brand-red: #B22222;
   --font-serif: "Playfair Display", serif;

@@ -15,25 +15,31 @@
     <title>Guerreiros de Oya e Ogun</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
       :root {
         --color-brand-navy: #001529;
         --color-brand-copper: #CD7F32;
         --color-brand-gold: #D4AF37;
       }
-      body { 
+      body, html { 
         overscroll-behavior-y: contain; 
         background-color: var(--color-brand-navy);
         margin: 0;
         padding: 0;
         font-family: 'Montserrat', sans-serif;
         color: white;
+        height: 100%;
+        overflow-x: hidden;
       }
       /* Critical Layout Classes */
       .bg-brand-navy { background-color: var(--color-brand-navy); }
       .text-brand-gold { color: var(--color-brand-gold); }
       .text-brand-copper { color: var(--color-brand-copper); }
+      .bg-\[\#001529\] { background-color: var(--color-brand-navy) !important; }
+      
+      h1, h2, h3, .font-serif { font-family: 'Playfair Display', serif; }
+      p, span, div, .font-sans { font-family: 'Montserrat', sans-serif; }
       
       #splash-preloader {
         position: fixed;
@@ -44,7 +50,6 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        overflow: hidden;
         transition: opacity 0.8s ease-out;
       }
       #splash-preloader.fade-out {
@@ -125,6 +130,14 @@
           leaf.style.width = leaf.style.height = (15 + Math.random() * 20) + 'px';
           container.appendChild(leaf);
         }
+        
+        // Safety fallback to ensure the preloader disappears even if React fails to load
+        setTimeout(() => {
+          if (container && !container.classList.contains('fade-out')) {
+            container.classList.add('fade-out');
+            setTimeout(() => { container.remove(); }, 850);
+          }
+        }, 5000);
       </script>
     </div>
     <div id="root"></div>
