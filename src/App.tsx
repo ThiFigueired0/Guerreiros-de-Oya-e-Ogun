@@ -13,16 +13,7 @@ import { AppSettings, Event, Candle, NotificationItem } from './types';
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
-// Screens
-import CalendarScreen from './screens/Calendar';
-import HerbsScreen from './screens/Herbs';
-import PointsScreen from './screens/Points';
-import NotesScreen from './screens/Notes';
-import SettingsScreen from './screens/Settings';
-import TrabalhosScreen from './screens/Trabalhos';
-import HomeScreen from './screens/Home';
-import StudiesScreen from './screens/Studies';
-import FinanceiroScreen from './screens/Financeiro';
+import { AppRoutes } from './AppRoutes';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
 import AuthScreen from './screens/Auth';
@@ -30,6 +21,7 @@ import CompleteProfile from './screens/CompleteProfile';
 import ResetPassword from './screens/ResetPassword';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
+import { AssistantButton, AssistantWrapper } from './components/AssistantFeatures';
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center h-screen w-full bg-[#001529]">
@@ -43,54 +35,6 @@ const ICON_MAP: Record<string, any> = {
 };
 
 const DEFAULT_DEV_REMINDER = "Obrigatório:\n- Bebidas para as quartinhas (Exu, Pombagira, Exu Mirim e Malandro)\n- Velas\n- Isqueiro\n- Roupa branca (Calça, shorts, camisa e Eketê)";
-
-const AssistantButton = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={cn(
-        "flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
-        "w-12 h-12 bg-gradient-to-b from-[#001c38] to-[#000a14]",
-        "shadow-[0_10px_15px_rgba(37,99,235,0.2)] ring-1 ring-white/30"
-      )}
-    >
-      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 to-transparent" />
-      <div className="relative z-10 text-white" style={{ filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))' }}>
-        <Bot className="w-6 h-6" />
-      </div>
-    </motion.button>
-  );
-};
-
-const AssistantModal = lazy(() => import('./components/AssistantModal'));
-
-const AssistantWrapper = () => {
-    const { setShowAssistantModal, isScrolled } = useAssistant();
-    const [isLoaded, setIsLoaded] = useState(false);
-    return (
-        <>
-            {isLoaded && (
-               <Suspense fallback={null}>
-                  <AssistantModal />
-               </Suspense>
-            )}
-            <AnimatePresence>
-              {isScrolled && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="fixed bottom-24 right-5 z-[500]"
-                >
-                  <AssistantButton onClick={() => { setIsLoaded(true); setShowAssistantModal(true); }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-        </>
-    );
-};
 
 const CALENDAR_2026: Omit<Event, 'id'>[] = [
   { title: 'Festa de Marias', category: 'Festa', date: '2026-01-24' },
@@ -1832,33 +1776,7 @@ function AppContent() {
               <div className="flex-1 flex flex-col h-full overflow-hidden">
                 <TopHeader />
                 <SocialButtons />
-                
-                                <Routes>
-                  <Route path="/home" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
-                      <AnimatePresence mode="wait">
-                        <HomeScreen />
-                      </AnimatePresence>
-                    </main>
-                  } />
-                  <Route path="*" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
-                      <AnimatePresence mode="wait">
-                        <Routes>
-                          <Route path="/" element={<Navigate to="/home" replace />} />
-                          <Route path="/calendar" element={<CalendarScreen />} />
-                          <Route path="/herbs" element={<HerbsScreen />} />
-                          <Route path="/trab" element={<TrabalhosScreen />} />
-                          <Route path="/points" element={<PointsScreen />} />
-                          <Route path="/studies" element={<StudiesScreen />} />
-                          <Route path="/notes" element={<NotesScreen />} />
-                          <Route path="/finance" element={<FinanceiroScreen />} />
-                          <Route path="/settings" element={<SettingsScreen />} />
-                        </Routes>
-                      </AnimatePresence>
-                    </main>
-                  } />
-                </Routes>
+                <AppRoutes />
               </div>
             </>
           )}
