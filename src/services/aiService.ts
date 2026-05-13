@@ -14,12 +14,73 @@ const getApiKey = () => {
   return undefined;
 };
 
+const getTavilyApiKey = () => {
+  if (import.meta.env && import.meta.env.VITE_TAVILY_API_KEY) {
+    return import.meta.env.VITE_TAVILY_API_KEY;
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.VITE_TAVILY_API_KEY || process.env.TAVILY_API_KEY;
+  }
+  return undefined;
+};
+
+const searchTavily = async (query: string): Promise<string> => {
+  const apiKey = getTavilyApiKey();
+  if (!apiKey) return "";
+  
+  try {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: "basic",
+        max_results: 3
+      })
+    });
+    
+    if (!response.ok) return "";
+    
+    const data = await response.json();
+    if (!data.results || data.results.length === 0) return "";
+    
+    return data.results.map((r: any) => `Fonte: ${r.url}\nResumo: ${r.content}`).join("\n\n");
+  } catch (error) {
+    console.error("Tavily search error:", error);
+    return "";
+  }
+};
+
 export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', content: string }[]): Promise<string> => {
   const apiKey = getApiKey();
   
   if (!apiKey) {
     console.error('Erro: Chave API GROQ não encontrada nos ambientes compatíveis.');
     return 'Erro de configuração no servidor. Tente novamente em instantes';
+  }
+
+  let finalMessages = [...messages];
+  
+  // Extrai a última mensagem do usuário para buscar
+  const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
+  
+  if (lastUserMessage) {
+    const searchResults = await searchTavily(lastUserMessage.content);
+    if (searchResults) {
+      // Modifica a última mensagem para incluir o contexto da web
+      const modifiedMessages = [...messages];
+      const lastIndex = modifiedMessages.lastIndexOf(lastUserMessage);
+      
+      modifiedMessages[lastIndex] = {
+        role: 'user',
+        content: `Informações atualizadas da web sobre o assunto (Use isso como contexto se for relevante para a pergunta):\n\n${searchResults}\n\nPergunta do usuário: ${lastUserMessage.content}`
+      };
+      
+      finalMessages = modifiedMessages;
+    }
   }
 
   try {
@@ -31,7 +92,7 @@ export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', c
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages,
+        messages: finalMessages,
         temperature: 0.7,
         max_tokens: 1024
       })
