@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAssistant } from '../lib/AssistantContext';
-import { lazy, Suspense } from 'react';
 
-const AssistantModal = lazy(() => import('./AssistantModal'));
+import AssistantModal from './AssistantModal';
 
 export const AssistantButton = ({ onClick }: { onClick: () => void }) => {
   return (
@@ -28,24 +27,22 @@ export const AssistantButton = ({ onClick }: { onClick: () => void }) => {
 };
 
 export const AssistantWrapper = () => {
-    const { setShowAssistantModal, isScrolled } = useAssistant();
-    const [isLoaded, setIsLoaded] = useState(false);
+    const { showAssistantModal, setShowAssistantModal, isScrolled } = useAssistant();
+
     return (
         <>
-            {isLoaded && (
-               <Suspense fallback={null}>
-                  <AssistantModal />
-               </Suspense>
-            )}
+            <AnimatePresence>
+                {showAssistantModal && <AssistantModal />}
+            </AnimatePresence>
             <AnimatePresence>
               {isScrolled && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="fixed bottom-24 right-5 z-[500]"
+                  className="fixed bottom-24 right-5 z-[9999]"
                 >
-                  <AssistantButton onClick={() => { setIsLoaded(true); setShowAssistantModal(true); }} />
+                  <AssistantButton onClick={() => { setShowAssistantModal(true); console.log("AssistantButton clicado da navbar flutuante"); }} />
                 </motion.div>
               )}
             </AnimatePresence>

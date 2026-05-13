@@ -543,8 +543,8 @@ function SocialButtons() {
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
       
-      <div className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
-        {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
+      <div className="absolute left-1/2 -translate-x-1/2 z-[9999] pointer-events-auto">
+        {!isScrolled && <AssistantButton onClick={() => { console.log('Botão clicado a partir do SocialButtons'); setShowAssistantModal(true); }} />}
       </div>
 
       <motion.a
@@ -1195,7 +1195,7 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
               transition={{ delay: 0.4, duration: 0.8 }}
               className="mt-10 text-center"
             >
-              <h1 className="text-brand-gold font-serif text-2xl tracking-[0.5em] font-black uppercase drop-shadow-lg flex items-center gap-2">
+              <h1 className="text-brand-gold font-serif text-2xl tracking-[0.5em] font-black uppercase drop-shadow-lg flex items-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
                 GUERREIROS DE OYA E OGUN
               </h1>
               

@@ -241,9 +241,9 @@ export default function HomeScreen() {
             </span>
           </motion.div>
           <h2 className={cn(
-            "text-2xl font-black tracking-tight flex items-center gap-2",
+            "text-2xl tracking-tight flex items-center gap-2",
             settings.darkMode ? "text-white" : "text-brand-navy"
-          )}>
+          )} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
             {greeting}, {displayName}!
           </h2>
         </div>
@@ -256,7 +256,7 @@ export default function HomeScreen() {
           className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-[16px] bg-gradient-to-r from-[#001a33] to-[#003366] border border-[#D4AF37] shadow-lg"
         >
           <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-          <span className="text-white text-xs font-semibold whitespace-nowrap">Mensagem Diária</span>
+          <span className="text-white text-xs font-semibold whitespace-nowrap font-sans font-[600]">Mensagem Diária</span>
         </motion.div>
       </header>
 

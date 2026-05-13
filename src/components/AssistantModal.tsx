@@ -14,10 +14,8 @@ const AssistantModal = () => {
     const assistantAvatarRef = React.useRef<HTMLInputElement>(null);
     const userAvatarRef = React.useRef<HTMLInputElement>(null);
     
-    if (!showAssistantModal) return null;
-    
     return (
-        <div className="fixed inset-0 z-[1000] flex flex-col justify-end">
+        <div className="fixed inset-0 z-[9999] flex flex-col justify-end">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
