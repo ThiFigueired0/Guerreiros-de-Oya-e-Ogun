@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { askAI } from '../services/aiService';
 import { useAuth } from './AuthContext';
 import { useStorage } from '../hooks/useStorage';
+import { supabase } from './supabase';
 
 interface AssistantContextType {
   showAssistantModal: boolean;
@@ -27,15 +28,37 @@ const AssistantContext = createContext<AssistantContextType | undefined>(undefin
 export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [settings] = useStorage<any>('templo_settings', {});
+  const [dbUser, setDbUser] = useState<any>(null);
   
   // Extrai nome real do profile, se existir
-  const userName = settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
+  const userName = dbUser?.full_name || settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
 
   // Ler o estado do projeto
   const [events] = useStorage<any[]>('templo_events', []);
   const [herbs] = useStorage<any[]>('templo_herb_stock', []);
   const [pontos] = useStorage<any[]>('templo_pontos', []);
   
+  React.useEffect(() => {
+    async function fetchUserData() {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (!error && data) {
+            setDbUser(data);
+          }
+        } catch (e) {
+          console.error("Erro ao buscar perfil:", e);
+        }
+      }
+    }
+    fetchUserData();
+  }, [user]);
+
   const [showAssistantModal, setShowAssistantModal] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
     { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?' }
