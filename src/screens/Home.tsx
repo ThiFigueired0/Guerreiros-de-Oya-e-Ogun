@@ -2,7 +2,8 @@
 import React, { useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp, Sun, Sword } from 'lucide-react';
+import { DailyMessageModal } from '../components/DailyMessageModal';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook, Note } from '../types';
@@ -227,8 +228,8 @@ export default function HomeScreen() {
       )}
     >
       {/* 1. Header Profiling */}
-      <header className="flex items-center justify-between mb-8 mt-2 px-2">
-        <div>
+      <header className="flex items-center justify-between mb-8 mt-2 px-2 gap-4">
+        <div className="flex-1">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -246,18 +247,17 @@ export default function HomeScreen() {
             {greeting}, {displayName}!
           </h2>
         </div>
-        <button 
+
+        {/* Premium Daily Message Card (Compact) */}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowDailyFactModal(true)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-            settings.darkMode 
-              ? "bg-brand-gold/20 text-brand-gold border border-brand-gold/30 shadow-brand-gold/10" 
-              : "bg-brand-gold text-white shadow-brand-gold/20"
-          )}
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-[16px] bg-gradient-to-r from-[#001a33] to-[#003366] border border-[#D4AF37] shadow-lg"
         >
-          <Sparkles className="w-4 h-4" />
-          Mensagem Diária
-        </button>
+          <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+          <span className="text-white text-xs font-semibold whitespace-nowrap">Mensagem Diária</span>
+        </motion.div>
       </header>
 
       {/* AI Response Display */}
@@ -1224,62 +1224,10 @@ export default function HomeScreen() {
       {/* Daily Fact Modal */}
       <AnimatePresence>
         {showDailyFactModal && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowDailyFactModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={cn(
-                "relative w-full max-w-sm rounded-[40px] overflow-hidden shadow-2xl p-8 flex flex-col items-center text-center",
-                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white"
-              )}
-            >
-              <div className="w-20 h-20 bg-brand-gold/10 text-brand-gold rounded-[32px] flex items-center justify-center mb-6 relative">
-                <Sparkles className="w-10 h-10" />
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute inset-0 bg-brand-gold/10 rounded-[32px] blur-xl"
-                />
-              </div>
-
-              <span className="px-4 py-1.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] font-black uppercase tracking-widest mb-4">
-                {dailyFact?.category || 'Sabedoria'}
-              </span>
-
-              <h3 className={cn("text-2xl font-black mb-4 leading-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                {dailyFact?.title || 'Você sabia?'}
-              </h3>
-
-              <div className="w-12 h-1 bg-brand-gold/20 rounded-full mb-6" />
-
-              <p className={cn(
-                "text-base font-medium leading-relaxed mb-8",
-                settings.darkMode ? "text-gray-300" : "text-gray-600"
-              )}>
-                {dailyFact?.content}
-              </p>
-
-              <button
-                onClick={() => setShowDailyFactModal(false)}
-                className={cn(
-                  "w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95",
-                  settings.darkMode 
-                    ? "bg-white text-black" 
-                    : "bg-brand-navy text-white shadow-xl shadow-brand-navy/20"
-                )}
-              >
-                Entendi, Axé!
-              </button>
-            </motion.div>
-          </div>
+          <DailyMessageModal 
+            content={dailyFact?.content || ''} 
+            onClose={() => setShowDailyFactModal(false)} 
+          />
         )}
       </AnimatePresence>
     </motion.div>
