@@ -26,6 +26,7 @@ const getTavilyApiKey = () => {
 
 const searchTavily = async (query: string): Promise<string> => {
   const apiKey = getTavilyApiKey();
+  console.log('Chave Tavily:', apiKey ? 'OK' : 'Faltando');
   if (!apiKey) return "";
   
   try {
@@ -42,7 +43,10 @@ const searchTavily = async (query: string): Promise<string> => {
       })
     });
     
-    if (!response.ok) return "";
+    if (!response.ok) {
+      console.error("Tavily search failed code:", response.status);
+      throw new Error("Tavily api error");
+    }
     
     const data = await response.json();
     if (!data.results || data.results.length === 0) return "";
@@ -50,7 +54,7 @@ const searchTavily = async (query: string): Promise<string> => {
     return data.results.map((r: any) => `Fonte: ${r.url}\nResumo: ${r.content}`).join("\n\n");
   } catch (error) {
     console.error("Tavily search error:", error);
-    return "";
+    throw new Error('Erro técnico na busca');
   }
 };
 
@@ -64,11 +68,24 @@ export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', c
 
   let finalMessages = [...messages];
   
+  if (!finalMessages.some(m => m.role === 'system')) {
+    finalMessages.unshift({
+        role: 'system',
+        content: 'Você é o Mini Chefinho, um mentor sábio, caloroso e inteligente, que guia guerreiros com conselhos e respostas curtas, precisas e educadas. Você deve usar linguagem acessível, mas firme. Limite sua resposta a 500 caracteres, respondendo direto à pergunta.'
+    });
+  }
+  
   // Extrai a última mensagem do usuário para buscar
   const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
   
   if (lastUserMessage) {
-    const searchResults = await searchTavily(lastUserMessage.content);
+    let searchResults = "";
+    try {
+      searchResults = await searchTavily(lastUserMessage.content);
+    } catch (error) {
+      return 'Erro técnico na busca';
+    }
+
     if (searchResults) {
       // Modifica a última mensagem para incluir o contexto da web
       const modifiedMessages = [...messages];

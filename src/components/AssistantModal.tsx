@@ -77,6 +77,22 @@ const AssistantModal = () => {
                     </div>
                   </div>
                 ))}
+                
+                {isChatLoading && (
+                  <div className="flex items-start gap-3 text-sm max-w-[85%] relative self-start">
+                     <div className="w-8 h-8 rounded-full border border-brand-gold overflow-hidden shrink-0 flex items-center justify-center bg-white cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
+                         {assistantAvatar ? <img src={assistantAvatar} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />}
+                     </div>
+                     <div className="p-4 rounded-2xl shadow-sm bg-white text-[#2D3436]">
+                       <div className="flex items-center gap-2">
+                           <div className="w-1.5 h-1.5 bg-brand-gold rounded-full animate-bounce" />
+                           <div className="w-1.5 h-1.5 bg-brand-gold rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                           <div className="w-1.5 h-1.5 bg-brand-gold rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                           <span className="ml-2 text-xs text-brand-gold font-semibold">O Mentor está pensando...</span>
+                       </div>
+                     </div>
+                  </div>
+                )}
             </div>
             <div className="pb-2">
                 <div className="flex items-center gap-2">

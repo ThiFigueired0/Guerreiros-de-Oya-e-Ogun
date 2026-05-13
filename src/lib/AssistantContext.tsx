@@ -37,6 +37,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     if (!input.trim()) return;
     const userMsg = { role: 'user' as const, content: input };
     setMessages(prev => [...prev, userMsg]);
+    setChatInput('');
     setIsChatLoading(true);
 
     try {
