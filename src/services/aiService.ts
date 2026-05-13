@@ -62,7 +62,9 @@ export const askAI = async (
   messages: { role: 'user' | 'assistant' | 'system', content: string }[],
   locationStr: string = '',
   userName: string = 'Guerreiro',
-  projectStateSummary: string = ''
+  projectStateSummary: string = '',
+  currentPage: string = '',
+  userMetadata: any = null
 ): Promise<string> => {
   const apiKey = getApiKey();
   
@@ -91,11 +93,14 @@ export const askAI = async (
   const timeMs = new Date().getTime(); // ensure the exact time is known down to MS if needed
   
   const localContext = locationStr && !locationStr.includes('Geolocalização indisponível') && !locationStr.includes('não concedeu permissão') ? locationStr : 'São Paulo, Brasil';
+  
   const dynamicContext = `Contexto Atual: Hoje é ${formattedDate}. O usuário está em: ${localContext}.
-Dados do Usuário (userContext):
+Página Atual do Projeto: ${currentPage || 'Início'}
+Você é o Mentor. Dados do Usuário Logado: ${JSON.stringify(userMetadata || {})}
+Dados do Usuário Extraídos:
 - Nome: ${userContext.name || 'NÃO_INFORMADO'}
 
-REGRAS DE NOME: Se o objeto userContext.name estiver presente e não for 'NÃO_INFORMADO', use este nome para saudar o usuário. Nunca use nomes encontrados em comentários de código ou exemplos de placeholders. Se for 'NÃO_INFORMADO', diga exatamente: 'Ainda não consegui identificar seu perfil no sistema, Guerreiro. Como posso te chamar?' (em tom de mentor).
+REGRAS DE NOME: Se houver dados em 'Dados do Usuário Logado', interaja com o usuário através de seu nome (como full_name ou name se possuirem valor). Nunca use nomes encontrados em comentários de código ou exemplos de placeholders. Se não possuir nenhuma informação, diga exatamente: 'Ainda não consegui identificar seu perfil no sistema, Guerreiro. Como posso te chamar?' (em tom de mentor).
 Resumo do Estado do Projeto (Templo):
 ${projectStateSummary || 'Nenhum dado cadastrado ou carregado.'}
 

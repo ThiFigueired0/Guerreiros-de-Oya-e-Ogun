@@ -59,7 +59,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     fetchUserData();
   }, [user]);
 
-  const [showAssistantModal, setShowAssistantModal] = useState(false);
+  const [showAssistantModal, setShowAssistantModalState] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
     { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?' }
   ]);
@@ -70,28 +70,25 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isScrolled, setIsScrolled] = useState(false);
   const [locationStr, setLocationStr] = useState<string>('');
 
-  React.useEffect(() => {
-    if ('geolocation' in navigator) {
+  const setShowAssistantModal = (show: boolean) => {
+    setShowAssistantModalState(show);
+    if (show && 'geolocation' in navigator) {
+      // Pedir a localização imediatamente quando abrir o modal pela primeira vez
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
-          try {
-            // we send simple lat/lon to Groq directly, it's smarter this way, or we could leave it to Tavily to figure out.
-            setLocationStr(`Lat: ${lat}, Lon: ${lon}`);
-          } catch(e) {
-            setLocationStr(`Lat: ${lat}, Lon: ${lon}`);
-          }
+          setLocationStr(`Lat: ${lat}, Lon: ${lon}`);
         },
         (error) => {
           console.warn("Location permission denied", error);
           setLocationStr("São Paulo, Brasil (Aviso ao assistant: O usuário não concedeu permissão de localização. Se perguntado sobre algo local, avise educadamente: 'Estou usando São Paulo como base, já que não tenho acesso à sua localização exata, Guerreiro.')");
         }
       );
-    } else {
+    } else if (show && !('geolocation' in navigator)) {
       setLocationStr("São Paulo, Brasil (Aviso ao assistant: Geolocalização indisponível. Se perguntado, avise que está usando São Paulo.)");
     }
-  }, []);
+  };
   
   const handleChatSend = async (input: string) => {
     if (!input.trim()) return;
@@ -117,7 +114,9 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
          [...messages.map(m => ({ role: m.role, content: m.content })), userMsg], 
          locationStr,
          userName,
-         projectStateSummary
+         projectStateSummary,
+         window.location.pathname,
+         user?.user_metadata
       );
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (e) {
@@ -149,6 +148,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAssistant = () => {
   const context = useContext(AssistantContext);
   if (!context) throw new Error('useAssistant must be used within AssistantProvider');
