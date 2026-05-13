@@ -661,8 +661,7 @@ function SocialButtons() {
     orixaPhotos: {}
   });
 
-  if (location.pathname !== '/home') return null;
-
+  // Removed path check to display on all pages
   return (
     <div className="w-full flex flex-row gap-3 px-8 -mt-6 mb-8 relative z-30 items-center justify-center">
       <motion.a
