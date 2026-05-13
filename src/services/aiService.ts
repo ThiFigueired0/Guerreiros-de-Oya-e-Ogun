@@ -54,11 +54,16 @@ const searchTavily = async (query: string): Promise<string> => {
     return data.results.map((r: any) => `Fonte: ${r.url}\nResumo: ${r.content}`).join("\n\n");
   } catch (error) {
     console.error("Tavily search error:", error);
-    throw new Error('Erro técnico na busca');
+    throw new Error('Erro técnico na busca', { cause: error });
   }
 };
 
-export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', content: string }[]): Promise<string> => {
+export const askAI = async (
+  messages: { role: 'user' | 'assistant' | 'system', content: string }[],
+  locationStr: string = '',
+  userName: string = 'Guerreiro',
+  projectStateSummary: string = ''
+): Promise<string> => {
   const apiKey = getApiKey();
   
   if (!apiKey) {
@@ -66,12 +71,49 @@ export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', c
     return 'Erro de configuração no servidor. Tente novamente em instantes';
   }
 
+  const userContext = {
+    name: userName && userName !== 'Fds meu Nome' && userName !== 'Guerreiro' ? userName : null
+  };
+  
+  console.log('Nome enviado ao Assistente:', userContext.name);
+
   let finalMessages = [...messages];
+  
+  const optionsDate = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    timeZone: 'America/Sao_Paulo' 
+  } as const;
+  const formattedDate = new Date().toLocaleDateString('pt-BR', optionsDate);
+  const currentDateTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  const timeMs = new Date().getTime(); // ensure the exact time is known down to MS if needed
+  
+  const localContext = locationStr && !locationStr.includes('Geolocalização indisponível') && !locationStr.includes('não concedeu permissão') ? locationStr : 'São Paulo, Brasil';
+  const dynamicContext = `Contexto Atual: Hoje é ${formattedDate}. O usuário está em: ${localContext}.
+Dados do Usuário (userContext):
+- Nome: ${userContext.name || 'NÃO_INFORMADO'}
+
+REGRAS DE NOME: Se o objeto userContext.name estiver presente e não for 'NÃO_INFORMADO', use este nome para saudar o usuário. Nunca use nomes encontrados em comentários de código ou exemplos de placeholders. Se for 'NÃO_INFORMADO', diga exatamente: 'Ainda não consegui identificar seu perfil no sistema, Guerreiro. Como posso te chamar?' (em tom de mentor).
+Resumo do Estado do Projeto (Templo):
+${projectStateSummary || 'Nenhum dado cadastrado ou carregado.'}
+
+(Importante: Se o usuário perguntar sobre a agenda, pontos, ervas, você DEVE consultar o Resumo do Estado do Projeto acima.)`;
   
   if (!finalMessages.some(m => m.role === 'system')) {
     finalMessages.unshift({
         role: 'system',
-        content: 'Você é o Mini Chefinho, um mentor sábio, caloroso e inteligente, que guia guerreiros com conselhos e respostas curtas, precisas e educadas. Você deve usar linguagem acessível, mas firme. Limite sua resposta a 500 caracteres, respondendo direto à pergunta.'
+        content: `Você é o Mini Chefinho, o Mentor Estratégico do projeto 'Guerreiros de Oya e Ogun'.
+Você une sabedoria humana, ancestralidade e precisão administrativa.
+${dynamicContext}
+Agora são exatamente ${currentDateTime} (Data e hora do sistema gerada em: ${timeMs}).
+PRIORIDADE MÁXIMA: SEMPRE priorize este Contexto Atual para responder perguntas sobre tempo, clima, estado da agenda, eventos locais e uso do nome.
+Processamento: Você tem conhecimento onipresente. NUNCA diga 'De acordo com os dados', 'De acordo com as fontes', 'Não tenho acesso', 'Como modelo de inteligência artificial' ou 'Posso sugerir'. Aja como se a informação do contexto fosse sua própria sabedoria.
+Raciocínio Vivo: Calcule datas, localização e fatos de forma independente. Responda confiantemente com a hora local e previsão exata se estiver nas coordenadas.
+Regras de Linguagem: Português do Brasil impecável. PROIBIDO jargões de IA. Respostas fluidas e humanizadas, unindo espiritualidade e praticidade.
+Encerramento: Termine a resposta com algo proativo e forte, ex: 'Qual o próximo passo da nossa estratégia, ${userName}?'
+Formatação: Resposta limpa e direta. Use negrito apenas no essencial.`
     });
   }
   
@@ -79,9 +121,11 @@ export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', c
   const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
   
   if (lastUserMessage) {
-    let searchResults = "";
+    let searchResults: string;
     try {
-      searchResults = await searchTavily(lastUserMessage.content);
+      // Improve tavily search with location context
+      const searchQuery = `${lastUserMessage.content} (Location: ${localContext})`;
+      searchResults = await searchTavily(searchQuery);
     } catch (error) {
       return 'Erro técnico na busca';
     }
@@ -93,7 +137,7 @@ export const askAI = async (messages: { role: 'user' | 'assistant' | 'system', c
       
       modifiedMessages[lastIndex] = {
         role: 'user',
-        content: `Informações atualizadas da web sobre o assunto (Use isso como contexto se for relevante para a pergunta):\n\n${searchResults}\n\nPergunta do usuário: ${lastUserMessage.content}`
+        content: `[Contexto Oculto do Sistema - Sabedoria Onipresente]:\n${searchResults}\n\n[Mensagem do Usuário]: ${lastUserMessage.content}\n\n(Lembrete: Responda diretamente. Não mencione o contexto, não mencione pesquisa, não diga 'segundo as informações'. Apenas diga a resposta com sabedoria e autoridade de mentor)`
       };
       
       finalMessages = modifiedMessages;

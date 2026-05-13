@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { askAI } from '../services/aiService';
+import { useAuth } from './AuthContext';
+import { useStorage } from '../hooks/useStorage';
 
 interface AssistantContextType {
   showAssistantModal: boolean;
@@ -23,6 +25,17 @@ interface AssistantContextType {
 const AssistantContext = createContext<AssistantContextType | undefined>(undefined);
 
 export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const [settings] = useStorage<any>('templo_settings', {});
+  
+  // Extrai nome real do profile, se existir
+  const userName = settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
+
+  // Ler o estado do projeto
+  const [events] = useStorage<any[]>('templo_events', []);
+  const [herbs] = useStorage<any[]>('templo_herb_stock', []);
+  const [pontos] = useStorage<any[]>('templo_pontos', []);
+  
   const [showAssistantModal, setShowAssistantModal] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
     { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?' }
@@ -32,6 +45,30 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [assistantAvatar, setAssistantAvatar] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [locationStr, setLocationStr] = useState<string>('');
+
+  React.useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          try {
+            // we send simple lat/lon to Groq directly, it's smarter this way, or we could leave it to Tavily to figure out.
+            setLocationStr(`Lat: ${lat}, Lon: ${lon}`);
+          } catch(e) {
+            setLocationStr(`Lat: ${lat}, Lon: ${lon}`);
+          }
+        },
+        (error) => {
+          console.warn("Location permission denied", error);
+          setLocationStr("São Paulo, Brasil (Aviso ao assistant: O usuário não concedeu permissão de localização. Se perguntado sobre algo local, avise educadamente: 'Estou usando São Paulo como base, já que não tenho acesso à sua localização exata, Guerreiro.')");
+        }
+      );
+    } else {
+      setLocationStr("São Paulo, Brasil (Aviso ao assistant: Geolocalização indisponível. Se perguntado, avise que está usando São Paulo.)");
+    }
+  }, []);
   
   const handleChatSend = async (input: string) => {
     if (!input.trim()) return;
@@ -40,8 +77,25 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     setChatInput('');
     setIsChatLoading(true);
 
+    // Build summary string of project data efficiently
+    let projectStateSummary = '';
+    if (events?.length > 0) {
+       projectStateSummary += `Agenda de Eventos (Total: ${events.length}): \n` + events.slice(-10).map(e => `- ${e.title} (${e.date})`).join('\n') + '\n\n';
+    }
+    if (herbs?.length > 0) {
+       projectStateSummary += `Ervas em Estoque: ${herbs.length} ervas cadastradas.\n\n`;
+    }
+    if (pontos?.length > 0) {
+       projectStateSummary += `Pontos Cantados: ${pontos.length} pontos cadastrados.\n\n`;
+    }
+
     try {
-      const response = await askAI([...messages.map(m => ({ role: m.role, content: m.content })), userMsg]);
+      const response = await askAI(
+         [...messages.map(m => ({ role: m.role, content: m.content })), userMsg], 
+         locationStr,
+         userName,
+         projectStateSummary
+      );
       setMessages(prev => [...prev, { role: 'assistant', content: response }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, não consegui processar sua mensagem.' }]);
