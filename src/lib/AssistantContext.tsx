@@ -14,6 +14,8 @@ interface AssistantContextType {
   setUserAvatar: React.Dispatch<React.SetStateAction<string | null>>;
   assistantAvatar: string | null;
   setAssistantAvatar: React.Dispatch<React.SetStateAction<string | null>>;
+  isScrolled: boolean;
+  setIsScrolled: (scrolled: boolean) => void;
   handleChatSend: (input: string) => Promise<void>;
   handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => void;
 }
@@ -29,6 +31,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [chatInput, setChatInput] = useState('');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [assistantAvatar, setAssistantAvatar] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   const handleChatSend = async (input: string) => {
     if (!input.trim()) return;
@@ -60,6 +63,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
       chatInput, setChatInput,
       userAvatar, setUserAvatar,
       assistantAvatar, setAssistantAvatar,
+      isScrolled, setIsScrolled,
       handleChatSend, handleAvatarChange
     }}>
       {children}

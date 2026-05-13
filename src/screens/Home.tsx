@@ -11,8 +11,10 @@ import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { askAI, getDailyKnowledge } from '../services/aiService';
 import { DID_YOU_KNOW_DATA } from '../data/didYouKnowData';
+import { useAssistant } from '../lib/AssistantContext';
 
 export default function HomeScreen() {
+  const { setIsScrolled } = useAssistant();
   const navigate = useNavigate();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -213,10 +215,14 @@ export default function HomeScreen() {
 
   return (
     <motion.div 
+      onScroll={(e) => {
+        const target = e.target as HTMLElement;
+        setIsScrolled(target.scrollTop > 100);
+      }}
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       className={cn(
-        "p-4 min-h-full pb-32 transition-colors duration-500",
+        "p-4 min-h-full pb-32 transition-colors duration-500 overflow-y-auto",
         settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
       )}
     >

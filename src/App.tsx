@@ -6,7 +6,7 @@ import {
   Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
   History as HistoryIcon, LogOut, Bot, ArrowUp
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
 import { AppSettings, Event, Candle, NotificationItem } from './types';
@@ -38,18 +38,16 @@ const ICON_MAP: Record<string, any> = {
 
 const DEFAULT_DEV_REMINDER = "Obrigatório:\n- Bebidas para as quartinhas (Exu, Pombagira, Exu Mirim e Malandro)\n- Velas\n- Isqueiro\n- Roupa branca (Calça, shorts, camisa e Eketê)";
 
-const FloatingAssistantButton = ({ onClick }: { onClick: () => void }) => (
-  <div className="fixed bottom-6 right-6 z-[60]">
+const AssistantButton = ({ onClick }: { onClick: () => void }) => {
+  return (
     <motion.button
-      animate={{ scale: [1, 1.02, 1] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.9 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={cn(
         "flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
-        "w-12 h-12 bg-gradient-to-b from-[#B8860B] to-[#FFD700]",
-        "shadow-[0_15px_20px_rgba(0,0,0,0.2)] ring-1 ring-white/30"
+        "w-12 h-12 bg-gradient-to-b from-[#001c38] to-[#000a14]",
+        "shadow-[0_10px_15px_rgba(37,99,235,0.2)] ring-1 ring-white/30"
       )}
     >
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/40 to-transparent" />
@@ -57,8 +55,8 @@ const FloatingAssistantButton = ({ onClick }: { onClick: () => void }) => (
         <Bot className="w-6 h-6" />
       </div>
     </motion.button>
-  </div>
-);
+  );
+};
 
 const AssistantModal = () => {
     const { 
@@ -163,16 +161,22 @@ const AssistantModal = () => {
 }
 
 const AssistantWrapper = () => {
-    const { setShowAssistantModal } = useAssistant();
-    const location = useLocation();
-
-    // Hide on Settings page. Assuming PDF Reader route doesn't exist yet but I can add it if found.
-    if (location.pathname === '/settings') return null;
-    
+    const { setShowAssistantModal, isScrolled } = useAssistant();
     return (
         <>
-            <FloatingAssistantButton onClick={() => setShowAssistantModal(true)} />
             <AssistantModal />
+            <AnimatePresence>
+              {isScrolled && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="fixed bottom-24 right-5 z-[500]"
+                >
+                  <AssistantButton onClick={() => setShowAssistantModal(true)} />
+                </motion.div>
+              )}
+            </AnimatePresence>
         </>
     );
 };
@@ -643,6 +647,7 @@ const TopHeader = React.memo(function TopHeader() {
 
 function SocialButtons() {
   const location = useLocation();
+  const { setShowAssistantModal, isScrolled } = useAssistant();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
@@ -659,7 +664,7 @@ function SocialButtons() {
   if (location.pathname !== '/home') return null;
 
   return (
-    <div className="w-full flex flex-row gap-3 px-8 -mt-6 mb-8 relative z-30 pointer-events-none">
+    <div className="w-full flex flex-row gap-3 px-8 -mt-6 mb-8 relative z-30 items-center justify-center">
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
@@ -667,8 +672,8 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "flex-1 p-3 rounded-[24px] bg-gradient-to-r from-brand-gold-light to-brand-gold-medium text-brand-navy shadow-xl shadow-brand-gold-medium/30 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
-          settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
+          "flex-1 p-3 rounded-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[#000000]/60 border-white/10"
         )}
       >
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
@@ -678,12 +683,16 @@ function SocialButtons() {
             null
           )}
         </div>
-        <div className="text-left relative z-10">
+        <div className="text-left relative z-10 mx-auto">
           <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">Instagram</h3>
         </div>
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
       
+      <div className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
+        {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
+      </div>
+
       <motion.a
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
@@ -691,19 +700,19 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "flex-1 p-3 rounded-[24px] bg-gradient-to-r from-brand-gold-light to-brand-gold-medium text-brand-navy shadow-xl shadow-brand-gold-medium/30 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
-          settings.darkMode && "from-brand-gold-medium to-brand-gold-dark text-white shadow-black/40"
+          "flex-1 p-3 rounded-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[#000000]/60 border-white/10"
         )}
       >
+        <div className="text-left relative z-10 mx-auto">
+          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
+        </div>
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
           {settings.tiktokLogo ? (
             <img src={settings.tiktokLogo} alt="TikTok Logo" className="w-full h-full object-cover" />
           ) : (
             null
           )}
-        </div>
-        <div className="text-left relative z-10">
-          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
         </div>
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
