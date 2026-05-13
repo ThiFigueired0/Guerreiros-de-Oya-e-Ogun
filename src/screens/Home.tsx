@@ -1,8 +1,8 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp } from 'lucide-react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { AppSettings, HerbBath, Ponto, Event, StudyBook, Note } from '../types';
@@ -40,6 +40,10 @@ export default function HomeScreen() {
   const [dailyFact, setDailyFact] = React.useState<{title: string, content: string, category: string} | null>(null);
   const [isLoadingFact, setIsLoadingFact] = React.useState(false);
   const [showAssistantModal, setShowAssistantModal] = React.useState(false);
+  const [userAvatar, setUserAvatar] = React.useState<string | null>(null);
+  const [assistantAvatar, setAssistantAvatar] = React.useState<string | null>(null);
+  const userAvatarRef = useRef<HTMLInputElement>(null);
+  const assistantAvatarRef = useRef<HTMLInputElement>(null);
   const [showDailyFactModal, setShowDailyFactModal] = React.useState(false);
   const [isFactTabCollapsed, setIsFactTabCollapsed] = React.useState(false);
   const [factTabSide, setFactTabSide] = React.useState<'left' | 'right'>('left');
@@ -158,6 +162,12 @@ export default function HomeScreen() {
     setNoteTitle('');
     setNoteContent('');
     setShowAssistantModal(false);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
+    if (e.target.files && e.target.files[0]) {
+      setter(URL.createObjectURL(e.target.files[0]));
+    }
   };
 
   // Próximos eventos (hoje ou no futuro)
@@ -1075,204 +1085,131 @@ export default function HomeScreen() {
           </div>
         </div>
       </section>
-      {/* Floating Daily Knowledge Tab */}
-      <div className="fixed inset-0 pointer-events-none z-50">
-        <motion.div
-          ref={factTabRef}
-          drag
-          dragMomentum={false}
-          dragElastic={0.1}
-          dragConstraints={{
-            top: 60,
-            bottom: window.innerHeight - 180,
-            left: 16,
-            right: window.innerWidth - 60
-          }}
-          onDragEnd={(_, info) => {
-            const viewportWidth = window.innerWidth;
-            const mid = viewportWidth / 2;
-            const side = info.point.x < mid ? 'left' : 'right';
-            setFactTabSide(side);
-            setFactTabY(info.point.y);
-          }}
-          style={{ 
-            x: factTabX, 
-            y: factTabY,
-            position: 'absolute',
-            left: 0,
-            top: 0
-          }}
-          animate={{ 
-            x: factTabSide === 'left' 
-              ? (isFactTabCollapsed ? -16 : 16) 
-              : (isFactTabCollapsed ? window.innerWidth - 48 : window.innerWidth - 260),
-            transition: { type: "spring", stiffness: 350, damping: 25 }
-          }}
-          className={cn(
-            "pointer-events-auto flex items-center group/tabContainer drop-shadow-2xl",
-          )}
-        >
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowAssistantModal(true)}
-            className={cn(
-              "flex items-center p-2 relative overflow-hidden transition-all duration-500 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border rounded-full w-[64px] h-[64px] justify-center",
-              settings.darkMode 
-                ? "bg-gradient-to-br from-[#1a2333]/95 to-[#111827]/95 border-[#2d3748]/50 text-white backdrop-blur-xl" 
-                : "bg-white/95 border-brand-gold/20 text-brand-navy backdrop-blur-xl hover:border-brand-gold/40"
-            )}
-          >
-            {/* Pulsing glow behind the icon */}
-            <motion.div 
-              animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.9, 1.1, 0.9] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className={cn(
-                "absolute opacity-50 blur-xl rounded-full",
-                "w-16 h-16 left-0",
-                settings.darkMode ? "bg-indigo-500/30" : "bg-brand-gold/30"
-              )} 
-            />
-
-            <div className={cn(
-              "relative z-10 w-12 h-12 shrink-0 rounded-full flex items-center justify-center transition-all duration-500 shadow-inner",
-              settings.darkMode 
-                ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30 group-hover:from-indigo-500/40 group-hover:to-purple-500/40" 
-                : "bg-gradient-to-tr from-brand-gold via-brand-gold-medium to-brand-gold-light text-white border border-brand-gold-dark shadow-[0_4px_12px_rgba(192,150,35,0.3)] group-hover:shadow-[0_4px_16px_rgba(192,150,35,0.5)]"
-            )}>
-              <Bot className="w-6 h-6" strokeWidth={1.5} />
-            </div>
-          </motion.button>
-        </motion.div>
-      </div>
-
-      {/* Assistant Modal */}
+      {/* Assistant Bottom Sheet */}
       <AnimatePresence>
         {showAssistantModal && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[1000] flex flex-col justify-end">
+            {/* Backdrop Blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAssistantModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/40 backdrop-blur-md"
             />
+            {/* Bottom Sheet */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={cn(
-                "relative w-full max-w-lg rounded-[48px] overflow-hidden shadow-2xl p-10 flex flex-col items-center text-center",
-                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white"
-              )}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.1}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 100) setShowAssistantModal(false);
+              }}
+              className="relative w-full h-[80vh] bg-[#F2F4F7] rounded-t-[30px] p-6 flex flex-col shadow-[0_-5px_15px_rgba(0,0,0,0.1)]"
             >
-              <div className="flex items-center justify-between w-full mb-8">
-                <h3 className={cn("text-2xl font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  {activeTab === 'chat' ? 'Assistente Virtual' : 'Nova Nota'}
-                </h3>
-                <button onClick={() => setShowAssistantModal(false)} className="p-3 bg-slate-900 rounded-full hover:bg-slate-700 transition-colors">
-                  <X className={cn("w-6 h-6 text-white")} />
+              {/* Indicator Handle */}
+              <div className="w-16 h-1.5 bg-brand-gold rounded-full mx-auto mb-6" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="relative group cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
+                    <div className="w-12 h-12 rounded-full border-2 border-brand-gold overflow-hidden bg-white flex items-center justify-center">
+                      {assistantAvatar 
+                        ? <img src={assistantAvatar} className="w-full h-full object-cover" /> 
+                        : <Bot className="w-6 h-6 text-brand-gold" />
+                      }
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                        <span className="text-[8px] text-white font-bold">Trocar</span>
+                      </div>
+                    </div>
+                    <input type="file" ref={assistantAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setAssistantAvatar)} />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#F2F4F7] bg-brand-gold" />
+                  </div>
+                  <h3 className="text-3xl font-serif font-bold text-[#2D3436] tracking-wide">
+                    Mini <span className="text-brand-gold">Chefinho</span>
+                  </h3>
+                </div>
+                <button onClick={() => setShowAssistantModal(false)} className="p-1 border border-brand-gold rounded-full text-brand-gold hover:bg-brand-gold/10 transition-colors">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {activeTab === 'chat' ? (
-                <div className="w-full flex-1 flex flex-col min-h-0 relative">
-                  <div className="flex-1 overflow-y-auto mb-4 pr-2 space-y-4">
-                    {messages.map((m, i) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "p-4 rounded-2xl text-sm max-w-[90%] shadow-sm", 
-                          m.role === 'assistant' 
-                            ? (settings.darkMode ? "bg-slate-700 text-slate-100" : "bg-slate-200 text-slate-900") 
-                            : "bg-brand-copper text-white self-end"
-                        )}
-                      >
-                        {m.content}
-                      </div>
-                    ))}
-                    {isChatLoading && <div className="text-xs text-slate-500 dark:text-slate-400 italic">IA esta pensando...</div>}
-                  </div>
-                  
-                  {/* Floating Toggle for Quick Note */}
+              {/* Suggestions Chips (Pílulas) */}
+              <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+                {['🔍 Quem é Ogum?', '🕯️ Fundamentos de Oya', '📚 Dúvida de ADM'].map((suggestion) => (
                   <button 
-                    onClick={() => setActiveTab('note')}
-                    className="mb-2 self-start text-[10px] uppercase tracking-widest font-black text-brand-copper flex items-center gap-1 hover:underline"
+                    key={suggestion}
+                    className="px-4 py-2 rounded-full border border-brand-gold text-[#2D3436] text-xs font-medium whitespace-nowrap hover:bg-brand-gold/10 transition-all"
                   >
-                    <Copy className="w-3 h-3" /> Adicionar Nota Rápida
+                    {suggestion}
                   </button>
+                ))}
+              </div>
 
-                  <div className="flex gap-2">
-                    <input 
-                      value={chatInput} 
-                      onChange={e => setChatInput(e.target.value)} 
-                      onKeyPress={e => e.key === 'Enter' && handleChatSend()}
-                      placeholder="Sua mensagem..." 
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto mb-6 space-y-6">
+                {messages.map((m, i) => (
+                  <div 
+                    key={i} 
+                    className={cn(
+                      "flex items-start gap-3 text-sm max-w-[85%] relative",
+                      m.role === 'user' ? "flex-row-reverse self-end" : "self-start"
+                    )}
+                  >
+                    <div 
                       className={cn(
-                        "flex-1 p-4 rounded-2xl text-sm font-medium border-2 transition-colors", 
-                        settings.darkMode 
-                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
-                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
+                        "w-8 h-8 rounded-full border border-brand-gold overflow-hidden shrink-0 flex items-center justify-center bg-white cursor-pointer",
+                        m.role === 'user' && "bg-[#E3E8EE]"
                       )}
-                    />
-                    <button
-                      className={cn("p-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-500")}
-                      title="Microfone (em breve)"
+                      onClick={() => m.role === 'user' && userAvatarRef.current?.click()}
                     >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={handleChatSend}
-                      className={cn("p-4 rounded-2xl bg-brand-navy text-white px-6")}
-                    >
-                      Enviar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full space-y-4 flex flex-col flex-1">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block px-1">Título</label>
-                    <input 
-                      value={noteTitle} 
-                      onChange={e => setNoteTitle(e.target.value)} 
-                      placeholder="Nome da nota..." 
-                      className={cn(
-                        "w-full p-4 rounded-2xl text-sm font-bold border-2 transition-colors", 
-                        settings.darkMode 
-                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
-                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
+                      {m.role === 'assistant' ? (
+                        assistantAvatar ? <img src={assistantAvatar} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />
+                      ) : (
+                        userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-gray-500" />
                       )}
-                    />
+                    </div>
+                    {m.role === 'user' && <input type="file" ref={userAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setUserAvatar)} />}
+                    <div className={cn(
+                      "p-4 rounded-2xl shadow-sm",
+                      m.role === 'assistant' 
+                        ? "bg-white text-[#2D3436]" 
+                        : "bg-[#E3E8EE] text-[#2D3436]"
+                    )}>
+                      {m.content}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2 block px-1">Conteúdo</label>
-                    <textarea 
-                      value={noteContent} 
-                      onChange={e => setNoteContent(e.target.value)} 
-                      placeholder="Escreva algo aqui..." 
-                      className={cn(
-                        "w-full h-48 p-5 rounded-3xl text-sm font-medium border-2 transition-colors", 
-                        settings.darkMode 
-                          ? "bg-slate-900 border-slate-600 text-white placeholder-slate-400 focus:border-brand-copper" 
-                          : "bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-brand-copper"
-                      )}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                      <button onClick={() => setActiveTab('chat')} className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-gray-200 text-gray-600">Cancelar</button>
-                      <button
-                        onClick={handleSaveNote}
-                        className={cn(
-                          "flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-                          settings.darkMode ? "bg-white text-black hover:bg-gray-200" : "bg-brand-copper text-white hover:bg-brand-copper/90 shadow-brand-copper/20"
-                        )}
-                      >
-                        Salvar
-                      </button>
-                  </div>
+                ))}
+                {isChatLoading && <div className="text-xs text-brand-gold italic">Pensando, Chefinho...</div>}
+              </div>
+              
+              {/* Input Area Integrated */}
+              <div className="pb-2">
+                <div className="flex items-center gap-2">
+                  <input 
+                    value={chatInput} 
+                    onChange={e => setChatInput(e.target.value)} 
+                    onKeyPress={e => e.key === 'Enter' && handleChatSend()}
+                    placeholder="Como posso te ajudar hoje, Chefinho?" 
+                    className="flex-1 bg-transparent p-2 text-sm text-[#2D3436] placeholder-slate-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleChatSend}
+                    disabled={!chatInput.trim()}
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                      chatInput.trim() ? "bg-brand-gold text-white shadow-lg shadow-brand-gold/20" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                    )}
+                  >
+                    <ArrowUp className="w-5 h-5" />
+                  </button>
                 </div>
-              )}
+              </div>
             </motion.div>
           </div>
         )}
