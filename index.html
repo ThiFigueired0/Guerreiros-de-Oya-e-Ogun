@@ -22,6 +22,7 @@
         background-color: #001529;
         margin: 0;
         padding: 0;
+        font-family: 'Montserrat', sans-serif;
       }
       #splash-preloader {
         position: fixed;
@@ -107,6 +108,15 @@
       @keyframes fillBar {
         to { width: 100%; }
       }
+      
+      /* Essential Custom Global Styles from index.css */
+      .perspective-1000 { perspective: 1000px; }
+      .preserve-3d { transform-style: preserve-3d; }
+      .backface-hidden { backface-visibility: hidden; }
+      ::-webkit-scrollbar { display: none; }
+      .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+      .artistic-shadow { box-shadow: 0 10px 30px -10px rgba(0, 31, 63, 0.1); }
+      .accent-glow { box-shadow: 0 0 20px rgba(205, 127, 50, 0.2); }
     </style>
   </head>
   <body class="bg-[#001529]">
