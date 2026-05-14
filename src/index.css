@@ -34,6 +34,33 @@
   will-change: transform;
 }
 
+@keyframes floating {
+  0% {
+    transform: translateY(-10vh) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.02;
+  }
+  85% {
+    opacity: 0.02;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.leaf-particle {
+  position: absolute;
+  color: #ffffff;
+  pointer-events: none;
+  z-index: 0;
+  animation: floating var(--duration, 25s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  left: var(--left, 50%);
+}
+
 .react-pdf__Page__textContent:not(.no-select) {
   user-select: text !important;
   -webkit-user-select: text !important;
@@ -74,4 +101,14 @@
 .custom-pdf-outline a:hover {
   opacity: 0.7;
   color: #CD7F32;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
 }

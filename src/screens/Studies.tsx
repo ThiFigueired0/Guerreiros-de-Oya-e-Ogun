@@ -998,8 +998,17 @@ export default function StudiesScreen() {
         try {
           if (!book.pdfBase64) continue;
           
-          const response = await fetch(book.pdfBase64);
-          const blob = await response.blob();
+          let base64String = book.pdfBase64;
+          if (base64String.startsWith('data:')) {
+            base64String = base64String.split(',')[1];
+          }
+          
+          const binaryString = atob(base64String);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: 'application/pdf' });
           await savePdfBinary(book.id, blob);
           
           const index = updatedBooks.findIndex(b => b.id === book.id);

@@ -21,6 +21,7 @@ interface AssistantContextType {
   setIsScrolled: (scrolled: boolean) => void;
   handleChatSend: (input: string) => Promise<void>;
   handleAvatarChange: (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => void;
+  clearChat: () => void;
 }
 
 const AssistantContext = createContext<AssistantContextType | undefined>(undefined);
@@ -31,7 +32,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [dbUser, setDbUser] = useState<any>(null);
   
   // Extrai nome real do profile, se existir
-  const userName = dbUser?.full_name || settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
+  const userName = dbUser?.nickname || dbUser?.first_name || settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
 
   // Ler o estado do projeto
   const [events] = useStorage<any[]>('templo_events', []);
@@ -97,17 +98,45 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     setChatInput('');
     setIsChatLoading(true);
 
-    // Build summary string of project data efficiently
-    let projectStateSummary = '';
-    if (events?.length > 0) {
-       projectStateSummary += `Agenda de Eventos (Total: ${events.length}): \n` + events.slice(-10).map(e => `- ${e.title} (${e.date})`).join('\n') + '\n\n';
-    }
-    if (herbs?.length > 0) {
-       projectStateSummary += `Ervas em Estoque: ${herbs.length} ervas cadastradas.\n\n`;
-    }
-    if (pontos?.length > 0) {
-       projectStateSummary += `Pontos Cantados: ${pontos.length} pontos cadastrados.\n\n`;
-    }
+    const fetchProjectContext = async () => {
+      let supabaseData = '';
+      if (user) {
+        supabaseData += `Perfil do usuário no Supabase: ${JSON.stringify(dbUser || {})}\n`;
+        // Tentamos buscar tabelas comuns se existirem, falhar silenciosamente se não constarem
+        try {
+          const { data: notes } = await supabase.from('notes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+          if (notes && notes.length > 0) {
+            supabaseData += `Últimas Anotações (notes): ${JSON.stringify(notes)}\n`;
+          }
+        } catch (e) {
+          console.error("Erro ignorado em notes", e);
+        }
+
+        try {
+          const { data: studies } = await supabase.from('studies').select('*').eq('user_id', user.id).limit(5);
+          if (studies && studies.length > 0) {
+            supabaseData += `Progresso de Estudos (studies): ${JSON.stringify(studies)}\n`;
+          }
+        } catch(e) {
+          console.error("Erro ignorado em studies", e);
+        }
+      }
+
+      let localData = '';
+      if (events?.length > 0) {
+         localData += `Agenda de Eventos (Total: ${events.length}): \n` + events.slice(-10).map(e => `- ${e.title} (${e.date})`).join('\n') + '\n\n';
+      }
+      if (herbs?.length > 0) {
+         localData += `Ervas em Estoque: ${herbs.length} ervas cadastradas.\n\n`;
+      }
+      if (pontos?.length > 0) {
+         localData += `Pontos Cantados: ${pontos.length} pontos cadastrados.\n\n`;
+      }
+
+      return `[Dados Consolidados do Supabase]\n${supabaseData || 'Sem dados remotos identificados para essa sessão.'}\n\n[Dados Armazenados Localmente]\n${localData}`;
+    };
+
+    const projectStateSummary = await fetchProjectContext();
 
     try {
       const response = await askAI(
@@ -132,6 +161,8 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  const clearChat = () => setMessages([{ role: 'assistant', content: 'Olá! Como posso te ajudar hoje?' }]);
+
   return (
     <AssistantContext.Provider value={{
       showAssistantModal, setShowAssistantModal,
@@ -141,7 +172,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
       userAvatar, setUserAvatar,
       assistantAvatar, setAssistantAvatar,
       isScrolled, setIsScrolled,
-      handleChatSend, handleAvatarChange
+      handleChatSend, handleAvatarChange, clearChat
     }}>
       {children}
     </AssistantContext.Provider>

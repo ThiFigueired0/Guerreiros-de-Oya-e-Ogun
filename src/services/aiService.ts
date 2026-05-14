@@ -79,74 +79,53 @@ export const askAI = async (
   
   console.log('Nome enviado ao Assistente:', userContext.name);
 
-  let finalMessages = [...messages];
-  
-  const optionsDate = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric', 
-    timeZone: 'America/Sao_Paulo' 
-  } as const;
-  const formattedDate = new Date().toLocaleDateString('pt-BR', optionsDate);
-  const currentDateTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  const timeMs = new Date().getTime(); // ensure the exact time is known down to MS if needed
-  
-  const localContext = locationStr && !locationStr.includes('Geolocalização indisponível') && !locationStr.includes('não concedeu permissão') ? locationStr : 'São Paulo, Brasil';
-  
-  const dynamicContext = `Contexto Atual: Hoje é ${formattedDate}. O usuário está em: ${localContext}.
-Página Atual do Projeto: ${currentPage || 'Início'}
-Você é o Mentor. Dados do Usuário Logado: ${JSON.stringify(userMetadata || {})}
-Dados do Usuário Extraídos:
-- Nome: ${userContext.name || 'NÃO_INFORMADO'}
-
-REGRAS DE NOME: Se houver dados em 'Dados do Usuário Logado', interaja com o usuário através de seu nome (como full_name ou name se possuirem valor). Nunca use nomes encontrados em comentários de código ou exemplos de placeholders. Se não possuir nenhuma informação, diga exatamente: 'Ainda não consegui identificar seu perfil no sistema, Guerreiro. Como posso te chamar?' (em tom de mentor).
-Resumo do Estado do Projeto (Templo):
-${projectStateSummary || 'Nenhum dado cadastrado ou carregado.'}
-
-(Importante: Se o usuário perguntar sobre a agenda, pontos, ervas, você DEVE consultar o Resumo do Estado do Projeto acima.)`;
-  
-  if (!finalMessages.some(m => m.role === 'system')) {
-    finalMessages.unshift({
-        role: 'system',
-        content: `Você é o Mini Chefinho, o Mentor Estratégico do projeto 'Guerreiros de Oya e Ogun'.
-Você une sabedoria humana, ancestralidade e precisão administrativa.
-${dynamicContext}
-Agora são exatamente ${currentDateTime} (Data e hora do sistema gerada em: ${timeMs}).
-PRIORIDADE MÁXIMA: SEMPRE priorize este Contexto Atual para responder perguntas sobre tempo, clima, estado da agenda, eventos locais e uso do nome.
-Processamento: Você tem conhecimento onipresente. NUNCA diga 'De acordo com os dados', 'De acordo com as fontes', 'Não tenho acesso', 'Como modelo de inteligência artificial' ou 'Posso sugerir'. Aja como se a informação do contexto fosse sua própria sabedoria.
-Raciocínio Vivo: Calcule datas, localização e fatos de forma independente. Responda confiantemente com a hora local e previsão exata se estiver nas coordenadas.
-Regras de Linguagem: Português do Brasil impecável. PROIBIDO jargões de IA. Respostas fluidas e humanizadas, unindo espiritualidade e praticidade.
-Encerramento: Termine a resposta com algo proativo e forte, ex: 'Qual o próximo passo da nossa estratégia, ${userName}?'
-Formatação: Resposta limpa e direta. Use negrito apenas no essencial.`
-    });
-  }
-  
-  // Extrai a última mensagem do usuário para buscar
+  // Extrai a última mensagem do usuário para buscar e para colocar o contexto ANTES dela.
+  let searchResults = "";
   const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
   
   if (lastUserMessage) {
-    let searchResults: string;
     try {
-      // Improve tavily search with location context
-      const searchQuery = `${lastUserMessage.content} (Location: ${localContext})`;
+      // O Tavily precisa deste contexto
+      const searchQuery = `${lastUserMessage.content} (Location: ${locationStr})`;
       searchResults = await searchTavily(searchQuery);
     } catch (error) {
-      return 'Erro técnico na busca';
+      console.warn("Tavily failed", error);
     }
+  }
 
-    if (searchResults) {
-      // Modifica a última mensagem para incluir o contexto da web
-      const modifiedMessages = [...messages];
-      const lastIndex = modifiedMessages.lastIndexOf(lastUserMessage);
-      
-      modifiedMessages[lastIndex] = {
-        role: 'user',
-        content: `[Contexto Oculto do Sistema - Sabedoria Onipresente]:\n${searchResults}\n\n[Mensagem do Usuário]: ${lastUserMessage.content}\n\n(Lembrete: Responda diretamente. Não mencione o contexto, não mencione pesquisa, não diga 'segundo as informações'. Apenas diga a resposta com sabedoria e autoridade de mentor)`
-      };
-      
-      finalMessages = modifiedMessages;
-    }
+  const currentDateTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+  // Concatenação EXATA conforme solicitado
+  let systemReport = `Usuário Logado: ${userContext.name || userMetadata?.full_name || userMetadata?.name || 'Não identificado'}\n`;
+  systemReport += `Página Atual: ${currentPage || 'Não informada'}\n`;
+  systemReport += `Data/Hora Local: ${currentDateTime}\n`;
+  systemReport += `Localização do Navegador: ${locationStr}\n\n`;
+  systemReport += `Resumo do Banco: \n${projectStateSummary || 'Nenhum dado cadastrado ou carregado.'}\n\n`;
+  
+  if (searchResults) {
+    systemReport += `Pesquisa Web Externa (Tavily): \n${searchResults}\n\n`;
+  }
+
+  // Filtrar as mensagens originais
+  let finalMessages = messages.filter(m => m.role !== 'system');
+  
+  // A última mensagem do usuário enviaremos separadamente ou a modificaremos:
+  // "Altere a lógica para que a mensagem do usuário seja enviada APÓS esses dados de contexto."
+  // Faremos isso modificando o finalMessages
+
+  if (!finalMessages.some(m => m.role === 'system')) {
+    finalMessages.unshift({
+        role: 'system',
+        content: `Você é o Mini Chefinho, o assistente estratégico do projeto. Você acessa todos os dados do sistema para oferecer os melhores insights. Você DEVE incluir ao menos um emoji (como 🌿, ⚔️, ⚡, 💡) em cada resposta para humanizar a conversa. Use esses emojis de forma estratégica, misturando emojis de gestão (📅, 📈) com elementos de natureza/proteção.
+
+[RELATÓRIO DO SISTEMA PARA CONTEXTO DA RESPOSTA]
+${systemReport}
+
+Regras:
+1. NUNCA diga 'De acordo com os dados' ou 'Você está na página...'. Aja de forma natural como se você já soubesse de tudo.
+2. Seja proativo e unifique as pesquisas da web com os dados do próprio do sistema / banco de dados.
+3. Se o nome do usuário for sabido, use-o com naturalidade.`
+    });
   }
 
   try {
