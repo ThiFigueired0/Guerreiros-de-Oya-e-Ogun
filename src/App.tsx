@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO } from './types';
+import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO } from './types';
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
@@ -531,10 +531,8 @@ function SocialButtons() {
         )}
       >
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
-          {settings.instagramLogo ? (
-            <img src={settings.instagramLogo} alt="Instagram Logo" className="w-full h-full object-cover" />
-          ) : (
-            null
+          {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
+            <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
           )}
         </div>
         <div className="text-left relative z-10 mx-auto">
@@ -562,10 +560,8 @@ function SocialButtons() {
           <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
         </div>
         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
-          {settings.tiktokLogo ? (
-            <img src={settings.tiktokLogo} alt="TikTok Logo" className="w-full h-full object-cover" />
-          ) : (
-            null
+          {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
+            <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
           )}
         </div>
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />

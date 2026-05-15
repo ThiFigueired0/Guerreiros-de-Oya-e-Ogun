@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, ChevronDown, User, Send, RotateCcw, X, Mic, Paperclip, Camera } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAssistant } from '../lib/AssistantContext';
+import { DEFAULT_ASSISTANT_AVATAR } from '../types';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -111,8 +112,8 @@ const AssistantModal = () => {
                     <div className="relative group cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
                       <div className="w-8 h-8 rounded-full border-[0.5px] border-[#D4AF37]/30 overflow-hidden bg-gradient-to-tr from-[#D4AF37]/10 to-transparent flex items-center justify-center relative shadow-[0_0_10px_rgba(212,175,55,0.1)]">
                         <div className="absolute inset-0 bg-[#D4AF37]/10 animate-pulse" />
-                        {assistantAvatar 
-                          ? <img src={assistantAvatar} className="w-full h-full object-cover relative z-10" /> 
+                        {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
+                          ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10" /> 
                           : <Bot className="w-4 h-4 text-[#D4AF37] relative z-10" />
                         }
                       </div>
@@ -157,7 +158,7 @@ const AssistantModal = () => {
                   >
                      {m.role === 'assistant' && (
                        <div className="w-8 h-8 rounded-full border-[0.5px] border-[#D4AF37]/30 bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)]">
-                           {assistantAvatar ? <img src={assistantAvatar} className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                           {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />}
                        </div>
                      )}
                     <div className={cn(
@@ -189,7 +190,7 @@ const AssistantModal = () => {
                     className="flex items-start gap-4 text-[15px] max-w-[85%] relative self-start font-sans"
                   >
                      <div className="w-8 h-8 rounded-full border-[0.5px] border-[#D4AF37]/30 bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] relative z-10">
-                         {assistantAvatar ? <img src={assistantAvatar} className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                         {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />}
                      </div>
                      <div className="px-[16px] py-[12px] rounded-[24px] bg-[#f1f5f9]/95 text-[#0f172a] rounded-bl-[4px] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] flex flex-col gap-3 min-w-[150px] backdrop-blur-md relative z-10">
                          <span className="text-[11px] text-[#0f172a]/60 flex items-center gap-2 tracking-wide font-medium">

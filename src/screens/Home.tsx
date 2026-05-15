@@ -6,7 +6,7 @@ import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, Ch
 import { DailyMessageModal } from '../components/DailyMessageModal';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
-import { AppSettings, HerbBath, Ponto, Event, StudyBook, Note } from '../types';
+import { AppSettings, HerbBath, Ponto, Event, StudyBook, Note, DEFAULT_ASSISTANT_AVATAR } from '../types';
 import { cn } from '../lib/utils';
 import { format, isAfter, isToday, startOfToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -1125,8 +1125,8 @@ export default function HomeScreen() {
                 <div className="flex items-center gap-3">
                   <div className="relative group cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
                     <div className="w-12 h-12 rounded-full border-2 border-brand-gold overflow-hidden bg-white flex items-center justify-center">
-                      {assistantAvatar 
-                        ? <img src={assistantAvatar} className="w-full h-full object-cover" /> 
+                      {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR)
+                        ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> 
                         : <Bot className="w-6 h-6 text-brand-gold" />
                       }
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
@@ -1175,7 +1175,7 @@ export default function HomeScreen() {
                       onClick={() => m.role === 'user' && userAvatarRef.current?.click()}
                     >
                       {m.role === 'assistant' ? (
-                        assistantAvatar ? <img src={assistantAvatar} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />
+                        (assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />
                       ) : (
                         userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-gray-500" />
                       )}
