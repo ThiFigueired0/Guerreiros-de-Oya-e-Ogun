@@ -451,7 +451,7 @@ export default function CalendarScreen() {
                 {isManaging ? 'Concluído' : 'Gerenciar'}
               </button>
             </div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Guerreiros de Oya e Ogun</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Guerreiros de Oya e Ogum</p>
           </div>
           <button 
             onClick={() => {

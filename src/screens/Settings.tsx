@@ -153,7 +153,7 @@ export default function SettingsScreen() {
 
       {/* Categories Footnote */}
       <div className="mt-12 text-center pb-20">
-        <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.4em]">Guerreiros de Oya e Ogun</p>
+        <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[0.4em]">Guerreiros de Oya e Ogum</p>
       </div>
 
       {/* Sub-screen Overlay */}

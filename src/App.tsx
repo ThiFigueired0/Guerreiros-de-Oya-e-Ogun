@@ -437,7 +437,7 @@ const TopHeader = React.memo(function TopHeader() {
             </div>
           )}
           <h2 className="text-brand-copper font-serif text-[11px] sm:text-[13px] uppercase tracking-[0.4em] sm:tracking-[0.5em] font-black text-center px-2 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-            Guerreiros de Oya e Ogun
+            Guerreiros de Oya e Ogum
           </h2>
           <motion.div 
             animate={{ width: ['0%', '100%', '0%'] }}
