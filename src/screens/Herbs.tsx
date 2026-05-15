@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, ChevronRight, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake, Calendar, CalendarDays } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, ChevronRight, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake, Calendar, CalendarDays, Download, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -626,6 +626,128 @@ export default function HerbsScreen() {
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const importBaths = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const processImport = (text: string) => {
+      try {
+        const blocks = text.split('--------------------------');
+        const newBaths: HerbBath[] = [];
+        
+        blocks.forEach(block => {
+          if (!block.trim() || block.includes('=== RELAÇÃO DE BANHOS ===')) return;
+          
+          const lines = block.split('\n').map(l => l.trim());
+          
+          let category = '';
+          let title = '';
+          let thermalProperty: 'quente' | 'morna' | 'fria' = 'morna';
+          const herbsLines: string[] = [];
+          const obsLines: string[] = [];
+          
+          let parsingHerbs = false;
+          let parsingObs = false;
+          
+          lines.forEach(line => {
+             if (line.startsWith('Pasta: ')) {
+               category = line.substring(7);
+               if (category === 'Gerais') category = '';
+             } else if (line.startsWith('Nome: ')) {
+               title = line.substring(6);
+             } else if (line.startsWith('Classificação: ')) {
+               const t = line.substring(15).toLowerCase();
+               if (t === 'quente' || t === 'morna' || t === 'fria') thermalProperty = t as any;
+             } else if (line === 'Ervas:') {
+               parsingHerbs = true;
+               parsingObs = false;
+             } else if (line === 'Observações:') {
+               parsingHerbs = false;
+               parsingObs = true;
+             } else {
+               if (parsingHerbs && line) herbsLines.push(line);
+               else if (parsingObs && line) obsLines.push(line);
+             }
+          });
+          
+          if (title && herbsLines.length > 0) {
+             newBaths.push({
+               id: crypto.randomUUID(),
+               title,
+               herbs: herbsLines.join('\n'),
+               observations: obsLines.join('\n'),
+               category: category || undefined,
+               thermalProperty,
+               isFavorite: false
+             });
+          }
+        });
+        
+        if (newBaths.length > 0) {
+          if (window.confirm(`${newBaths.length} banhos encontrados. Deseja adicionar?`)) {
+            setBaths(prev => {
+               const copy = [...prev];
+               newBaths.forEach(nb => {
+                 const exists = copy.some(c => c.title === nb.title && Math.abs(c.herbs.length - nb.herbs.length) < 5);
+                 if (!exists) copy.push(nb);
+               });
+               return copy;
+            });
+            alert("Banhos importados com sucesso!");
+          }
+        } else {
+          alert("Nenhum banho encontrado ou formato inválido.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao ler o arquivo.");
+      }
+      e.target.value = '';
+    };
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text.includes('')) {
+        const reader2 = new FileReader();
+        reader2.onload = (evt2) => processImport(evt2.target?.result as string);
+        reader2.readAsText(file, 'ISO-8859-1');
+      } else {
+        processImport(text);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  const exportBaths = () => {
+    if (baths.length === 0) {
+      alert("Não há banhos para exportar.");
+      return;
+    }
+
+    let content = "=== RELAÇÃO DE BANHOS ===\n\n";
+    const sortedBaths = [...baths].sort((a,b) => (a.category || "Gerais").localeCompare(b.category || "Gerais"));
+    
+    sortedBaths.forEach(b => {
+      content += `Pasta: ${b.category || 'Gerais'}\n`;
+      content += `Nome: ${b.title}\n`;
+      content += `Classificação: ${b.thermalProperty || 'morna'}\n`;
+      content += `Ervas:\n${b.herbs}\n`;
+      if (b.observations) content += `Observações:\n${b.observations}\n`;
+      content += `\n--------------------------\n\n`;
+    });
+
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `banhos_templo.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filteredBaths = baths
     .filter(b => {
       const matchesSearch = b.title.toLowerCase().includes(search.toLowerCase()) || b.herbs.toLowerCase().includes(search.toLowerCase());
@@ -720,6 +842,33 @@ export default function HerbsScreen() {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
+              <input 
+                type="file" 
+                accept=".txt" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={importBaths} 
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "p-3.5 rounded-2xl border transition-all active:scale-95 flex items-center justify-center",
+                  settings.darkMode ? "bg-white/5 border-white/10 text-brand-copper" : "bg-white border-gray-100 text-brand-navy shadow-sm"
+                )}
+                title="Importar banhos (.txt)"
+              >
+                <Upload className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={exportBaths}
+                className={cn(
+                  "p-3.5 rounded-2xl border transition-all active:scale-95 flex items-center justify-center",
+                  settings.darkMode ? "bg-white/5 border-white/10 text-brand-copper" : "bg-white border-gray-100 text-brand-navy shadow-sm"
+                )}
+                title="Exportar todos os banhos"
+              >
+                <Download className="w-5 h-5" />
+              </button>
               {selectedCategory && (
                 <button 
                   onClick={() => setIsManaging(!isManaging)}

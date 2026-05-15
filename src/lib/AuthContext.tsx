@@ -51,9 +51,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
+      if (error) {
+        if (!error.message.includes('Refresh Token Not Found')) {
+          console.error('Error getting session:', error);
+        }
+      }
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
+      setLoading(false);
+    }).catch(e => {
+      if (!e.message?.includes('Refresh Token Not Found')) {
+        console.error('getSession catch:', e);
+      }
+      setSession(null);
+      setUser(null);
       setLoading(false);
     });
 

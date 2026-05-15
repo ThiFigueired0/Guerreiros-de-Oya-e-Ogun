@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Search, Trash2, Edit2, Calendar as CalendarIcon, ChevronDown, Star, Download, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -207,6 +207,144 @@ export default function CalendarScreen() {
         }
       }
     });
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const importAgenda = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const processImport = (text: string) => {
+      try {
+        const blocks = text.split('--------------------------');
+        const newEvents: Event[] = [];
+        
+        blocks.forEach(block => {
+          if (!block.trim() || block.includes('=== AGENDA DO TEMPLO ===')) return;
+          
+          const lines = block.split('\n').map(l => l.trim());
+          
+          let date = '';
+          let category = '';
+          let title = '';
+          let isCanceled = false;
+          let cancelReason = '';
+          let replacementDate = '';
+          const reminderLines: string[] = [];
+          let parsingOBS = false;
+          
+          lines.forEach(line => {
+            if (line.startsWith('Data: ')) {
+               const rawDate = line.substring(6).split(' ')[0]; // 22/10/2026
+               if (rawDate && rawDate.includes('/')) {
+                 const parts = rawDate.split('/');
+                 if (parts.length === 3) date = `${parts[2]}-${parts[1]}-${parts[0]}`; // yyyy-MM-dd
+               }
+            } else if (line.startsWith('Categoria: ')) {
+               category = line.substring(11);
+            } else if (line.startsWith('Título: ')) {
+               title = line.substring(8);
+               if (title === 'Lembrete') title = '';
+            } else if (line.startsWith('STATUS: CANCELADO')) {
+               isCanceled = true;
+            } else if (line.startsWith('Motivo: ')) {
+               cancelReason = line.substring(8);
+            } else if (line.startsWith('Reposição: ')) {
+               const rawDate = line.substring(11).split(' ')[0];
+               if (rawDate && rawDate.includes('/')) {
+                 const parts = rawDate.split('/');
+                 if (parts.length === 3) replacementDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+               }
+            } else if (line.startsWith('Observações:')) {
+               parsingOBS = true;
+            } else if (parsingOBS) {
+               if (line) reminderLines.push(line);
+            }
+          });
+          
+          if (date && category) {
+             newEvents.push({
+               id: crypto.randomUUID(),
+               date,
+               category,
+               title,
+               isCanceled,
+               cancelReason,
+               replacementDate,
+               reminder: reminderLines.join('\n')
+             });
+          }
+        });
+        
+        if (newEvents.length > 0) {
+          if (window.confirm(`${newEvents.length} eventos encontrados. Deseja adicionar à sua agenda?`)) {
+            setEvents(prev => {
+              const prevCopy = [...prev];
+              newEvents.forEach(ne => {
+                 const exists = prevCopy.some(p => p.date === ne.date && p.category === ne.category && p.title === ne.title);
+                 if (!exists) prevCopy.push(ne);
+              });
+              return prevCopy;
+            });
+            alert("Eventos importados com sucesso!");
+          }
+        } else {
+          alert("Nenhum evento encontrado ou formato inválido.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao ler o arquivo.");
+      }
+      e.target.value = '';
+    };
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text.includes('')) {
+        const reader2 = new FileReader();
+        reader2.onload = (evt2) => processImport(evt2.target?.result as string);
+        reader2.readAsText(file, 'ISO-8859-1');
+      } else {
+        processImport(text);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  const exportAgenda = () => {
+    if (events.length === 0) {
+      alert("Não há eventos para exportar.");
+      return;
+    }
+
+    const sortedEvents = [...events].sort((a, b) => {
+      return parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime();
+    });
+
+    let content = "=== AGENDA DO TEMPLO ===\n\n";
+    sortedEvents.forEach(e => {
+      const eventDateStr = format(parseEventDate(e.date), "dd/MM/yyyy (EEEE)", { locale: ptBR });
+      content += `Data: ${eventDateStr}\n`;
+      content += `Categoria: ${e.category}\n`;
+      content += `Título: ${e.title || 'Lembrete'}\n`;
+      if (e.isCanceled) {
+        content += `STATUS: CANCELADO\n`;
+        if (e.cancelReason) content += `Motivo: ${e.cancelReason}\n`;
+        if (e.replacementDate) content += `Reposição: ${format(parseEventDate(e.replacementDate), 'dd/MM/yyyy')}\n`;
+      }
+      if (e.reminder) content += `Observações:\n${e.reminder}\n`;
+      content += `\n--------------------------\n\n`;
+    });
+
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agenda_templo_${format(new Date(), 'yyyy')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const closeModal = () => {
@@ -453,29 +591,58 @@ export default function CalendarScreen() {
             </div>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Guerreiros de Oya e Ogum</p>
           </div>
-          <button 
-            onClick={() => {
-              setEditingId(null);
-              const cat = settings.eventCategories[0];
-              const dateStr = format(new Date(), 'yyyy-MM-dd');
-              setNewEvent({ 
-                title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
-                category: cat, 
-                date: dateStr, 
-                reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
-                isCanceled: false,
-                cancelReason: '',
-                replacementDate: ''
-              });
-              setShowModal(true);
-            }}
-            className={cn(
-              "flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-              settings.darkMode ? "bg-brand-copper text-brand-navy shadow-brand-copper/20" : "bg-brand-navy text-white shadow-brand-navy/10"
-            )}
-          >
-            <Plus className="w-4 h-4" /> Agendar
-          </button>
+          <div className="flex items-center gap-2">
+            <input 
+              type="file" 
+              accept=".txt" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={importAgenda} 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "flex items-center gap-2 px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+                settings.darkMode ? "bg-white/5 text-brand-copper border border-white/10" : "bg-white text-brand-navy border border-gray-100"
+              )}
+              title="Importar de arquivo .txt"
+            >
+              <Upload className="w-4 h-4" /> Importar
+            </button>
+            <button 
+              onClick={exportAgenda}
+              className={cn(
+                "flex items-center gap-2 px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+                settings.darkMode ? "bg-white/5 text-brand-copper border border-white/10" : "bg-white text-brand-navy border border-gray-100"
+              )}
+              title="Exportar para arquivo .txt"
+            >
+              <Download className="w-4 h-4" /> Exportar
+            </button>
+            <button 
+              onClick={() => {
+                setEditingId(null);
+                const cat = settings.eventCategories[0];
+                const dateStr = format(new Date(), 'yyyy-MM-dd');
+                setNewEvent({ 
+                  title: cat === 'Desenvolvimento' ? suggestDevTitle(dateStr) : '', 
+                  category: cat, 
+                  date: dateStr, 
+                  reminder: cat === 'Desenvolvimento' ? DEFAULT_DEV_REMINDER : '',
+                  isCanceled: false,
+                  cancelReason: '',
+                  replacementDate: ''
+                });
+                setShowModal(true);
+              }}
+              className={cn(
+                "flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
+                settings.darkMode ? "bg-brand-copper text-brand-navy shadow-brand-copper/20" : "bg-brand-navy text-white shadow-brand-navy/10"
+              )}
+            >
+              <Plus className="w-4 h-4" /> Agendar
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">

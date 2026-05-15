@@ -104,36 +104,57 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
         supabaseData += `Perfil do usuário no Supabase: ${JSON.stringify(dbUser || {})}\n`;
         // Tentamos buscar tabelas comuns se existirem, falhar silenciosamente se não constarem
         try {
-          const { data: notes } = await supabase.from('notes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+          const { data: notes } = await supabase.from('notas').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
           if (notes && notes.length > 0) {
-            supabaseData += `Últimas Anotações (notes): ${JSON.stringify(notes)}\n`;
+            supabaseData += `Últimas Anotações (notas no supabase): ${JSON.stringify(notes)}\n`;
           }
         } catch (e) {
-          console.error("Erro ignorado em notes", e);
+          console.error("Erro ignorado em notas", e);
         }
 
         try {
-          const { data: studies } = await supabase.from('studies').select('*').eq('user_id', user.id).limit(5);
+          const { data: studies } = await supabase.from('books').select('*').eq('user_id', user.id).limit(10);
           if (studies && studies.length > 0) {
-            supabaseData += `Progresso de Estudos (studies): ${JSON.stringify(studies)}\n`;
+            supabaseData += `Progresso de Estudos (books no supabase): ${JSON.stringify(studies)}\n`;
           }
         } catch(e) {
-          console.error("Erro ignorado em studies", e);
+          console.error("Erro ignorado em books", e);
         }
       }
 
-      let localData = '';
-      if (events?.length > 0) {
-         localData += `Agenda de Eventos (Total: ${events.length}): \n` + events.slice(-10).map(e => `- ${e.title} (${e.date})`).join('\n') + '\n\n';
-      }
-      if (herbs?.length > 0) {
-         localData += `Ervas em Estoque: ${herbs.length} ervas cadastradas.\n\n`;
-      }
-      if (pontos?.length > 0) {
-         localData += `Pontos Cantados: ${pontos.length} pontos cadastrados.\n\n`;
+      let localData = '=== DADOS LOCAIS DO PROJETO ===\n';
+      const prefix = user ? `templo_${user.id}_` : `templo_guest_`;
+      
+      const ALL_KEYS = [
+        'templo_events', 'templo_baths', 'templo_pontos', 'templo_folders',
+        'templo_notes', 'templo_herb_stock', 'templo_bichos', 'templo_simulation_history',
+        'templo_offerings', 'templo_candles', 'templo_study_docs', 'templo_glossary',
+        'templo_greetings', 'templo_finance', 'templo_history', 'templo_settings',
+        'templo_books'
+      ];
+
+      for (const key of ALL_KEYS) {
+        try {
+          const val = window.localStorage.getItem(user ? `templo_${user.id}_${key}` : `templo_guest_${key}`) || window.localStorage.getItem(key);
+          if (val) {
+             const parsed = JSON.parse(val);
+             // Truncate to avoid exploding context limits
+             let strVal = JSON.stringify(parsed);
+             if (strVal.length > 8000) {
+                strVal = strVal.substring(0, 8000) + '... (truncado devido ao tamanho - há mais itens)';
+             }
+             if (Array.isArray(parsed)) {
+                localData += `[${key}] (Total: ${parsed.length} itens): ${strVal}\n\n`;
+             } else {
+                localData += `[${key}]: ${strVal}\n\n`;
+             }
+          }
+        } catch(e) {
+          console.error("Erro ignorado ao ler chave " + key, e);
+        }
       }
 
-      return `[Dados Consolidados do Supabase]\n${supabaseData || 'Sem dados remotos identificados para essa sessão.'}\n\n[Dados Armazenados Localmente]\n${localData}`;
+      return `[Dados Consolidados do Supabase]\n${supabaseData || 'Sem dados remotos identificados para essa sessão.'}\n\n[Dados Armazenados Localmente e Sincronizados]\n${localData}`;
     };
 
     const projectStateSummary = await fetchProjectContext();
