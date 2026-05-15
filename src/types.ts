@@ -80,6 +80,8 @@ export interface UsefulContact {
   isFixed?: boolean;
 }
 
+export const DEFAULT_TEMPLO_LOGO = 'https://res.cloudinary.com/dpv8m5igw/image/upload/v1778869084/327276929_939594793896909_5313574604003820054_n_1_cmsz0m.jpg';
+
 export interface AppSettings {
   darkMode: boolean;
   immersiveMode?: boolean;

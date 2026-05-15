@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Leaf, Mail, Lock, User, Ghost, Loader2, Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
-import { AppSettings } from '../types';
+import { AppSettings, DEFAULT_TEMPLO_LOGO } from '../types';
 import { supabase } from '../lib/supabase';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 
@@ -246,7 +246,17 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                 transition={{ duration: 0.3 }}
                 className="flex flex-col flex-1 relative z-10"
               >
-                <div className="text-center mb-8 mt-2">
+                <div className="text-center mb-8 mt-2 flex flex-col items-center">
+                  <div className={cn(
+                    "w-24 h-24 mb-4 rounded-full border border-brand-copper/30 shadow-lg flex items-center justify-center p-1 relative overflow-hidden",
+                    settings.darkMode ? "bg-gray-900 border-white/10" : "bg-white"
+                  )}>
+                    <img 
+                      src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                      alt="Logo Templo" 
+                      className="w-full h-full object-contain filter drop-shadow-md"
+                    />
+                  </div>
                   <h2 className={cn("text-3xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     Bem-vindo
                   </h2>
@@ -377,7 +387,17 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                 transition={{ duration: 0.3 }}
                 className="flex flex-col flex-1 relative z-10"
               >
-                <div className="text-center mb-8 mt-2">
+                <div className="text-center mb-8 mt-2 flex flex-col items-center">
+                  <div className={cn(
+                    "w-20 h-20 mb-4 rounded-full border border-brand-copper/30 shadow-lg flex items-center justify-center p-1 relative overflow-hidden",
+                    settings.darkMode ? "bg-gray-900 border-white/10" : "bg-white"
+                  )}>
+                    <img 
+                      src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                      alt="Logo Templo" 
+                      className="w-full h-full object-contain filter drop-shadow-md"
+                    />
+                  </div>
                   <h2 className={cn("text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     Criar Conta
                   </h2>

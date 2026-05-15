@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle, NotificationItem } from './types';
+import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO } from './types';
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
@@ -486,9 +486,9 @@ const TopHeader = React.memo(function TopHeader() {
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
             
-            {settings.logoBase64 && (
+            {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
               <img 
-                src={settings.logoBase64} 
+                src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
                 alt="Logo Templo" 
                 className="w-full h-full object-contain filter drop-shadow-md"
               />
@@ -1726,7 +1726,7 @@ function AppContent() {
     <UndoContext.Provider value={{ queueDelete }}>
       <AssistantProvider>
         <AssistantWrapper />
-      <InitialLoader show={!isAppReady} logo={settings.logoBase64} />
+      <InitialLoader show={!isAppReady} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
       <NotificationManager />
       <div className={cn(
         "min-h-[100dvh] bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
@@ -1742,7 +1742,7 @@ function AppContent() {
         )}>
            {authLoading ? (
             <div className="flex-1 flex items-center justify-center">
-              <InitialLoader show={true} logo={settings.logoBase64} />
+              <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
             </div>
           ) : isRecovering ? (
             <ResetPassword onSuccess={() => setIsRecovering(false)} />

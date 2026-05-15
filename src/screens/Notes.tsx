@@ -112,38 +112,69 @@ export default function NotesScreen() {
     setSelectedNote(null);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      Array.from(files).forEach(file => {
+      if (!user) return alert('Você precisa estar logado para enviar arquivos.');
+      
+      Array.from(files).forEach(async (file) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           const base64String = reader.result as string;
-          setNoteForm(prev => ({
-            ...prev,
-            images: [...(prev.images || []), base64String]
-          }));
+          try {
+            // Upload immediately to supabase storage helper
+            const { uploadFileToSupabase } = await import('../lib/storage');
+            const url = await uploadFileToSupabase(
+              'templo-uploads', 
+              `notas/${user.id}/${Date.now()}_${file.name}`, 
+              base64String, 
+              file.type
+            );
+            
+            setNoteForm(prev => ({
+              ...prev,
+              images: [...(prev.images || []), url]
+            }));
+          } catch(err) {
+            console.error('Failed to upload image:', err);
+            alert('Falha ao enviar a imagem.');
+          }
         };
         reader.readAsDataURL(file);
       });
     }
   };
 
-  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      Array.from(files).forEach(file => {
+      if (!user) return alert('Você precisa estar logado para enviar arquivos.');
+      
+      Array.from(files).forEach(async (file) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           const base64String = reader.result as string;
-          setNoteForm(prev => ({
-            ...prev,
-            attachments: [...(prev.attachments || []), {
-              name: file.name,
-              type: 'pdf',
-              data: base64String
-            }]
-          }));
+          try {
+            const { uploadFileToSupabase } = await import('../lib/storage');
+            const url = await uploadFileToSupabase(
+              'templo-uploads', 
+              `notas/${user.id}/${Date.now()}_${file.name}`, 
+              base64String, 
+              file.type
+            );
+            
+            setNoteForm(prev => ({
+              ...prev,
+              attachments: [...(prev.attachments || []), {
+                name: file.name,
+                type: 'pdf',
+                data: url // Store URL instead of huge base64
+              }]
+            }));
+          } catch(err) {
+            console.error('Failed to upload PDF:', err);
+            alert('Falha ao enviar o PDF.');
+          }
         };
         reader.readAsDataURL(file);
       });

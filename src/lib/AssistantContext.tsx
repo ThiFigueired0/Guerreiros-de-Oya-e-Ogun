@@ -32,7 +32,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [dbUser, setDbUser] = useState<any>(null);
   
   // Extrai nome real do profile, se existir
-  const userName = dbUser?.nickname || dbUser?.first_name || settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
+  const userName = dbUser?.full_name || settings?.nickname || settings?.firstName || user?.user_metadata?.nickname || user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Guerreiro';
 
   // Ler o estado do projeto
   const [events] = useStorage<any[]>('templo_events', []);
