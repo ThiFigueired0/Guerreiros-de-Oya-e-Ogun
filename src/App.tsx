@@ -530,7 +530,7 @@ function SocialButtons() {
   }, []);
 
   return (
-    <div className="w-full flex-row gap-0 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
+    <div key={location.pathname} className="w-full flex-row gap-0 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
       
       {/* INSTAGRAM (Left) */}
       <motion.a
@@ -1124,7 +1124,7 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
   );
 }
 
-function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) {
+function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | null, onSkip?: () => void }) {
   const [progress, setProgress] = React.useState(0);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
@@ -1142,7 +1142,7 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
   React.useEffect(() => {
     if (!show) return;
     const startTime = Date.now();
-    const duration = 4000;
+    const duration = 1500;
     
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -1168,10 +1168,11 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
     <AnimatePresence>
       {show && (
         <motion.div
+          onClick={onSkip}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.0, ease: "easeInOut" }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh]"
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh] cursor-pointer"
           style={{ backgroundColor: '#001529' }}
         >
           {/* Global Animated Background */}
@@ -1206,48 +1207,60 @@ function InitialLoader({ show, logo }: { show: boolean, logo?: string | null }) 
           {/* Logo & Content */}
           <div className="relative z-10 flex flex-col items-center">
             <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="relative"
             >
-              {/* Pulse Glow - Optimized */}
+              {/* Pulse Glow - Magical */}
               <motion.div 
                 animate={{ 
-                  opacity: [0.2, 0.4, 0.2]
+                  opacity: [0.3, 0.6, 0.3],
+                  scale: [0.9, 1.1, 0.9]
                 }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -inset-10 bg-brand-copper/20 rounded-full"
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-10 bg-gradient-to-br from-brand-copper/30 to-brand-gold/20 rounded-full blur-2xl"
               />
 
-              <div className="w-48 h-48 rounded-full border border-brand-copper/30 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-2 overflow-hidden relative">
+              <motion.div 
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="w-48 h-48 sm:w-56 sm:h-56 rounded-full border-[1.5px] border-brand-gold/40 bg-white shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex items-center justify-center p-2 overflow-hidden relative"
+              >
                 {logo && (
                   <img src={logo} alt="Logo" className="w-full h-full object-contain logo-optimized" />
                 )}
-              </div>
+              </motion.div>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
-              className="mt-10 text-center"
+              className="mt-12 text-center"
             >
-              <h1 className="text-brand-gold font-serif text-2xl tracking-[0.5em] font-black uppercase drop-shadow-lg flex items-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h1 className="text-brand-gold font-serif text-xl sm:text-2xl tracking-[0.4em] sm:tracking-[0.5em] font-black uppercase drop-shadow-[0_2px_10px_rgba(218,165,32,0.4)] flex items-center justify-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
                 GUERREIROS DE OYA E OGUN
               </h1>
               
               {/* Progress Bar */}
-              <div className="w-48 h-1 bg-brand-copper/20 mx-auto mt-8 rounded-full overflow-hidden relative">
+              <div className="w-56 h-[3px] bg-white/10 mx-auto mt-8 rounded-full overflow-hidden relative shadow-inner">
                 <div 
-                  className="absolute left-0 top-0 h-full bg-brand-gold transition-all duration-100 ease-linear"
+                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-brand-copper via-brand-gold to-[#FFF8D6] transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(255,215,0,0.8)] relative"
                   style={{ width: `${progress}%` }}
-                />
+                >
+                  <div className="absolute right-0 top-0 bottom-0 w-10 bg-white/50 blur-[2px]" />
+                </div>
               </div>
               
-              <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.4em] mt-6">
-                Tenda de Umbanda • Oya e Ogum
-              </p>
+              <div className="flex flex-col items-center mt-6 gap-2">
+                <p className="text-brand-gold/60 text-[10px] font-bold uppercase tracking-[0.3em]">
+                  {progress < 100 ? "Preparando sua experiência..." : "Entrando..."}
+                </p>
+                <p className="text-white/20 text-[8px] font-black uppercase tracking-[0.4em]">
+                  Tenda de Umbanda • Oya e Ogum
+                </p>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -1368,24 +1381,22 @@ function AppContent() {
   const [hasRemovedPreloader, setHasRemovedPreloader] = React.useState(false);
 
   React.useEffect(() => {
-    // Stage 1: Mark app as ready after 4 seconds
+    // Stage 0: Remove native preloader immediately
+    const preloader = document.getElementById('splash-preloader');
+    if (preloader) {
+      preloader.classList.add('fade-out');
+      setTimeout(() => {
+        preloader.remove();
+        setHasRemovedPreloader(true);
+      }, 500);
+    } else {
+      setHasRemovedPreloader(true);
+    }
+
+    // Stage 1: Mark app as ready after 1.5 seconds
     const timer = setTimeout(() => {
       setIsAppReady(true);
-      
-      // Stage 2: Trigger fade out for the native preloader
-      const preloader = document.getElementById('splash-preloader');
-      if (preloader) {
-        preloader.classList.add('fade-out');
-        
-        // Stage 3: Remove from DOM after transition
-        setTimeout(() => {
-          preloader.remove();
-          setHasRemovedPreloader(true);
-        }, 850);
-      } else {
-        setHasRemovedPreloader(true);
-      }
-    }, 4000);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -1764,7 +1775,11 @@ function AppContent() {
     <UndoContext.Provider value={{ queueDelete }}>
       <AssistantProvider>
         <AssistantWrapper />
-      <InitialLoader show={!isAppReady} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
+      <InitialLoader 
+        show={!isAppReady} 
+        logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+        onSkip={() => setIsAppReady(true)}
+      />
       <NotificationManager />
       <div className={cn(
         "min-h-[100dvh] bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
