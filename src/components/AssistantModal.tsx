@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, ChevronDown, User, Send, RotateCcw, X, Mic, Paperclip, Camera } from 'lucide-react';
+import { Bot, ChevronDown, User, Send, RotateCcw, X, Mic, Paperclip, Camera, Volume2, Pause, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAssistant } from '../lib/AssistantContext';
 import { DEFAULT_ASSISTANT_AVATAR } from '../types';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SmartSuggestions } from './SmartSuggestions';
+import { transcribeAudio, generateSpeech, analyzeImage, extractTextFromPdf } from '../services/aiService';
+import { Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 // (Removido quickActions fixos, será usado SmartSuggestions no seu lugar no JSX)
 
@@ -78,6 +81,177 @@ const parseContent = (content: string) => {
   return { mainContent, suggestions };
 };
 
+const MessageAudioButton = ({ text, isComplete }: { text: string; isComplete: boolean }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleClick = async () => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      return;
+    }
+    
+    if (isPlaying && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (audioRef.current && audioRef.current.paused && audioRef.current.currentTime > 0) {
+      audioRef.current.play();
+      setIsPlaying(true);
+      return;
+    }
+    
+    if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPlaying(true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const audioBlob = await generateSpeech(text);
+      const url = URL.createObjectURL(audioBlob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setIsPlaying(false);
+        URL.revokeObjectURL(url);
+      };
+      
+      await audio.play();
+      setIsPlaying(true);
+    } catch (e) {
+      console.warn("Hugging Face TTS falhou ou não está configurado, usando Web Speech API nativa como fallback.");
+      if ('speechSynthesis' in window) {
+        const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'pt-BR';
+        
+        const voices = window.speechSynthesis.getVoices();
+        const ptVoice = voices.find(v => v.lang === 'pt-BR' || v.lang.includes('pt'));
+        if (ptVoice) {
+          utterance.voice = ptVoice;
+        }
+        
+        utterance.onend = () => setIsPlaying(false);
+        
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+        setIsPlaying(true);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isComplete) return null;
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={isLoading}
+      title={isPlaying ? "Pausar" : "Ouvir"}
+      className="p-1.5 rounded-full hover:bg-[#D4AF37]/20 text-[#D4AF37] transition-all focus:outline-none disabled:opacity-50 self-start mt-1 flex-shrink-0"
+    >
+      {isLoading ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : isPlaying ? (
+        <Pause className="w-4 h-4" />
+      ) : (
+        <Volume2 className="w-4 h-4" />
+      )}
+    </button>
+  );
+};
+
+const shouldShowDownloadButton = (content: string) => {
+  const cleanContent = content.replace(/<sugestoes>[\s\S]*<\/sugestoes>/g, '');
+  const listMatches = (cleanContent.match(/^[-*]\s/gm) || []).length;
+  const numberMatches = (cleanContent.match(/^\d+\.\s/gm) || []).length;
+  const hasKeywords = /(receita|cronograma|guia|passo a passo|ingredientes|banho de)/i.test(cleanContent);
+  return listMatches >= 3 || numberMatches >= 3 || hasKeywords;
+};
+
+const DownloadPdfButton = ({ content }: { content: string }) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleDownload = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      try {
+        const doc = new jsPDF();
+        doc.setFont("helvetica");
+
+        const cleanContent = content
+           .replace(/<sugestoes>[\s\S]*<\/sugestoes>/g, '')
+           .replace(/[#*]/g, '')
+           .split('\n');
+
+        let yOffset = 20;
+        doc.setFontSize(16);
+        doc.setTextColor(212, 175, 55); // Gold title
+        doc.text("Documento - Mini Chefinho", 20, yOffset);
+        yOffset += 15;
+        
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+
+        const pageHeight = doc.internal.pageSize.height;
+
+        cleanContent.forEach(line => {
+           if (line.trim() === '') {
+               yOffset += 4;
+               return;
+           }
+           const splitText = doc.splitTextToSize(line, 170);
+           splitText.forEach((textLine: string) => {
+              if (yOffset > pageHeight - 20) {
+                 doc.addPage();
+                 yOffset = 20;
+              }
+              doc.text(textLine, 20, yOffset);
+              yOffset += 7;
+           });
+        });
+
+        doc.save("documento-mini-chefinho.pdf");
+      } catch (e) {
+        console.error("Erro ao gerar PDF:", e);
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 100);
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={isGenerating}
+      className="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B49020] hover:brightness-110 active:scale-95 text-black rounded-xl font-medium text-[13px] tracking-tight transition-all shadow-[0_4px_10px_rgba(212,175,55,0.2)] focus:outline-none self-start"
+    >
+      {isGenerating ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Download className="w-[18px] h-[18px]" />}
+      Baixar Documento (PDF)
+    </button>
+  );
+};
+
 const AssistantModal = () => {
     const { 
         showAssistantModal, setShowAssistantModal, 
@@ -89,6 +263,18 @@ const AssistantModal = () => {
     const [isFocused, setIsFocused] = useState(false);
     const [isChatStarted, setIsChatStarted] = useState(messages.length > 1);
     const [isTyping, setIsTyping] = useState(false);
+    
+    // Áudio e Anexos
+    const [isRecording, setIsRecording] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+    
+    const [attachments, setAttachments] = useState<{file: File, type: 'image' | 'pdf'}[]>([]);
+    const [isProcessingAttachments, setIsProcessingAttachments] = useState(false);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const pdfInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
       setIsChatStarted(messages.length > 1);
@@ -99,8 +285,19 @@ const AssistantModal = () => {
     useEffect(() => {
       if (isChatLoading) {
          setIsTyping(true);
+         if (currentAudioRef.current) {
+           currentAudioRef.current.pause();
+           currentAudioRef.current = null;
+         }
       }
     }, [isChatLoading]);
+
+    useEffect(() => {
+      if (!showAssistantModal && currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+    }, [showAssistantModal]);
     
     const assistantAvatarRef = useRef<HTMLInputElement>(null);
     const userAvatarRef = useRef<HTMLInputElement>(null);
@@ -108,11 +305,104 @@ const AssistantModal = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isAutoScrollEnabledRef = useRef(true);
 
+    const handleMicClick = async () => {
+      // Pause any ongoing TTS audio
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+
+      if (isRecording) {
+        // Stop recording
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+        }
+      } else {
+        // Start recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          audioChunksRef.current = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            
+            // Pare os tracks do microfone (libera as permissões visuais e lock)
+            stream.getTracks().forEach(track => track.stop());
+            setIsRecording(false);
+
+            if (audioBlob.size > 0) {
+              setIsTranscribing(true);
+              try {
+                const text = await transcribeAudio(audioBlob);
+                if (text && text.trim().length > 0) {
+                  setIsChatStarted(true);
+                  handleChatSend(text);
+                }
+              } catch (error) {
+                console.error("Transcription errored:", error);
+              } finally {
+                setIsTranscribing(false);
+              }
+            }
+          };
+
+          mediaRecorder.start();
+          setIsRecording(true);
+        } catch (error) {
+          console.error("Could not start recording:", error);
+        }
+      }
+    };
+
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
       // If user scrolls up more than 100px from the bottom, pause auto-scroll
       const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
       isAutoScrollEnabledRef.current = isAtBottom;
+    };
+
+    const handleTypingComplete = (text: string) => {
+      setIsTyping(false);
+    };
+
+    const processAndSendChat = async (text: string) => {
+      if (!text.trim() && attachments.length === 0) return;
+      
+      let contextPrefix = "";
+      
+      if (attachments.length > 0) {
+        setIsProcessingAttachments(true);
+        try {
+          for (const att of attachments) {
+             if (att.type === 'image') {
+                const desc = await analyzeImage(att.file);
+                contextPrefix += `[O usuário anexou uma imagem que contém: ${desc}]\n`;
+             } else if (att.type === 'pdf') {
+                const pdfText = await extractTextFromPdf(att.file);
+                contextPrefix += `[Conteúdo do PDF anexado: ${pdfText}]\n`;
+             }
+          }
+        } catch (e) {
+          console.error("Erro ao extrair anexos:", e);
+          contextPrefix += `[O usuário tentou anexar arquivos, mas houve um erro técnico ao lê-los.]\n`;
+        } finally {
+          setIsProcessingAttachments(false);
+        }
+      }
+      
+      const finalMsg = contextPrefix + text;
+      
+      setIsChatStarted(true);
+      setAttachments([]);
+      handleChatSend(finalMsg);
     };
 
     useEffect(() => {
@@ -283,7 +573,7 @@ const AssistantModal = () => {
                               {i === messages.length - 1 ? (
                                   <TypewriterMarkdown 
                                     content={mainContent} 
-                                    onComplete={() => setIsTyping(false)} 
+                                    onComplete={() => handleTypingComplete(mainContent)} 
                                   />
                               ) : (
                                   <Markdown remarkPlugins={[remarkGfm]}>{mainContent}</Markdown>
@@ -291,6 +581,16 @@ const AssistantModal = () => {
                             </div>
                           ) : (
                             <p className="leading-relaxed whitespace-pre-wrap font-medium">{m.content}</p>
+                          )}
+                          {m.role === 'assistant' && (
+                            <div className="self-end mt-1 -mb-2 w-full flex flex-col">
+                              {shouldShowDownloadButton(mainContent) && (i !== messages.length - 1 || (!isTyping && !isChatLoading)) && (
+                                <DownloadPdfButton content={mainContent} />
+                              )}
+                              <div className="self-end mt-1">
+                                <MessageAudioButton text={mainContent} isComplete={i !== messages.length - 1 || (!isTyping && !isChatLoading)} />
+                              </div>
+                            </div>
                           )}
                         </div>
                       </motion.div>
@@ -354,6 +654,20 @@ const AssistantModal = () => {
               
               <div className="pb-[max(1rem,env(safe-area-inset-bottom))] px-6 shrink-0 flex flex-col gap-1.5 relative z-10">
                 
+                {attachments.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2 w-full overflow-x-auto scrollbar-hide">
+                     {attachments.map((att, idx) => (
+                        <div key={idx} className="relative shrink-0 flex items-center gap-2 bg-[#000000]/40 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10 shadow-sm">
+                           {att.type === 'image' ? <Camera className="w-3.5 h-3.5 text-[#D4AF37]" /> : <Paperclip className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                           <span className="text-[12px] font-sans font-medium text-white/90 truncate max-w-[120px]">{att.file.name}</span>
+                           <button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="ml-1 text-white/50 hover:text-red-400 focus:outline-none">
+                             <X className="w-3.5 h-3.5" />
+                           </button>
+                        </div>
+                     ))}
+                  </div>
+                )}
+                
                 <div 
                   className={cn(
                     "flex items-end gap-3 relative transition-all duration-300",
@@ -364,10 +678,33 @@ const AssistantModal = () => {
                     "flex items-end gap-1 flex-1 bg-[#070a13]/90 border-[0.5px] rounded-2xl transition-all duration-300 px-2 py-1 shadow-inner",
                     isFocused ? "border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.05)] bg-[#070a13]" : "border-white/10"
                   )}>
-                    <button className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Anexar arquivo">
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      ref={pdfInputRef} 
+                      accept=".pdf" 
+                      onChange={(e) => {
+                         if (e.target.files && e.target.files[0]) {
+                             setAttachments(prev => [...prev, { file: e.target.files![0], type: 'pdf' }]);
+                         }
+                      }} 
+                    />
+                    <button onClick={() => pdfInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Anexar PDF">
                       <Paperclip className="w-[18px] h-[18px]" />
                     </button>
-                    <button className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Câmera">
+                    
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      ref={imageInputRef} 
+                      accept="image/*" 
+                      onChange={(e) => {
+                         if (e.target.files && e.target.files[0]) {
+                             setAttachments(prev => [...prev, { file: e.target.files![0], type: 'image' }]);
+                         }
+                      }} 
+                    />
+                    <button onClick={() => imageInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Câmera / Imagem">
                       <Camera className="w-[18px] h-[18px]" />
                     </button>
                     <textarea 
@@ -380,30 +717,40 @@ const AssistantModal = () => {
                       onKeyDown={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          setIsChatStarted(true);
-                          handleChatSend(chatInput);
+                          processAndSendChat(chatInput);
                           e.currentTarget.style.height = 'auto';
                         }
                       }}
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
-                      placeholder="Pergunte ao Mini Chefinho..." 
+                      disabled={isRecording || isTranscribing || isProcessingAttachments}
+                      placeholder={isRecording ? "Gravando áudio..." : isTranscribing ? "Transcrevendo..." : isProcessingAttachments ? "Processando anexos..." : "Pergunte ao Mini Chefinho..."}
                       className="flex-1 bg-transparent px-2 py-3 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-tight font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide flex items-center justify-center align-middle"
                       rows={1}
                     />
                     <div className="flex items-center gap-1 shrink-0 pr-1 mb-1">
-                      <button className="p-2 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none" title="Mensagem de voz">
-                        <Mic className="w-[18px] h-[18px]" />
+                      <button 
+                        onClick={handleMicClick}
+                        disabled={isTranscribing}
+                        className={cn(
+                          "p-2 transition-all rounded-full focus:outline-none relative",
+                          isRecording 
+                            ? "text-[#D4AF37]" 
+                            : isTranscribing ? "text-white/30 cursor-not-allowed" : "text-white/50 hover:text-[#D4AF37]"
+                        )} 
+                        title="Mensagem de voz"
+                      >
+                        <Mic className={cn("w-[18px] h-[18px]", isRecording && "animate-pulse")} />
+                        {isRecording && (
+                          <span className="absolute top-[4px] right-[4px] w-[6px] h-[6px] rounded-full bg-red-500 animate-pulse" />
+                        )}
                       </button>
                       <button
-                        onClick={() => {
-                          setIsChatStarted(true);
-                          handleChatSend(chatInput);
-                        }}
-                        disabled={!chatInput.trim()}
+                        onClick={() => processAndSendChat(chatInput)}
+                        disabled={!chatInput.trim() && attachments.length === 0}
                         className={cn(
                           "flex items-center justify-center transition-all duration-300 p-2 rounded-full",
-                          chatInput.trim() 
+                          (chatInput.trim() || attachments.length > 0) 
                             ? "bg-transparent text-[#D4AF37] hover:scale-105" 
                             : "bg-transparent text-white/50 cursor-not-allowed"
                         )}

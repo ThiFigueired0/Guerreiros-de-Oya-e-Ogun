@@ -150,6 +150,10 @@ DIRETRIZES DE SUGESTÕES CONTEXTUAIS (FOLLOW-UP):
 
 Lembre-se: Você é o assistente oficial do projeto, traga segurança, respeito aos fundamentos e aquele toque de carisma humano que faz o usuário se sentir em casa.
 
+DIRETRIZES DE TRATAMENTO E GERAÇÃO DE MÍDIA:
+10. Você agora recebe o contexto de imagens e documentos traduzidos em texto pelo sistema através de tags como [O usuário anexou uma imagem que contém: ...] ou [Conteúdo do PDF anexado: ...]. Interprete essas descrições com o seu profundo conhecimento espiritual. Se descreverem uma folha, ferramenta ou guia, identifique o fundamento e explique ao usuário com propriedade e carisma.
+11. Sempre que o usuário te pedir para "gerar", "criar" ou "montar" um documento, guia, lista de compras para ritual ou cronograma, estruture sua resposta em texto de forma extremamente organizada, utilizando tópicos claros ou listas limpas. O sistema usará sua resposta para gerar um arquivo PDF baixável para o usuário, então seja caprichoso na organização do texto e na formatação.
+
 [RELATÓRIO DO SISTEMA PARA CONTEXTO DA RESPOSTA]
 ${systemReport}
 
@@ -161,7 +165,7 @@ Regras adicionais:
   }
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    let response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -175,8 +179,33 @@ Regras adicionais:
       })
     });
 
+    if (!response.ok && response.status === 429) {
+      console.warn('Groq Rate Limit on llama-3.3-70b-versatile. Falling back to llama-3.1-8b-instant...');
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: finalMessages,
+          temperature: 0.7,
+          max_tokens: 1024
+        })
+      });
+    }
+
     if (!response.ok) {
-      return 'O assistente está temporariamente indisponível.';
+      const errorText = await response.text();
+      console.error('Groq API Error:', response.status, errorText);
+      try {
+        const errorJson = JSON.parse(errorText);
+        // Only return generic error to user, keep details in console to avoid ugly UI
+        return `O assistente está temporariamente indisponível. Detalhe: ${errorJson.error?.message || response.statusText}`;
+      } catch (e) {
+        return `O assistente está temporariamente indisponível (Erro ${response.status}).`;
+      }
     }
 
     const data = await response.json();
@@ -186,7 +215,40 @@ Regras adicionais:
   }
 };
 
+export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    throw new Error('Chave API GROQ não encontrada.');
+  }
+
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'audio.webm');
+  formData.append('model', 'whisper-large-v3');
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro na API Groq: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.text || '';
+  } catch (error) {
+    console.error('Erro na transcrição:', error);
+    throw error;
+  }
+};
+
 export const getDailyKnowledge = async (): Promise<string> => {
+
   const apiKey = getApiKey();
   
   if (!apiKey) {
@@ -246,5 +308,116 @@ export const getDailyKnowledge = async (): Promise<string> => {
       content: "Conectando com as correntes de conhecimento... Tente novamente em breve.",
       category: "Status"
     });
+  }
+};
+
+const getHuggingFaceApiKey = () => {
+  if (import.meta.env && import.meta.env.VITE_HUGGINGFACE_API_KEY) {
+    return import.meta.env.VITE_HUGGINGFACE_API_KEY;
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.VITE_HUGGINGFACE_API_KEY || process.env.HUGGINGFACE_API_KEY;
+  }
+  return undefined;
+};
+
+export const analyzeImage = async (imageBlob: Blob): Promise<string> => {
+  const apiKey = getHuggingFaceApiKey();
+  if (!apiKey) {
+    throw new Error('Chave API Hugging Face não encontrada.');
+  }
+
+  // Usando um modelo de imagem para texto do Hugging Face.
+  // Modelos alternativos: nlpconnect/vit-gpt2-image-captioning, Salesforce/blip-image-captioning-large
+  const response = await fetch('https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/octet-stream',
+    },
+    body: imageBlob,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao analisar a imagem: ${response.status}`);
+  }
+
+  const result = await response.json();
+  if (result && result.length > 0 && result[0].generated_text) {
+    return result[0].generated_text;
+  }
+  return 'A IA não conseguiu interpretar os detalhes formatados da imagem.';
+};
+
+export const extractTextFromPdf = async (pdfBlob: Blob): Promise<string> => {
+  try {
+    // Import dynamically to avoid SSR/Vite issues if any
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    // Limite de páginas para evitar travamentos
+    const maxPages = Math.min(pdf.numPages, 10);
+    
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    return fullText;
+  } catch (error) {
+    console.error("Erro ao processar PDF:", error);
+    throw new Error("Não foi possível extrair o texto do PDF.");
+  }
+};
+
+export const generateSpeech = async (text: string): Promise<Blob> => {
+  const apiKey = getHuggingFaceApiKey();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  } else {
+    console.warn("Aviso: Chave API Hugging Face não encontrada. Fallback local será ativado.");
+    throw new Error("Chave API Hugging Face não encontrada. Configure VITE_HUGGINGFACE_API_KEY no .env.");
+  }
+
+  // Remove XML tags from text and normalize punctuation for better voice processing (pauses)
+  const cleanText = text
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/([*#_~|]+|--+)/g, '.') // Replace special chars and long dashes with dots
+    .replace(/\s+/g, ' ') // Collapse spaces
+    .trim();
+
+  // Try inference API
+  try {
+    const response = await fetch('https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        inputs: cleanText,
+        parameters: {
+          voice: 'pm_alex', // Voz masculina firme em PT-BR (alternativa: 'pf_bella')
+          lang: 'p', // Língua portuguesa
+          speed: 0.92, // Velocidade levemente reduzida para soar mais natural
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro na API Hugging Face: ${response.status}`);
+    }
+
+    return await response.blob();
+  } catch (error) {
+    throw new Error("API indisponível ou falha de rede"); // Triggers fallback
   }
 };

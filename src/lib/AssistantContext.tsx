@@ -140,8 +140,8 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
              const parsed = JSON.parse(val);
              // Truncate to avoid exploding context limits
              let strVal = JSON.stringify(parsed);
-             if (strVal.length > 8000) {
-                strVal = strVal.substring(0, 8000) + '... (truncado devido ao tamanho - há mais itens)';
+             if (strVal.length > 500) {
+                strVal = strVal.substring(0, 500) + '... (truncado)';
              }
              if (Array.isArray(parsed)) {
                 localData += `[${key}] (Total: ${parsed.length} itens): ${strVal}\n\n`;
