@@ -1,17 +1,30 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
 import { StudyBook, GlossaryTerm, Ponto, Event } from '../types';
+import { RefreshCw } from 'lucide-react';
 
 interface SmartSuggestionsProps {
   onSuggestionClick: (suggestion: string) => void;
 }
+
+// Fisher-Yates array shuffle function
+const shuffleArray = <T,>(array: T[]) => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
 
 export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestionClick }) => {
   const [books] = useIdbStorage<StudyBook[]>('templo_books', []);
   const [glossary] = useStorage<GlossaryTerm[]>('templo_glossary', []);
   const [pontos] = useStorage<Ponto[]>('templo_pontos', []);
   const [events] = useStorage<Event[]>('templo_events', []);
+  
+  const [refreshCount, setRefreshCount] = useState(0);
 
   // Lógica para dia da semana
   const dayOfWeek = new Date().getDay(); // 0 = Dom, 1 = Seg...
@@ -31,9 +44,9 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestion
   ];
 
   const suggestions = useMemo(() => {
-    const list: string[] = [];
+    let list: string[] = [];
 
-    // 1. Liturgia do Dia
+    // 1. Liturgia do Dia (somente na primeira renderização, sem o refresh agressivo ou pode misturar com o resto)
     if (dayOfWeek === 3) {
       list.push("🌿 Composição do Banho de Descarrego 💧");
     } else if (dayOfWeek === 4) {
@@ -59,9 +72,8 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestion
     }
 
     if (glossary && glossary.length > 0) {
-      // Como não há data no GlossaryTerm, pegamos o último (simulando "adicionado recentemente")
-      const latestTerm = glossary[glossary.length - 1];
-      list.push(`📖 Fundamento de: ${latestTerm.term} 🕯️`);
+      const randomTerm = glossary[Math.floor(Math.random() * glossary.length)];
+      list.push(`📖 Fundamento de: ${randomTerm.term} 🕯️`);
     }
 
     // 3. Engajamento com Mídia - Pontos
@@ -81,38 +93,59 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestion
       }
     }
 
-    // 5. Preenchimento de até 5
+    // Ao invés de dependermos 100% de coisas fixas por dia, adicionamos um pool vasto de perguntas curadas
     const fallbacks = [
       "⚔️ Quais as ervas para o pai Ogum? 🌿",
       "🥁 O que significa Macumba? 📿",
       "🎶 Me ensine um ponto antigo 👴🏿",
       "👼 Como firmar meu anjo da guarda? 🕯️",
       "🕊️ Quais linhas trabalham na umbanda? 🌟",
+      "💎 Qual a diferença entre pedras quentes e frias? 🪨",
+      "🌊 Que banho posso tomar na sexta-feira? 🛀",
+      "🌟 Me conte uma curiosidade sobre Exu 🔱",
+      "🪴 Como montar um altar em casa? 🕊️",
+      "🕰️ Quando a Umbanda foi fundada? 📜",
+      "🌹 O que simboliza a coroa da Pombagira? 💃",
+      "⚖️ O que é a lei de causa e efeito? 🌀",
+      "🌿 Qual a diferença de banho de ori e descarrego? 💦",
     ];
 
-    let i = 0;
-    while (list.length < 5 && i < fallbacks.length) {
-      if (!list.includes(fallbacks[i])) {
-        list.push(fallbacks[i]);
-      }
-      i++;
-    }
+    // Adiciona items do fallback garantindo randomização forte a cada refresh
+    list = [...list, ...shuffleArray(fallbacks)];
+
+    // Precisamos embaralhar toda a lista para que a cada refresh os itens mudem de ordem
+    const shuffledList = shuffleArray(Array.from(new Set(list)));
 
     // Garante que retorne exatamente até 5 sugestões
-    return list.slice(0, 5);
-  }, [books, glossary, pontos, events, dayOfWeek, tomorrowStr]);
+    return shuffledList.slice(0, 5);
+  }, [books, glossary, pontos, events, dayOfWeek, tomorrowStr, refreshCount]);
 
   return (
-    <>
-      {suggestions.map((action, index) => (
-         <button 
-           key={`${action}-${index}`}
-           onClick={() => onSuggestionClick(action)}
-           className="shrink-0 w-[150px] px-3 py-2 bg-[#0f172a]/50 hover:bg-[#D4AF37]/10 text-xs font-sans text-white font-medium rounded-2xl border-[0.5px] border-[#D4AF37]/60 transition-all duration-300 focus:outline-none whitespace-normal text-left leading-snug"
-         >
-           {action}
-         </button>
-      ))}
-    </>
+    <div className="flex flex-col w-full relative group/suggestions">
+      <div className="flex justify-between items-center w-full px-1 mb-2">
+        <span className="text-[12px] font-medium text-white/50 tracking-wide font-sans">
+          Sugestões rápidas
+        </span>
+        <button
+          onClick={() => setRefreshCount(prev => prev + 1)}
+          className="text-white/40 hover:text-[#D4AF37] p-1 rounded-full transition-all flex items-center justify-center opacity-0 group-hover/suggestions:opacity-100 focus:opacity-100"
+          title="Gerar novas sugestões"
+        >
+          <RefreshCw className="w-[14px] h-[14px]" />
+        </button>
+      </div>
+
+      <div className="flex gap-2 w-full overflow-x-auto pb-1 scrollbar-hide px-1 snap-x">
+        {suggestions.map((action, index) => (
+           <button 
+             key={`${action}-${index}`}
+             onClick={() => onSuggestionClick(action)}
+             className="shrink-0 w-[200px] sm:w-[180px] p-2.5 bg-[#0f172a]/50 hover:bg-[#0f172a] text-[13px] font-sans text-white/90 font-medium rounded-[14px] border-[0.5px] border-[#D4AF37]/30 hover:border-[#D4AF37]/80 hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none whitespace-normal text-left leading-normal snap-start"
+           >
+             {action}
+           </button>
+        ))}
+      </div>
+    </div>
   );
 };

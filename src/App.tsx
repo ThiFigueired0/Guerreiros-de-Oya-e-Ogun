@@ -519,6 +519,7 @@ function SocialButtons() {
   const [shouldAnimate, setShouldAnimate] = React.useState(false);
 
   React.useEffect(() => {
+    setShouldAnimate(false);
     const checkPreloader = () => {
       if (!document.getElementById('splash-preloader')) {
         setTimeout(() => setShouldAnimate(true), 300);
@@ -527,7 +528,7 @@ function SocialButtons() {
       }
     };
     checkPreloader();
-  }, []);
+  }, [location.pathname]);
 
   return (
     <div key={location.pathname} className="w-full flex-row gap-0 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">

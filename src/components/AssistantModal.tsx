@@ -10,23 +10,24 @@ import { SmartSuggestions } from './SmartSuggestions';
 
 // (Removido quickActions fixos, será usado SmartSuggestions no seu lugar no JSX)
 
-const TypewriterMarkdown = ({ content }: { content: string }) => {
+const TypewriterMarkdown = ({ content, onComplete }: { content: string, onComplete?: () => void }) => {
   const [displayedContent, setDisplayedContent] = useState('');
 
   useEffect(() => {
     setDisplayedContent('');
     let i = 0;
     const interval = setInterval(() => {
-      if (i < content.length-1) {
+      if (i < content.length - 1) {
         setDisplayedContent(prev => prev + content.charAt(i));
         i++;
       } else {
         setDisplayedContent(content);
         clearInterval(interval);
+        if (onComplete) onComplete();
       }
     }, 15);
     return () => clearInterval(interval);
-  }, [content]);
+  }, [content, onComplete]);
 
   return <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>;
 };
@@ -53,6 +54,30 @@ const LeafAnimation = () => {
     );
 };
 
+const parseContent = (content: string) => {
+  let mainContent = content;
+  let suggestions: string[] = [];
+  
+  const tagStart = '<sugestoes>';
+  const tagEnd = '</sugestoes>';
+  const startIndex = content.indexOf(tagStart);
+  
+  if (startIndex !== -1) {
+    mainContent = content.substring(0, startIndex).trim();
+    const suggestBlock = content.substring(startIndex + tagStart.length);
+    
+    const endIndex = suggestBlock.indexOf(tagEnd);
+    const rawSuggestions = endIndex !== -1 ? suggestBlock.substring(0, endIndex) : suggestBlock;
+    
+    suggestions = rawSuggestions
+      .split('\n')
+      .map(s => s.trim().replace(/^[-*]\s*/, ''))
+      .filter(s => s.length > 0);
+  }
+  
+  return { mainContent, suggestions };
+};
+
 const AssistantModal = () => {
     const { 
         showAssistantModal, setShowAssistantModal, 
@@ -62,13 +87,66 @@ const AssistantModal = () => {
     } = useAssistant();
     
     const [isFocused, setIsFocused] = useState(false);
+    const [isChatStarted, setIsChatStarted] = useState(messages.length > 1);
+    const [isTyping, setIsTyping] = useState(false);
+
+    useEffect(() => {
+      setIsChatStarted(messages.length > 1);
+    }, [messages.length]);
+    
+    // When a request is loading, we are about to type soon, so optionally clear or set typing.
+    // Setting isTyping(true) when loading ensures that suggestions are hidden.
+    useEffect(() => {
+      if (isChatLoading) {
+         setIsTyping(true);
+      }
+    }, [isChatLoading]);
+    
     const assistantAvatarRef = useRef<HTMLInputElement>(null);
     const userAvatarRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isAutoScrollEnabledRef = useRef(true);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+      // If user scrolls up more than 100px from the bottom, pause auto-scroll
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+      isAutoScrollEnabledRef.current = isAtBottom;
+    };
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (isAutoScrollEnabledRef.current) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
     }, [messages, isChatLoading]);
+
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      let timeoutId: NodeJS.Timeout;
+      
+      const observer = new MutationObserver(() => {
+        if (isAutoScrollEnabledRef.current) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 50);
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+
+      return () => {
+          observer.disconnect();
+          clearTimeout(timeoutId);
+      };
+    }, []);
     
     return (
         <AnimatePresence>
@@ -94,7 +172,7 @@ const AssistantModal = () => {
                   setShowAssistantModal(false);
                 }
               }}
-              className="relative w-full lg:max-w-3xl h-[85vh] lg:h-[80vh] bg-[#0f172a]/90 backdrop-blur-[16px] rounded-t-[24px] lg:rounded-[24px] flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3)] border-[0.5px] border-white/10 border-t-[#D4AF37] font-sans tracking-[-0.02em] overflow-hidden"
+              className="relative w-full lg:max-w-3xl h-[85dvh] lg:h-[80vh] bg-[#0f172a]/90 backdrop-blur-[16px] rounded-t-[24px] lg:rounded-[24px] flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3)] border-[0.5px] border-white/10 border-t-[#D4AF37] font-sans tracking-[-0.02em] overflow-hidden"
             >
               <div className="bg-[#070a13]/95 backdrop-blur-[15px] border-b-[0.5px] border-white/5 px-6 py-3.5 flex flex-col shrink-0 relative z-10 group/header">
                 <div className="flex items-center justify-between">
@@ -146,7 +224,11 @@ const AssistantModal = () => {
               
               <LeafAnimation />
               
-              <div className="flex-1 overflow-y-auto mt-6 mb-4 px-6 relative scrollbar-hide">
+              <div 
+                ref={containerRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto mt-6 mb-4 px-6 relative scrollbar-hide"
+              >
                 <div className="space-y-6">
                   {messages.length === 0 && !isChatLoading && (
                     <motion.div 
@@ -165,47 +247,78 @@ const AssistantModal = () => {
                     </motion.div>
                   )}
 
-                  {messages.map((m, i) => (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                      key={i} 
-                      className={cn(
-                        "flex items-start gap-2.5 text-[14px] lg:text-[15px] max-w-[95%] lg:max-w-[85%] relative font-sans",
-                        m.role === 'user' ? "flex-row-reverse self-end ml-auto" : "self-start"
-                      )}
-                    >
-                       {m.role === 'assistant' && (
-                         <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37] bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
-                             {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-[#D4AF37]" />}
-                         </div>
-                       )}
-                       {m.role === 'user' && (
-                         <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37]/50 bg-gradient-to-br from-[#D4AF37] to-[#B49020] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
-                             {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-black/80" />}
-                         </div>
-                       )}
-                      <div className={cn(
-                        "px-4 py-3 rounded-[20px] overflow-hidden backdrop-blur-md relative z-10 w-full",
-                        m.role === 'assistant' 
-                          ? "bg-[#f1f5f9]/95 text-[#0f172a] rounded-tl-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]" 
-                          : "bg-gradient-to-br from-[#D4AF37] to-[#B49020] text-black rounded-tr-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]"
-                      )}>
-                        {m.role === 'assistant' ? (
-                          <div className="prose prose-sm prose-p:leading-relaxed prose-headings:text-[#0f172a] prose-headings:font-[600] prose-a:text-[#D4AF37] prose-strong:text-[#0f172a] prose-strong:font-[600] max-w-none text-[#0f172a] font-sans tracking-[-0.02em] prose-td:border prose-td:border-slate-200 prose-th:border prose-th:border-slate-200 prose-table:border-collapse prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-code:text-[#D4AF37] prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-[400] prose-code:rounded">
-                            {i === messages.length - 1 ? (
-                                <TypewriterMarkdown content={m.content} />
-                            ) : (
-                                <Markdown remarkPlugins={[remarkGfm]}>{m.content}</Markdown>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="leading-relaxed whitespace-pre-wrap font-medium">{m.content}</p>
+                  {messages.map((m, i) => {
+                    const isAssistant = m.role === 'assistant';
+                    const { mainContent, suggestions } = isAssistant ? parseContent(m.content) : { mainContent: m.content, suggestions: [] };
+
+                    return (
+                    <div key={i} className={cn("flex flex-col gap-2 w-full", m.role === 'user' ? "items-end" : "items-start")}>
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className={cn(
+                          "flex items-start gap-2.5 text-[14px] lg:text-[15px] max-w-[95%] lg:max-w-[85%] relative font-sans",
+                          m.role === 'user' ? "flex-row-reverse self-end ml-auto" : "self-start"
                         )}
-                      </div>
-                    </motion.div>
-                  ))}
+                      >
+                         {m.role === 'assistant' && (
+                           <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37] bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
+                               {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-[#D4AF37]" />}
+                           </div>
+                         )}
+                         {m.role === 'user' && (
+                           <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37]/50 bg-gradient-to-br from-[#D4AF37] to-[#B49020] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
+                               {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-black/80" />}
+                           </div>
+                         )}
+                        <div className={cn(
+                          "px-4 py-3 rounded-[20px] overflow-hidden backdrop-blur-md relative z-10 w-full flex flex-col gap-3",
+                          m.role === 'assistant' 
+                            ? "bg-[#f1f5f9]/95 text-[#0f172a] rounded-tl-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]" 
+                            : "bg-gradient-to-br from-[#D4AF37] to-[#B49020] text-black rounded-tr-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]"
+                        )}>
+                          {m.role === 'assistant' ? (
+                            <div className="prose prose-sm prose-p:leading-relaxed prose-headings:text-[#0f172a] prose-headings:font-[600] prose-a:text-[#D4AF37] prose-strong:text-[#0f172a] prose-strong:font-[600] max-w-none text-[#0f172a] font-sans tracking-[-0.02em] prose-td:border prose-td:border-slate-200 prose-th:border prose-th:border-slate-200 prose-table:border-collapse prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-code:text-[#D4AF37] prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-[400] prose-code:rounded">
+                              {i === messages.length - 1 ? (
+                                  <TypewriterMarkdown 
+                                    content={mainContent} 
+                                    onComplete={() => setIsTyping(false)} 
+                                  />
+                              ) : (
+                                  <Markdown remarkPlugins={[remarkGfm]}>{mainContent}</Markdown>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="leading-relaxed whitespace-pre-wrap font-medium">{m.content}</p>
+                          )}
+                        </div>
+                      </motion.div>
+                      
+                      {isAssistant && suggestions.length > 0 && i === messages.length - 1 && !isChatLoading && !isTyping && !chatInput.trim() && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                          className="flex flex-wrap gap-2 mt-1 ml-11 pl-1 max-w-[85%]"
+                        >
+                          {suggestions.map((s, idx) => (
+                            <button 
+                               key={idx} 
+                               onClick={() => {
+                                  setIsChatStarted(true);
+                                  handleChatSend(s);
+                               }}
+                               className="px-3 py-1.5 bg-[#0f172a]/70 hover:bg-[#0f172a] text-[12px] font-sans text-white/90 font-medium rounded-[12px] border-[0.5px] border-[#D4AF37]/40 hover:border-[#D4AF37]/80 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none text-left"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </div>
+                    );
+                  })}
                   
                   {isChatLoading && (
                     <motion.div 
@@ -230,10 +343,16 @@ const AssistantModal = () => {
                 </div>
               </div>
               
-              <div className="pb-4 px-6 shrink-0 flex flex-col gap-1.5 relative z-10">
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
-                  <SmartSuggestions onSuggestionClick={handleChatSend} />
+              {(!isChatStarted && !isChatLoading) && (
+                <div className="pb-2 px-6 shrink-0 flex flex-col gap-1.5 relative z-10 w-full">
+                  <SmartSuggestions onSuggestionClick={(suggestion) => {
+                    handleChatSend(suggestion);
+                    setIsChatStarted(true);
+                  }} />
                 </div>
+              )}
+              
+              <div className="pb-[max(1rem,env(safe-area-inset-bottom))] px-6 shrink-0 flex flex-col gap-1.5 relative z-10">
                 
                 <div 
                   className={cn(
@@ -255,29 +374,32 @@ const AssistantModal = () => {
                       value={chatInput} 
                       onChange={e => {
                         setChatInput(e.target.value);
-                        e.target.style.height = '44px';
+                        e.target.style.height = 'auto';
                         e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                       }} 
                       onKeyDown={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
+                          setIsChatStarted(true);
                           handleChatSend(chatInput);
-                          e.currentTarget.style.height = '44px';
+                          e.currentTarget.style.height = 'auto';
                         }
                       }}
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
                       placeholder="Pergunte ao Mini Chefinho..." 
-                      className="flex-1 bg-transparent px-2 py-[10px] mb-0.5 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-snug font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide"
+                      className="flex-1 bg-transparent px-2 py-3 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-tight font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide flex items-center justify-center align-middle"
                       rows={1}
-                      style={{ height: '44px' }}
                     />
                     <div className="flex items-center gap-1 shrink-0 pr-1 mb-1">
                       <button className="p-2 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none" title="Mensagem de voz">
                         <Mic className="w-[18px] h-[18px]" />
                       </button>
                       <button
-                        onClick={() => handleChatSend(chatInput)}
+                        onClick={() => {
+                          setIsChatStarted(true);
+                          handleChatSend(chatInput);
+                        }}
                         disabled={!chatInput.trim()}
                         className={cn(
                           "flex items-center justify-center transition-all duration-300 p-2 rounded-full",
