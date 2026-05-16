@@ -268,7 +268,7 @@ const AssistantModal = () => {
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
                       placeholder="Pergunte ao Mini Chefinho..." 
-                      className="flex-1 bg-transparent px-2 py-3 mb-0.5 min-h-[44px] max-h-[120px] resize-none text-[15px] font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide"
+                      className="flex-1 bg-transparent px-2 py-[10px] mb-0.5 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-snug font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide"
                       rows={1}
                       style={{ height: '44px' }}
                     />
