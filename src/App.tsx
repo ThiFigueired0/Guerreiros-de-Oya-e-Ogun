@@ -516,56 +516,87 @@ function SocialButtons() {
     orixaPhotos: {}
   });
 
-  // Removed path check to display on all pages
   return (
-    <div className="w-full flex flex-row gap-3 px-8 -mt-6 mb-8 relative z-30 items-center justify-center">
+    <div className="w-full flex-row gap-0 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
+      
+      {/* INSTAGRAM (Left) */}
       <motion.a
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: "100%", opacity: 1 }}
+        style={{ maxWidth: 180 }}
+        transition={{ duration: 0.2, delay: 0.2, ease: "easeOut" }}
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
         href="https://www.instagram.com/guerreirosdeoyaeogum/"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "flex-1 p-3 rounded-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[#000000]/60 border-white/10"
+          "h-12 rounded-l-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 mr-[-24px]",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6)] border-white/10"
         )}
       >
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
-          {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
-            <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
-          )}
-        </div>
-        <div className="text-left relative z-10 mx-auto">
-          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">Instagram</h3>
-        </div>
+        <motion.div 
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ duration: 0.2, delay: 0.4 }}
+           className="h-full flex items-center justify-start gap-3 pl-2 sm:pl-3 pr-[32px] absolute right-0 min-w-[140px] sm:min-w-[170px]"
+        >
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
+            {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
+              <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
+            )}
+          </div>
+          <div className="text-left relative z-10 mx-auto whitespace-nowrap">
+            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">Instagram</h3>
+          </div>
+        </motion.div>
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
       
-      <div className="absolute left-1/2 -translate-x-1/2 z-[9999] pointer-events-auto">
-        {!isScrolled && <AssistantButton onClick={() => { console.log('Botão clicado a partir do SocialButtons'); setShowAssistantModal(true); }} />}
-      </div>
+      {/* ROBÔ (Center) */}
+      <motion.div 
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [1.1, 1], opacity: 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="z-50 relative shrink-0 pointer-events-auto flex items-center justify-center w-14 h-14"
+      >
+        {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
+      </motion.div>
 
+      {/* TIKTOK (Right) */}
       <motion.a
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: "100%", opacity: 1 }}
+        style={{ maxWidth: 180 }}
+        transition={{ duration: 0.2, delay: 0.2, ease: "easeOut" }}
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
         href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "flex-1 p-3 rounded-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center gap-3 group transition-all overflow-hidden relative pointer-events-auto",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[#000000]/60 border-white/10"
+          "h-12 rounded-r-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 ml-[-24px]",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6)] border-white/10"
         )}
       >
-        <div className="text-left relative z-10 mx-auto">
-          <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
-        </div>
-        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
-          {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
-            <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
-          )}
-        </div>
+        <motion.div 
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ duration: 0.2, delay: 0.4 }}
+           className="h-full flex items-center justify-end gap-3 pr-2 sm:pr-3 pl-[32px] absolute left-0 min-w-[140px] sm:min-w-[170px]"
+        >
+          <div className="text-right relative z-10 mx-auto whitespace-nowrap">
+            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none">TikTok</h3>
+          </div>
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden">
+            {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
+              <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
+            )}
+          </div>
+        </motion.div>
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
       </motion.a>
+
     </div>
   );
 }

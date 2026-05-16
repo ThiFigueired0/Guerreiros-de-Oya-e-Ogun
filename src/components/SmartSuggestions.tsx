@@ -108,7 +108,7 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestion
          <button 
            key={`${action}-${index}`}
            onClick={() => onSuggestionClick(action)}
-           className="shrink-0 px-[14px] py-[8px] bg-[#0f172a]/50 hover:bg-[#D4AF37]/10 text-[13px] font-sans text-white font-[500] rounded-full border-[0.5px] border-[#D4AF37]/60 transition-all duration-300 focus:outline-none whitespace-nowrap"
+           className="shrink-0 px-3 py-2 bg-[#0f172a]/50 hover:bg-[#D4AF37]/10 text-xs font-sans text-white font-medium rounded-full border-[0.5px] border-[#D4AF37]/60 transition-all duration-300 focus:outline-none whitespace-nowrap"
          >
            {action}
          </button>
