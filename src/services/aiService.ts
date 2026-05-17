@@ -26,7 +26,6 @@ const getTavilyApiKey = () => {
 
 const searchTavily = async (query: string): Promise<string> => {
   const apiKey = getTavilyApiKey();
-  console.log('Chave Tavily:', apiKey ? 'OK' : 'Faltando');
   if (!apiKey) return "";
   
   try {
@@ -44,8 +43,7 @@ const searchTavily = async (query: string): Promise<string> => {
     });
     
     if (!response.ok) {
-      console.error("Tavily search failed code:", response.status);
-      throw new Error("Tavily api error");
+      return "";
     }
     
     const data = await response.json();
@@ -53,8 +51,7 @@ const searchTavily = async (query: string): Promise<string> => {
     
     return data.results.map((r: any) => `Fonte: ${r.url}\nResumo: ${r.content}`).join("\n\n");
   } catch (error) {
-    console.error("Tavily search error:", error);
-    throw new Error('Erro técnico na busca', { cause: error });
+    return "";
   }
 };
 
@@ -64,7 +61,9 @@ export const askAI = async (
   userName: string = 'Guerreiro',
   projectStateSummary: string = '',
   currentPage: string = '',
-  userMetadata: any = null
+  userMetadata: any = null,
+  onChunk?: (chunk: string) => void,
+  guestSelectedModel?: string
 ): Promise<string> => {
   const apiKey = getApiKey();
   
@@ -152,9 +151,37 @@ Lembre-se: Você é o assistente oficial do projeto, traga segurança, respeito 
 
 DIRETRIZES DE TRATAMENTO E GERAÇÃO DE MÍDIA:
 10. Você agora recebe o contexto de imagens e documentos traduzidos em texto pelo sistema através de tags como [O usuário anexou uma imagem que contém: ...] ou [Conteúdo do PDF anexado: ...]. Interprete essas descrições com o seu profundo conhecimento espiritual. Se descreverem uma folha, ferramenta ou guia, identifique o fundamento e explique ao usuário com propriedade e carisma.
-11. Sempre que o usuário te pedir para "gerar", "criar" ou "montar" um documento, guia, lista de compras para ritual ou cronograma, estruture sua resposta em texto de forma extremamente organizada, utilizando tópicos claros ou listas limpas. O sistema usará sua resposta para gerar um arquivo PDF baixável para o usuário, então seja caprichoso na organização do texto e na formatação.
+11. Sempre que o usuário te pedir EXPLICITAMENTE para "gerar", "criar" ou "montar" um documento, arquivo ou PDF (ex: "consolide em um documento", "gere um pdf", "crie um arquivo"), estruture sua resposta em texto de forma organizada. MUITO IMPORTANTE: Você **DEVE** incluir a tag especial <pdf_ready/> no final da sua resposta para sinalizar ao sistema que um botão de download deve ser exibido. Não inclua essa tag se o usuário não pediu um documento.
+12. Destaque sempre em **negrito** os nomes de Entidades, Orixás e Divindades na sua resposta (ex: **Exu**, **Iemanjá**, **Zé Pelintra**). O sistema aplicará uma cor especial dourada nessas palavras.
 
-[RELATÓRIO DO SISTEMA PARA CONTEXTO DA RESPOSTA]
+DIRETRIZES DE RESUMO E NAVEGAÇÃO:
+13. MODO RESUMO: Sempre que o usuário pedir para "resumir", "resume aí", "condensar" ou pedir uma versão mais curta de um texto longo ou explicação anterior, você DEVE condensar o conteúdo em poucos tópicos curtos (bullet points), de forma direta e objetiva, mantendo apenas a essência dos fundamentos ou da mensagem.
+14. NAVEGAÇÃO AUTÔNOMA: Sempre que o usuário pedir para você abrir uma tela, acessar uma página, mostrar alguma lista do projeto ou mudar de página (ex: "abra minha lista de banhos", "vá para a agenda", "me mostre as finanças"), você DEVE gerar uma tag especial de navegação no formato <navigate path="/caminho"/> no final da sua resposta, além de uma mensagem amigável de confirmação.
+Os caminhos disponíveis no sistema são:
+- Início / Visão geral: /home
+- Agenda / Eventos: /calendar
+- Banhos / Ervas: /herbs
+- Trabalhos / Rituais: /trab
+- Pontos cantados: /points
+- Estudos / Fundamentos: /studies
+- Notas / Anotações: /notes
+- Financeiro / Caixa: /finance
+- Ajustes / Perfil: /settings
+
+DIRETRIZES DE CRONOGRAMA E DATAS:
+14. A data atual do sistema é ${new Date().toISOString()}.
+15. Sempre que o usuário perguntar sobre "próximos eventos", "agenda" ou "o que vai acontecer", utilize a data atual como ponto de corte absoluto.
+16. REGRA DE FILTRAGEM RÍGIDA: Compare o mês e o ano da data atual com os eventos disponíveis. Se um evento tiver uma data ANTERIOR à data de hoje, você deve IGNORÁ-LO completamente. Ele não existe mais para a agenda de próximos eventos.
+17. Caso o próximo evento da lista já tenha passado e não haja eventos futuros cadastrados, seja honesto de forma natural. (Ex: "Olha, na nossa agenda local o último evento foi a Festa de Marias em janeiro, então para os próximos dias não tenho nada marcado por aqui. Quer que eu verifique alguma outra coisa sobre os fundamentos?")
+18. REGRA DE ANÁLISE DE AGENDA: Sempre que o usuário perguntar pelo "primeiro", "último" ou fizer perguntas sobre os limites da agenda do ano, você deve fazer uma varredura COMPLETA em todas as linhas do contexto de eventos fornecido. Não assuma que o primeiro mês que você encontrou no meio do texto é o fim da lista. Olhe até a última linha do contexto para identificar o evento com a maior data do ano (ex: dezembro) antes de responder qual é o último. Seja extremamente preciso com os nomes e datas. Se houver eventos em dezembro, o último é o de dezembro, e não o de julho.
+19. DIRETRIZ DE SEGURANÇA DA AGENDA: Você só deve informar eventos baseando-se ESTREITAMENTE no histórico/contexto interno da agenda que foi fornecido a você pelo sistema. Proibição de busca externa: Se o usuário perguntar sobre a agenda do ano e você notar que faltam meses (como o segundo semestre), você NUNCA deve buscar eventos na internet ou inventar feiras, shows ou feriados externos de São Paulo para preencher a resposta.
+
+DIRETRIZES DE CONSULTA AOS DADOS DO USUÁRIO E CONHECIMENTO PRÓPRIO (CRÍTICO):
+19. Sempre que o usuário perguntar sobre "o que eu tenho", "o que está cadastrado", "meu estoque", "minhas ervas", "quais banhos possuo", LER O [RELATÓRIO DO SISTEMA].
+20. Para listar O QUE O USUÁRIO TEM SALVO, baseie-se APENAS na lista de itens anexada no relatório abaixo. Liste cuidadosamente o que o usuário tem lá. Se o relatório não tiver os dados dele, diga que ele não tem nada salvo sobre isso.
+21. PORÉM, para responder a perguntas TÉCNICAS (MISTÉRIOS), ensinar as "ervas de um banho" se elas não estiverem no relatório, ensinar "simpatias", "pontos", ou esclarecer DÚVIDAS ESPIRITUAIS, você é um sábio e **DEVE** usar o SEU VASTO CONHECIMENTO (seja da net ou de seus dados internos) para ensinar, somando à realidade dele. MISTURE as ervas que ele tem com o que falta, etc. Não recuse ensinar só porque não está no relatório!
+
+[RELATÓRIO DO SISTEMA DE DADOS CADASTRADOS PELO USUÁRIO (LEIA COM ATENÇÃO)]
 ${systemReport}
 
 Regras adicionais:
@@ -165,51 +192,158 @@ Regras adicionais:
   }
 
   try {
-    let response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: finalMessages,
-        temperature: 0.7,
-        max_tokens: 1024
-      })
-    });
+    let isStream = !!onChunk;
+    let response: Response | undefined;
+    let isOpenRouter = false;
 
-    if (!response.ok && response.status === 429) {
-      console.warn('Groq Rate Limit on llama-3.3-70b-versatile. Falling back to llama-3.1-8b-instant...');
-      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    try {
+      const targetModel = guestSelectedModel || 'llama-3.3-70b-versatile';
+      isOpenRouter = targetModel.includes('/');
+      const endpoint = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
+      
+      let primaryKey = apiKey;
+      if (isOpenRouter) {
+        primaryKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+        if (!primaryKey) {
+          console.warn('VITE_OPENROUTER_API_KEY ausente para OpenRouter.');
+          throw new Error('VITE_OPENROUTER_API_KEY ausente');
+        }
+      }
+
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${primaryKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Mini Chefinho'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
+          model: targetModel,
           messages: finalMessages,
           temperature: 0.7,
-          max_tokens: 1024
+          max_tokens: 1024,
+          stream: isStream
         })
       });
-    }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Groq API Error:', response.status, errorText);
-      try {
-        const errorJson = JSON.parse(errorText);
-        // Only return generic error to user, keep details in console to avoid ugly UI
-        return `O assistente está temporariamente indisponível. Detalhe: ${errorJson.error?.message || response.statusText}`;
-      } catch (e) {
-        return `O assistente está temporariamente indisponível (Erro ${response.status}).`;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`[${isOpenRouter ? 'OpenRouter' : 'Groq'} Error] ${response.status} - ${errorText}`);
+      }
+    } catch (error: any) {
+      console.warn('Primary request failed...', error.message || error);
+      const isRateLimit = error.message?.includes('429') || error.message?.includes('too large');
+      
+      let fallbackSuccess = false;
+      const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
+      // 1. Tentar OpenRouter como primeiro nível de fallback se não estiver usando ele primariamente
+      if (!isOpenRouter && openRouterKey) {
+        console.warn('Tentando fallback no OpenRouter (google/gemini-2.0-flash-lite-preview-02-05:free)...');
+        try {
+          response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openRouterKey}`,
+              'HTTP-Referer': window.location.origin,
+              'X-Title': 'Mini Chefinho'
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
+              messages: finalMessages,
+              temperature: 0.7,
+              max_tokens: 1024,
+              stream: isStream
+            })
+          });
+          
+          if (response && response.ok) {
+            fallbackSuccess = true;
+          } else if (response) {
+            console.warn('Fallback OpenRouter falhou:', await response.text());
+          }
+        } catch (e) {
+          console.warn('Erro de rede no fallback OpenRouter:', e);
+        }
+      }
+
+      // 2. Se der rate limit no modelo principal e OpenRouter falhou/não configurado,
+      // tenta o modelo menor e mais restrito do Groq.
+      if (!fallbackSuccess && (isRateLimit || guestSelectedModel?.includes('/'))) {
+        console.warn('Tentando fallback no Groq com llama-3.1-8b-instant...');
+        response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-8b-instant',
+            messages: finalMessages,
+            temperature: 0.7,
+            max_tokens: 1024,
+            stream: isStream
+          })
+        });
+
+        if (!response || !response.ok) {
+          const errorText = response ? await response.text() : 'Network error';
+          const statusResult = response ? response.status : 500;
+          const statusText = response ? response.statusText : 'Error';
+          console.error('Fallback API Error:', statusResult, errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            return `O assistente está temporariamente indisponível. Detalhe: ${errorJson.error?.message || statusText}`;
+          } catch (e) {
+            return `O assistente está temporariamente indisponível (Erro ${statusResult}).`;
+          }
+        }
+      } else if (!fallbackSuccess) {
+        return `O assistente falhou na requisição. Detalhe: ${error.message}`;
       }
     }
 
-    const data = await response.json();
-    return data.choices[0]?.message?.content || 'Sem resposta.';
+    if (isStream && response && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullContent = "";
+      let buffer = "";
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith("data: ") && trimmedLine !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(trimmedLine.slice(6));
+                if (data.choices && data.choices[0]?.delta?.content) {
+                  const text = data.choices[0].delta.content;
+                  fullContent += text;
+                  onChunk!(text);
+                }
+              } catch (e) {
+                // Parse errors can happen with partial streams, ignore
+              }
+            }
+          }
+        }
+      }
+      return fullContent || 'Sem resposta.';
+    }
+
+    if (response) {
+      const data = await response.json();
+      return data.choices[0]?.message?.content || 'Sem resposta.';
+    }
+    
+    return 'Sem resposta.';
   } catch (error) {
     return 'Houve um problema ao processar sua pergunta.';
   }
@@ -322,38 +456,67 @@ const getHuggingFaceApiKey = () => {
 };
 
 export const analyzeImage = async (imageBlob: Blob): Promise<string> => {
-  const apiKey = getHuggingFaceApiKey();
+  const apiKey = getApiKey(); // uses Groq key
   if (!apiKey) {
-    throw new Error('Chave API Hugging Face não encontrada.');
+    throw new Error('Chave API GROQ não encontrada para Visão.');
   }
 
-  // Usando um modelo de imagem para texto do Hugging Face.
-  // Modelos alternativos: nlpconnect/vit-gpt2-image-captioning, Salesforce/blip-image-captioning-large
-  const response = await fetch('https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/octet-stream',
-    },
-    body: imageBlob,
-  });
+  try {
+    const arrayBuffer = await imageBlob.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+    const base64Image = `data:${imageBlob.type || 'image/jpeg'};base64,${base64Data}`;
 
-  if (!response.ok) {
-    throw new Error(`Falha ao analisar a imagem: ${response.status}`);
-  }
+    const prompt = "Describe this image in detail, focusing on identifying objects, colors, plants, or symbols, in a way that can be used for a chat assistant context.";
 
-  const result = await response.json();
-  if (result && result.length > 0 && result[0].generated_text) {
-    return result[0].generated_text;
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: base64Image } }
+            ]
+          }
+        ],
+        temperature: 0.5,
+        max_tokens: 300
+      }),
+    });
+
+    if (!response.ok) {
+      const errTxt = await response.text();
+      console.error('Groq Vision Error:', errTxt);
+      throw new Error(`A API de Visão falhou com status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.choices[0]?.message?.content || 'Análise de imagem concluída, mas sem detalhes fornecidos.';
+  } catch (error) {
+    if (error instanceof Error) {
+        throw new Error(error.message, { cause: error });
+    }
+    throw new Error('Falha de conexão com a API de Visão.', { cause: error });
   }
-  return 'A IA não conseguiu interpretar os detalhes formatados da imagem.';
 };
 
 export const extractTextFromPdf = async (pdfBlob: Blob): Promise<string> => {
   try {
-    // Import dynamically to avoid SSR/Vite issues if any
     const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerPort) {
+      // Use module worker to avoid Vite dynamically injecting ?import on a text string
+      const workerUrl = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(workerUrl, { type: 'module' });
+    }
 
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -372,7 +535,7 @@ export const extractTextFromPdf = async (pdfBlob: Blob): Promise<string> => {
     return fullText;
   } catch (error) {
     console.error("Erro ao processar PDF:", error);
-    throw new Error("Não foi possível extrair o texto do PDF.");
+    throw new Error("Não foi possível extrair o texto do PDF.", { cause: error });
   }
 };
 
@@ -418,6 +581,6 @@ export const generateSpeech = async (text: string): Promise<Blob> => {
 
     return await response.blob();
   } catch (error) {
-    throw new Error("API indisponível ou falha de rede"); // Triggers fallback
+    throw new Error("API indisponível ou falha de rede", { cause: error }); // Triggers fallback
   }
 };

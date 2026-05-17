@@ -634,11 +634,12 @@ export default function HerbsScreen() {
 
     const processImport = (text: string) => {
       try {
-        const blocks = text.split('--------------------------');
+        const cleanText = text.replace('=== RELAÇÃO DE BANHOS ===', '');
+        const blocks = cleanText.split('--------------------------');
         const newBaths: HerbBath[] = [];
         
         blocks.forEach(block => {
-          if (!block.trim() || block.includes('=== RELAÇÃO DE BANHOS ===')) return;
+          if (!block.trim()) return;
           
           const lines = block.split('\n').map(l => l.trim());
           
@@ -686,25 +687,32 @@ export default function HerbsScreen() {
         });
         
         if (newBaths.length > 0) {
-          if (window.confirm(`${newBaths.length} banhos encontrados. Deseja adicionar?`)) {
-            setBaths(prev => {
-               const copy = [...prev];
-               newBaths.forEach(nb => {
-                 const exists = copy.some(c => c.title === nb.title && Math.abs(c.herbs.length - nb.herbs.length) < 5);
-                 if (!exists) copy.push(nb);
-               });
-               return copy;
-            });
-            alert("Banhos importados com sucesso!");
-          }
+          setBaths(prev => {
+             const copy = [...prev];
+             newBaths.forEach(nb => {
+               const exists = copy.some(c => c.title === nb.title && Math.abs(c.herbs.length - nb.herbs.length) < 5);
+               if (!exists) copy.push(nb);
+             });
+             return copy;
+          });
+          setNotifications(prev => [{
+             id: `import_${Date.now()}`,
+             title: `${newBaths.length} banho(s) importados.`,
+             timestamp: Date.now(),
+             category: 'sistema',
+             read: false
+          }, ...prev].slice(0, 100));
+          alert(`${newBaths.length} banhos importados com sucesso!`);
         } else {
-          alert("Nenhum banho encontrado ou formato inválido.");
+          alert("Nenhum banho encontrado ou formato inválido. Certifique-se de que o arquivo está no formato correto.");
         }
       } catch (err) {
         console.error(err);
         alert("Erro ao ler o arquivo.");
       }
-      e.target.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     };
 
     const reader = new FileReader();

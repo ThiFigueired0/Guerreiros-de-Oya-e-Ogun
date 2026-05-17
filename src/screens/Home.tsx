@@ -42,7 +42,6 @@ export default function HomeScreen() {
   const [isLoadingAI, setIsLoadingAI] = React.useState(false);
   const [dailyFact, setDailyFact] = React.useState<{title: string, content: string, category: string} | null>(null);
   const [isLoadingFact, setIsLoadingFact] = React.useState(false);
-  const [showAssistantModal, setShowAssistantModal] = React.useState(false);
   const [userAvatar, setUserAvatar] = React.useState<string | null>(null);
   const [assistantAvatar, setAssistantAvatar] = React.useState<string | null>(null);
   const userAvatarRef = useRef<HTMLInputElement>(null);
@@ -164,7 +163,6 @@ export default function HomeScreen() {
     setNotes(prev => [newNote, ...prev]);
     setNoteTitle('');
     setNoteContent('');
-    setShowAssistantModal(false);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string | null>>) => {
@@ -1091,136 +1089,6 @@ export default function HomeScreen() {
           </div>
         </div>
       </section>
-      {/* Assistant Bottom Sheet */}
-      <AnimatePresence>
-        {showAssistantModal && (
-          <div className="fixed inset-0 z-[1000] flex flex-col justify-end">
-            {/* Backdrop Blur */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAssistantModal(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-md"
-            />
-            {/* Bottom Sheet */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.1}
-              onDragEnd={(_, info) => {
-                if (info.offset.y > 100) setShowAssistantModal(false);
-              }}
-              className="relative w-full h-[80vh] bg-[#F2F4F7] rounded-t-[30px] p-6 flex flex-col shadow-[0_-5px_15px_rgba(0,0,0,0.1)]"
-            >
-              {/* Indicator Handle */}
-              <div className="w-16 h-1.5 bg-brand-gold rounded-full mx-auto mb-6" />
-
-              {/* Header */}
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="relative group cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
-                    <div className="w-12 h-12 rounded-full border-2 border-brand-gold overflow-hidden bg-white flex items-center justify-center">
-                      {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR)
-                        ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> 
-                        : <Bot className="w-6 h-6 text-brand-gold" />
-                      }
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                        <span className="text-[8px] text-white font-bold">Trocar</span>
-                      </div>
-                    </div>
-                    <input type="file" ref={assistantAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setAssistantAvatar)} />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#F2F4F7] bg-brand-gold" />
-                  </div>
-                  <h3 className="text-3xl font-serif font-bold text-[#2D3436] tracking-wide">
-                    Mini <span className="text-brand-gold">Chefinho</span>
-                  </h3>
-                </div>
-                <button onClick={() => setShowAssistantModal(false)} className="p-1 border border-brand-gold rounded-full text-brand-gold hover:bg-brand-gold/10 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Suggestions Chips (Pílulas) */}
-              <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                {['🔍 Quem é Ogum?', '🕯️ Fundamentos de Oya', '📚 Dúvida de ADM'].map((suggestion) => (
-                  <button 
-                    key={suggestion}
-                    className="px-4 py-2 rounded-full border border-brand-gold text-[#2D3436] text-xs font-medium whitespace-nowrap hover:bg-brand-gold/10 transition-all"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-
-              {/* Chat Area */}
-              <div className="flex-1 overflow-y-auto mb-6 space-y-6">
-                {messages.map((m, i) => (
-                  <div 
-                    key={i} 
-                    className={cn(
-                      "flex items-start gap-3 text-sm max-w-[85%] relative",
-                      m.role === 'user' ? "flex-row-reverse self-end" : "self-start"
-                    )}
-                  >
-                    <div 
-                      className={cn(
-                        "w-8 h-8 rounded-full border border-brand-gold overflow-hidden shrink-0 flex items-center justify-center bg-white cursor-pointer",
-                        m.role === 'user' && "bg-[#E3E8EE]"
-                      )}
-                      onClick={() => m.role === 'user' && userAvatarRef.current?.click()}
-                    >
-                      {m.role === 'assistant' ? (
-                        (assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />
-                      ) : (
-                        userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-gray-500" />
-                      )}
-                    </div>
-                    {m.role === 'user' && <input type="file" ref={userAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setUserAvatar)} />}
-                    <div className={cn(
-                      "p-4 rounded-2xl shadow-sm",
-                      m.role === 'assistant' 
-                        ? "bg-white text-[#2D3436]" 
-                        : "bg-[#E3E8EE] text-[#2D3436]"
-                    )}>
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && <div className="text-xs text-brand-gold italic">Pensando, Chefinho...</div>}
-              </div>
-              
-              {/* Input Area Integrated */}
-              <div className="pb-2">
-                <div className="flex items-center gap-2">
-                  <input 
-                    value={chatInput} 
-                    onChange={e => setChatInput(e.target.value)} 
-                    onKeyPress={e => e.key === 'Enter' && handleChatSend()}
-                    placeholder="Como posso te ajudar hoje, Chefinho?" 
-                    className="flex-1 bg-transparent p-2 text-sm text-[#2D3436] placeholder-slate-500 focus:outline-none"
-                  />
-                  <button
-                    onClick={handleChatSend}
-                    disabled={!chatInput.trim()}
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                      chatInput.trim() ? "bg-brand-gold text-white shadow-lg shadow-brand-gold/20" : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                    )}
-                  >
-                    <ArrowUp className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Daily Fact Modal */}
       <AnimatePresence>
         {showDailyFactModal && (
