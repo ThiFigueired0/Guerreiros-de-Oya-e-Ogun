@@ -55,6 +55,61 @@ const searchTavily = async (query: string): Promise<string> => {
   }
 };
 
+// Local fallback using WebLLM
+const runLocalFallback = async (
+  messages: { role: 'user' | 'assistant' | 'system', content: string }[],
+  onChunk?: (chunk: string) => void
+): Promise<string> => {
+  try {
+    console.warn("⚠️ Ativando Modo de Segurança Local (WebLLM)... O primeiro carregamento pode demorar.");
+    
+    // Dynamically import WebLLM so it doesn't block initial page load
+    const webllm = await import('@mlc-ai/web-llm');
+    
+    // Use a lightweight model for fallback
+    const selectedModel = 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
+    
+    const engine = await webllm.CreateMLCEngine(selectedModel, {
+      initProgressCallback: (progress) => {
+        console.log(`[WebLLM Progress] ${progress.text}`);
+      }
+    });
+    
+    // We map messages to ChatCompletionMessageParam format used by WebLLM
+    const chatMessages = messages.map(m => ({ 
+      role: m.role as "system" | "user" | "assistant", 
+      content: m.content 
+    }));
+    
+    if (onChunk) {
+       let fullReply = "";
+       const asyncChunkGenerator = await engine.chat.completions.create({
+         messages: chatMessages,
+         temperature: 0.7,
+         stream: true,
+       });
+       
+       for await (const chunk of asyncChunkGenerator) {
+         if (chunk.choices[0]?.delta?.content) {
+            const text = chunk.choices[0].delta.content;
+            fullReply += text;
+            onChunk(text);
+         }
+       }
+       return fullReply;
+    } else {
+       const reply = await engine.chat.completions.create({
+         messages: chatMessages,
+         temperature: 0.7,
+       });
+       return reply.choices[0]?.message?.content || "Sem resposta no modo local.";
+    }
+  } catch (err: any) {
+    console.error("Falha no Modo de Segurança Local:", err);
+    throw new Error(`Falha local total: ${err.message}`);
+  }
+};
+
 export const askAI = async (
   messages: { role: 'user' | 'assistant' | 'system', content: string }[],
   locationStr: string = '',
@@ -105,13 +160,19 @@ export const askAI = async (
     systemReport += `Pesquisa Web Externa (Tavily): \n${searchResults}\n\n`;
   }
 
-  // Filtrar as mensagens originais
-  let finalMessages = messages.filter(m => m.role !== 'system');
+  // Poda de Contexto Local (Context Truncation)
+  // Limita o histórico de mensagens para evitar estouro de tokens e lentidão
+  let chatMessages = messages.filter(m => m.role !== 'system');
+  const totalChars = chatMessages.reduce((acc, msg) => acc + msg.content.length, 0);
   
-  // A última mensagem do usuário enviaremos separadamente ou a modificaremos:
-  // "Altere a lógica para que a mensagem do usuário seja enviada APÓS esses dados de contexto."
-  // Faremos isso modificando o finalMessages
+  // Poda as mensagens mais antigas mantendo apenas as 4 últimas se exceder os gatilhos
+  if (chatMessages.length > 4 || totalChars > 8000) {
+    chatMessages = chatMessages.slice(-4);
+  }
+  
+  let finalMessages = [...chatMessages];
 
+  // Adiciona a diretriz do Sistema (System Prompt) fixamente
   if (!finalMessages.some(m => m.role === 'system')) {
     finalMessages.unshift({
         role: 'system',
@@ -194,93 +255,51 @@ Regras adicionais:
   try {
     let isStream = !!onChunk;
     let response: Response | undefined;
-    let isOpenRouter = false;
+    
+    const targetModel = guestSelectedModel || 'llama-3.3-70b-versatile';
+    const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
-    try {
-      const targetModel = guestSelectedModel || 'llama-3.3-70b-versatile';
-      isOpenRouter = targetModel.includes('/');
-      const endpoint = isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
-      
-      let primaryKey = apiKey;
-      if (isOpenRouter) {
-        primaryKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-        if (!primaryKey) {
-          console.warn('VITE_OPENROUTER_API_KEY ausente para OpenRouter.');
-          throw new Error('VITE_OPENROUTER_API_KEY ausente');
-        }
+    // Failover Loop (Pool de Provedores)
+    const providers = [];
+    
+    // Provedor 1: Groq (Primário)
+    if (apiKey && !targetModel.includes('/')) {
+      providers.push({ name: 'Groq (Primário)', endpoint: 'https://api.groq.com/openai/v1/chat/completions', key: apiKey, model: targetModel });
+    }
+    
+    if (openRouterKey) {
+      if (targetModel.includes('/')) {
+        providers.push({ name: 'OpenRouter (Selecionado)', endpoint: 'https://openrouter.ai/api/v1/chat/completions', key: openRouterKey, model: targetModel });
       }
+      // Provedor 2: OpenRouter (Llama 3.3 70B equivalente)
+      providers.push({ name: 'OpenRouter (Llama 3.3 70B)', endpoint: 'https://openrouter.ai/api/v1/chat/completions', key: openRouterKey, model: 'meta-llama/llama-3.3-70b-instruct' });
+      // Provedor 3: Fallback OpenRouter Menor (Llama 3.1 8B Free/SambaNova/Together)
+      providers.push({ name: 'OpenRouter / Fallback Server (Llama 3.1 8B)', endpoint: 'https://openrouter.ai/api/v1/chat/completions', key: openRouterKey, model: 'meta-llama/llama-3.1-8b-instruct:free' });
+      // Provedor 4: Fallback final para Gemini 2.0 Flash Lite via OpenRouter
+      providers.push({ name: 'OpenRouter (Gemini 2.0 Flash Lite)', endpoint: 'https://openrouter.ai/api/v1/chat/completions', key: openRouterKey, model: 'google/gemini-2.0-flash-lite-preview-02-05:free' });
+    }
+    
+    if (apiKey) {
+      // Provedor 5: Groq Fallback 8B (último recurso rápido)
+      providers.push({ name: 'Groq (Fallback 8B)', endpoint: 'https://api.groq.com/openai/v1/chat/completions', key: apiKey, model: 'llama-3.1-8b-instant' });
+    }
+    
+    let lastError: Error | null = null;
 
-      response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${primaryKey}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Mini Chefinho'
-        },
-        body: JSON.stringify({
-          model: targetModel,
-          messages: finalMessages,
-          temperature: 0.7,
-          max_tokens: 1024,
-          stream: isStream
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`[${isOpenRouter ? 'OpenRouter' : 'Groq'} Error] ${response.status} - ${errorText}`);
-      }
-    } catch (error: any) {
-      console.warn('Primary request failed...', error.message || error);
-      const isRateLimit = error.message?.includes('429') || error.message?.includes('too large');
-      
-      let fallbackSuccess = false;
-      const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-
-      // 1. Tentar OpenRouter como primeiro nível de fallback se não estiver usando ele primariamente
-      if (!isOpenRouter && openRouterKey) {
-        console.warn('Tentando fallback no OpenRouter (google/gemini-2.0-flash-lite-preview-02-05:free)...');
-        try {
-          response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${openRouterKey}`,
-              'HTTP-Referer': window.location.origin,
-              'X-Title': 'Mini Chefinho'
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.0-flash-lite-preview-02-05:free',
-              messages: finalMessages,
-              temperature: 0.7,
-              max_tokens: 1024,
-              stream: isStream
-            })
-          });
-          
-          if (response && response.ok) {
-            fallbackSuccess = true;
-          } else if (response) {
-            console.warn('Fallback OpenRouter falhou:', await response.text());
-          }
-        } catch (e) {
-          console.warn('Erro de rede no fallback OpenRouter:', e);
-        }
-      }
-
-      // 2. Se der rate limit no modelo principal e OpenRouter falhou/não configurado,
-      // tenta o modelo menor e mais restrito do Groq.
-      if (!fallbackSuccess && (isRateLimit || guestSelectedModel?.includes('/'))) {
-        console.warn('Tentando fallback no Groq com llama-3.1-8b-instant...');
-        response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    for (const provider of providers) {
+      try {
+        console.log(`[Failover Loop] Tentando provedor: ${provider.name} com modelo ${provider.model}...`);
+        
+        const res = await fetch(provider.endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${provider.key}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'Mini Chefinho'
           },
           body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
+            model: provider.model,
             messages: finalMessages,
             temperature: 0.7,
             max_tokens: 1024,
@@ -288,20 +307,27 @@ Regras adicionais:
           })
         });
 
-        if (!response || !response.ok) {
-          const errorText = response ? await response.text() : 'Network error';
-          const statusResult = response ? response.status : 500;
-          const statusText = response ? response.statusText : 'Error';
-          console.error('Fallback API Error:', statusResult, errorText);
-          try {
-            const errorJson = JSON.parse(errorText);
-            return `O assistente está temporariamente indisponível. Detalhe: ${errorJson.error?.message || statusText}`;
-          } catch (e) {
-            return `O assistente está temporariamente indisponível (Erro ${statusResult}).`;
-          }
+        if (!res.ok) {
+          throw new Error(`[${provider.name} Error] ${res.status} - ${await res.text()}`);
         }
-      } else if (!fallbackSuccess) {
-        return `O assistente falhou na requisição. Detalhe: ${error.message}`;
+
+        response = res;
+        break; // Sucesso, aborta o loop e continua o processamento
+      } catch (err: any) {
+        console.warn(`[Failover Loop] Falha no provedor ${provider.name}:`, err.message || err);
+        lastError = err;
+      }
+    }
+
+    if (!response) {
+      console.warn(`[Failover Loop] Todos os provedores falharam. Acionando Fallback Local WebLLM...`);
+      try {
+        if (onChunk) {
+          onChunk("*(Modo de Segurança Local ativado: Servidores indisponíveis. Processando no seu dispositivo...)*\n\n");
+        }
+        return await runLocalFallback(finalMessages, onChunk);
+      } catch (localErr: any) {
+        return `O assistente está temporariamente indisponível. Motivo: ${lastError?.message || 'Todos os provedores falharam.'} (Fallback Local: ${localErr.message})`;
       }
     }
 

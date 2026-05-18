@@ -514,8 +514,15 @@ const AssistantModal = () => {
       isAutoScrollEnabledRef.current = isAtBottom;
     };
 
-    const handleTypingComplete = (text: string) => {
+    const handleTypingComplete = (index: number) => {
       setIsTyping(false);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        if (newMessages[index]) {
+          newMessages[index] = { ...newMessages[index], isTyped: true };
+        }
+        return newMessages;
+      });
     };
 
     const handleChatInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -654,22 +661,24 @@ const AssistantModal = () => {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="fixed bottom-24 right-5 w-16 h-16 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-2 border-[#D4AF37] overflow-hidden z-[99999] flex items-center justify-center bg-[#0f172a] cursor-pointer group"
+              className="fixed bottom-24 right-5 w-16 h-16 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-2 border-[#D4AF37] z-[99999] cursor-pointer group"
               onClick={() => setIsPipMode(false)}
             >
-               <div className="absolute inset-0 bg-[#D4AF37]/10 animate-pulse" />
-               {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
-                  ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10 pointer-events-none" /> 
-                  : <Bot className="w-8 h-8 text-[#D4AF37] relative z-10 pointer-events-none" />
-               }
-               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm z-20">
-                  <Maximize className="w-6 h-6 text-white" />
+               <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center bg-[#0f172a]">
+                 <div className="absolute inset-0 bg-[#D4AF37]/10 animate-pulse" />
+                 {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
+                    ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10 pointer-events-none" /> 
+                    : <Bot className="w-8 h-8 text-[#D4AF37] relative z-10 pointer-events-none" />
+                 }
+                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm z-20">
+                    <Maximize className="w-6 h-6 text-white" />
+                 </div>
                </div>
                <button 
                   onClick={(e) => { e.stopPropagation(); setShowAssistantModal(false); setIsPipMode(false); }} 
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-30 shadow-md"
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-30 shadow-md"
                >
-                  <X className="w-3 h-3" />
+                  <X className="w-4 h-4" />
                </button>
             </motion.div>
         )}
@@ -895,10 +904,10 @@ const AssistantModal = () => {
                           )}>
                             {m.role === 'assistant' ? (
                               <div className="prose prose-sm prose-p:leading-relaxed prose-headings:text-[#0f172a] prose-headings:font-[600] prose-a:text-[#D4AF37] prose-strong:text-[#D4AF37] prose-strong:font-[700] prose-strong:-tracking-[0.01em] max-w-none text-[#0f172a] font-sans tracking-[-0.02em] prose-td:border prose-td:border-slate-200 prose-th:border prose-th:border-slate-200 prose-table:border-collapse prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-code:text-[#D4AF37] prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-[400] prose-code:rounded">
-                                {i === messages.length - 1 ? (
+                                {!m.isTyped ? (
                                     <TypewriterMarkdown 
                                       content={mainContent} 
-                                      onComplete={() => handleTypingComplete(mainContent)} 
+                                      onComplete={() => handleTypingComplete(i)} 
                                     />
                                 ) : (
                                     <Markdown remarkPlugins={[remarkGfm]}>{mainContent}</Markdown>

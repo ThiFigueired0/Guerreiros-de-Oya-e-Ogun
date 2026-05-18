@@ -8,8 +8,8 @@ import { supabase } from './supabase';
 interface AssistantContextType {
   showAssistantModal: boolean;
   setShowAssistantModal: (show: boolean) => void;
-  messages: { role: 'user' | 'assistant', content: string, timestamp?: number }[];
-  setMessages: React.Dispatch<React.SetStateAction<{ role: 'user' | 'assistant', content: string, timestamp?: number }[]>>;
+  messages: { role: 'user' | 'assistant', content: string, timestamp?: number, isTyped?: boolean }[];
+  setMessages: React.Dispatch<React.SetStateAction<{ role: 'user' | 'assistant', content: string, timestamp?: number, isTyped?: boolean }[]>>;
   isChatLoading: boolean;
   setIsChatLoading: (loading: boolean) => void;
   chatInput: string;
@@ -77,8 +77,8 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [currentSessionId, setCurrentSessionId] = useStorage<string | null>('templo_current_chat_session', null);
 
   const [showAssistantModal, setShowAssistantModalState] = useState(false);
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, timestamp?: number }[]>([
-    { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?', timestamp: Date.now() }
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, timestamp?: number, isTyped?: boolean }[]>([
+    { role: 'assistant', content: 'Olá! Como posso te ajudar hoje?', timestamp: Date.now(), isTyped: true }
   ]);
 
   // Sincronizar mensagens com was session loaded
@@ -86,7 +86,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     if (currentSessionId && sessions.length > 0) {
       const sess = sessions.find((s: any) => s.id === currentSessionId);
       if (sess && sess.messages?.length > 0) {
-        setMessages(sess.messages);
+        setMessages(sess.messages.map((m: any) => ({ ...m, isTyped: true })));
       }
     }
   }, [currentSessionId]);
@@ -251,7 +251,9 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
              }
              localData += `[${key}]: ${strVal}\n`;
           }
-        } catch(e) {}
+        } catch(e) {
+          // ignore parsing error
+        }
       }
 
       return `[Supabase]\n${supabaseData || 'Nenhum'}\n\n[Local]\n${localData || 'Nenhum'}`;
@@ -333,7 +335,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const createNewSession = () => {
     setCurrentSessionId(null);
-    setMessages([{ role: 'assistant', content: 'Olá! Como posso te ajudar hoje?', timestamp: Date.now() }]);
+    setMessages([{ role: 'assistant', content: 'Olá! Como posso te ajudar hoje?', timestamp: Date.now(), isTyped: true }]);
   };
 
   const clearChat = () => createNewSession();
