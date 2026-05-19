@@ -131,7 +131,7 @@ function Navigation() {
   return (
     <>
       <nav className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
+        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] transition-colors duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
         settings.darkMode && "bg-[#121212]/70 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
       )}>
         <div className="flex justify-between items-center w-full relative">
@@ -148,7 +148,7 @@ function Navigation() {
                   setShowMore(false);
                 }}
                 className={cn(
-                  "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-500 ease-out z-10",
+                  "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-colors duration-200 ease-out z-10 touch-manipulation active:scale-95 [-webkit-tap-highlight-color:transparent]",
                   isActive ? (settings.darkMode ? "text-white" : "text-brand-navy") : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 )}
               >
@@ -163,14 +163,14 @@ function Navigation() {
                   />
                 )}
                 <IconComponent className={cn(
-                  "w-6 h-6 transition-transform duration-300", 
-                  isActive ? "stroke-[2.5px] scale-105" : "scale-100"
+                  "w-6 h-6 transition-transform duration-200", 
+                  isActive ? "stroke-[2.5px] scale-105 -translate-y-1" : "scale-100"
                 )} />
                 <span className={cn(
-                  "text-[9px] font-bold mt-1 transition-all duration-300 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1",
-                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 absolute bottom-1"
+                  "absolute bottom-2 text-[9px] font-bold transition-all duration-200 max-w-full overflow-hidden text-ellipsis whitespace-nowrap px-1",
+                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none"
                 )}>
-                  {isActive && tab.label}
+                  {tab.label}
                 </span>
               </Link>
             );
@@ -179,7 +179,7 @@ function Navigation() {
           <button
             onClick={() => setShowMore(!showMore)}
             className={cn(
-              "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-500 ease-out z-10",
+              "relative flex flex-col items-center justify-center w-14 h-14 rounded-full transition-colors duration-200 ease-out z-10 touch-manipulation active:scale-95 [-webkit-tap-highlight-color:transparent]",
               (showMore || activeTabInSecondary) ? (settings.darkMode ? "text-white" : "text-brand-navy") : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
@@ -196,8 +196,8 @@ function Navigation() {
             
             <div className="relative">
                <LayoutGrid className={cn(
-                 "w-6 h-6 transition-transform duration-300", 
-                 (showMore || activeTabInSecondary) ? "stroke-[2.5px] scale-105" : "scale-100"
+                 "w-6 h-6 transition-transform duration-200", 
+                 (showMore || activeTabInSecondary) ? "stroke-[2.5px] scale-105 -translate-y-1" : "scale-100"
                )} />
                {activeTabInSecondary && !showMore && (
                  <div className="absolute 0 top-0 right-0 w-2 h-2 bg-[#B8860B] rounded-full border border-white dark:border-[#121212]" />
@@ -205,10 +205,10 @@ function Navigation() {
             </div>
             
             <span className={cn(
-              "text-[9px] font-bold mt-1 transition-all duration-300",
-              (showMore || activeTabInSecondary) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 absolute bottom-1"
+              "absolute bottom-2 text-[9px] font-bold transition-all duration-200",
+              (showMore || activeTabInSecondary) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 pointer-events-none"
             )}>
-              {(showMore || activeTabInSecondary) && 'Menu'}
+              Menu
             </span>
           </button>
         </div>
@@ -254,7 +254,7 @@ function Navigation() {
                       key={tab.path}
                       to={tab.path}
                       onClick={() => setShowMore(false)}
-                      className="flex flex-col items-center gap-2 group"
+                      className="flex flex-col items-center gap-2 group active:scale-95 transition-transform touch-manipulation [-webkit-tap-highlight-color:transparent]"
                     >
                       <div className={cn(
                         "w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-300 relative group-hover:scale-105",
@@ -317,10 +317,10 @@ const TopHeader = React.memo(function TopHeader() {
   }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
 
   const leaves = React.useMemo(() => {
-    return [...Array(60)].map((_, i) => ({
+    return [...Array(15)].map((_, i) => ({
       id: i,
-      size: 10 + Math.random() * 20,
-      duration: 15 + Math.random() * 30,
+      size: 15 + Math.random() * 20,
+      duration: 20 + Math.random() * 30,
       delay: Math.random() * -20,
       opacity: 0.15 + Math.random() * 0.25,
       pathX: Math.random() * 200 - 100,
@@ -568,7 +568,7 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center relative pointer-events-auto z-10 origin-center mystical-aura",
+          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
           settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
         )}
       >
@@ -587,7 +587,6 @@ function SocialButtons() {
             <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">Instagram</h3>
           </div>
         </motion.div>
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
       </motion.a>
       
       {/* Separator / Gap visually addressed by parent flex */}
@@ -603,7 +602,7 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center relative pointer-events-auto z-10 origin-center mystical-aura",
+          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
           settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
         )}
       >
@@ -622,7 +621,6 @@ function SocialButtons() {
             )}
           </div>
         </motion.div>
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
       </motion.a>
 
     </div>
@@ -1172,10 +1170,10 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
   }, [show]);
 
   const leaves = React.useMemo(() => {
-    return [...Array(25)].map((_, i) => ({
+    return [...Array(8)].map((_, i) => ({
       id: i,
       size: 15 + Math.random() * 25,
-      duration: 8 + Math.random() * 12,
+      duration: 12 + Math.random() * 12,
       delay: Math.random() * -20,
       left: `${Math.random() * 100}%`,
     }));

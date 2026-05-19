@@ -32,7 +32,7 @@
   border-radius: inherit;
   padding: 3px;
   background: conic-gradient(
-    from var(--aura-angle),
+    from 0deg,
     rgba(212, 175, 55, 0) 0%,
     rgba(205, 127, 50, 0.4) 25%,
     rgba(212, 175, 55, 0.8) 60%,
@@ -42,7 +42,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: nameAuraSpin 12s linear infinite;
+  animation: etherealSpin 12s linear infinite;
   z-index: -1;
   pointer-events: none;
   filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6)) blur(1px);
@@ -55,7 +55,7 @@
   border-radius: inherit;
   padding: 2px;
   background: conic-gradient(
-    from calc(var(--aura-angle) - 180deg),
+    from 180deg,
     rgba(205, 127, 50, 0) 0%,
     rgba(205, 127, 50, 0.3) 40%,
     rgba(255, 235, 160, 0.6) 75%,
@@ -64,11 +64,45 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: nameAuraSpin 18s linear infinite reverse;
+  animation: etherealSpin 18s linear infinite reverse;
   z-index: -2;
   pointer-events: none;
   filter: drop-shadow(0 0 4px rgba(205, 127, 50, 0.4)) blur(1px);
   opacity: 0.8;
+}
+
+@keyframes panBorder {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.mystical-aura-btn {
+  position: relative;
+}
+
+.mystical-aura-btn::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 20%,
+    rgba(255, 235, 160, 1) 40%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 235, 160, 1) 60%,
+    transparent 80%,
+    transparent 100%
+  );
+  background-size: 200% auto;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: panBorder 3s linear infinite;
+  z-index: -1;
+  pointer-events: none;
 }
 
 @property --aura-angle {
@@ -242,6 +276,7 @@
   animation: floating var(--duration, 25s) linear infinite;
   animation-delay: var(--delay, 0s);
   left: var(--left, 50%);
+  will-change: transform;
 }
 
 .react-pdf__Page__textContent:not(.no-select) {

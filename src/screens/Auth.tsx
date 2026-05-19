@@ -131,7 +131,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
   };
 
   const leaves = useMemo(() => {
-    return [...Array(60)].map((_, i) => ({
+    return [...Array(15)].map((_, i) => ({
       id: i,
       size: 32 + Math.random() * 40, // even larger size
       duration: 15 + Math.random() * 30,
