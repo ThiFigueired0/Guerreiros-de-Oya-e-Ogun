@@ -80,7 +80,7 @@ export interface UsefulContact {
   isFixed?: boolean;
 }
 
-export const DEFAULT_TEMPLO_LOGO = 'https://res.cloudinary.com/dpv8m5igw/image/upload/v1779129046/2530f586-95fd-45d1-a887-8be0458a0a28_ztv0ly.jpg';
+export const DEFAULT_TEMPLO_LOGO = 'https://res.cloudinary.com/dpv8m5igw/video/upload/v1779208720/WhatsApp_Video_2026-05-19_at_13.23.46_fs21bg.mp4';
 export const DEFAULT_INSTAGRAM_LOGO = 'https://res.cloudinary.com/dpv8m5igw/image/upload/v1778870299/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA1L3JtNTMzLW5lb24tMDAzLmpwZw_ci3qyh.webp';
 export const DEFAULT_TIKTOK_LOGO = 'https://res.cloudinary.com/dpv8m5igw/image/upload/v1778870382/655140_uxy5kh.webp';
 export const DEFAULT_ASSISTANT_AVATAR = 'https://res.cloudinary.com/dpv8m5igw/image/upload/v1778872491/15d88a8c-a394-432e-a4ba-abed0f7bb4b1_epejjh.jpg';

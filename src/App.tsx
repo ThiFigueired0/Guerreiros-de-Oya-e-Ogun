@@ -335,13 +335,13 @@ const TopHeader = React.memo(function TopHeader() {
   return (
     <div 
       className={cn(
-        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[40dvh] sm:min-h-0",
+        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[40dvh] sm:min-h-0 z-20",
         settings.darkMode 
           ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
           : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
       )}
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 90px)',
         paddingBottom: '4rem',
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
@@ -425,18 +425,18 @@ const TopHeader = React.memo(function TopHeader() {
           className="flex flex-col items-center mb-8 gap-2"
         >
           {fullName && (
-            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-2 focus-within:ring-2 ring-brand-gold/50 name-aura">
+            <div className="bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-brand-gold/30 mb-2 flex items-center justify-center gap-1.5 focus-within:ring-2 ring-brand-gold/50 name-aura shadow-sm">
               {isGuest ? (
-                <Ghost className="w-3.5 h-3.5 text-white/80" />
+                <Ghost className="w-3 h-3 text-brand-gold/80" />
               ) : settings.profilePhoto ? (
-                <div className="w-5 h-5 rounded-full overflow-hidden border border-white/30">
+                <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-brand-gold/40 shadow-inner">
                   <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
                 </div>
               ) : null}
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">{fullName}</span>
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] pt-[1px]">{fullName}</span>
             </div>
           )}
-          <h2 className="text-brand-copper font-serif text-[11px] sm:text-[13px] uppercase tracking-[0.4em] sm:tracking-[0.5em] font-black text-center px-2 whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[16px] sm:text-[18px] md:text-[22px] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
             Guerreiros de Oya e Ogum
           </h2>
           <motion.div 
@@ -480,24 +480,46 @@ const TopHeader = React.memo(function TopHeader() {
           </div>
 
           <div className={cn(
-            "w-40 h-40 rounded-full bg-white relative frame-3d mystical-aura",
-            settings.darkMode ? "bg-gray-950" : "bg-white"
+            "w-44 h-44 rounded-full relative frame-3d mystical-aura",
+            settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
           )}>
             {/* Glossy Overlay */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/5 via-white/20 to-transparent z-10 pointer-events-none mix-blend-overlay" />
             
-            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white p-1">
+            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative">
               {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
-                <img 
-                  src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
-                  alt="Logo Templo" 
-                  className="w-full h-full object-cover filter drop-shadow-md rounded-full"
-                />
+                (() => {
+                  const src = settings.logoBase64 || DEFAULT_TEMPLO_LOGO;
+                  return src.includes('.mp4') ? (
+                    <video 
+                      src={src} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className="w-full h-full object-cover filter drop-shadow-md rounded-full"
+                    />
+                  ) : (
+                    <img 
+                      src={src} 
+                      alt="Logo Templo" 
+                      className="w-full h-full object-cover filter drop-shadow-md rounded-full"
+                    />
+                  );
+                })()
               )}
             </div>
           </div>
         </motion.div>
       </div>
+
+      {/* Decorative Bottom Transition */}
+      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent z-20" />
+      <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
+      
+      {/* Light glow at the boundary */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 max-w-2xl h-8 bg-brand-gold/20 blur-xl z-0 pointer-events-none" />
+
     </div>
   );
 });
@@ -533,7 +555,7 @@ function SocialButtons() {
   }, [location.pathname]);
 
   return (
-    <div key={location.pathname} className="w-full flex-row gap-0 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
+    <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
       
       {/* INSTAGRAM (Left) */}
       <motion.a
@@ -546,15 +568,15 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-l-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 mr-[-24px] origin-right",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6)] border-white/10"
+          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center relative pointer-events-auto z-10 origin-center mystical-aura",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
         )}
       >
         <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: shouldAnimate ? 1 : 0 }}
            transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-start gap-3 pl-2 sm:pl-3 pr-[32px] absolute right-0 min-w-[140px] sm:min-w-[170px]"
+           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
         >
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-sm">
             {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
@@ -568,15 +590,7 @@ function SocialButtons() {
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
       </motion.a>
       
-      {/* ROBÔ (Center) */}
-      <motion.div 
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: shouldAnimate ? [0, 1.1, 1] : 0, opacity: shouldAnimate ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="z-50 relative shrink-0 pointer-events-auto flex items-center justify-center w-14 h-14"
-      >
-        {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
-      </motion.div>
+      {/* Separator / Gap visually addressed by parent flex */}
 
       {/* TIKTOK (Right) */}
       <motion.a
@@ -589,15 +603,15 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-r-[24px] bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 ml-[-24px] origin-left",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6)] border-white/10"
+          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center relative pointer-events-auto z-10 origin-center mystical-aura",
+          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
         )}
       >
         <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: shouldAnimate ? 1 : 0 }}
            transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-end gap-3 pr-2 sm:pr-3 pl-[32px] absolute left-0 min-w-[140px] sm:min-w-[170px]"
+           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
         >
           <div className="text-right relative z-10 mx-auto whitespace-nowrap">
             <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">TikTok</h3>
@@ -742,7 +756,7 @@ function NotificationCenter({
 
   return (
     <>
-      <div className="absolute top-3 right-6 z-[60]">
+      <div className="absolute top-4 right-4 sm:right-6 z-[60]">
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -1228,10 +1242,21 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               <motion.div 
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-48 h-48 sm:w-56 sm:h-56 rounded-full border-[1.5px] border-brand-gold/40 bg-white shadow-[0_15px_50px_rgba(0,0,0,0.6)] flex items-center justify-center p-2 overflow-hidden relative"
+                className="w-48 h-48 sm:w-56 sm:h-56 rounded-full frame-3d flex items-center justify-center overflow-hidden relative"
               >
                 {logo && (
-                  <img src={logo} alt="Logo" className="w-full h-full object-contain logo-optimized" />
+                  logo.includes('.mp4') ? (
+                    <video 
+                      src={logo} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className="w-full h-full object-cover logo-optimized rounded-full"
+                    />
+                  ) : (
+                    <img src={logo} alt="Logo" className="w-full h-full object-contain logo-optimized" />
+                  )
                 )}
               </motion.div>
             </motion.div>
@@ -1242,7 +1267,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               transition={{ delay: 0.4, duration: 0.8 }}
               className="mt-12 text-center"
             >
-              <h1 className="text-brand-gold font-serif text-xl sm:text-2xl tracking-[0.4em] sm:tracking-[0.5em] font-black uppercase drop-shadow-[0_2px_10px_rgba(218,165,32,0.4)] flex items-center justify-center gap-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <h1 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-xl sm:text-2xl tracking-[0.4em] sm:tracking-[0.5em] font-bold uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] flex items-center justify-center gap-2 pb-1 animate-shimmer-text" style={{ fontFamily: "'Playfair Display', serif" }}>
                 GUERREIROS DE OYA E OGUN
               </h1>
               
@@ -1276,6 +1301,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
+  const { setShowAssistantModal, isScrolled } = useAssistant();
   const [isRecovering, setIsRecovering] = useState(false);
 
   useEffect(() => {
@@ -1776,7 +1802,6 @@ function AppContent() {
 
   return (
     <UndoContext.Provider value={{ queueDelete }}>
-      <AssistantProvider>
         <AssistantWrapper />
       <InitialLoader 
         show={!isAppReady} 
@@ -1810,6 +1835,9 @@ function AppContent() {
             <>
               {/* Top Floating Buttons */}
               <GlobalSearch />
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center">
+                {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
+              </div>
               <NotificationCenter 
                 darkMode={settings.darkMode} 
                 notifications={notifications} 
@@ -1838,7 +1866,6 @@ function AppContent() {
           )}
         </div>
       </div>
-      </AssistantProvider>
     </UndoContext.Provider>
   );
 }
@@ -1846,7 +1873,9 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AssistantProvider>
+        <AppContent />
+      </AssistantProvider>
     </BrowserRouter>
   );
 }

@@ -19,7 +19,7 @@ app.post('/api/mini-chefinho', async (req, res) => {
   }
 
   // 1. Context Gathering using Supabase RAG
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:3000';
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

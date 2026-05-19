@@ -14,7 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseUrl || (typeof window !== "undefined" ? window.location.origin : 'http://localhost:3000'),
   supabaseAnonKey || 'placeholder-key',
   {
     global: {

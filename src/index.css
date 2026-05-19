@@ -32,7 +32,7 @@
   border-radius: inherit;
   padding: 3px;
   background: conic-gradient(
-    from 0deg,
+    from var(--aura-angle),
     rgba(212, 175, 55, 0) 0%,
     rgba(205, 127, 50, 0.4) 25%,
     rgba(212, 175, 55, 0.8) 60%,
@@ -42,7 +42,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: etherealSpin 5s linear infinite;
+  animation: nameAuraSpin 12s linear infinite;
   z-index: -1;
   pointer-events: none;
   filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6)) blur(1px);
@@ -55,7 +55,7 @@
   border-radius: inherit;
   padding: 2px;
   background: conic-gradient(
-    from 180deg,
+    from calc(var(--aura-angle) - 180deg),
     rgba(205, 127, 50, 0) 0%,
     rgba(205, 127, 50, 0.3) 40%,
     rgba(255, 235, 160, 0.6) 75%,
@@ -64,7 +64,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: etherealSpin 8s linear infinite reverse;
+  animation: nameAuraSpin 18s linear infinite reverse;
   z-index: -2;
   pointer-events: none;
   filter: drop-shadow(0 0 4px rgba(205, 127, 50, 0.4)) blur(1px);
@@ -104,7 +104,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: nameAuraSpin 5s linear infinite;
+  animation: nameAuraSpin 12s linear infinite;
   z-index: -1;
   pointer-events: none;
   filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.5));
@@ -126,7 +126,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  animation: nameAuraSpin 8s linear infinite reverse;
+  animation: nameAuraSpin 18s linear infinite reverse;
   z-index: -2;
   pointer-events: none;
   filter: drop-shadow(0 0 2px rgba(205, 127, 50, 0.3));
@@ -134,16 +134,56 @@
 }
 
 .frame-3d {
-  /* Moldura 3D luxuosa usando sombras múltiplas e bordas */
-  border: 4px solid #D4AF37;
-  border-bottom-color: #8A5A19;
-  border-right-color: #A67C00;
-  border-top-color: #FFDF73;
+  /* Soft, glass-like luxury frame */
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow: 
-    0 0 0 2px #3E2723, /* contorno escuro metálico */
-    0 15px 35px 5px rgba(0,0,0,0.6), /* sombra projetada profunda */
-    inset 0 6px 15px rgba(0,0,0,0.4), /* profundidade interna */
-    inset 0 -2px 10px rgba(255,255,255,0.2); /* reflexo interno */
+    0 0 0 1px rgba(212, 175, 55, 0.6) inset,
+    0 15px 35px 5px rgba(0,0,0,0.5),
+    inset 0 6px 15px rgba(0,0,0,0.3),
+    0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+@keyframes metallicShine {
+  0% { transform: translateX(-150%) skewX(-45deg); }
+  50%, 100% { transform: translateX(250%) skewX(-45deg); }
+}
+
+.glimmer-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.glimmer-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) skewX(-45deg);
+  animation: metallicShine 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 20;
+}
+
+@keyframes shimmerBackground {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-shimmer-text {
+  background-size: 200% auto;
+  animation: shimmerBackground 4s linear infinite;
 }
 
 /* Adjust aura for frame-3d specifically */

@@ -114,7 +114,7 @@ export function GlobalSearch() {
 
   return (
     <>
-      <div className="absolute top-3 left-6 z-[60]">
+      <div className="absolute top-4 left-4 sm:left-6 z-[60]">
         <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
