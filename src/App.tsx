@@ -425,7 +425,7 @@ const TopHeader = React.memo(function TopHeader() {
           className="flex flex-col items-center mb-8 gap-2"
         >
           {fullName && (
-            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-2 focus-within:ring-2 ring-brand-gold/50">
+            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-1 flex items-center justify-center gap-2 focus-within:ring-2 ring-brand-gold/50 name-aura">
               {isGuest ? (
                 <Ghost className="w-3.5 h-3.5 text-white/80" />
               ) : settings.profilePhoto ? (
@@ -480,19 +480,21 @@ const TopHeader = React.memo(function TopHeader() {
           </div>
 
           <div className={cn(
-            "w-40 h-40 rounded-full border-2 border-brand-copper/40 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center p-1.5 overflow-hidden relative",
-            settings.darkMode ? "bg-gray-950 border-brand-copper/20" : "bg-white"
+            "w-40 h-40 rounded-full bg-white relative frame-3d mystical-aura",
+            settings.darkMode ? "bg-gray-950" : "bg-white"
           )}>
             {/* Glossy Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
             
-            {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
-              <img 
-                src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
-                alt="Logo Templo" 
-                className="w-full h-full object-contain filter drop-shadow-md"
-              />
-            )}
+            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white p-1">
+              {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
+                <img 
+                  src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                  alt="Logo Templo" 
+                  className="w-full h-full object-cover filter drop-shadow-md rounded-full"
+                />
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
@@ -746,10 +748,10 @@ function NotificationCenter({
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowNotifications(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all",
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura",
             darkMode 
               ? "bg-black/40 border border-white/10" 
-              : "bg-white/10 border border-white/20 hover:bg-white/20"
+              : "bg-white/10 hover:bg-white/20"
           )}
         >
           <div className="relative">

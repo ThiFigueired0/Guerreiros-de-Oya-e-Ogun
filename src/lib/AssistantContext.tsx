@@ -158,56 +158,6 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
     const needsTrabs = isGeneralQuery || ['trabalho', 'oferenda', 'bicho', 'vela', 'firmeza', 'assentamento'].some(kw => questionLower.includes(kw));
 
     const fetchProjectContext = async () => {
-      let supabaseData = '';
-      if (user) {
-        supabaseData += `Perfil: ${JSON.stringify(dbUser || {})}\n`;
-        try {
-          const promises = [];
-          if (needsAgenda) promises.push(supabase.from('eventos').select('title, data_evento').eq('user_id', user.id).order('data_evento', { ascending: true }).limit(50));
-          if (needsHerbs) {
-            promises.push(supabase.from('estoques').select('name, in_stock, classification').eq('user_id', user.id).limit(100));
-            promises.push(supabase.from('banhos').select('title, category, herbs').eq('user_id', user.id).limit(200));
-          }
-          if (needsPoints) promises.push(supabase.from('pontos').select('title, type, isFavorite').eq('user_id', user.id).limit(50));
-          if (needsFinance) promises.push(supabase.from('financeiro').select('type, amount, description').eq('user_id', user.id).limit(50));
-          if (needsTrabs) {
-            promises.push(supabase.from('oferendas').select('title, entity').eq('user_id', user.id).limit(30));
-            promises.push(supabase.from('bichos').select('name, quantity').eq('user_id', user.id).limit(30));
-            promises.push(supabase.from('velas').select('color, quantity').eq('user_id', user.id).limit(30));
-          }
-
-          if (promises.length > 0) {
-            const results = await Promise.all(promises);
-            let idx = 0;
-            if (needsAgenda && results[idx]?.data?.length) supabaseData += `Agenda: ${results[idx++].data?.map((x:any) => `${x.data_evento}: ${x.title}`).join(' | ')}\n`;
-            if (needsHerbs) {
-              const est = results[idx++].data;
-              if (est?.length) supabaseData += `Ervas em Estoque: ${est.map((x:any) => `${x.name} (${x.in_stock ? 'Tem' : 'Falta'})`).join(', ')}\n`;
-              const bn = results[idx++].data;
-              if (bn?.length) supabaseData += `Banhos: ${bn.map((x:any) => `${x.title} (Cat: ${x.category}) -> Ervas: ${x.herbs?.replace(/\n/g, ', ')}`).join(' | ')}\n`;
-            }
-            if (needsPoints) {
-              const pt = results[idx++].data;
-              if (pt?.length) supabaseData += `Pontos: ${pt.map((x:any) => `${x.title}`).join(', ')}\n`;
-            }
-            if (needsFinance) {
-              const fn = results[idx++].data;
-              if (fn?.length) supabaseData += `Financeiro: ${JSON.stringify(fn)}\n`;
-            }
-            if (needsTrabs) {
-              const of = results[idx++].data;
-              if (of?.length) supabaseData += `Oferendas: ${JSON.stringify(of)}\n`;
-              const bi = results[idx++].data;
-              if (bi?.length) supabaseData += `Bichos: ${JSON.stringify(bi)}\n`;
-              const ve = results[idx++].data;
-              if (ve?.length) supabaseData += `Velas: ${JSON.stringify(ve)}\n`;
-            }
-          }
-        } catch (e) {
-          console.error("Erro ao buscar contexto", e);
-        }
-      }
-
       let localData = '';
       const ALL_KEYS = [
         'templo_events', 'templo_baths', 'templo_pontos', 'templo_folders',
@@ -232,7 +182,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
              let processed = parsed;
              if (Array.isArray(parsed)) {
                if (key === 'templo_baths') {
-                 processed = parsed.map((b: any) => (`${b.title} (Cat: ${b.category}) -> Ervas: ${b.herbs?.replace(/\n/g, ', ')}`)).join(' | ');
+                 processed = parsed.map((b: any) => (`${b.title} (Cat: ${b.category}) -> Ervas: ${b.herbs?.replace(/\\n/g, ', ')}`)).join(' | ');
                } else if (key === 'templo_pontos') {
                  processed = parsed.map((p: any) => (`${p.title} ${p.isFavorite ? '★' : ''}`)).join(', ');
                } else if (key === 'templo_events') {
@@ -256,7 +206,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       }
 
-      return `[Supabase]\n${supabaseData || 'Nenhum'}\n\n[Local]\n${localData || 'Nenhum'}`;
+      return `[Local]\n${localData || 'Nenhum'}`;
     };
 
     const projectStateSummary = await fetchProjectContext();
@@ -273,6 +223,7 @@ export const AssistantProvider: React.FC<{ children: ReactNode }> = ({ children 
          projectStateSummary,
          window.location.pathname,
          user?.user_metadata,
+         user?.id || null,
          (chunk: string) => {
            if (!isStreamingMessageAppended) {
              setIsChatLoading(false);

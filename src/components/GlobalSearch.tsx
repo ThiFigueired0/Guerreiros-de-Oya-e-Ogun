@@ -120,10 +120,10 @@ export function GlobalSearch() {
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all",
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura",
             settings.darkMode 
               ? "bg-black/40 border border-white/10" 
-              : "bg-white/10 border border-white/20 hover:bg-white/20"
+              : "bg-white/10 hover:bg-white/20"
           )}
         >
           <Search className={cn("w-5 h-5", settings.darkMode ? "text-gray-300" : "text-white")} strokeWidth={2.5} />
