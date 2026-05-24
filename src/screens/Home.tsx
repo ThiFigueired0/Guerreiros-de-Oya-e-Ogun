@@ -14,6 +14,7 @@ import { askAI, getDailyKnowledge } from '../services/aiService';
 import { DID_YOU_KNOW_DATA } from '../data/didYouKnowData';
 import { useAssistant } from '../lib/AssistantContext';
 import { GlobalSearch } from '../components/GlobalSearch';
+import { supabase } from '../lib/supabase';
 
 export default function HomeScreen() {
   const { setIsScrolled } = useAssistant();
@@ -231,40 +232,51 @@ export default function HomeScreen() {
         "bg-transparent"
       )}
     >
-      {/* 1. Header & Search */}
-      <motion.div variants={itemVariants} className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <div>
-             <motion.h1 
-               initial={{ opacity: 0, x: -20 }}
-               animate={{ opacity: 1, x: 0 }}
-               className={cn("text-2xl sm:text-3xl font-black font-display tracking-tight", settings.darkMode ? "text-white" : "text-gray-900")}>
-               Olá, Visitante <motion.span animate={{ rotate: [0, 20, -10, 20, 0] }} transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }} className="inline-block origin-bottom-right">👋</motion.span>
-             </motion.h1>
-             <motion.p 
-               initial={{ opacity: 0, x: -20 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.1 }}
-               className={cn("text-sm sm:text-base font-medium mt-1", settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80")}>
-               Que a luz te guie hoje.
-             </motion.p>
-          </div>
-          <motion.div 
-            initial={{ scale: 0, rotate: -90 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={cn(
-              "w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-lg cursor-pointer",
-              settings.darkMode ? "border-brand-gold/30 shadow-brand-gold/10" : "border-brand-copper/30 shadow-brand-copper/10"
-            )}
-            onClick={() => navigate('/settings')}
-          >
-             <img src={userAvatar || DEFAULT_ASSISTANT_AVATAR} alt="Avatar" className="w-full h-full object-cover" />
-          </motion.div>
+      {/* 1. Hero Section (Híbrida) & Search */}
+      <motion.div variants={itemVariants} className="flex flex-col gap-6 items-center justify-center relative mt-2 pt-8 sm:pt-6">
+        <div className="relative text-center w-full">
+             {/* Partículas flutuantes para adicionar mais vida (10 animações) */}
+             {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={`star-${i}`}
+                  className={cn("absolute rounded-full w-1 h-1 pointer-events-none", settings.darkMode ? "bg-brand-gold/40" : "bg-brand-copper/40")}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ 
+                    opacity: [0, 0.8, 0], 
+                    scale: [0.5, 1.5, 0.5],
+                    y: [0, -30, -60],
+                    x: Math.sin(i * 10) * 20
+                  }}
+                  transition={{ 
+                    duration: 3 + Math.random() * 2, 
+                    repeat: Infinity, 
+                    delay: Math.random() * 2,
+                    ease: "easeInOut"
+                  }}
+                  style={{ left: `${20 + (i * 15)}%`, top: '10%' }}
+                />
+             ))}
+             {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={`particle-${i}`}
+                  className={cn("absolute rounded-full w-2 h-2 pointer-events-none blur-[1px]", settings.darkMode ? "bg-white/10" : "bg-brand-copper/10")}
+                  animate={{ 
+                    opacity: [0.2, 0.6, 0.2], 
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 90, 180]
+                  }}
+                  transition={{ 
+                    duration: 4 + Math.random() * 3, 
+                    repeat: Infinity, 
+                    delay: Math.random() * 2,
+                    ease: "linear"
+                  }}
+                  style={{ right: `${20 + (i * 12)}%`, bottom: '10%' }}
+                />
+             ))}
         </div>
-        <div className="w-full">
+
+        <div className="w-full max-w-2xl mx-auto z-10 pt-4">
           <GlobalSearch />
         </div>
       </motion.div>
@@ -305,27 +317,31 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* 2. Bento Grid Dashboard */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 sm:gap-4">
-         {/* Next Event - Tall */}
+      {/* 2. Bento Grid Dashboard - Acesso Rápido */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-[120px] sm:auto-rows-[140px] px-2 mb-8">
+         {/* Eventos e Giras - Destaque Principal */}
          <motion.div
             onClick={() => navigate("/calendar")}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
-              "col-span-2 sm:col-span-1 row-span-2 p-5 rounded-[32px] sm:rounded-[40px] border relative overflow-hidden flex flex-col justify-between group cursor-pointer h-[200px] sm:h-auto",
+              "col-span-2 md:col-span-2 row-span-2 p-5 sm:p-6 rounded-2xl border relative overflow-hidden flex flex-col justify-between group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
               settings.darkMode 
-                ? "bg-gradient-to-br from-[#1A1A1A] to-brand-gold/5 border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-brand-gold/30" 
-                : "bg-white border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:shadow-[0_16px_48px_rgba(31,56,100,0.1)] hover:border-brand-copper/30"
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:bg-white/90"
             )}
          >
            <motion.div animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-0 right-0 w-48 h-48 bg-brand-copper/10 dark:bg-brand-gold/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" />
+           <motion.div animate={{ opacity: [0.1, 0.4, 0.1], scale: [1, 1.5, 1], x: [0, -20, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} className="absolute bottom-0 left-0 w-32 h-32 bg-brand-copper/5 dark:bg-brand-gold/5 rounded-full blur-2xl pointer-events-none -ml-10 -mb-10" />
+           
            <div className="flex justify-between items-start z-10 relative">
              <div className={cn(
-               "w-14 h-14 rounded-[22px] shadow-sm flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
+               "w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] shadow-sm flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
                settings.darkMode ? "bg-white/5 text-brand-gold" : "bg-gradient-to-br from-brand-copper to-brand-gold text-white"
              )}>
-                <Calendar className="w-6 h-6 drop-shadow-sm" />
+                <motion.div animate={{ rotate: [0, -5, 5, 0], scale: [1, 1.05, 1] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}>
+                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-sm" />
+             </motion.div>
              </div>
              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 duration-300">
                <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-white" : "text-black")} />
@@ -333,7 +349,7 @@ export default function HomeScreen() {
            </div>
            
            <div className="z-10 relative mt-4">
-             <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] block mb-1.5", settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80")}>Próximo Evento</span>
+             <span className={cn("text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] block mb-1.5", settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80")}>Agenda do Terreiro</span>
              {nextEvent ? (
                 <>
                   <h3 className={cn("text-xl sm:text-2xl font-black leading-tight font-display mb-2 line-clamp-2", nextEvent.isCanceled && "line-through opacity-50", settings.darkMode ? "text-white" : "text-gray-900")}>{nextEvent.title}</h3>
@@ -343,9 +359,149 @@ export default function HomeScreen() {
                   </div>
                 </>
              ) : (
-                <p className={cn("text-base font-medium mt-2 leading-tight", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Sem eventos na agenda.</p>
+                <>
+                   <h3 className={cn("text-xl sm:text-2xl font-black leading-tight font-display mb-2", settings.darkMode ? "text-white" : "text-gray-900")}>Eventos e Giras</h3>
+                   <p className={cn("text-sm font-medium leading-tight", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Sua agenda está livre.</p>
+                </>
              )}
            </div>
+         </motion.div>
+
+         {/* Biblioteca - Col-Span-2 na mobile, adaptável no tablet/desktop */}
+         <motion.div
+            onClick={() => lastBook ? navigate("/studies", { state: { openBookId: lastBook.id } }) : navigate("/studies")}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={cn(
+              "col-span-2 md:col-span-1 lg:col-span-2 row-span-1 md:row-span-2 p-5 rounded-2xl border relative overflow-hidden flex flex-row md:flex-col items-center md:items-start md:justify-between group cursor-pointer gap-4 transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:bg-white/90"
+            )}
+         >
+            <div className={cn(
+               "w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] shadow-sm flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 group-hover:scale-105",
+               !lastBook?.coverImage && !lastBook?.coverColor && (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600")
+            )} style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}>
+              {lastBook?.coverImage ? (
+                 <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              ) : (
+                <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+                <BookOpen className={cn("w-6 h-6", lastBook?.coverColor ? "text-white" : "")} />
+              </motion.div>
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0 md:mt-auto">
+               <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] block mb-1", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>Biblioteca</span>
+               <p className={cn("text-base sm:text-lg font-black leading-tight truncate font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
+                 {lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}
+               </p>
+               {lastBook && (
+                 <div className="flex items-center gap-3 mt-2 hidden md:flex">
+                   <div className="flex-1 h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden relative">
+                     <motion.div initial={{ width: 0 }} animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages!) * 100}%` }} transition={{ duration: 1.5, ease: "easeOut" }} className={cn("absolute left-0 top-0 bottom-0 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]", settings.darkMode ? "bg-indigo-400" : "bg-indigo-500")} />
+                   </div>
+                   <span className={cn("text-[10px] sm:text-xs font-mono font-bold", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>
+                 </div>
+               )}
+            </div>
+         </motion.div>
+
+         {/* Banhos */}
+         <motion.div
+            onClick={() => navigate('/herbs')}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-emerald-100 shadow-[0_4px_16px_rgba(16,185,129,0.05)] hover:bg-white/90"
+            )}
+         >
+           <motion.div animate={{ opacity: [0, 0.5, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+           <div className={cn(
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:rotate-[15deg] relative z-10",
+             settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-md shadow-emerald-500/20"
+           )}>
+              <motion.div animate={{ rotate: [0, -10, 15, -5, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
+              <Leaf className="w-5 h-5 drop-shadow-sm" />
+           </motion.div>
+           </div>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", settings.darkMode ? "text-emerald-50" : "text-emerald-950")}>Banhos</h3>
+         </motion.div>
+
+         {/* Pontos */}
+         <motion.div
+            onClick={() => navigate('/points')}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-rose-100 shadow-[0_4px_16px_rgba(244,63,94,0.05)] hover:bg-white/90"
+            )}
+         >
+           <motion.div animate={{ opacity: [0, 0.5, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }} className="absolute bottom-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+           <div className={cn(
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-[15deg] relative z-10",
+             settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-md shadow-rose-500/20"
+           )}>
+              <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
+              <Music className="w-5 h-5 drop-shadow-sm" />
+           </motion.div>
+           </div>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", settings.darkMode ? "text-rose-50" : "text-rose-950")}>Pontos</h3>
+         </motion.div>
+
+         {/* Anotações */}
+         <motion.div
+            onClick={() => navigate('/notes')}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-blue-100 shadow-[0_4px_16px_rgba(59,130,246,0.05)] hover:bg-white/90"
+            )}
+         >
+           <motion.div animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+           <div className={cn(
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:rotate-[15deg] relative z-10",
+             settings.darkMode ? "bg-blue-500/20 text-blue-400" : "bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-md shadow-blue-500/20"
+           )}>
+              <motion.div animate={{ y: [0, -2, 0], scale: [1, 1.05, 1] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+              <MessageSquare className="w-5 h-5 drop-shadow-sm" />
+           </motion.div>
+           </div>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", settings.darkMode ? "text-blue-50" : "text-blue-950")}>Anotações</h3>
+         </motion.div>
+
+         {/* Trabalhos */}
+         <motion.div
+            onClick={() => navigate('/trab')}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-amber-100 shadow-[0_4px_16px_rgba(245,158,11,0.05)] hover:bg-white/90"
+            )}
+         >
+           <motion.div animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+           <div className={cn(
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-[15deg] relative z-10",
+             settings.darkMode ? "bg-amber-500/20 text-amber-400" : "bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-md shadow-amber-500/20"
+           )}>
+              <motion.div animate={{ rotate: [0, 180, 360], scale: [1, 1.2, 1] }} transition={{ duration: 5, repeat: Infinity, ease: "linear" }}>
+              <Sparkles className="w-5 h-5 drop-shadow-sm" />
+           </motion.div>
+           </div>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", settings.darkMode ? "text-amber-50" : "text-amber-950")}>Trabalhos</h3>
          </motion.div>
 
          {/* Financeiro */}
@@ -354,18 +510,22 @@ export default function HomeScreen() {
             whileHover={{ scale: 1.04, y: -2 }}
             whileTap={{ scale: 0.96 }}
             className={cn(
-              "col-span-1 p-5 rounded-[32px] sm:rounded-[36px] border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group h-32 sm:h-auto",
-              settings.darkMode ? "bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40" : "bg-gradient-to-br from-emerald-50 to-white pt-6 border-emerald-100 shadow-[0_8px_32px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_48px_rgba(16,185,129,0.15)] hover:border-emerald-200"
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-violet-100 shadow-[0_4px_16px_rgba(139,92,246,0.05)] hover:bg-white/90"
             )}
          >
+           <motion.div animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute bottom-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl pointer-events-none" />
            <div className={cn(
-             "w-12 h-12 rounded-[20px] flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-[15deg] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]",
-             settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:rotate-[15deg] relative z-10",
+             settings.darkMode ? "bg-violet-500/20 text-violet-400" : "bg-gradient-to-br from-violet-400 to-violet-500 text-white shadow-md shadow-violet-500/20"
            )}>
+              <motion.div animate={{ scale: [1, 1.1, 1], y: [0, -2, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
               <Wallet className="w-5 h-5 drop-shadow-sm" />
+           </motion.div>
            </div>
-           <h3 className={cn("font-black text-sm sm:text-base leading-tight font-display tracking-tight", settings.darkMode ? "text-emerald-50" : "text-emerald-950")}>Financeiro</h3>
-           <p className={cn("text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1", settings.darkMode ? "text-emerald-400/80" : "text-emerald-600/80")}>Ajuda & PIX</p>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", settings.darkMode ? "text-violet-50" : "text-violet-950")}>Financeiro</h3>
          </motion.div>
 
          {/* Address */}
@@ -374,60 +534,23 @@ export default function HomeScreen() {
             whileHover={{ scale: 1.04, y: -2 }}
             whileTap={{ scale: 0.96 }}
             className={cn(
-              "col-span-1 p-5 rounded-[32px] sm:rounded-[36px] border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group h-32 sm:h-auto transition-colors duration-500",
-              settings.darkMode ? "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40" : "bg-gradient-to-br from-rose-50 to-white pt-6 border-rose-100 shadow-[0_8px_32px_rgba(244,63,94,0.08)] hover:shadow-[0_16px_48px_rgba(244,63,94,0.15)] hover:border-rose-200",
-              copied === 'address' && (settings.darkMode ? "bg-green-500/20 border-green-500/50" : "from-green-50 to-white border-green-200 shadow-green-500/20")
+              "col-span-1 p-4 sm:p-5 rounded-2xl border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-2xl",
+              settings.darkMode 
+                ? "bg-white/5 backdrop-blur-md border-white/10 shadow-xl hover:bg-white/10" 
+                : "bg-white/70 backdrop-blur-md border-rose-100 shadow-[0_4px_16px_rgba(244,63,94,0.05)] hover:bg-white/90",
+              copied === 'address' && (settings.darkMode ? "!bg-green-500/20 !border-green-500/50" : "!bg-green-50 !border-green-200")
             )}
          >
+           <motion.div animate={{ opacity: [0, 0.4, 0], scale: [0.8, 1.2, 0.8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
            <div className={cn(
-             "w-12 h-12 rounded-[20px] flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-[15deg]",
+             "w-10 h-10 rounded-[16px] flex items-center justify-center mb-2 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-[15deg] relative z-10",
              copied === 'address'
                ? (settings.darkMode ? "bg-green-500/20 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "bg-gradient-to-br from-green-400 to-green-500 text-white shadow-lg shadow-green-500/30")
                : (settings.darkMode ? "bg-rose-500/20 text-rose-400 group-hover:shadow-[0_0_20px_rgba(244,63,94,0.4)]" : "bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-lg shadow-rose-500/30")
            )}>
-              {copied === 'address' ? <CheckCircle2 className="w-5 h-5 drop-shadow-sm" /> : <MapPin className="w-5 h-5 drop-shadow-sm" />}
+              {copied === 'address' ? <CheckCircle2 className="w-5 h-5 drop-shadow-sm" /> : <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}><MapPin className="w-5 h-5 drop-shadow-sm" /></motion.div>}
            </div>
-           <h3 className={cn("font-black text-sm sm:text-base leading-tight font-display tracking-tight", copied === 'address' ? (settings.darkMode ? "text-green-50" : "text-green-950") : (settings.darkMode ? "text-rose-50" : "text-rose-950"))}>{copied === 'address' ? "Copiado!" : "Endereço"}</h3>
-           <p className={cn("text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1", copied === 'address' ? (settings.darkMode ? "text-green-400/80" : "text-green-600/80") : (settings.darkMode ? "text-rose-400/80" : "text-rose-600/80"))}>Terreiro</p>
-         </motion.div>
-         
-         {/* Last Study - Wide */}
-         <motion.div
-            onClick={() => lastBook ? navigate("/studies", { state: { openBookId: lastBook.id } }) : navigate("/studies")}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              "col-span-2 p-4 sm:p-5 rounded-[32px] sm:rounded-[40px] border relative overflow-hidden flex items-center gap-4 cursor-pointer group transition-all duration-300",
-              settings.darkMode ? "bg-[#1A1A1A]/80 backdrop-blur-xl border-white/5 hover:border-indigo-500/30 hover:bg-white/5" : "bg-white border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:shadow-[0_16px_48px_rgba(99,102,241,0.1)] hover:border-indigo-100"
-            )}
-         >
-            <div className={cn(
-               "w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] flex items-center justify-center shrink-0 shadow-inner overflow-hidden transition-transform duration-500 group-hover:scale-105",
-               !lastBook?.coverImage && !lastBook?.coverColor && (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600")
-            )} style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}>
-              {lastBook?.coverImage ? (
-                 <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-              ) : (
-                <BookOpen className={cn("w-6 h-6", lastBook?.coverColor ? "text-white" : "")} />
-              )}
-            </div>
-            <div className="flex-1 min-w-0 pr-2">
-               <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] block mb-1", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>Último Estudo</span>
-               <p className={cn("text-base sm:text-lg font-black leading-tight truncate font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
-                 {lastBook ? lastBook.name.replace('.pdf', '') : "Comece a evoluir, estudar agora"}
-               </p>
-               {lastBook && (
-                 <div className="flex items-center gap-3 mt-2">
-                   <div className="flex-1 h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden relative">
-                     <motion.div initial={{ width: 0 }} animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages!) * 100}%` }} transition={{ duration: 1.5, ease: "easeOut" }} className={cn("absolute left-0 top-0 bottom-0 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]", settings.darkMode ? "bg-indigo-400" : "bg-indigo-500")} />
-                   </div>
-                   <span className={cn("text-[10px] sm:text-xs font-mono font-bold", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>
-                 </div>
-               )}
-            </div>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 group-hover:translate-x-0">
-               <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-white" : "text-black")} />
-            </div>
+           <h3 className={cn("font-black text-xs sm:text-sm leading-tight font-display tracking-tight", copied === 'address' ? (settings.darkMode ? "text-green-50" : "text-green-950") : (settings.darkMode ? "text-rose-50" : "text-rose-950"))}>{copied === 'address' ? "Copiado!" : "Endereço"}</h3>
          </motion.div>
       </motion.div>
 
@@ -608,7 +731,9 @@ export default function HomeScreen() {
                       "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[15deg] shadow-inner",
                       settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-emerald-500/30"
                     )}>
+                      <motion.div animate={{ rotate: [0, -10, 15, -5, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
                       <Leaf className="w-6 h-6 drop-shadow-sm" />
+                    </motion.div>
                     </div>
 
                     <div className="relative z-10 mt-auto">
@@ -646,7 +771,9 @@ export default function HomeScreen() {
                       "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-[15deg] shadow-inner",
                       settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-rose-500/30"
                     )}>
+                      <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
                       <Music className="w-6 h-6 drop-shadow-sm" />
+                    </motion.div>
                     </div>
 
                     <div className="relative z-10 mt-auto">
@@ -687,7 +814,9 @@ export default function HomeScreen() {
                       {book.coverImage ? (
                         <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       ) : (
+                        <motion.div animate={{ rotate: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
                         <GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "drop-shadow-sm")} />
+                      </motion.div>
                       )}
                     </div>
 
@@ -830,7 +959,7 @@ export default function HomeScreen() {
                    
                    {event.reminder && !event.isCanceled && (
                      <div className="flex items-center gap-1 mt-1 font-mono text-[9px] font-bold text-gray-500">
-                       <Clock className="w-3 h-3" /> {event.reminder}
+                       <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}><Clock className="w-3 h-3" /></motion.div> {event.reminder}
                      </div>
                    )}
                  </div>
