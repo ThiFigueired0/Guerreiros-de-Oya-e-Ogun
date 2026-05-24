@@ -227,43 +227,77 @@ export default function HomeScreen() {
       animate="show"
       exit="hidden" 
       className={cn(
-        "p-4 transition-colors duration-500 w-full",
+        "px-4 pb-32 pt-6 transition-colors duration-500 w-full max-w-2xl mx-auto space-y-8",
         "bg-transparent"
       )}
     >
-      {/* Global Search Bar (moved from header) */}
-      <div className="w-full px-2 mb-2 mt-4">
-        <GlobalSearch />
-      </div>
+      {/* 1. Header & Search */}
+      <motion.div variants={itemVariants} className="flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <div>
+             <motion.h1 
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+               className={cn("text-2xl sm:text-3xl font-black font-display tracking-tight", settings.darkMode ? "text-white" : "text-gray-900")}>
+               Olá, Visitante <motion.span animate={{ rotate: [0, 20, -10, 20, 0] }} transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }} className="inline-block origin-bottom-right">👋</motion.span>
+             </motion.h1>
+             <motion.p 
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ delay: 0.1 }}
+               className={cn("text-sm sm:text-base font-medium mt-1", settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80")}>
+               Que a luz te guie hoje.
+             </motion.p>
+          </div>
+          <motion.div 
+            initial={{ scale: 0, rotate: -90 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={cn(
+              "w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-lg cursor-pointer",
+              settings.darkMode ? "border-brand-gold/30 shadow-brand-gold/10" : "border-brand-copper/30 shadow-brand-copper/10"
+            )}
+            onClick={() => navigate('/settings')}
+          >
+             <img src={userAvatar || DEFAULT_ASSISTANT_AVATAR} alt="Avatar" className="w-full h-full object-cover" />
+          </motion.div>
+        </div>
+        <div className="w-full">
+          <GlobalSearch />
+        </div>
+      </motion.div>
 
       {/* AI Response Display */}
       <AnimatePresence>
         {aiResponse && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-2 mb-6"
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, scale: 0.9 }}
           >
             <div className={cn(
               "p-5 rounded-[32px] border relative overflow-hidden",
               settings.darkMode 
-                ? "bg-[#1A1A1A] border-white/10 text-gray-200" 
-                : "bg-white border-brand-copper/20 text-white shadow-xl shadow-brand-copper/5"
+                ? "bg-gradient-to-br from-[#1a1a1a] to-[#222] border-white/10 shadow-lg shadow-black/50" 
+                : "bg-gradient-to-br from-white to-brand-copper/5 border-brand-copper/20 shadow-xl shadow-brand-copper/5"
             )}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <motion.div animate={{ rotate: [-5, 5, -5], y: [0, -2, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="p-1.5 bg-brand-copper/10 rounded-xl text-brand-copper"><Bot className="w-4 h-4" /></motion.div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Assistente Oya Ogum</span>
+                  <motion.div animate={{ rotate: [-5, 5, -5], y: [0, -2, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className={cn("p-1.5 rounded-xl", settings.darkMode ? "bg-white/10 text-brand-gold" : "bg-brand-copper/10 text-brand-copper")}>
+                    <Sparkles className="w-4 h-4" />
+                  </motion.div>
+                  <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Assistente Oya Ogum</span>
                 </div>
                 <button 
                   onClick={() => setAiResponse(null)}
                   className="p-1.5 active:bg-black/5 dark:active:bg-white/5 rounded-full transition-colors"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
                 </button>
               </div>
-              <p className="text-sm font-bold leading-relaxed italic">
+              <p className={cn("text-sm sm:text-base font-bold leading-relaxed italic", settings.darkMode ? "text-gray-200" : "text-gray-700")}>
                 "{aiResponse}"
               </p>
             </div>
@@ -271,128 +305,131 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* 2. Dashboard Interface */}
-      <motion.section variants={itemVariants} className="flex flex-col gap-3 mb-8 px-4 max-w-md mx-auto relative z-10 p-2">
-        {/* Next Event List Item */}
-        <motion.div variants={itemVariants} onClick={() => navigate("/calendar")}
-          whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-          className={cn(
-            "p-4 rounded-3xl relative overflow-hidden transition-colors cursor-pointer group flex items-center gap-4",
-            settings.darkMode 
-              ? "bg-black/20 backdrop-blur-xl border border-white/5 hover:bg-black/30" 
-              : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.05)]"
-          )}
-        >
-          <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-inner", 
-            settings.darkMode ? "bg-white/5 text-brand-gold" : "bg-gradient-to-br from-brand-gold/80 to-brand-gold text-white"
-          )}>
-            <Calendar className="w-5 h-5 drop-shadow-sm" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className={cn("text-[9px] font-bold uppercase tracking-widest block mb-0.5", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Próximo Evento</span>
-            {nextEvent ? (
-              <>
-                <h3 className={cn("text-base font-bold leading-tight truncate font-display", nextEvent.isCanceled && "line-through opacity-50", settings.darkMode ? "text-white" : "text-gray-900")}>{nextEvent.title}</h3>
-                <div className="flex items-center gap-1.5 mt-1">
-                   <p className={cn("text-[11px] font-mono", settings.darkMode ? "text-gray-400" : "text-gray-600")}>{format(parseISO(nextEvent.date), "dd/MM", { locale: ptBR })}</p>
-                   <span className={cn("text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider", settings.darkMode ? "bg-white/10 text-gray-300" : "bg-black/5 text-gray-600")}>{nextEvent.category}</span>
-                   {nextEvent.isCanceled && <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-red-500/10 text-red-500">Cancelado</span>}
-                </div>
-              </>
-            ) : (
-              <h3 className={cn("text-sm font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Nenhum evento próximo</h3>
+      {/* 2. Bento Grid Dashboard */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 sm:gap-4">
+         {/* Next Event - Tall */}
+         <motion.div
+            onClick={() => navigate("/calendar")}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={cn(
+              "col-span-2 sm:col-span-1 row-span-2 p-5 rounded-[32px] sm:rounded-[40px] border relative overflow-hidden flex flex-col justify-between group cursor-pointer h-[200px] sm:h-auto",
+              settings.darkMode 
+                ? "bg-gradient-to-br from-[#1A1A1A] to-brand-gold/5 border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-brand-gold/30" 
+                : "bg-white border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:shadow-[0_16px_48px_rgba(31,56,100,0.1)] hover:border-brand-copper/30"
             )}
-          </div>
-          <ChevronRight className={cn("w-4 h-4 shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-100 transition-all", settings.darkMode ? "text-white" : "text-black")} />
-        </motion.div>
-
-        {/* Last Study List Item */}
-        <motion.div variants={itemVariants} onClick={() => lastBook ? navigate("/studies", { state: { openBookId: lastBook.id } }) : navigate("/studies")}
-           whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-           className={cn(
-             "p-4 rounded-3xl relative overflow-hidden transition-colors cursor-pointer flex items-center gap-4 group",
-             settings.darkMode ? "bg-black/20 backdrop-blur-xl border border-white/5 hover:bg-black/30" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.05)]"
-           )}
-        >
-          <div 
-             className={cn(
-               "w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-inner", 
-               (!lastBook?.coverImage && !lastBook?.coverColor) && (
-                 settings.darkMode ? "bg-white/5 text-gray-300" : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
-               )
-             )}
-             style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}
-          >
-             {lastBook?.coverImage ? (
-               <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-             ) : (
-               <GraduationCap className={cn("w-5 h-5", lastBook?.coverColor ? "text-white" : "")} />
-             )}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-             <span className={cn("text-[9px] font-bold uppercase tracking-widest block mb-0.5", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Último Estudo</span>
-             <p className={cn("text-base font-bold leading-tight truncate font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
-               {lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}
-             </p>
-             {lastBook && (
-               <div className="flex items-center gap-2 mt-1.5">
-                 <div className="flex-1 h-1 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
-                   <motion.div initial={{ width: 0 }} animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages!) * 100}%` }} className={cn("h-full rounded-full", settings.darkMode ? "bg-brand-gold" : "bg-brand-copper")} />
-                 </div>
-                 <span className={cn("text-[9px] font-mono font-bold", settings.darkMode ? "text-gray-400" : "text-gray-500")}>{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>
-               </div>
-             )}
-          </div>
-          <ChevronRight className={cn("w-4 h-4 shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-100 transition-all", settings.darkMode ? "text-white" : "text-black")} />
-        </motion.div>
-
-        {/* Finance and Location Row */}
-        <div className="grid grid-cols-2 gap-3 mt-1">
-          {/* Pix / Finance */}
-          <motion.div variants={itemVariants} onClick={() => setShowPixMenu(true)}
-             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
-             className={cn(
-               "p-4 rounded-[28px] relative overflow-hidden transition-colors cursor-pointer flex flex-col justify-center items-center text-center gap-2 group h-32",
-               settings.darkMode ? "bg-emerald-900/10 backdrop-blur-xl border border-emerald-500/10 hover:bg-emerald-900/20" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(16,185,129,0.08)]"
-             )}
-          >
-             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-inner", settings.darkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white")}>
-                <Wallet className="w-5 h-5 drop-shadow-sm" />
-             </div>
-             <div>
-                <p className={cn("text-xs font-bold leading-tight font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
-                  Financeiro
-                </p>
-                <span className={cn("text-[9px] font-medium tracking-wide block mt-0.5", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/70")}>Ajuda & PIX</span>
-             </div>
-          </motion.div>
-
-          {/* Location Action */}
-          <motion.div variants={itemVariants} onClick={(e) => { e.preventDefault(); copyToClipboard("Av. Sapopemba, 16068 - Jd ster, São Paulo - SP, 08830-180", "address"); }}
-             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
-             className={cn(
-               "p-4 rounded-[28px] relative overflow-hidden transition-colors cursor-pointer flex flex-col justify-center items-center text-center gap-2 group h-32",
-               settings.darkMode ? "bg-red-900/10 backdrop-blur-xl border border-red-500/10 hover:bg-red-900/20" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(239,68,68,0.08)]",
-               copied === 'address' && (settings.darkMode ? "bg-green-900/20 border-green-500/20" : "bg-green-50 border-green-200 shadow-green-500/10")
-             )}
-          >
-             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-inner", 
-                 copied === 'address' ? (settings.darkMode ? "bg-green-500/20 text-green-400" : "bg-gradient-to-br from-green-400 to-green-500 text-white")
-                 : (settings.darkMode ? "bg-red-500/10 text-red-500" : "bg-gradient-to-br from-red-400 to-red-500 text-white")
+         >
+           <motion.div animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-0 right-0 w-48 h-48 bg-brand-copper/10 dark:bg-brand-gold/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" />
+           <div className="flex justify-between items-start z-10 relative">
+             <div className={cn(
+               "w-14 h-14 rounded-[22px] shadow-sm flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
+               settings.darkMode ? "bg-white/5 text-brand-gold" : "bg-gradient-to-br from-brand-copper to-brand-gold text-white"
              )}>
-                {copied === 'address' ? <CheckCircle2 className="w-5 h-5 drop-shadow-sm" /> : <MapPin className="w-5 h-5 drop-shadow-sm" />}
+                <Calendar className="w-6 h-6 drop-shadow-sm" />
              </div>
-             <div>
-                <p className={cn("text-xs font-bold leading-tight font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
-                  {copied === 'address' ? "Copiado!" : "Endereço"}
-                </p>
-                <span className={cn("text-[9px] font-medium tracking-wide block mt-0.5", settings.darkMode ? "text-red-400/70" : "text-red-600/70")}>Terreiro</span>
+             <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 duration-300">
+               <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-white" : "text-black")} />
              </div>
-          </motion.div>
-        </div>
-      </motion.section>
+           </div>
+           
+           <div className="z-10 relative mt-4">
+             <span className={cn("text-[10px] font-black uppercase tracking-[0.2em] block mb-1.5", settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80")}>Próximo Evento</span>
+             {nextEvent ? (
+                <>
+                  <h3 className={cn("text-xl sm:text-2xl font-black leading-tight font-display mb-2 line-clamp-2", nextEvent.isCanceled && "line-through opacity-50", settings.darkMode ? "text-white" : "text-gray-900")}>{nextEvent.title}</h3>
+                  <div className="flex items-center gap-2 mt-auto">
+                     <span className={cn("text-[10px] sm:text-xs font-mono px-2.5 py-1 rounded-lg font-bold", settings.darkMode ? "bg-white/10 text-gray-300" : "bg-gray-100 text-gray-700")}>{format(parseISO(nextEvent.date), "dd/MM", { locale: ptBR })}</span>
+                     <span className={cn("text-[9px] sm:text-[10px] px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider", settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-copper/10 text-brand-copper")}>{nextEvent.category}</span>
+                  </div>
+                </>
+             ) : (
+                <p className={cn("text-base font-medium mt-2 leading-tight", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Sem eventos na agenda.</p>
+             )}
+           </div>
+         </motion.div>
+
+         {/* Financeiro */}
+         <motion.div
+            onClick={() => setShowPixMenu(true)}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-5 rounded-[32px] sm:rounded-[36px] border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group h-32 sm:h-auto",
+              settings.darkMode ? "bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40" : "bg-gradient-to-br from-emerald-50 to-white pt-6 border-emerald-100 shadow-[0_8px_32px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_48px_rgba(16,185,129,0.15)] hover:border-emerald-200"
+            )}
+         >
+           <div className={cn(
+             "w-12 h-12 rounded-[20px] flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:rotate-[15deg] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]",
+             settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+           )}>
+              <Wallet className="w-5 h-5 drop-shadow-sm" />
+           </div>
+           <h3 className={cn("font-black text-sm sm:text-base leading-tight font-display tracking-tight", settings.darkMode ? "text-emerald-50" : "text-emerald-950")}>Financeiro</h3>
+           <p className={cn("text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1", settings.darkMode ? "text-emerald-400/80" : "text-emerald-600/80")}>Ajuda & PIX</p>
+         </motion.div>
+
+         {/* Address */}
+         <motion.div
+            onClick={(e) => { e.preventDefault(); copyToClipboard("Av. Sapopemba, 16068 - Jd ster, São Paulo - SP, 08830-180", "address"); }}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className={cn(
+              "col-span-1 p-5 rounded-[32px] sm:rounded-[36px] border relative overflow-hidden flex flex-col justify-center items-center text-center cursor-pointer group h-32 sm:h-auto transition-colors duration-500",
+              settings.darkMode ? "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40" : "bg-gradient-to-br from-rose-50 to-white pt-6 border-rose-100 shadow-[0_8px_32px_rgba(244,63,94,0.08)] hover:shadow-[0_16px_48px_rgba(244,63,94,0.15)] hover:border-rose-200",
+              copied === 'address' && (settings.darkMode ? "bg-green-500/20 border-green-500/50" : "from-green-50 to-white border-green-200 shadow-green-500/20")
+            )}
+         >
+           <div className={cn(
+             "w-12 h-12 rounded-[20px] flex items-center justify-center mb-3 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-[15deg]",
+             copied === 'address'
+               ? (settings.darkMode ? "bg-green-500/20 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "bg-gradient-to-br from-green-400 to-green-500 text-white shadow-lg shadow-green-500/30")
+               : (settings.darkMode ? "bg-rose-500/20 text-rose-400 group-hover:shadow-[0_0_20px_rgba(244,63,94,0.4)]" : "bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-lg shadow-rose-500/30")
+           )}>
+              {copied === 'address' ? <CheckCircle2 className="w-5 h-5 drop-shadow-sm" /> : <MapPin className="w-5 h-5 drop-shadow-sm" />}
+           </div>
+           <h3 className={cn("font-black text-sm sm:text-base leading-tight font-display tracking-tight", copied === 'address' ? (settings.darkMode ? "text-green-50" : "text-green-950") : (settings.darkMode ? "text-rose-50" : "text-rose-950"))}>{copied === 'address' ? "Copiado!" : "Endereço"}</h3>
+           <p className={cn("text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1", copied === 'address' ? (settings.darkMode ? "text-green-400/80" : "text-green-600/80") : (settings.darkMode ? "text-rose-400/80" : "text-rose-600/80"))}>Terreiro</p>
+         </motion.div>
+         
+         {/* Last Study - Wide */}
+         <motion.div
+            onClick={() => lastBook ? navigate("/studies", { state: { openBookId: lastBook.id } }) : navigate("/studies")}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className={cn(
+              "col-span-2 p-4 sm:p-5 rounded-[32px] sm:rounded-[40px] border relative overflow-hidden flex items-center gap-4 cursor-pointer group transition-all duration-300",
+              settings.darkMode ? "bg-[#1A1A1A]/80 backdrop-blur-xl border-white/5 hover:border-indigo-500/30 hover:bg-white/5" : "bg-white border-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.06)] hover:shadow-[0_16px_48px_rgba(99,102,241,0.1)] hover:border-indigo-100"
+            )}
+         >
+            <div className={cn(
+               "w-14 h-14 sm:w-16 sm:h-16 rounded-[24px] flex items-center justify-center shrink-0 shadow-inner overflow-hidden transition-transform duration-500 group-hover:scale-105",
+               !lastBook?.coverImage && !lastBook?.coverColor && (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600")
+            )} style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}>
+              {lastBook?.coverImage ? (
+                 <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              ) : (
+                <BookOpen className={cn("w-6 h-6", lastBook?.coverColor ? "text-white" : "")} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+               <span className={cn("text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] block mb-1", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>Último Estudo</span>
+               <p className={cn("text-base sm:text-lg font-black leading-tight truncate font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
+                 {lastBook ? lastBook.name.replace('.pdf', '') : "Comece a evoluir, estudar agora"}
+               </p>
+               {lastBook && (
+                 <div className="flex items-center gap-3 mt-2">
+                   <div className="flex-1 h-2 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden relative">
+                     <motion.div initial={{ width: 0 }} animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages!) * 100}%` }} transition={{ duration: 1.5, ease: "easeOut" }} className={cn("absolute left-0 top-0 bottom-0 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]", settings.darkMode ? "bg-indigo-400" : "bg-indigo-500")} />
+                   </div>
+                   <span className={cn("text-[10px] sm:text-xs font-mono font-bold", settings.darkMode ? "text-indigo-400" : "text-indigo-600")}>{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>
+                 </div>
+               )}
+            </div>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 group-hover:translate-x-0">
+               <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-white" : "text-black")} />
+            </div>
+         </motion.div>
+      </motion.div>
 
 
       {/* Menu PIX Expandido (Overlay Modal) */}
@@ -509,38 +546,37 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* 3. Atalhos / Favoritos Rápidos */}
-      <motion.section variants={itemVariants} className="mb-8 pl-2">
-        <div className="flex items-center justify-between mb-4 pr-4">
-          <h3 className={cn("font-black text-[10px] uppercase tracking-[0.2em]", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
-            Meus Favoritos
+      {/* 3. Favoritos / Carousel Expandido */}
+      <motion.section variants={itemVariants} className="">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h3 className={cn("font-black text-[12px] sm:text-sm uppercase tracking-[0.2em] flex items-center gap-2", settings.darkMode ? "text-gray-300" : "text-gray-800")}>
+            <Heart className="w-4 h-4 text-rose-500 fill-rose-500/20" /> Meus Favoritos
           </h3>
-          <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}><Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" /></motion.div>
         </div>
 
         {(favBaths.length > 0 || favPontos.length > 0 || favBooks.length > 0) ? (
           <>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pr-4 p-1 rounded-full" style={{ backgroundColor: settings.darkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+            <div className="flex items-center gap-2 mb-5 overflow-x-auto scrollbar-hide p-1.5 rounded-[20px] mx-2" style={{ backgroundColor: settings.darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }}>
               {['all', ...(favBaths.length > 0 ? ['baths'] : []), ...(favPontos.length > 0 ? ['pontos'] : []), ...(favBooks.length > 0 ? ['books'] : [])].map((tab) => {
                 const isSelected = favFilter === tab;
                 const labels: any = { all: 'Todos', baths: 'Banhos', pontos: 'Pontos', books: 'Estudos' };
-                const activeColor = tab === 'baths' ? 'bg-emerald-500 text-white' : tab === 'pontos' ? 'bg-rose-500 text-white' : tab === 'books' ? 'bg-indigo-500 text-white' : settings.darkMode ? 'bg-white text-black' : 'bg-brand-navy text-white';
-                const inactiveColor = settings.darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600';
+                const activeColor = tab === 'baths' ? 'text-white' : tab === 'pontos' ? 'text-white' : tab === 'books' ? 'text-white' : settings.darkMode ? 'text-black' : 'text-white';
+                const inactiveColor = settings.darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-800';
                 
                 return (
                   <button
                     key={tab}
                     onClick={() => setFavFilter(tab as any)}
                     className={cn(
-                      "relative px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap",
+                      "relative px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-colors whitespace-nowrap",
                       isSelected ? activeColor : inactiveColor
                     )}
                   >
                     {isSelected && (
                       <motion.div
-                        layoutId="activeFavFilter"
-                        className="absolute inset-0 rounded-full -z-10"
-                        style={{ backgroundColor: settings.darkMode ? (tab === 'all' ? '#fff' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') : (tab === 'all' ? '#1a365d' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') }}
+                        layoutId="activeFavFilter2"
+                        className="absolute inset-0 rounded-xl shadow-sm -z-10"
+                        style={{ backgroundColor: settings.darkMode ? (tab === 'all' ? '#fff' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') : (tab === 'all' ? '#111827' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') }}
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       />
                     )}
@@ -550,115 +586,121 @@ export default function HomeScreen() {
               })}
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-8 pr-4 scrollbar-hide snap-x relative">
-              {(favFilter === 'all' || favFilter === 'baths') && favBaths.map(bath => (
+            <div className="flex gap-4 overflow-x-auto pb-4 px-2 scrollbar-hide snap-x relative">
+              {(favFilter === 'all' || favFilter === 'baths') && favBaths.map((bath, i) => (
                 <div key={bath.id} className="relative group/card snap-start flex-shrink-0">
                   <motion.button
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.04, y: -2 }}
-                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    whileTap={{ scale: 0.95 }} onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[140px] sm:w-[160px] h-[160px] sm:h-[180px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden cursor-pointer",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        ? "bg-[#1A1A1A]/80 backdrop-blur-xl border-emerald-500/20 hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]"
+                        : "bg-gradient-to-br from-emerald-50/80 to-white/80 backdrop-blur-xl border-emerald-200/60 shadow-[0_8px_24px_rgba(16,185,129,0.08)] hover:shadow-[0_16px_32px_rgba(16,185,129,0.15)] hover:border-emerald-300"
                     )}
                   >
                     <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
                     
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 active:scale-110 active:rotate-6",
-                      settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white text-emerald-600 shadow-sm"
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[15deg] shadow-inner",
+                      settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-emerald-500/30"
                     )}>
-                      <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 3, repeat: Infinity }}><Leaf className="w-6 h-6" /></motion.div>
+                      <Leaf className="w-6 h-6 drop-shadow-sm" />
                     </div>
 
                     <div className="relative z-10 mt-auto">
-                      <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-emerald-500/80" : "text-emerald-600/80")}>Banho</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-emerald-900")}>{bath.title}</p>
+                      <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-1", settings.darkMode ? "text-emerald-500/80" : "text-emerald-600/80")}>Banho</p>
+                      <p className={cn("font-bold text-sm leading-tight line-clamp-2 font-display tracking-tight", settings.darkMode ? "text-white" : "text-emerald-950")}>{bath.title}</p>
                     </div>
                   </motion.button>
                   <button
                     onClick={(e) => toggleFavBath(e, bath.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-emerald-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-emerald-500/10 active:scale-95 z-20 backdrop-blur-sm bg-black/5 dark:bg-white/5"
                   >
-                    <HeartOff className="w-4 h-4 text-emerald-500 opacity-60 active:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-emerald-500" />
                   </button>
                 </div>
               ))}
               
-              {(favFilter === 'all' || favFilter === 'pontos') && favPontos.map(ponto => (
+              {(favFilter === 'all' || favFilter === 'pontos') && favPontos.map((ponto, i) => (
                 <div key={ponto.id} className="relative group/card snap-start flex-shrink-0">
                   <motion.button
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.04, y: -2 }}
-                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    whileTap={{ scale: 0.95 }} onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[140px] sm:w-[160px] h-[160px] sm:h-[180px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden cursor-pointer",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-rose-500/50"
-                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-rose-500/50"
+                        ? "bg-[#1A1A1A]/80 backdrop-blur-xl border-rose-500/20 hover:border-rose-500/50 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)]"
+                        : "bg-gradient-to-br from-rose-50/80 to-white/80 backdrop-blur-xl border-rose-200/60 shadow-[0_8px_24px_rgba(244,63,94,0.08)] hover:shadow-[0_16px_32px_rgba(244,63,94,0.15)] hover:border-rose-300"
                     )}
                   >
                     <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 active:scale-110 active:-rotate-6",
-                      settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-white text-rose-600 shadow-sm"
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-[15deg] shadow-inner",
+                      settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-gradient-to-br from-rose-400 to-rose-500 text-white shadow-rose-500/30"
                     )}>
-                      <motion.div animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 2.5, repeat: Infinity }}><Music className="w-6 h-6" /></motion.div>
+                      <Music className="w-6 h-6 drop-shadow-sm" />
                     </div>
 
                     <div className="relative z-10 mt-auto">
-                      <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-rose-500/80" : "text-rose-600/80")}>Ponto</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-rose-900")}>{ponto.title}</p>
+                      <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-1", settings.darkMode ? "text-rose-500/80" : "text-rose-600/80")}>Ponto</p>
+                      <p className={cn("font-bold text-sm leading-tight line-clamp-2 font-display tracking-tight", settings.darkMode ? "text-white" : "text-rose-950")}>{ponto.title}</p>
                     </div>
                   </motion.button>
                   <button
                     onClick={(e) => toggleFavPonto(e, ponto.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-rose-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-rose-500/10 active:scale-95 z-20 backdrop-blur-sm bg-black/5 dark:bg-white/5"
                   >
-                    <HeartOff className="w-4 h-4 text-rose-500 opacity-60 active:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-rose-500" />
                   </button>
                 </div>
               ))}
 
-              {(favFilter === 'all' || favFilter === 'books') && favBooks.map(book => (
+              {(favFilter === 'all' || favFilter === 'books') && favBooks.map((book, i) => (
                 <div key={book.id} className="relative group/card snap-start flex-shrink-0">
                   <motion.button
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.04, y: -2 }}
-                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    whileTap={{ scale: 0.95 }} onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[140px] sm:w-[160px] h-[160px] sm:h-[180px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden cursor-pointer",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        ? "bg-[#1A1A1A]/80 backdrop-blur-xl border-indigo-500/20 hover:border-indigo-500/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)]"
+                        : "bg-gradient-to-br from-indigo-50/80 to-white/80 backdrop-blur-xl border-indigo-200/60 shadow-[0_8px_24px_rgba(99,102,241,0.08)] hover:shadow-[0_16px_32px_rgba(99,102,241,0.15)] hover:border-indigo-300"
                     )}
                   >
                     <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] shadow-sm flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 active:scale-110", 
-                      (!book.coverImage && !book.coverColor) ? (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-white text-indigo-600") : ""
+                      "w-12 h-12 rounded-[20px] shadow-inner flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 group-hover:scale-110", 
+                      (!book.coverImage && !book.coverColor) ? (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-gradient-to-br from-indigo-400 to-indigo-500 text-white shadow-indigo-500/30") : ""
                     )} style={book.coverColor && !book.coverImage ? { backgroundColor: book.coverColor } : undefined}>
                       {book.coverImage ? (
-                        <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover" />
+                        <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       ) : (
-                        <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 3, repeat: Infinity }}><GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "")} /></motion.div>
+                        <GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "drop-shadow-sm")} />
                       )}
                     </div>
 
                     <div className="relative z-10 mt-auto">
-                      <p className="text-[9px] font-black uppercase tracking-[0.15em] mb-1.5" style={{ color: book.coverColor || (settings.darkMode ? '#818cf8' : '#4f46e5') }}>Estudo</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-indigo-900")}>{book.name.replace('.pdf', '')}</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: book.coverColor || (settings.darkMode ? '#818cf8' : '#4f46e5') }}>Estudo</p>
+                      <p className={cn("font-bold text-sm leading-tight line-clamp-2 font-display tracking-tight", settings.darkMode ? "text-white" : "text-indigo-950")}>{book.name.replace('.pdf', '')}</p>
                     </div>
                   </motion.button>
                   <button
                     onClick={(e) => toggleFavBook(e, book.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-indigo-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-indigo-500/10 active:scale-95 z-20 backdrop-blur-sm bg-black/5 dark:bg-white/5"
                   >
-                    <HeartOff className="w-4 h-4 text-indigo-500 opacity-60 active:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-indigo-500" />
                   </button>
                 </div>
               ))}
@@ -666,102 +708,92 @@ export default function HomeScreen() {
           </>
         ) : (
           <div className={cn(
-            "p-6 sm:p-8 rounded-[32px] border flex flex-col items-center justify-center text-center mr-4 mt-2",
-            settings.darkMode ? "bg-white/5 border-white/10" : "bg-white/80 border-gray-100 shadow-sm"
+            "p-8 sm:p-10 rounded-[32px] border text-center mx-2",
+            settings.darkMode ? "bg-white/[0.02] border-white/5 border-dashed" : "bg-white/40 border-gray-200 border-dashed backdrop-blur-xl"
           )}>
-            <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center mb-4",
-              settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-300"
+            <motion.div animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className={cn(
+              "w-16 h-16 rounded-[24px] flex items-center justify-center mx-auto mb-5 shadow-inner rotate-3",
+              settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-400"
             )}>
-              <Heart className="w-8 h-8 stroke-[1.5]" />
+              <Heart className="w-7 h-7 stroke-[2]" />
             </motion.div>
-            <h4 className={cn("font-bold text-base mb-2", settings.darkMode ? "text-gray-200" : "text-white")}>
-              Nenhum favorito ainda
+            <h4 className={cn("font-black text-lg mb-2 font-display tracking-tight", settings.darkMode ? "text-white" : "text-gray-900")}>
+              Nenhum favorito selecionado
             </h4>
-            <p className={cn("text-[13px] leading-relaxed max-w-[220px] mb-6", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
-              Salve seus banhos, pontos e estudos preferidos para ter acesso rápido aqui.
+            <p className={cn("text-[13px] leading-relaxed max-w-[260px] mx-auto mb-6", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+              Quando você marcar banhos, pontos ou estudos como favoritos, eles aparecerão aqui magicamente.
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <button 
                 onClick={() => navigate('/herbs')}
                 className={cn(
-                  "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
-                  settings.darkMode ? "bg-emerald-500/20 text-emerald-400 active:bg-emerald-500/30" : "bg-emerald-50 text-emerald-700 active:bg-emerald-100 border border-white/10"
+                  "px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all active:scale-95",
+                  settings.darkMode ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shadow-sm"
                 )}
               >
-                + Banho
+                Explorar Banhos
               </button>
               <button 
                 onClick={() => navigate('/points')}
                 className={cn(
-                  "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
-                  settings.darkMode ? "bg-rose-500/20 text-rose-400 active:bg-rose-500/30" : "bg-rose-50 text-rose-700 active:bg-rose-100 border border-white/10"
+                  "px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all active:scale-95",
+                  settings.darkMode ? "bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30" : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 shadow-sm"
                 )}
               >
-                + Ponto
+                Ouvir Pontos
               </button>
             </div>
           </div>
         )}
       </motion.section>
-      {/* 4. Agenda Resumida */}
+      {/* 4. Agenda Resumida (Bento Style) */}
       <motion.section variants={itemVariants} className="px-2 pb-24">
         <div className="flex items-center justify-between mb-4">
-          <h3 className={cn("font-black text-[10px] uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
-            Próximos Eventos
+          <h3 className={cn("font-black text-[12px] sm:text-sm uppercase tracking-[0.2em] flex items-center gap-2", settings.darkMode ? "text-gray-300" : "text-gray-800")}>
+            <Calendar className="w-4 h-4 text-brand-copper" /> Agenda
           </h3>
           <button 
             onClick={() => navigate('/calendar', { state: { scrollToAgenda: true } })}
-            className="text-[10px] font-black uppercase tracking-widest text-brand-copper active:underline active:scale-95 transition-all"
+            className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] px-3 py-1.5 rounded-full bg-brand-copper/10 text-brand-copper active:scale-95 transition-all"
           >
-            Ver Detalhes
+            Ver Tudo
           </button>
         </div>
         
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {upcomingEvents.slice(0, 4).map((event, index) => {
             const eventDate = parseISO(event.date);
             const isEventToday = isToday(eventDate);
             
             return (
               <motion.button 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: index * 0.1 }}
                  key={event.id}
                  onClick={() => navigate('/calendar', { state: { scrollToAgenda: true } })}
-                 whileHover={{ scale: 1.02, x: 5 }}
-                 whileTap={{ scale: 0.98 }} className={cn(
-                   "w-full flex items-center gap-4 p-4 rounded-[28px] border transition-colors text-left group relative overflow-hidden",
-                   settings.darkMode ? "bg-[#1A1A1A] border-white/10" : "bg-white/10 border-white/10 backdrop-blur-md shadow-sm",
-                   isEventToday && (settings.darkMode ? "border-brand-copper/30 bg-brand-copper/10" : "border-brand-copper/30 bg-brand-copper/5 shadow-brand-copper/10")
+                 whileHover={{ scale: 1.02 }}
+                 whileTap={{ scale: 0.98 }}
+                 className={cn(
+                   "w-full flex items-center gap-4 p-5 rounded-[32px] border transition-colors text-left group relative overflow-hidden h-[100px]",
+                   settings.darkMode ? "bg-[#1A1A1A]" : "bg-white/80 backdrop-blur-md shadow-[0_8px_24px_rgba(31,56,100,0.05)]",
+                   isEventToday ? (settings.darkMode ? "border-brand-copper/40" : "border-brand-copper/40 shadow-[0_8px_32px_rgba(184,134,11,0.15)]") : (settings.darkMode ? "border-white/5" : "border-gray-200")
                  )}
               >
-                {/* Decoration line for today */}
-                {isEventToday && (
-                  <motion.div animate={{ height: ['48px', '32px', '48px'], opacity: [1, 0.6, 1] }} transition={{ duration: 2, repeat: Infinity }} className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 rounded-r-full bg-brand-copper" />
-                )}
+                {/* Decoration wave */}
+                <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black/5 to-transparent dark:from-white/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
-                <div className="absolute right-4 opacity-100 transition-all duration-300 pointer-events-none">
-                  <motion.div animate={{ x: [0, -5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ChevronRight className="w-5 h-5 text-gray-400 opacity-60" /></motion.div>
-                </div>
                 <div 
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[64px] h-[64px] rounded-[22px] border transition-colors shrink-0"
-,
-                    isEventToday && (settings.darkMode ? "border-brand-copper/50 text-brand-copper shadow-lg shadow-brand-copper/10" : "text-brand-copper border-brand-copper/30 shadow-lg shadow-brand-copper/20")
+                    "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-[20px] transition-all shrink-0 group-hover:scale-105",
+                    isEventToday && (settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-gradient-to-br from-brand-copper/80 to-brand-copper text-white shadow-lg")
                   )}
                   style={!isEventToday ? {
                     backgroundColor: settings.darkMode ? getCategoryColor(event.category) + '15' : getCategoryColor(event.category) + '10',
-                    borderColor: settings.darkMode ? getCategoryColor(event.category) + '30' : getCategoryColor(event.category) + '20',
                     color: settings.darkMode ? '#fff' : getCategoryColor(event.category)
-                  } : {
-                    backgroundColor: settings.darkMode ? 'rgba(184, 134, 11, 0.2)' : 'rgba(184, 134, 11, 0.1)'
-                  }}
+                  } : {}}
                 >
-                  <span className="text-xl leading-none font-black" style={!isEventToday && !settings.darkMode ? { color: '#0f172a' } : {}}>
+                  <span className={cn("text-xl leading-none font-black font-display", !isEventToday && !settings.darkMode && "text-gray-900")}>
                     {format(eventDate, 'dd')}
                   </span>
                   <span className={cn("text-[8px] uppercase font-bold tracking-widest mt-1", isEventToday ? "" : "opacity-80")} style={!isEventToday && !settings.darkMode ? { color: getCategoryColor(event.category) } : {}}>
@@ -769,10 +801,10 @@ export default function HomeScreen() {
                   </span>
                 </div>
                  
-                 <div className="flex-1 overflow-hidden py-1">
+                 <div className="flex-1 overflow-hidden">
                    <div className="flex items-center gap-2 mb-1.5">
                      <span 
-                       className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                       className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md"
                        style={{ 
                          color: getCategoryColor(event.category),
                          backgroundColor: settings.darkMode ? getCategoryColor(event.category) + '20' : getCategoryColor(event.category) + '15'
@@ -781,57 +813,40 @@ export default function HomeScreen() {
                        {event.category}
                      </span>
                      {isEventToday && (
-                       <span className="text-[8px] font-black uppercase tracking-wider text-brand-copper flex items-center gap-1 animate-pulse">
-                         <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full bg-brand-copper" /> Hoje
+                       <span className="text-[8px] font-black uppercase tracking-wider text-brand-copper flex items-center gap-1">
+                         Hoje
                        </span>
                      )}
                    </div>
 
                    <p className={cn(
-                     "font-medium text-[15px] leading-tight truncate", 
-                     settings.darkMode ? "text-white active:text-gray-200 transition-colors" : "text-[#1a202c] active:text-white transition-colors",
+                     "font-bold text-sm sm:text-base leading-tight truncate font-display tracking-tight", 
+                     settings.darkMode ? "text-white group-hover:text-brand-gold" : "text-gray-900 group-hover:text-brand-copper",
                      event.isCanceled && "line-through opacity-50"
                    )}>
                      {event.title}
-                     {event.isCanceled && <span className="ml-2 text-[9px] font-black text-red-500 uppercase tracking-widest no-underline opacity-100 italic">Cancelado</span>}
+                     {event.isCanceled && <span className="ml-2 text-[8px] font-black text-red-500 uppercase tracking-widest no-underline opacity-100">Cancelado</span>}
                    </p>
                    
-                   {event.reminder && (
-                     <div className="flex gap-3 items-center mt-1">
-                       <span className={cn("text-[10px] flex items-center gap-1 font-medium", isEventToday ? "text-brand-copper" : "text-gray-400")}>
-                         <Clock className="w-3 h-3" /> {event.reminder}
-                       </span>
+                   {event.reminder && !event.isCanceled && (
+                     <div className="flex items-center gap-1 mt-1 font-mono text-[9px] font-bold text-gray-500">
+                       <Clock className="w-3 h-3" /> {event.reminder}
                      </div>
                    )}
-                 </div>
-                 <div className="opacity-0 active:opacity-100 transition-opacity pr-2 shrink-0">
-                   <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-gray-300" : "text-gray-300")} />
                  </div>
               </motion.button>
             );
           })}
           
           {upcomingEvents.length === 0 && (
-             <div className="p-8 text-center rounded-[32px] border border-dashed border-gray-200 dark:border-white/10">
-               <motion.div animate={{ y: [0, -5, 0], opacity: [0.5, 1, 0.5] }} transition={{ duration: 3, repeat: Infinity }}><Calendar className="w-8 h-8 text-gray-300 dark:text-gray-300 mx-auto mb-3" /></motion.div>
-               <p className="text-gray-400 text-xs font-medium">Nenhum evento agendado para os próximos dias.</p>
+             <div className="col-span-1 sm:col-span-2 p-8 text-center rounded-[32px] border border-dashed border-gray-200 dark:border-white/10 dark:bg-white/[0.02]">
+               <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 4, repeat: Infinity }}><Calendar className="w-8 h-8 text-gray-300 dark:text-gray-500 mx-auto mb-3" /></motion.div>
+               <h4 className={cn("font-black text-base font-display tracking-tight mb-1", settings.darkMode ? "text-white" : "text-gray-900")}>Agenda Livre</h4>
+               <p className="text-gray-400 text-xs font-medium">Você não tem compromissos próximos no terreiro.</p>
              </div>
           )}
-          
-          {upcomingEvents.length > 4 && (
-            <button 
-              onClick={() => navigate('/calendar')}
-              className={cn(
-                "w-full py-4 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all",
-                settings.darkMode ? "text-gray-400 active:bg-white/5" : "text-gray-300 active:bg-black/5"
-              )}
-            >
-              Ver agenda completa
-            </button>
-          )}
         </div>
-
-        </motion.section>
+      </motion.section>
 
       {/* Contatos Úteis */}
         <motion.div variants={itemVariants} className={cn(
