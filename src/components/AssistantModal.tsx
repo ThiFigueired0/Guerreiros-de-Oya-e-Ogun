@@ -658,10 +658,15 @@ const AssistantModal = () => {
            <motion.div
               drag
               dragConstraints={{ left: -window.innerWidth + 80, right: 0, top: -window.innerHeight + 80, bottom: 0 }}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              initial={{ scale: 0.8, opacity: 0, boxShadow: "0 0 0px rgba(212,175,55,0)" }}
+              animate={{ 
+                scale: [1, 1.05, 1], 
+                opacity: 1, 
+                boxShadow: ["0 0 20px rgba(212,175,55,0.2)", "0 0 40px rgba(212,175,55,0.6)", "0 0 20px rgba(212,175,55,0.2)"] 
+              }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="fixed bottom-24 right-5 w-16 h-16 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-2 border-[#D4AF37] z-[99999] cursor-pointer group"
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="fixed bottom-24 right-5 w-16 h-16 rounded-full border-2 border-[#D4AF37] z-[99999] cursor-pointer group"
               onClick={() => setIsPipMode(false)}
             >
                <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center bg-[#0f172a]">

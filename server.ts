@@ -7,7 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -195,6 +196,128 @@ ${systemReport}`
     res.end();
   } else {
     res.status(500).json({ error: 'Todos os provedores falharam.', details: lastError?.message });
+  }
+});
+
+app.post('/api/daily-knowledge', async (req, res) => {
+  const apiKey = process.env.VITE_GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: `Você é um historiador e doutrinador de Umbanda e Candomblé. \nGere uma pílula de conhecimento (um Itã, um Fundamento ou uma Tradição Histórica).\nO tom deve ser educativo e respeitoso.\nResponda APENAS em JSON no formato:\n{\n  "title": "Título Curto",\n  "content": "Conteúdo educativo detalhado (até 450 caracteres)",\n  "category": "Itã | Fundamento | Tradição"\n}` },
+          { role: 'user', content: 'Gere o conhecimento estruturado de hoje.' }
+        ],
+        temperature: 0.8,
+        max_tokens: 500
+      })
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Falha na API' });
+    const data = await response.json();
+    return res.json({ reply: data.choices[0]?.message?.content || "" });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/analyze-image', async (req, res) => {
+  const apiKey = process.env.VITE_GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+  const { prompt, base64Image } = req.body;
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: base64Image } }] }],
+        temperature: 0.5,
+        max_tokens: 300
+      })
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Falha na API' });
+    const data = await response.json();
+    return res.json({ reply: data.choices[0]?.message?.content || '' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/generate-speech', async (req, res) => {
+  const apiKey = process.env.VITE_HUGGINGFACE_API_KEY || process.env.HUGGINGFACE_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+  const { cleanText } = req.body;
+  try {
+    const response = await fetch('https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ inputs: cleanText, parameters: { voice: 'pm_alex', lang: 'p', speed: 0.92 } }),
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Falha na API HF' });
+    const buffer = await response.arrayBuffer();
+    res.setHeader('Content-Type', 'audio/webm');
+    return res.send(Buffer.from(buffer));
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/transcribe-audio', express.raw({ type: ['audio/webm', 'audio/*'], limit: '50mb' }), async (req, res) => {
+  const apiKey = process.env.VITE_GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+  
+  if (!req.body || !Buffer.isBuffer(req.body)) {
+    return res.status(400).json({ error: 'No audio data' });
+  }
+
+  const formData = new FormData();
+  formData.append('file', new Blob([req.body], { type: 'audio/webm' }), 'audio.webm');
+  formData.append('model', 'whisper-large-v3');
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      body: formData,
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Falha na API transcrição' });
+    const data = await response.json();
+    return res.json({ text: data.text || '' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/generate-toc', async (req, res) => {
+  const apiKey = process.env.VITE_GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Chave não configurada' });
+  const { text } = req.body;
+  
+  const prompt = `Abaixo está um texto copiado de um sumário (índice), que pode estar muito desformatado. Identifique os títulos/capítulos e suas respectivas páginas (ex: "Introdução....5", "1. Introdução - 5" ou apenas "Introdução 5"). Organize os dados extraídos em um array JSON com os campos "capitulo" (string) e "pagina" (number). Aja inteligentemente e filtre sujeiras. Retorne estritamente o JSON válido e NADA MAIS, sem introduções ou explicações.\n\nTexto do Sumário:\n${text}`;
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 1024
+      })
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Erro ao processar texto com Groq API.' });
+    const data = await response.json();
+    return res.json({ reply: data.choices?.[0]?.message?.content || '[]' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

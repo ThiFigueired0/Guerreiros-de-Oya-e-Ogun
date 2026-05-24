@@ -147,27 +147,17 @@ export const askAI = async (
 };
 
 export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
-  const apiKey = getApiKey();
-  
-  if (!apiKey) {
-    throw new Error('Chave API GROQ não encontrada.');
-  }
-
-  const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.webm');
-  formData.append('model', 'whisper-large-v3');
-
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    const response = await fetch('/api/transcribe-audio', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'audio/webm'
       },
-      body: formData,
+      body: audioBlob,
     });
 
     if (!response.ok) {
-      throw new Error(`Erro na API Groq: ${response.status}`);
+      throw new Error(`Erro na API local: ${response.status}`);
     }
 
     const data = await response.json();
@@ -179,47 +169,9 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
 };
 
 export const getDailyKnowledge = async (): Promise<string> => {
-
-  const apiKey = getApiKey();
-  
-  if (!apiKey) {
-    return JSON.stringify({
-      title: "Sabedoria Oculta",
-      content: "A sabedoria do dia está guardada. Verifique a chave de acesso.",
-      category: "Aviso"
-    });
-  }
-
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um historiador e doutrinador de Umbanda e Candomblé. 
-            Gere uma pílula de conhecimento (um Itã, um Fundamento ou uma Tradição Histórica).
-            O tom deve ser educativo e respeitoso.
-            Responda APENAS em JSON no formato:
-            {
-              "title": "Título Curto",
-              "content": "Conteúdo educativo detalhado (até 450 caracteres)",
-              "category": "Itã | Fundamento | Tradição"
-            }`
-          },
-          {
-            role: 'user',
-            content: 'Gere o conhecimento estruturado de hoje.'
-          }
-        ],
-        temperature: 0.8,
-        max_tokens: 500
-      })
+    const response = await fetch('/api/daily-knowledge', {
+      method: 'POST'
     });
 
     if (!response.ok) return JSON.stringify({
@@ -229,7 +181,7 @@ export const getDailyKnowledge = async (): Promise<string> => {
     });
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content || "";
+    const content = data.reply || "";
     // Clean potential markdown code blocks
     const jsonStr = content.replace(/```json|```/g, "").trim();
     return jsonStr;
@@ -253,11 +205,6 @@ const getHuggingFaceApiKey = () => {
 };
 
 export const analyzeImage = async (imageBlob: Blob): Promise<string> => {
-  const apiKey = getApiKey(); // uses Groq key
-  if (!apiKey) {
-    throw new Error('Chave API GROQ não encontrada para Visão.');
-  }
-
   try {
     const arrayBuffer = await imageBlob.arrayBuffer();
     const base64Data = btoa(
@@ -267,36 +214,25 @@ export const analyzeImage = async (imageBlob: Blob): Promise<string> => {
 
     const prompt = "Describe this image in detail, focusing on identifying objects, colors, plants, or symbols, in a way that can be used for a chat assistant context.";
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('/api/analyze-image', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: base64Image } }
-            ]
-          }
-        ],
-        temperature: 0.5,
-        max_tokens: 300
+        prompt,
+        base64Image
       }),
     });
 
     if (!response.ok) {
       const errTxt = await response.text();
-      console.error('Groq Vision Error:', errTxt);
+      console.error('Vision Error:', errTxt);
       throw new Error(`A API de Visão falhou com status: ${response.status}`);
     }
 
     const result = await response.json();
-    return result.choices[0]?.message?.content || 'Análise de imagem concluída, mas sem detalhes fornecidos.';
+    return result.reply || 'Análise de imagem concluída, mas sem detalhes fornecidos.';
   } catch (error) {
     if (error instanceof Error) {
         throw new Error(error.message, { cause: error });
@@ -337,47 +273,25 @@ export const extractTextFromPdf = async (pdfBlob: Blob): Promise<string> => {
 };
 
 export const generateSpeech = async (text: string): Promise<Blob> => {
-  const apiKey = getHuggingFaceApiKey();
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (apiKey) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
-  } else {
-    console.warn("Aviso: Chave API Hugging Face não encontrada. Fallback local será ativado.");
-    throw new Error("Chave API Hugging Face não encontrada. Configure VITE_HUGGINGFACE_API_KEY no .env.");
-  }
-
-  // Remove XML tags from text and normalize punctuation for better voice processing (pauses)
   const cleanText = text
     .replace(/<[^>]*>?/gm, '')
-    .replace(/([*#_~|]+|--+)/g, '.') // Replace special chars and long dashes with dots
-    .replace(/\s+/g, ' ') // Collapse spaces
+    .replace(/([*#_~|]+|--+)/g, '.') 
+    .replace(/\s+/g, ' ') 
     .trim();
 
-  // Try inference API
   try {
-    const response = await fetch('https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M', {
+    const response = await fetch('/api/generate-speech', {
       method: 'POST',
-      headers,
-      body: JSON.stringify({
-        inputs: cleanText,
-        parameters: {
-          voice: 'pm_alex', // Voz masculina firme em PT-BR (alternativa: 'pf_bella')
-          lang: 'p', // Língua portuguesa
-          speed: 0.92, // Velocidade levemente reduzida para soar mais natural
-        }
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cleanText }),
     });
 
     if (!response.ok) {
-      throw new Error(`Erro na API Hugging Face: ${response.status}`);
+      throw new Error(`Erro na API: ${response.status}`);
     }
 
     return await response.blob();
   } catch (error) {
-    throw new Error("API indisponível ou falha de rede", { cause: error }); // Triggers fallback
+    throw new Error("API indisponível ou falha de rede", { cause: error });
   }
 };

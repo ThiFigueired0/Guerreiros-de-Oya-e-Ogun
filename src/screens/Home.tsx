@@ -2,7 +2,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp, Sun, Sword } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp, Sun, Sword , CloudSun, Moon, MoonStar } from 'lucide-react';
 import { DailyMessageModal } from '../components/DailyMessageModal';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
@@ -13,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { askAI, getDailyKnowledge } from '../services/aiService';
 import { DID_YOU_KNOW_DATA } from '../data/didYouKnowData';
 import { useAssistant } from '../lib/AssistantContext';
+import { GlobalSearch } from '../components/GlobalSearch';
 
 export default function HomeScreen() {
   const { setIsScrolled } = useAssistant();
@@ -204,59 +205,36 @@ export default function HomeScreen() {
   const nextEvent = upcomingEvents[0];
   const lastBook = inProgressBooks[0];
 
-  const currentDate = new Date();
-  const greeting = currentDate.getHours() < 12 ? "Bom dia" : currentDate.getHours() < 18 ? "Boa tarde" : "Boa noite";
-  const displayName = settings.nickname?.trim() 
-    ? settings.nickname.trim() 
-    : settings.firstName?.trim() 
-      ? settings.firstName.trim().split(' ')[0] 
-      : "Guerreiro";
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 40, scale: 0.9 },
+    show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 200, damping: 20 } }
+  };
 
   return (
-    <motion.div 
-      onScroll={(e) => {
-        const target = e.target as HTMLElement;
-        setIsScrolled(target.scrollTop > 100);
-      }}
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      exit="hidden" 
       className={cn(
-        "p-4 min-h-full pb-32 transition-colors duration-500 overflow-y-auto",
-        settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
+        "p-4 transition-colors duration-500 w-full",
+        "bg-transparent"
       )}
     >
-      {/* 1. Header Profiling */}
-      <header className="flex items-center justify-between mb-8 mt-2 px-2 gap-4">
-        <div className="flex-1">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 mb-1"
-          >
-            <Sparkles className="w-4 h-4 text-brand-copper" />
-            <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-              {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </span>
-          </motion.div>
-          <h2 className={cn(
-            "text-2xl tracking-tight flex items-center gap-2",
-            settings.darkMode ? "text-white" : "text-brand-navy"
-          )} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-            {greeting}, {displayName}!
-          </h2>
-        </div>
-
-        {/* Premium Daily Message Card (Compact) */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowDailyFactModal(true)}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-[16px] bg-gradient-to-r from-[#001a33] to-[#003366] border border-[#D4AF37] shadow-lg"
-        >
-          <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-          <span className="text-white text-xs font-semibold whitespace-nowrap font-sans font-[600]">Mensagem Diária</span>
-        </motion.div>
-      </header>
+      {/* Global Search Bar (moved from header) */}
+      <div className="w-full px-2 mb-2 mt-4">
+        <GlobalSearch />
+      </div>
 
       {/* AI Response Display */}
       <AnimatePresence>
@@ -270,19 +248,17 @@ export default function HomeScreen() {
             <div className={cn(
               "p-5 rounded-[32px] border relative overflow-hidden",
               settings.darkMode 
-                ? "bg-[#1A1A1A] border-gray-800 text-gray-200" 
-                : "bg-white border-brand-copper/20 text-brand-navy shadow-xl shadow-brand-copper/5"
+                ? "bg-[#1A1A1A] border-white/10 text-gray-200" 
+                : "bg-white border-brand-copper/20 text-white shadow-xl shadow-brand-copper/5"
             )}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-brand-copper/10 rounded-xl text-brand-copper">
-                    <Bot className="w-4 h-4" />
-                  </div>
+                  <motion.div animate={{ rotate: [-5, 5, -5], y: [0, -2, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="p-1.5 bg-brand-copper/10 rounded-xl text-brand-copper"><Bot className="w-4 h-4" /></motion.div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Assistente Oya Ogum</span>
                 </div>
                 <button 
                   onClick={() => setAiResponse(null)}
-                  className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+                  className="p-1.5 active:bg-black/5 dark:active:bg-white/5 rounded-full transition-colors"
                 >
                   <X className="w-4 h-4 text-gray-400" />
                 </button>
@@ -295,218 +271,129 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* 2. Bento Grid Dashboard */}
-      <section className="grid grid-cols-2 gap-3 mb-8 px-2">
-        {/* Widget 1: Próxima Gira */}
-        <div 
-          onClick={() => navigate('/calendar')}
+      {/* 2. Dashboard Interface */}
+      <motion.section variants={itemVariants} className="flex flex-col gap-3 mb-8 px-4 max-w-md mx-auto relative z-10 p-2">
+        {/* Next Event List Item */}
+        <motion.div variants={itemVariants} onClick={() => navigate("/calendar")}
+          whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
           className={cn(
-            "col-span-2 p-5 rounded-[32px] border relative overflow-hidden transition-all active:scale-[0.98]",
+            "p-4 rounded-3xl relative overflow-hidden transition-colors cursor-pointer group flex items-center gap-4",
             settings.darkMode 
-              ? "bg-gradient-to-br from-[#121a2f] to-[#1A1A1A] border-[#1e293b]" 
-              : "bg-gradient-to-br from-[#0B1E36] via-[#102b4e] to-[#1a365d] border-[#0B1E36] shadow-xl shadow-brand-navy/20"
+              ? "bg-black/20 backdrop-blur-xl border border-white/5 hover:bg-black/30" 
+              : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.05)]"
           )}
         >
-          {/* Decorative Mesh Gradient Blur */}
-          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-48 h-48 bg-brand-copper/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 p-4 opacity-5">
-            <Calendar className={cn("w-32 h-32", settings.darkMode ? "text-blue-100" : "text-white")} />
+          <div className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-inner", 
+            settings.darkMode ? "bg-white/5 text-brand-gold" : "bg-gradient-to-br from-brand-gold/80 to-brand-gold text-white"
+          )}>
+            <Calendar className="w-5 h-5 drop-shadow-sm" />
           </div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-brand-copper/20 p-1.5 rounded-xl text-brand-copper border border-brand-copper/30 shadow-sm shadow-brand-copper/10">
-                <Clock className="w-4 h-4" />
-              </div>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest",
-                settings.darkMode ? "text-brand-copper" : "text-brand-copper"
-              )}>Próximo Evento</span>
-            </div>
-            
+          <div className="flex-1 min-w-0">
+            <span className={cn("text-[9px] font-bold uppercase tracking-widest block mb-0.5", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>Próximo Evento</span>
             {nextEvent ? (
-              <div>
-                      <h3 className={cn(
-                        "text-xl font-black text-white leading-tight mb-2 pr-12 drop-shadow-sm",
-                        nextEvent.isCanceled && "line-through opacity-50"
-                      )}>
-                        {nextEvent.title}
-                      </h3>
-                      <div className="flex items-center gap-2.5 text-white/90">
-                        <span className="text-xs font-bold leading-none bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
-                          {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
-                        </span>
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-black/20 border border-black/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm text-white/80">
-                          {nextEvent.category}
-                        </span>
-                        {nextEvent.isCanceled && (
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-red-500/80 border border-red-500 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm text-white">
-                            Cancelado
-                          </span>
-                        )}
-                      </div>
-              </div>
+              <>
+                <h3 className={cn("text-base font-bold leading-tight truncate font-display", nextEvent.isCanceled && "line-through opacity-50", settings.darkMode ? "text-white" : "text-gray-900")}>{nextEvent.title}</h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                   <p className={cn("text-[11px] font-mono", settings.darkMode ? "text-gray-400" : "text-gray-600")}>{format(parseISO(nextEvent.date), "dd/MM", { locale: ptBR })}</p>
+                   <span className={cn("text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider", settings.darkMode ? "bg-white/10 text-gray-300" : "bg-black/5 text-gray-600")}>{nextEvent.category}</span>
+                   {nextEvent.isCanceled && <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-red-500/10 text-red-500">Cancelado</span>}
+                </div>
+              </>
             ) : (
-              <div>
-                <h3 className="text-lg font-black text-white/50 leading-tight drop-shadow-sm">Nenhum evento próximo</h3>
-              </div>
+              <h3 className={cn("text-sm font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Nenhum evento próximo</h3>
             )}
           </div>
-        </div>
+          <ChevronRight className={cn("w-4 h-4 shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-100 transition-all", settings.darkMode ? "text-white" : "text-black")} />
+        </motion.div>
 
-        {/* Widget 2: Estudo / Progresso */}
-        <div 
-          onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
-          className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
-            settings.darkMode 
-              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border-gray-800 hover:border-brand-gold/30" 
-              : "bg-gradient-to-br from-brand-gold/5 to-white border-brand-gold/10 shadow-xl shadow-brand-gold/5 hover:border-brand-gold/20"
-          )}
+        {/* Last Study List Item */}
+        <motion.div variants={itemVariants} onClick={() => lastBook ? navigate("/studies", { state: { openBookId: lastBook.id } }) : navigate("/studies")}
+           whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+           className={cn(
+             "p-4 rounded-3xl relative overflow-hidden transition-colors cursor-pointer flex items-center gap-4 group",
+             settings.darkMode ? "bg-black/20 backdrop-blur-xl border border-white/5 hover:bg-black/30" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(31,56,100,0.05)]"
+           )}
         >
-          {/* Background Icon Decoration */}
-          <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 -rotate-12 transition-transform duration-700 pointer-events-none">
-            <BookOpen className="w-44 h-44 stroke-[1] text-brand-gold" />
+          <div 
+             className={cn(
+               "w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-inner", 
+               (!lastBook?.coverImage && !lastBook?.coverColor) && (
+                 settings.darkMode ? "bg-white/5 text-gray-300" : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600"
+               )
+             )}
+             style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}
+          >
+             {lastBook?.coverImage ? (
+               <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+             ) : (
+               <GraduationCap className={cn("w-5 h-5", lastBook?.coverColor ? "text-white" : "")} />
+             )}
           </div>
-
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <div 
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border transition-colors", 
-                (!lastBook?.coverImage && !lastBook?.coverColor) && (
-                  settings.darkMode 
-                  ? "bg-brand-gold/10 text-brand-gold border-brand-gold/20" 
-                  : "bg-brand-gold text-white border-brand-gold/40 shadow-lg shadow-brand-gold/20"
-                )
-              )}
-              style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}
-            >
-              {lastBook?.coverImage ? (
-                <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover" />
-              ) : (
-                <GraduationCap className={cn(
-                  "w-5 h-5", 
-                  lastBook?.coverColor ? "text-white" : (settings.darkMode ? "text-brand-gold" : "text-white")
-                )} />
-              )}
-            </div>
-            {lastBook && <span className="text-[10px] font-black text-brand-gold">{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>}
-          </div>
-          <div className="relative z-10">
-            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-brand-gold/70" : "text-brand-gold/80")}>Último Estudo</p>
-            <p className={cn(
-              "font-bold text-xs leading-tight line-clamp-2",
-              settings.darkMode ? "text-white" : "text-brand-navy"
-            )}>{lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}</p>
-          </div>
-        </div>
-
-        {/* Widget 3: Financeiro / PIX */}
-        <div 
-          onClick={() => setShowPixMenu(true)}
-          className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
-            settings.darkMode 
-              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border-gray-800 hover:border-emerald-500/30" 
-              : "bg-gradient-to-br from-emerald-50 to-white border-emerald-100 shadow-xl shadow-emerald-500/5 hover:border-emerald-200"
-          )}
-        >
-          {/* Background Icon Decoration */}
-          <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 -rotate-12 transition-transform duration-700 pointer-events-none">
-            <div className="relative">
-              <Banknote className="w-44 h-44 stroke-[1] text-emerald-600" />
-              <div className="absolute inset-0 flex items-center justify-center pt-2">
-                <DollarSign className="w-16 h-16 stroke-[2] text-emerald-600 opacity-40" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <div className={cn(
-              "p-2 rounded-xl backdrop-blur-sm border transition-colors", 
-              settings.darkMode 
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                : "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20"
-            )}>
-              <Wallet className="w-5 h-5" />
-            </div>
-            <ChevronRight className={cn("w-4 h-4 opacity-50", settings.darkMode ? "text-gray-400" : "text-emerald-600")} />
-          </div>
-          <div className="relative z-10">
-            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/80")}>Dados Bancários</p>
-            <p className={cn(
-              "font-bold text-sm leading-tight",
-              settings.darkMode ? "text-white" : "text-brand-navy"
-            )}>PIX / Ajuda</p>
-          </div>
-        </div>
-
-        {/* Area: Contatos e Localização */}
-        <div className="col-span-2 space-y-4 mb-4">
           
-          {/* Endereço do Terreiro */}
-          <div className={cn(
-            "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden flex items-center gap-4 sm:gap-6 group hover:translate-y-[-2px]",
-            settings.darkMode 
-              ? "bg-gradient-to-br from-[#1A1A1A] to-[#141414] border border-gray-800 hover:border-red-500/30 hover:shadow-[0_8px_30px_rgba(239,68,68,0.1)]" 
-              : "bg-gradient-to-br from-[#fff5f5] to-white border border-[#fce8e8] hover:border-[#fcd9d9] shadow-[0_8px_30px_rgba(239,68,68,0.04)] hover:shadow-[0_12px_40px_rgba(239,68,68,0.12)]"
-          )}>
-            {/* Background Map Decoration */}
-            <div className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500 pointer-events-none">
-              <MapPin className="w-48 h-48 sm:w-56 sm:h-56 stroke-[1]" />
-            </div>
-
-            <div className={cn(
-              "w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-[24px] sm:rounded-[28px] shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3 shadow-sm",
-              settings.darkMode ? "bg-red-500/20 text-red-400" : "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-red-500/20"
-            )}>
-              <MapPin className="w-7 h-7 sm:w-8 sm:h-8 stroke-[2]" />
-            </div>
-            
-            <div className="flex-1 min-w-0 pr-2 relative z-10">
-              <p className={cn("text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-1.5 sm:mb-2", settings.darkMode ? "text-red-400/70" : "text-red-600/80")}>
-                Endereço do Terreiro
-              </p>
-              <p className={cn("font-bold text-[14px] sm:text-[16px] leading-tight mb-1 truncate whitespace-normal transition-colors", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-[#0a182c]")}>
-                Av. Sapopemba,<br/>
-                16068 - Jd ster
-              </p>
-              <p className={cn("text-[11px] sm:text-xs font-medium", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-                São Paulo - SP, 08830-180
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shrink-0 relative z-10">
-              <button 
-                onClick={(e) => { e.preventDefault(); copyToClipboard("Av. Sapopemba, 16068 - Jd ster, São Paulo - SP, 08830-180", "address"); }}
-                className={cn(
-                  "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-95 group/btn",
-                  copied === 'address' 
-                    ? "bg-green-500 text-white shadow-md shadow-green-500/20" 
-                    : settings.darkMode 
-                      ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" 
-                      : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
-                )}
-              >
-                {copied === 'address' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />}
-              </button>
-              <a 
-                href="https://maps.app.goo.gl/bVTm79ZwaBrbJHq19?g_st=aw"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-95 group/btn",
-                  settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
-                )}
-              >
-                <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
-              </a>
-            </div>
+          <div className="flex-1 min-w-0">
+             <span className={cn("text-[9px] font-bold uppercase tracking-widest block mb-0.5", settings.darkMode ? "text-gray-400" : "text-gray-500")}>Último Estudo</span>
+             <p className={cn("text-base font-bold leading-tight truncate font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
+               {lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}
+             </p>
+             {lastBook && (
+               <div className="flex items-center gap-2 mt-1.5">
+                 <div className="flex-1 h-1 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                   <motion.div initial={{ width: 0 }} animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages!) * 100}%` }} className={cn("h-full rounded-full", settings.darkMode ? "bg-brand-gold" : "bg-brand-copper")} />
+                 </div>
+                 <span className={cn("text-[9px] font-mono font-bold", settings.darkMode ? "text-gray-400" : "text-gray-500")}>{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>
+               </div>
+             )}
           </div>
+          <ChevronRight className={cn("w-4 h-4 shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-100 transition-all", settings.darkMode ? "text-white" : "text-black")} />
+        </motion.div>
+
+        {/* Finance and Location Row */}
+        <div className="grid grid-cols-2 gap-3 mt-1">
+          {/* Pix / Finance */}
+          <motion.div variants={itemVariants} onClick={() => setShowPixMenu(true)}
+             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+             className={cn(
+               "p-4 rounded-[28px] relative overflow-hidden transition-colors cursor-pointer flex flex-col justify-center items-center text-center gap-2 group h-32",
+               settings.darkMode ? "bg-emerald-900/10 backdrop-blur-xl border border-emerald-500/10 hover:bg-emerald-900/20" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(16,185,129,0.08)]"
+             )}
+          >
+             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-inner", settings.darkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white")}>
+                <Wallet className="w-5 h-5 drop-shadow-sm" />
+             </div>
+             <div>
+                <p className={cn("text-xs font-bold leading-tight font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
+                  Financeiro
+                </p>
+                <span className={cn("text-[9px] font-medium tracking-wide block mt-0.5", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/70")}>Ajuda & PIX</span>
+             </div>
+          </motion.div>
+
+          {/* Location Action */}
+          <motion.div variants={itemVariants} onClick={(e) => { e.preventDefault(); copyToClipboard("Av. Sapopemba, 16068 - Jd ster, São Paulo - SP, 08830-180", "address"); }}
+             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+             className={cn(
+               "p-4 rounded-[28px] relative overflow-hidden transition-colors cursor-pointer flex flex-col justify-center items-center text-center gap-2 group h-32",
+               settings.darkMode ? "bg-red-900/10 backdrop-blur-xl border border-red-500/10 hover:bg-red-900/20" : "bg-white/40 backdrop-blur-xl border border-white/60 hover:bg-white/60 shadow-[0_8px_32px_rgba(239,68,68,0.08)]",
+               copied === 'address' && (settings.darkMode ? "bg-green-900/20 border-green-500/20" : "bg-green-50 border-green-200 shadow-green-500/10")
+             )}
+          >
+             <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 shadow-inner", 
+                 copied === 'address' ? (settings.darkMode ? "bg-green-500/20 text-green-400" : "bg-gradient-to-br from-green-400 to-green-500 text-white")
+                 : (settings.darkMode ? "bg-red-500/10 text-red-500" : "bg-gradient-to-br from-red-400 to-red-500 text-white")
+             )}>
+                {copied === 'address' ? <CheckCircle2 className="w-5 h-5 drop-shadow-sm" /> : <MapPin className="w-5 h-5 drop-shadow-sm" />}
+             </div>
+             <div>
+                <p className={cn("text-xs font-bold leading-tight font-display", settings.darkMode ? "text-white" : "text-gray-900")}>
+                  {copied === 'address' ? "Copiado!" : "Endereço"}
+                </p>
+                <span className={cn("text-[9px] font-medium tracking-wide block mt-0.5", settings.darkMode ? "text-red-400/70" : "text-red-600/70")}>Terreiro</span>
+             </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
+
 
       {/* Menu PIX Expandido (Overlay Modal) */}
       <AnimatePresence>
@@ -525,28 +412,28 @@ export default function HomeScreen() {
               exit={{ opacity: 0, y: 100, scale: 0.95 }}
               className={cn(
                 "relative w-full max-w-sm rounded-[36px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]",
-                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white border border-gray-100"
+                settings.darkMode ? "bg-[#1A1A1A] border border-white/10" : "bg-white border border-gray-100"
               )}
             >
               <div className="p-6 border-b flex items-center justify-between shrink-0" style={{ borderColor: settings.darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-copper/10 text-brand-copper rounded-2xl flex items-center justify-center">
-                    <Wallet className="w-5 h-5" />
+                    <motion.div animate={{ y: [0, -2, 0], scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity }}><Wallet className="w-5 h-5" /></motion.div>
                   </div>
-                  <h3 className={cn("font-black text-sm uppercase tracking-widest", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                  <h3 className={cn("font-black text-sm uppercase tracking-widest", settings.darkMode ? "text-white" : "text-white")}>
                     Contas do Templo
                   </h3>
                 </div>
-                <button onClick={() => setShowPixMenu(false)} className="p-2 bg-gray-100 dark:bg-white/5 rounded-full active:scale-95 transition-all">
-                  <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                </button>
+                <motion.button animate={{ rotate: [0, 90, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} onClick={() => setShowPixMenu(false)} className="p-2 bg-gray-100 dark:bg-white/5 rounded-full active:scale-95 transition-all">
+                  <X className="w-4 h-4 text-gray-300 dark:text-gray-400" />
+                </motion.button>
               </div>
 
               <div className="p-6 space-y-4 overflow-y-auto scrollbar-hide">
                 {/* Caixa */}
                 <div className={cn(
                   "p-5 rounded-[28px] border transition-all relative overflow-hidden flex flex-col",
-                  settings.darkMode ? "bg-black/40 border-gray-800" : "bg-brand-copper/5 border-brand-copper/10 shadow-sm"
+                  settings.darkMode ? "bg-black/40 border-white/10" : "bg-brand-copper/5 border-brand-copper/10 shadow-sm"
                 )}>
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-gray-100 shrink-0 flex items-center justify-center overflow-hidden">
@@ -558,23 +445,23 @@ export default function HomeScreen() {
                     </div>
                     <div>
                       <p className={cn("text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>Mensalidade</p>
-                      <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>Caixa Econômica</p>
+                      <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-white" : "text-white")}>Caixa Econômica</p>
                     </div>
                   </div>
                   
                   <div className={cn(
                     "p-4 rounded-2xl flex items-center justify-between gap-4 mt-auto border",
-                    settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-white shadow-sm"
+                    settings.darkMode ? "bg-white/5 border-white/5" : "bg-white/10 border-white/10 backdrop-blur-md"
                   )}>
                     <div className="overflow-hidden">
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (CPF)</p>
-                      <p className={cn("text-sm sm:text-base font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>33464358810</p>
+                      <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest mb-1">Chave PIX (CPF)</p>
+                      <p className={cn("text-sm sm:text-base font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-white")}>33464358810</p>
                     </div>
                     <button 
                       onClick={() => copyToClipboard('33464358810', 'caixa')}
                       className="w-11 h-11 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20 active:scale-95 transition-all shrink-0"
                     >
-                      {copied === 'caixa' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                      {copied === 'caixa' ? <CheckCircle2 className="w-5 h-5" /> : <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}><Copy className="w-5 h-5" /></motion.div>}
                     </button>
                   </div>
                 </div>
@@ -582,7 +469,7 @@ export default function HomeScreen() {
                 {/* Nubank */}
                 <div className={cn(
                   "p-5 rounded-[28px] border transition-all relative overflow-hidden flex flex-col",
-                  settings.darkMode ? "bg-black/40 border-gray-800" : "bg-[#8A05BE]/5 border-[#8A05BE]/10 shadow-sm"
+                  settings.darkMode ? "bg-black/40 border-white/10" : "bg-[#8A05BE]/5 border-[#8A05BE]/10 shadow-sm"
                 )}>
                   <div className="flex justify-between items-center mb-5">
                     <div className="flex items-center gap-3">
@@ -595,24 +482,24 @@ export default function HomeScreen() {
                       </div>
                       <div>
                         <p className={cn("text-[9px] font-black uppercase tracking-widest opacity-60 mb-0.5", settings.darkMode ? "text-[#8A05BE]" : "text-[#8A05BE]")}>Diversos & Banhos</p>
-                        <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>Nubank</p>
+                        <p className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-white" : "text-white")}>Nubank</p>
                       </div>
                     </div>
                   </div>
                   
                   <div className={cn(
                     "p-4 rounded-2xl flex items-center justify-between gap-4 mt-auto border",
-                    settings.darkMode ? "bg-white/5 border-white/5" : "bg-white border-white shadow-sm"
+                    settings.darkMode ? "bg-white/5 border-white/5" : "bg-white/10 border-white/10 backdrop-blur-md"
                   )}>
                     <div className="overflow-hidden">
-                      <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-1">Chave PIX (Celular)</p>
-                      <p className={cn("text-sm sm:text-base font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-brand-navy")}>11982350614</p>
+                      <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest mb-1">Chave PIX (Celular)</p>
+                      <p className={cn("text-sm sm:text-base font-mono font-black tracking-widest truncate", settings.darkMode ? "text-white" : "text-white")}>11982350614</p>
                     </div>
                     <button 
                       onClick={() => copyToClipboard('11982350614', 'nubank')}
                       className="w-11 h-11 bg-[#8A05BE] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#8A05BE]/20 active:scale-95 transition-all shrink-0"
                     >
-                      {copied === 'nubank' ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                      {copied === 'nubank' ? <CheckCircle2 className="w-5 h-5" /> : <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}><Copy className="w-5 h-5" /></motion.div>}
                     </button>
                   </div>
                 </div>
@@ -623,172 +510,155 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       {/* 3. Atalhos / Favoritos Rápidos */}
-      <section className="mb-8 pl-2">
+      <motion.section variants={itemVariants} className="mb-8 pl-2">
         <div className="flex items-center justify-between mb-4 pr-4">
-          <h3 className={cn("font-black text-[10px] uppercase tracking-[0.2em]", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+          <h3 className={cn("font-black text-[10px] uppercase tracking-[0.2em]", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
             Meus Favoritos
           </h3>
-          <Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" />
+          <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}><Heart className="w-3 h-3 text-brand-copper/50 fill-brand-copper/10" /></motion.div>
         </div>
 
         {(favBaths.length > 0 || favPontos.length > 0 || favBooks.length > 0) ? (
           <>
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pr-4">
-              <button
-                onClick={() => setFavFilter('all')}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                  favFilter === 'all' 
-                    ? (settings.darkMode ? "bg-white text-black" : "bg-brand-navy text-white")
-                    : (settings.darkMode ? "bg-white/5 text-gray-400 hover:bg-white/10" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
-                )}
-              >
-                Todos
-              </button>
-              {favBaths.length > 0 && (
-                <button
-                  onClick={() => setFavFilter('baths')}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                    favFilter === 'baths' 
-                      ? (settings.darkMode ? "bg-emerald-500 text-white" : "bg-emerald-500 text-white")
-                      : (settings.darkMode ? "bg-emerald-500/10 text-emerald-500/70 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
-                  )}
-                >
-                  Banhos
-                </button>
-              )}
-              {favPontos.length > 0 && (
-                <button
-                  onClick={() => setFavFilter('pontos')}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                    favFilter === 'pontos' 
-                      ? (settings.darkMode ? "bg-rose-500 text-white" : "bg-rose-500 text-white")
-                      : (settings.darkMode ? "bg-rose-500/10 text-rose-500/70 hover:bg-rose-500/20" : "bg-rose-50 text-rose-600 hover:bg-rose-100")
-                  )}
-                >
-                  Pontos
-                </button>
-              )}
-              {favBooks.length > 0 && (
-                <button
-                  onClick={() => setFavFilter('books')}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
-                    favFilter === 'books' 
-                      ? (settings.darkMode ? "bg-indigo-500 text-white" : "bg-indigo-500 text-white")
-                      : (settings.darkMode ? "bg-indigo-500/10 text-indigo-500/70 hover:bg-indigo-500/20" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100")
-                  )}
-                >
-                  Estudos
-                </button>
-              )}
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide pr-4 p-1 rounded-full" style={{ backgroundColor: settings.darkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }}>
+              {['all', ...(favBaths.length > 0 ? ['baths'] : []), ...(favPontos.length > 0 ? ['pontos'] : []), ...(favBooks.length > 0 ? ['books'] : [])].map((tab) => {
+                const isSelected = favFilter === tab;
+                const labels: any = { all: 'Todos', baths: 'Banhos', pontos: 'Pontos', books: 'Estudos' };
+                const activeColor = tab === 'baths' ? 'bg-emerald-500 text-white' : tab === 'pontos' ? 'bg-rose-500 text-white' : tab === 'books' ? 'bg-indigo-500 text-white' : settings.darkMode ? 'bg-white text-black' : 'bg-brand-navy text-white';
+                const inactiveColor = settings.darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600';
+                
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setFavFilter(tab as any)}
+                    className={cn(
+                      "relative px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap",
+                      isSelected ? activeColor : inactiveColor
+                    )}
+                  >
+                    {isSelected && (
+                      <motion.div
+                        layoutId="activeFavFilter"
+                        className="absolute inset-0 rounded-full -z-10"
+                        style={{ backgroundColor: settings.darkMode ? (tab === 'all' ? '#fff' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') : (tab === 'all' ? '#1a365d' : tab === 'baths' ? '#10b981' : tab === 'pontos' ? '#f43f5e' : '#6366f1') }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{labels[tab]}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex gap-4 overflow-x-auto pb-8 pr-4 scrollbar-hide snap-x relative">
               {(favFilter === 'all' || favFilter === 'baths') && favBaths.map(bath => (
                 <div key={bath.id} className="relative group/card snap-start flex-shrink-0">
-                  <button 
-                    onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/herbs', { state: { openBathId: bath.id } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-[#111c18] to-[#0d1411] border-[#182b22] hover:border-emerald-500/30 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] hover:-translate-y-1"
-                        : "bg-gradient-to-b from-emerald-50 to-white border-emerald-100 shadow-sm hover:shadow-[0_12px_40px_rgba(16,185,129,0.12)] hover:border-emerald-200 hover:-translate-y-1"
+                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     )}
                   >
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/30 transition-colors pointer-events-none" />
+                    <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
                     
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 active:scale-110 active:rotate-6",
                       settings.darkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-white text-emerald-600 shadow-sm"
                     )}>
-                      <Leaf className="w-6 h-6" />
+                      <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 3, repeat: Infinity }}><Leaf className="w-6 h-6" /></motion.div>
                     </div>
 
                     <div className="relative z-10 mt-auto">
                       <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-emerald-500/80" : "text-emerald-600/80")}>Banho</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-emerald-900")}>{bath.title}</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-emerald-900")}>{bath.title}</p>
                     </div>
-                  </button>
+                  </motion.button>
                   <button
                     onClick={(e) => toggleFavBath(e, bath.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-emerald-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-emerald-500/10 active:scale-95 z-20"
                   >
-                    <HeartOff className="w-4 h-4 text-emerald-500 opacity-60 hover:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-emerald-500 opacity-60 active:opacity-100" />
                   </button>
                 </div>
               ))}
               
               {(favFilter === 'all' || favFilter === 'pontos') && favPontos.map(ponto => (
                 <div key={ponto.id} className="relative group/card snap-start flex-shrink-0">
-                  <button 
-                    onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/points', { state: { pontoId: ponto.id, folderId: ponto.folderId } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-[#1c1114] to-[#140d0f] border-[#2b181a] hover:border-rose-500/30 hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] hover:-translate-y-1"
-                        : "bg-gradient-to-b from-rose-50 to-white border-rose-100 shadow-sm hover:shadow-[0_12px_40px_rgba(244,63,94,0.12)] hover:border-rose-200 hover:-translate-y-1"
+                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-rose-500/50"
+                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-rose-500/50"
                     )}
                   >
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl group-hover:bg-rose-500/30 transition-colors pointer-events-none" />
+                    <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6",
+                      "w-12 h-12 rounded-[20px] flex items-center justify-center transition-transform duration-500 active:scale-110 active:-rotate-6",
                       settings.darkMode ? "bg-rose-500/20 text-rose-400" : "bg-white text-rose-600 shadow-sm"
                     )}>
-                      <Music className="w-6 h-6" />
+                      <motion.div animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 2.5, repeat: Infinity }}><Music className="w-6 h-6" /></motion.div>
                     </div>
 
                     <div className="relative z-10 mt-auto">
                       <p className={cn("text-[9px] font-black uppercase tracking-[0.15em] mb-1.5", settings.darkMode ? "text-rose-500/80" : "text-rose-600/80")}>Ponto</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-rose-900")}>{ponto.title}</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-rose-900")}>{ponto.title}</p>
                     </div>
-                  </button>
+                  </motion.button>
                   <button
                     onClick={(e) => toggleFavPonto(e, ponto.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-rose-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-rose-500/10 active:scale-95 z-20"
                   >
-                    <HeartOff className="w-4 h-4 text-rose-500 opacity-60 hover:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-rose-500 opacity-60 active:opacity-100" />
                   </button>
                 </div>
               ))}
 
               {(favFilter === 'all' || favFilter === 'books') && favBooks.map(book => (
                 <div key={book.id} className="relative group/card snap-start flex-shrink-0">
-                  <button 
-                    onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }} onClick={() => navigate('/studies', { state: { openBookId: book.id } })}
                     className={cn(
-                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-all duration-500 active:scale-95 text-left flex flex-col justify-between group overflow-hidden",
+                      "relative w-[150px] sm:w-[160px] h-[180px] sm:h-[190px] p-5 rounded-[32px] border transition-colors duration-500 text-left flex flex-col justify-between group overflow-hidden",
                       settings.darkMode
-                        ? "bg-gradient-to-b from-[#11131c] to-[#0d0f14] border-[#181d2b] hover:border-indigo-500/30 hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] hover:-translate-y-1"
-                        : "bg-gradient-to-b from-indigo-50 to-white border-indigo-100 shadow-sm hover:shadow-[0_12px_40px_rgba(99,102,241,0.12)] hover:border-indigo-200 hover:-translate-y-1"
+                        ? "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        : "bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-md border-white/10 shadow-sm focus-visible:outline-none focus:ring-2 focus:ring-indigo-500/50"
                     )}
                   >
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors pointer-events-none" />
+                    <motion.div animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 
                     <div className={cn(
-                      "w-12 h-12 rounded-[20px] shadow-sm flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 group-hover:scale-110", 
+                      "w-12 h-12 rounded-[20px] shadow-sm flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-500 active:scale-110", 
                       (!book.coverImage && !book.coverColor) ? (settings.darkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-white text-indigo-600") : ""
                     )} style={book.coverColor && !book.coverImage ? { backgroundColor: book.coverColor } : undefined}>
                       {book.coverImage ? (
                         <img src={book.coverImage} alt={book.name} className="w-full h-full object-cover" />
                       ) : (
-                        <GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "")} />
+                        <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 3, repeat: Infinity }}><GraduationCap className={cn("w-6 h-6", book.coverColor ? "text-white" : "")} /></motion.div>
                       )}
                     </div>
 
                     <div className="relative z-10 mt-auto">
                       <p className="text-[9px] font-black uppercase tracking-[0.15em] mb-1.5" style={{ color: book.coverColor || (settings.darkMode ? '#818cf8' : '#4f46e5') }}>Estudo</p>
-                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 group-hover:text-white" : "text-brand-navy group-hover:text-indigo-900")}>{book.name.replace('.pdf', '')}</p>
+                      <p className={cn("font-bold text-[14px] leading-tight line-clamp-2", settings.darkMode ? "text-gray-100 active:text-white" : "text-white active:text-indigo-900")}>{book.name.replace('.pdf', '')}</p>
                     </div>
-                  </button>
+                  </motion.button>
                   <button
                     onClick={(e) => toggleFavBook(e, book.id)}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all hover:bg-indigo-500/10 active:scale-95 z-20"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/card:opacity-100 transition-all active:bg-indigo-500/10 active:scale-95 z-20"
                   >
-                    <HeartOff className="w-4 h-4 text-indigo-500 opacity-60 hover:opacity-100" />
+                    <HeartOff className="w-4 h-4 text-indigo-500 opacity-60 active:opacity-100" />
                   </button>
                 </div>
               ))}
@@ -799,16 +669,16 @@ export default function HomeScreen() {
             "p-6 sm:p-8 rounded-[32px] border flex flex-col items-center justify-center text-center mr-4 mt-2",
             settings.darkMode ? "bg-white/5 border-white/10" : "bg-white/80 border-gray-100 shadow-sm"
           )}>
-            <div className={cn(
+            <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }} className={cn(
               "w-16 h-16 rounded-full flex items-center justify-center mb-4",
               settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-300"
             )}>
               <Heart className="w-8 h-8 stroke-[1.5]" />
-            </div>
-            <h4 className={cn("font-bold text-base mb-2", settings.darkMode ? "text-gray-200" : "text-brand-navy")}>
+            </motion.div>
+            <h4 className={cn("font-bold text-base mb-2", settings.darkMode ? "text-gray-200" : "text-white")}>
               Nenhum favorito ainda
             </h4>
-            <p className={cn("text-[13px] leading-relaxed max-w-[220px] mb-6", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+            <p className={cn("text-[13px] leading-relaxed max-w-[220px] mb-6", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
               Salve seus banhos, pontos e estudos preferidos para ter acesso rápido aqui.
             </p>
             <div className="flex gap-2">
@@ -816,7 +686,7 @@ export default function HomeScreen() {
                 onClick={() => navigate('/herbs')}
                 className={cn(
                   "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
-                  settings.darkMode ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
+                  settings.darkMode ? "bg-emerald-500/20 text-emerald-400 active:bg-emerald-500/30" : "bg-emerald-50 text-emerald-700 active:bg-emerald-100 border border-white/10"
                 )}
               >
                 + Banho
@@ -825,7 +695,7 @@ export default function HomeScreen() {
                 onClick={() => navigate('/points')}
                 className={cn(
                   "px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95",
-                  settings.darkMode ? "bg-rose-500/20 text-rose-400 hover:bg-rose-500/30" : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                  settings.darkMode ? "bg-rose-500/20 text-rose-400 active:bg-rose-500/30" : "bg-rose-50 text-rose-700 active:bg-rose-100 border border-white/10"
                 )}
               >
                 + Ponto
@@ -833,17 +703,16 @@ export default function HomeScreen() {
             </div>
           </div>
         )}
-      </section>
-
+      </motion.section>
       {/* 4. Agenda Resumida */}
-      <section className="px-2 pb-24">
+      <motion.section variants={itemVariants} className="px-2 pb-24">
         <div className="flex items-center justify-between mb-4">
-          <h3 className={cn("font-black text-[10px] uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+          <h3 className={cn("font-black text-[10px] uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-300")}>
             Próximos Eventos
           </h3>
           <button 
             onClick={() => navigate('/calendar', { state: { scrollToAgenda: true } })}
-            className="text-[10px] font-black uppercase tracking-widest text-brand-copper hover:underline active:scale-95 transition-all"
+            className="text-[10px] font-black uppercase tracking-widest text-brand-copper active:underline active:scale-95 transition-all"
           >
             Ver Detalhes
           </button>
@@ -861,20 +730,27 @@ export default function HomeScreen() {
                 transition={{ delay: index * 0.1 }}
                  key={event.id}
                  onClick={() => navigate('/calendar', { state: { scrollToAgenda: true } })}
-                 className={cn(
-                   "w-full flex items-center gap-4 p-4 rounded-[28px] border transition-all active:scale-[0.98] text-left group relative overflow-hidden",
-                   settings.darkMode ? "bg-[#1A1A1A] border-gray-800 hover:border-gray-700" : "bg-white border-gray-100 shadow-sm hover:border-brand-copper/30 hover:shadow-md",
+                 whileHover={{ scale: 1.02, x: 5 }}
+                 whileTap={{ scale: 0.98 }} className={cn(
+                   "w-full flex items-center gap-4 p-4 rounded-[28px] border transition-colors text-left group relative overflow-hidden",
+                   settings.darkMode ? "bg-[#1A1A1A] border-white/10" : "bg-white/10 border-white/10 backdrop-blur-md shadow-sm",
                    isEventToday && (settings.darkMode ? "border-brand-copper/30 bg-brand-copper/10" : "border-brand-copper/30 bg-brand-copper/5 shadow-brand-copper/10")
                  )}
               >
                 {/* Decoration line for today */}
                 {isEventToday && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full bg-brand-copper" />
+                  <motion.div animate={{ height: ['48px', '32px', '48px'], opacity: [1, 0.6, 1] }} transition={{ duration: 2, repeat: Infinity }} className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 rounded-r-full bg-brand-copper" />
                 )}
 
+                
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+                <div className="absolute right-4 opacity-100 transition-all duration-300 pointer-events-none">
+                  <motion.div animate={{ x: [0, -5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}><ChevronRight className="w-5 h-5 text-gray-400 opacity-60" /></motion.div>
+                </div>
                 <div 
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[64px] h-[64px] rounded-[22px] border transition-colors shrink-0",
+                    "flex flex-col items-center justify-center min-w-[64px] h-[64px] rounded-[22px] border transition-colors shrink-0"
+,
                     isEventToday && (settings.darkMode ? "border-brand-copper/50 text-brand-copper shadow-lg shadow-brand-copper/10" : "text-brand-copper border-brand-copper/30 shadow-lg shadow-brand-copper/20")
                   )}
                   style={!isEventToday ? {
@@ -906,14 +782,14 @@ export default function HomeScreen() {
                      </span>
                      {isEventToday && (
                        <span className="text-[8px] font-black uppercase tracking-wider text-brand-copper flex items-center gap-1 animate-pulse">
-                         <div className="w-1.5 h-1.5 rounded-full bg-brand-copper" /> Hoje
+                         <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full bg-brand-copper" /> Hoje
                        </span>
                      )}
                    </div>
 
                    <p className={cn(
                      "font-medium text-[15px] leading-tight truncate", 
-                     settings.darkMode ? "text-white group-hover:text-gray-200 transition-colors" : "text-[#1a202c] group-hover:text-brand-navy transition-colors",
+                     settings.darkMode ? "text-white active:text-gray-200 transition-colors" : "text-[#1a202c] active:text-white transition-colors",
                      event.isCanceled && "line-through opacity-50"
                    )}>
                      {event.title}
@@ -928,16 +804,16 @@ export default function HomeScreen() {
                      </div>
                    )}
                  </div>
-                 <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2 shrink-0">
-                   <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-gray-600" : "text-gray-300")} />
+                 <div className="opacity-0 active:opacity-100 transition-opacity pr-2 shrink-0">
+                   <ChevronRight className={cn("w-5 h-5", settings.darkMode ? "text-gray-300" : "text-gray-300")} />
                  </div>
               </motion.button>
             );
           })}
           
           {upcomingEvents.length === 0 && (
-             <div className="p-8 text-center rounded-[32px] border border-dashed border-gray-200 dark:border-gray-800">
-               <Calendar className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+             <div className="p-8 text-center rounded-[32px] border border-dashed border-gray-200 dark:border-white/10">
+               <motion.div animate={{ y: [0, -5, 0], opacity: [0.5, 1, 0.5] }} transition={{ duration: 3, repeat: Infinity }}><Calendar className="w-8 h-8 text-gray-300 dark:text-gray-300 mx-auto mb-3" /></motion.div>
                <p className="text-gray-400 text-xs font-medium">Nenhum evento agendado para os próximos dias.</p>
              </div>
           )}
@@ -947,7 +823,7 @@ export default function HomeScreen() {
               onClick={() => navigate('/calendar')}
               className={cn(
                 "w-full py-4 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all",
-                settings.darkMode ? "text-gray-400 hover:bg-white/5" : "text-gray-500 hover:bg-black/5"
+                settings.darkMode ? "text-gray-400 active:bg-white/5" : "text-gray-300 active:bg-black/5"
               )}
             >
               Ver agenda completa
@@ -955,30 +831,32 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* Contatos Úteis */}
-        <div className={cn(
-          "p-5 sm:p-8 rounded-[32px] sm:rounded-[40px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto",
+        </motion.section>
+
+      {/* Contatos Úteis */}
+        <motion.div variants={itemVariants} className={cn(
+          "p-5 sm:p-8 rounded-[32px] sm:rounded-[40px] transition-all duration-300 relative overflow-hidden group active:translate-y-[-2px] mt-8 max-w-lg mx-auto",
           settings.darkMode 
-            ? "bg-gradient-to-br from-[#1A1A1A] to-[#111111] border border-white/5 hover:border-blue-500/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
-            : "bg-gradient-to-br from-[#f0f7ff] to-white border border-blue-100/50 hover:border-blue-200 shadow-[0_10px_40px_rgba(59,130,246,0.05)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.1)]"
+            ? "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/5 active:border-blue-500/30 active:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+            : "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/10 active:border-blue-200 shadow-[0_10px_40px_rgba(59,130,246,0.05)] active:shadow-[0_20px_60px_rgba(59,130,246,0.1)]"
         )}>
           {/* Background Phone Decoration */}
-          <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">
+          <div className="absolute -right-8 -bottom-8 opacity-[0.03] active:scale-110 active:rotate-6 transition-transform duration-700 pointer-events-none">
             <Phone className="w-40 h-40 sm:w-56 sm:h-56 stroke-[1]" />
           </div>
 
           <div className="flex items-center gap-4 sm:gap-5 mb-6 sm:mb-8 relative z-10">
-            <div className={cn(
-              "w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl sm:rounded-[28px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-lg",
+            <motion.div animate={{ rotate: [0, 15, -15, 0], y: [0, -4, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className={cn(
+              "w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl sm:rounded-[28px] shrink-0 transition-all duration-500 active:scale-105 active:-rotate-6 shadow-lg",
               settings.darkMode ? "bg-blue-500/20 text-blue-400 shadow-blue-500/10" : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/30"
             )}>
               <Phone className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.5]" />
-            </div>
+            </motion.div>
             <div>
               <p className={cn("text-[8px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-0.5 sm:mb-1", settings.darkMode ? "text-blue-400/80" : "text-blue-600")}>
                 Canais de Apoio
               </p>
-              <h3 className={cn("text-lg sm:text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
+              <h3 className={cn("text-lg sm:text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-white")}>
                 Contatos Úteis
               </h3>
             </div>
@@ -995,8 +873,8 @@ export default function HomeScreen() {
                   "group/item relative flex items-center justify-between p-3.5 sm:p-4.5 rounded-[24px] sm:rounded-[32px] transition-all border",
                   isEven && "flex-row-reverse",
                   settings.darkMode 
-                    ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 shadow-xl" 
-                    : "bg-white border-white hover:border-blue-200 shadow-sm hover:shadow-xl shadow-blue-900/5"
+                    ? "bg-white/[0.02] border-white/5 active:bg-white/[0.06] active:border-blue-500/30 shadow-xl" 
+                    : "bg-white border-white active:border-blue-200 shadow-sm active:shadow-xl shadow-blue-900/5"
                 )}>
                   <div className={cn(
                     "flex items-center gap-3 sm:gap-4 flex-1 truncate",
@@ -1015,14 +893,14 @@ export default function HomeScreen() {
                     <div className="flex flex-col truncate">
                       <span className={cn(
                         "text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] block mb-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity",
-                        settings.darkMode ? "text-gray-400" : "text-brand-navy"
+                        settings.darkMode ? "text-gray-400" : "text-white"
                       )}>
                         {contact.name}
                         {contact.isFixed && <span className={cn("ml-1.5 text-[7px] text-brand-gold font-black", isEven && "mr-1.5 ml-0")}>(FIXO)</span>}
                       </span>
                       <span className={cn(
                         "font-bold text-[13px] sm:text-[16px] tracking-tight truncate",
-                        settings.darkMode ? "text-white" : "text-brand-navy"
+                        settings.darkMode ? "text-white" : "text-white"
                       )}>
                         {contact.phone}
                       </span>
@@ -1041,8 +919,8 @@ export default function HomeScreen() {
                           copied === contact.id 
                             ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
                             : settings.darkMode 
-                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
-                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                              ? "bg-white/5 border-white/5 text-gray-300 active:text-blue-400 active:border-blue-400/30" 
+                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 active:text-blue-600 active:bg-blue-50 active:border-blue-200"
                         )}
                       >
                         {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1057,7 +935,7 @@ export default function HomeScreen() {
                         "w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all active:scale-[0.8] text-white shadow-lg overflow-hidden",
                         settings.whatsappLogo 
                           ? (settings.darkMode ? "bg-white/5 p-1.5" : "bg-gray-50 p-1.5")
-                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 hover:shadow-[#25D366]/40 hover:-translate-y-0.5"
+                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 active:shadow-[#25D366]/40 active:-translate-y-0.5"
                       )}
                     >
                       {settings.whatsappLogo ? (
@@ -1075,8 +953,8 @@ export default function HomeScreen() {
                           copied === contact.id 
                             ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
                             : settings.darkMode 
-                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
-                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                              ? "bg-white/5 border-white/5 text-gray-300 active:text-blue-400 active:border-blue-400/30" 
+                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 active:text-blue-600 active:bg-blue-50 active:border-blue-200"
                         )}
                       >
                         {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1085,10 +963,9 @@ export default function HomeScreen() {
                   </div>
                 </div>
               );
-            })}
+                        })}
           </div>
-        </div>
-      </section>
+        </motion.div>
       {/* Daily Fact Modal */}
       <AnimatePresence>
         {showDailyFactModal && (

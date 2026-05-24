@@ -114,19 +114,29 @@ export function GlobalSearch() {
 
   return (
     <>
-      <div className="absolute top-4 left-4 sm:left-6 z-[60]">
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+      <div className="relative group w-full mb-6 px-1">
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setIsOpen(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura",
+            "w-full h-14 rounded-[24px] flex items-center px-5 transition-all duration-300 relative overflow-hidden cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] group/search",
             settings.darkMode 
-              ? "bg-black/40 border border-white/10" 
-              : "bg-white/10 hover:bg-white/20"
+              ? "bg-[#1A1A1A]/80 border border-white/5 text-gray-400 hover:border-white/10 hover:bg-[#222]/90 backdrop-blur-xl" 
+              : "bg-white/70 border border-white/40 text-gray-500 hover:bg-white/95 shadow-sm backdrop-blur-xl"
           )}
         >
-          <Search className={cn("w-5 h-5", settings.darkMode ? "text-gray-300" : "text-white")} strokeWidth={2.5} />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover/search:opacity-100 transition-opacity duration-700 pointer-events-none" />
+          <motion.div 
+            animate={{ rotate: [0, 10, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Search className="w-5 h-5 mr-3 shrink-0 text-brand-gold drop-shadow-sm" strokeWidth={2.5} />
+          </motion.div>
+          <span className="font-medium text-sm tracking-wide">Buscar pontos, orixás, eventos...</span>
+          <div className="ml-auto flex items-center justify-center w-8 h-8 rounded-full bg-black/5 dark:bg-white/5">
+            <Search className="w-3.5 h-3.5 opacity-50" />
+          </div>
         </motion.div>
       </div>
 

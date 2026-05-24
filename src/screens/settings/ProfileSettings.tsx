@@ -122,10 +122,13 @@ export default function ProfileSettings() {
       )}>
         <div 
           onClick={() => profilePhotoRef.current?.click()}
-          className="group w-24 h-24 rounded-full border-4 border-white/20 bg-white/10 flex items-center justify-center backdrop-blur-sm shadow-2xl relative z-10 cursor-pointer overflow-hidden transition-all active:scale-95"
+          className={cn(
+            "group w-24 h-24 flex items-center justify-center shadow-2xl relative z-10 cursor-pointer transition-all active:scale-95",
+            !settings.profilePhoto && "rounded-full border-4 border-white/20 bg-white/10 backdrop-blur-sm overflow-hidden"
+          )}
         >
           {settings.profilePhoto ? (
-            <img src={settings.profilePhoto} alt="Perfil" className="w-full h-full object-cover" />
+            <img src={settings.profilePhoto} alt="Perfil" className="w-full h-full object-contain drop-shadow-xl" />
           ) : (
             <User className="w-10 h-10 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
           )}

@@ -772,8 +772,7 @@ export default function HerbsScreen() {
 
   return (
     <motion.div className={cn(
-      "p-4 bg-[#F9F9F9] min-h-full transition-colors duration-500 pb-20",
-      settings.darkMode && "bg-[#121212]"
+      "p-4 bg-transparent min-h-full transition-colors duration-500 pb-20"
     )}>
       {/* Fixed Header Component: Semana de Gira */}
       <button 

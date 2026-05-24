@@ -73,11 +73,9 @@ export const DailyMessageModal: React.FC<DailyMessageModalProps> = ({ content, o
                 <div className="relative mb-8">
                   <div className="absolute -top-4 -left-4 w-8 h-8 border-t border-l border-[#C5A059]/30" />
                   <div className="absolute -bottom-4 -right-4 w-8 h-8 border-b border-r border-[#C5A059]/30" />
-                  <Sparkles className="w-12 h-12 text-[#C5A059]" strokeWidth={1} />
+                  <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity }}><Sparkles className="w-12 h-12 text-[#C5A059]" strokeWidth={1} /></motion.div>
                 </div>
-                <p className="text-white/80 text-sm font-light tracking-widest text-center uppercase">
-                  Toque para despertar sua força
-                </p>
+                <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="text-white/80 text-sm font-light tracking-widest text-center uppercase">Toque para despertar sua força</motion.p>
               </motion.div>
             ) : (
               /* Revealed State */

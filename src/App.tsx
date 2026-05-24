@@ -4,8 +4,10 @@ import {
   Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
-  History as HistoryIcon, LogOut, Bot, ArrowUp
+  History as HistoryIcon, LogOut, Bot, ArrowUp, Menu, ExternalLink, Moon, Sun, ChevronRight, SunMedium, CloudSun, MoonStar, Sparkles
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
@@ -13,15 +15,17 @@ import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFA
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
+import { SidebarMenu } from './components/SidebarMenu';
+import { AnimatedLeaves } from './components/AnimatedLeaves';
 import { AppRoutes } from './AppRoutes';
 import { NotificationManager } from './components/NotificationManager';
-import { GlobalSearch } from './components/GlobalSearch';
 import AuthScreen from './screens/Auth';
 import CompleteProfile from './screens/CompleteProfile';
 import ResetPassword from './screens/ResetPassword';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
 import { AssistantButton, AssistantWrapper } from './components/AssistantFeatures';
+import { EtherealEnergyBackground } from './components/SpiritualBackgrounds';
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center h-screen w-full bg-[#001529]">
@@ -130,8 +134,8 @@ function Navigation() {
   
   return (
     <>
-      <nav className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] transition-colors duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
+      <motion.nav animate={{ boxShadow: ["0 8px 32px rgba(212,175,55,0.08)", "0 12px 42px rgba(212,175,55,0.2)", "0 8px 32px rgba(212,175,55,0.08)"] }} transition={{ duration: 4, repeat: Infinity }} className={cn(
+        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] hover:scale-105 transition-all duration-300 rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
         settings.darkMode && "bg-[#121212]/70 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
       )}>
         <div className="flex justify-between items-center w-full relative">
@@ -212,7 +216,7 @@ function Navigation() {
             </span>
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
       <AnimatePresence>
         {showMore && (
@@ -299,23 +303,7 @@ const TopHeader = React.memo(function TopHeader() {
     orixaPhotos: {}
   });
 
-  const fullName = React.useMemo(() => {
-    if (isGuest) return "Modo Guest";
-    
-    // 1. Prefer explicitly set firstName + lastName from local settings (synced/manual)
-    const sName = [settings.firstName?.trim(), settings.lastName?.trim()].filter(Boolean).join(' ');
-    if (sName) return sName;
-    
-    // 2. Fallback to Supabase metadata (First/Last from manual signup or full_name from Google)
-    const metadata = user?.user_metadata;
-    const mFullName = [metadata?.first_name, metadata?.last_name].filter(Boolean).join(' ');
-    if (mFullName) return mFullName;
-    if (metadata?.full_name) return metadata.full_name;
-    if (metadata?.name) return metadata.name;
-    
-    return settings.nickname || "Guerreiro";
-  }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
-
+// The fullName logic will be moved to AppContent
   const leaves = React.useMemo(() => {
     return [...Array(15)].map((_, i) => ({
       id: i,
@@ -335,14 +323,14 @@ const TopHeader = React.memo(function TopHeader() {
   return (
     <div 
       className={cn(
-        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[40dvh] sm:min-h-0 z-20",
+        "relative overflow-hidden shadow-xl flex flex-col items-center min-h-0 z-20 shrink-0",
         settings.darkMode 
           ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
           : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
       )}
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 90px)',
-        paddingBottom: '4rem',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 85px)',
+        paddingBottom: '2.5rem',
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
@@ -422,21 +410,9 @@ const TopHeader = React.memo(function TopHeader() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="flex flex-col items-center mb-8 gap-2"
+          className="flex flex-col items-center mb-6 gap-2"
         >
-          {fullName && (
-            <div className="bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-brand-gold/30 mb-2 flex items-center justify-center gap-1.5 focus-within:ring-2 ring-brand-gold/50 name-aura shadow-sm">
-              {isGuest ? (
-                <Ghost className="w-3 h-3 text-brand-gold/80" />
-              ) : settings.profilePhoto ? (
-                <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-brand-gold/40 shadow-inner">
-                  <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
-                </div>
-              ) : null}
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] pt-[1px]">{fullName}</span>
-            </div>
-          )}
-          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[16px] sm:text-[18px] md:text-[22px] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
+          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[14px] sm:text-[16px] md:text-[18px] uppercase tracking-[0.2em] sm:tracking-[0.25em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
             Guerreiros de Oya e Ogum
           </h2>
           <motion.div 
@@ -479,8 +455,8 @@ const TopHeader = React.memo(function TopHeader() {
             </motion.div>
           </div>
 
-          <div className={cn(
-            "w-44 h-44 rounded-full relative frame-3d mystical-aura",
+          <motion.div whileHover={{ scale: 1.05, rotate: 5 }} whileTap={{ scale: 0.95 }} className={cn(
+            "w-36 h-36 rounded-full relative frame-3d mystical-aura cursor-pointer shadow-[0_10px_40px_rgba(212,175,55,0.4)]",
             settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
           )}>
             {/* Glossy Overlay */}
@@ -509,9 +485,12 @@ const TopHeader = React.memo(function TopHeader() {
                 })()
               )}
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
+
+      <SocialButtons />
+      <motion.div animate={{ opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 10, repeat: Infinity }} className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.05)_0,transparent_100%)] z-0 mix-blend-screen" />
 
       {/* Decorative Bottom Transition */}
       <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent z-20" />
@@ -525,8 +504,6 @@ const TopHeader = React.memo(function TopHeader() {
 });
 
 function SocialButtons() {
-  const location = useLocation();
-  const { setShowAssistantModal, isScrolled } = useAssistant();
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
@@ -540,89 +517,59 @@ function SocialButtons() {
     orixaPhotos: {}
   });
 
-  const [shouldAnimate, setShouldAnimate] = React.useState(false);
-
-  React.useEffect(() => {
-    setShouldAnimate(false);
-    const checkPreloader = () => {
-      if (!document.getElementById('splash-preloader')) {
-        setTimeout(() => setShouldAnimate(true), 300);
-      } else {
-        setTimeout(checkPreloader, 100);
-      }
-    };
-    checkPreloader();
-  }, [location.pathname]);
-
   return (
-    <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
-      
-      {/* INSTAGRAM (Left) */}
+    <div className="flex items-center justify-center gap-6 mt-6 pb-2 z-30 pointer-events-auto relative w-full">
+      {/* INSTAGRAM */}
       <motion.a
-        initial={{ width: 0, opacity: 0 }}
-        animate={{ width: shouldAnimate ? 180 : 0, opacity: shouldAnimate ? 1 : 0 }}
-        transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
-        whileHover={{ scale: 1.05, y: -2 }}
+        whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         href="https://www.instagram.com/guerreirosdeoyaeogum/"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
+          "w-11 h-11 rounded-full overflow-hidden flex items-center justify-center relative group backdrop-blur-md",
+          "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+          "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50"
         )}
       >
+        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <motion.div 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: shouldAnimate ? 1 : 0 }}
-           transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
-        >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-sm">
+          animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0 rounded-full z-0"
+        />
+        <div className="relative z-10 w-5 h-5 flex items-center justify-center overflow-hidden rounded-md group-hover:scale-110 transition-transform duration-300">
             {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
-              <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
+              <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram" className="w-[120%] h-[120%] object-cover" />
             )}
-          </div>
-          <div className="text-left relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">Instagram</h3>
-          </div>
-        </motion.div>
+        </div>
       </motion.a>
       
-      {/* Separator / Gap visually addressed by parent flex */}
-
-      {/* TIKTOK (Right) */}
+      {/* TIKTOK */}
       <motion.a
-        initial={{ width: 0, opacity: 0 }}
-        animate={{ width: shouldAnimate ? 180 : 0, opacity: shouldAnimate ? 1 : 0 }}
-        transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
-        whileHover={{ scale: 1.05, y: -2 }}
+        whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
+          "w-11 h-11 rounded-full overflow-hidden flex items-center justify-center relative group backdrop-blur-md",
+          "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+          "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50"
         )}
       >
+        <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <motion.div 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: shouldAnimate ? 1 : 0 }}
-           transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
-        >
-          <div className="text-right relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">TikTok</h3>
-          </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-sm">
+          animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          className="absolute inset-0 rounded-full z-0"
+        />
+        <div className="relative z-10 w-5 h-5 flex items-center justify-center overflow-hidden rounded-full group-hover:scale-110 transition-transform duration-300">
             {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
-              <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
+              <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok" className="w-[120%] h-[120%] object-cover object-center" />
             )}
-          </div>
-        </motion.div>
+        </div>
       </motion.a>
-
     </div>
   );
 }
@@ -754,24 +701,30 @@ function NotificationCenter({
 
   return (
     <>
-      <div className="absolute top-4 right-4 sm:right-6 z-[60]">
+      <div className="relative group">
         <motion.div 
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowNotifications(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura",
-            darkMode 
-              ? "bg-black/40 border border-white/10" 
-              : "bg-white/10 hover:bg-white/20"
+            "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden glimmer-panel cursor-pointer",
+            "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+            "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50",
+            "text-white hover:ring-[#D4AF37]"
           )}
         >
-          <div className="relative">
-            <Bell className={cn("w-5 h-5", darkMode ? "text-gray-300" : "text-white")} strokeWidth={2.5} />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <motion.div 
+            animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-0 rounded-full z-0"
+          />
+          <div className="relative z-10 flex items-center justify-center group-hover:text-white transition-colors duration-300">
+            <Bell className="w-5 h-5 text-current drop-shadow-sm" strokeWidth={2.5} />
             {showBadge && (
               <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-5 w-5 bg-brand-red border-2 border-white items-center justify-center">
+                <span className="relative inline-flex rounded-full h-5 w-5 bg-brand-red border-2 border-[#1a2e4d] items-center justify-center group-hover:border-[#1a2e4d] transition-colors duration-300">
                   <span className="text-[9px] font-black text-white leading-none">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
@@ -1299,7 +1252,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
-  const { setShowAssistantModal, isScrolled } = useAssistant();
+  const { setShowAssistantModal, isScrolled, setIsScrolled } = useAssistant();
   const [isRecovering, setIsRecovering] = useState(false);
 
   useEffect(() => {
@@ -1340,6 +1293,35 @@ function AppContent() {
     birthDate: '',
     gender: 'masculino'
   });
+
+  const fullName = React.useMemo(() => {
+    if (isGuest) return "Modo Guest";
+    
+    // 1. Prefer explicitly set firstName + lastName from local settings (synced/manual)
+    const sName = [settings.firstName?.trim(), settings.lastName?.trim()].filter(Boolean).join(' ');
+    if (sName) return sName;
+    
+    // 2. Fallback to Supabase metadata (First/Last from manual signup or full_name from Google)
+    const metadata = user?.user_metadata;
+    const mFullName = [metadata?.first_name, metadata?.last_name].filter(Boolean).join(' ');
+    if (mFullName) return mFullName;
+    if (metadata?.full_name) return metadata.full_name;
+    if (metadata?.name) return metadata.name;
+    
+    return settings.nickname || "Guerreiro";
+  }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
+
+  const currentDate = new Date();
+  const hour = currentDate.getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const GreetingIcon = hour < 12 ? SunMedium : hour < 18 ? CloudSun : MoonStar;
+  const displayName = settings.nickname?.trim()
+    ? settings.nickname.trim()
+    : user?.user_metadata?.first_name?.trim() 
+      ? user.user_metadata.first_name.trim() 
+      : settings.firstName?.trim() 
+        ? settings.firstName.trim().split(' ')[0] 
+        : fullName.split(' ')[0];
 
   // Apply the Primary Color dynamically
   React.useEffect(() => {
@@ -1406,8 +1388,13 @@ function AppContent() {
   const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
   const [isAppReady, setIsAppReady] = React.useState(false);
   const [hasRemovedPreloader, setHasRemovedPreloader] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
+    if (!settings.darkMode) {
+      setSettings(prev => ({ ...prev, darkMode: true }));
+    }
+
     // Stage 0: Remove native preloader immediately
     const preloader = document.getElementById('splash-preloader');
     if (preloader) {
@@ -1808,7 +1795,7 @@ function AppContent() {
       />
       <NotificationManager />
       <div className={cn(
-        "min-h-[100dvh] bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
+        "h-[100dvh] overflow-hidden bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
         settings.darkMode && "bg-black"
       )}>
         {/* Outer Glow Effects (Desktop/Tablet feel) */}
@@ -1816,51 +1803,136 @@ function AppContent() {
         <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
 
         <div className={cn(
-          "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
-          settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
+          "w-full h-full sm:h-[812px] max-h-[100dvh] max-w-lg flex flex-col relative overflow-hidden overscroll-none rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
+          settings.darkMode ? "bg-black" : "bg-brand-navy"
         )}>
            {authLoading ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center p-4">
               <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
             </div>
           ) : isRecovering ? (
-            <ResetPassword onSuccess={() => setIsRecovering(false)} />
+            <div className="p-4 w-full h-full"><ResetPassword onSuccess={() => setIsRecovering(false)} /></div>
           ) : (!user && !isGuest) ? (
-            <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
+            <div className="w-full h-full"><AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} /></div>
           ) : (user && !isProfileComplete) ? (
-            <CompleteProfile />
+            <div className="w-full h-full"><CompleteProfile /></div>
           ) : (
             <>
-              {/* Top Floating Buttons */}
-              <GlobalSearch />
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center">
-                {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
+              {/* SIDEBAR MENU IN BACKGROUND */}
+              <div className="absolute inset-0 z-0 select-none">
+                <SidebarMenu 
+                  settings={settings} 
+                  setSettings={setSettings} 
+                  fullName={fullName} 
+                  isGuest={isGuest} 
+                  closeMenu={() => setIsMenuOpen(false)} 
+                />
               </div>
-              <NotificationCenter 
-                darkMode={settings.darkMode} 
-                notifications={notifications} 
-                setNotifications={setNotifications} 
-              />
 
-              <Navigation />
-              
-              <AnimatePresence>
-                {activeUndo && (
-                  <UndoToast 
-                    key={activeUndo.id}
-                    action={activeUndo} 
-                    onUndo={handleUndo} 
-                    onFinish={finalizeDelete} 
+              {/* MAIN APP CONTENT (SCALES OVER MENU) */}
+              <motion.div 
+                className={cn(
+                  "absolute inset-0 flex flex-col z-10 overflow-hidden shadow-[-20px_0_40px_rgba(0,0,0,0.5)]",
+                  "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+                )}
+                animate={{
+                  scale: isMenuOpen ? 0.82 : 1,
+                  x: isMenuOpen ? '65%' : 0,
+                  borderRadius: isMenuOpen ? 32 : 0,
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+                <EtherealEnergyBackground />
+                <AnimatedLeaves />
+                
+                {/* Click overlay to close menu */}
+                {isMenuOpen && (
+                  <div 
+                    className="absolute inset-0 z-50 cursor-pointer" 
+                    onClick={() => setIsMenuOpen(false)}
                   />
                 )}
-              </AnimatePresence>
 
-              <div className="flex-1 flex flex-col h-full overflow-hidden">
-                <TopHeader />
-                <SocialButtons />
-                <AppRoutes />
-              </div>
+                {/* Main Top Actions Row */}
+                <div className="absolute top-[max(env(safe-area-inset-top),16px)] left-0 w-full flex items-center justify-between px-4 z-[40] pointer-events-none">
+                  <button 
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden glimmer-panel cursor-pointer group pointer-events-auto shrink-0",
+                      "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+                      "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50",
+                      "text-white hover:ring-[#D4AF37]"
+                    )}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <motion.div 
+                      animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute inset-0 rounded-full z-0"
+                    />
+                    <div className="relative z-10 flex items-center justify-center group-hover:text-white transition-colors duration-300">
+                      <Menu className="w-5 h-5 text-current drop-shadow-sm" strokeWidth={2.5} />
+                    </div>
+                  </button>
+
+                  <div className="flex-1 flex flex-col items-center justify-center pointer-events-auto px-2">
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1.5 mb-0.5"
+                    >
+                      <motion.div animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }} transition={{ duration: 3, repeat: Infinity }}><Sparkles className="w-3 h-3 text-brand-gold drop-shadow-md" /></motion.div>
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 drop-shadow-sm">
+                        {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                      </span>
+                    </motion.div>
+                    <motion.h2 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="text-lg tracking-tight flex items-center gap-1.5 text-white drop-shadow-lg"
+                      style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
+                    >
+                      <GreetingIcon className="w-4 h-4 text-brand-gold drop-shadow-md filter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
+                      <span>{greeting}, {displayName}!</span>
+                    </motion.h2>
+                  </div>
+
+                  <div className="flex items-center gap-3 pointer-events-auto shrink-0">
+                    <NotificationCenter 
+                      darkMode={settings.darkMode} 
+                      notifications={notifications} 
+                      setNotifications={setNotifications} 
+                    />
+                  </div>
+                </div>
+                
+                <AnimatePresence>
+                  {activeUndo && (
+                    <UndoToast 
+                      key={activeUndo.id}
+                      action={activeUndo} 
+                      onUndo={handleUndo} 
+                      onFinish={finalizeDelete} 
+                    />
+                  )}
+                </AnimatePresence>
+
+                <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar relative pt-[max(env(safe-area-inset-top,0px)+70px,70px)]">
+                  <AppRoutes />
+                </div>
+              </motion.div>
             </>
+          )}
+          
+          {/* Floating Assistant Button */}
+          {isAppReady && (
+            <div className="absolute bottom-6 right-6 z-50">
+              <AssistantButton 
+                onClick={() => setShowAssistantModal(true)} 
+              />
+            </div>
           )}
         </div>
       </div>

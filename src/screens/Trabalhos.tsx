@@ -445,7 +445,7 @@ export default function TrabalhosScreen() {
       animate={{ opacity: 1 }} 
       className={cn(
         "p-4 min-h-full pb-32 transition-colors duration-500",
-        settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
+        "bg-transparent"
       )}
     >
       <div className="mb-8">

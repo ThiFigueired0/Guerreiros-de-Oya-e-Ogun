@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAssistant } from './lib/AssistantContext';
 
 import CalendarScreen from './screens/Calendar';
 import HerbsScreen from './screens/Herbs';
@@ -18,16 +19,28 @@ const LoadingFallback = () => (
 );
 
 export const AppRoutes = () => {
+    const { setIsScrolled } = useAssistant();
+
+    const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+        setIsScrolled(e.currentTarget.scrollTop > 50);
+    };
+
     return (
         <Suspense fallback={<LoadingFallback />}>
             <Routes>
                 <Route path="/home" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
+                    <main 
+                      onScroll={handleScroll}
+                      className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 w-full scrollbar-hide relative"
+                    >
                         <HomeScreen />
                     </main>
                 } />
                 <Route path="*" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
+                    <main 
+                      onScroll={handleScroll}
+                      className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 w-full scrollbar-hide relative"
+                    >
                         <Routes>
                             <Route path="/" element={<Navigate to="/home" replace />} />
                             <Route path="/calendar" element={<CalendarScreen />} />
