@@ -153,7 +153,7 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
         "absolute inset-0 flex flex-col overflow-hidden transition-colors duration-700",
         settings.darkMode 
           ? "bg-gradient-to-b from-[#0A0A0A] to-[#1A1A1A]" 
-          : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+          : "bg-gradient-to-br from-brand-navy via-[#021f08] to-[#010903]"
       )}>
         {/* Texture Overlay */}
         <div 

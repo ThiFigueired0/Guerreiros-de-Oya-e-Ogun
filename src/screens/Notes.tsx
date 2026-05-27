@@ -467,7 +467,7 @@ export default function NotesScreen() {
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className={cn(
               "fixed inset-0 z-[400] flex flex-col transition-colors duration-500",
-              "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+              "bg-gradient-to-br from-brand-navy via-[#021f08] to-[#010903]"
             )}
           >
             <div className={cn("p-4 pt-12 flex items-center justify-between border-b border-gray-100", settings.darkMode && "border-gray-800")}>

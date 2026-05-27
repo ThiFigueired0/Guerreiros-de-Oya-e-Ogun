@@ -21,7 +21,7 @@ html, body {
 }
 
 @theme {
-  --color-brand-navy: var(--brand-navy, #001F3F);
+  --color-brand-navy: var(--brand-navy, #041c0c);
   --color-brand-copper: var(--brand-copper, #CD7F32);
   --color-brand-gold: var(--brand-gold, #D4AF37);
   --color-brand-gold-light: var(--brand-gold-light, #FFE082);

@@ -83,7 +83,7 @@ export function GlobalSearch() {
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query, results]);
+  }, [query]);
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -114,16 +114,16 @@ export function GlobalSearch() {
 
   return (
     <>
-      <div className="relative group w-full mb-2">
+      <div className="relative group w-full mb-6 px-1">
         <motion.div 
           whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setIsOpen(true)}
           className={cn(
-            "w-full max-w-2xl mx-auto rounded-full flex items-center px-6 py-3 transition-all duration-300 relative overflow-hidden cursor-pointer shadow-lg group/search",
+            "w-full h-14 rounded-[24px] flex items-center px-5 transition-all duration-300 relative overflow-hidden cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] group/search",
             settings.darkMode 
-              ? "bg-white/5 backdrop-blur-md border border-white/10 text-gray-300 hover:bg-white/10" 
-              : "bg-white/50 backdrop-blur-md border border-white/40 text-gray-600 hover:bg-white/60"
+              ? "bg-black/55 border border-white/5 text-gray-300 hover:border-brand-gold/25 hover:bg-black/65 backdrop-blur-xl" 
+              : "bg-black/35 border border-brand-gold/15 text-gray-200 hover:bg-black/40 hover:border-brand-gold/35 shadow-sm backdrop-blur-xl"
           )}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover/search:opacity-100 transition-opacity duration-700 pointer-events-none" />
@@ -131,11 +131,11 @@ export function GlobalSearch() {
             animate={{ rotate: [0, 10, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Search className="w-5 h-5 mr-3 shrink-0 text-brand-gold drop-shadow-sm opacity-80" strokeWidth={2} />
+            <Search className="w-5 h-5 mr-3 shrink-0 text-brand-gold drop-shadow-sm" strokeWidth={2.5} />
           </motion.div>
-          <span className="font-light text-sm sm:text-base tracking-wide flex-1 text-left opacity-80 truncate">Busque por fundamentos, banhos, pontos cantados...</span>
-          <div className="ml-2 flex items-center justify-center w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 shrink-0 transition-colors group-hover/search:bg-black/10 dark:group-hover/search:bg-white/10">
-            <Search className="w-3.5 h-3.5 opacity-60" />
+          <span className="font-medium text-sm tracking-wide">Buscar pontos, orixás, eventos...</span>
+          <div className="ml-auto flex items-center justify-center w-8 h-8 rounded-full bg-black/5 dark:bg-white/5">
+            <Search className="w-3.5 h-3.5 opacity-50" />
           </div>
         </motion.div>
       </div>
@@ -149,15 +149,15 @@ export function GlobalSearch() {
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               transition={{ duration: 0.2 }}
               className={cn(
-                "w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border",
-                settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white border-gray-100"
+                "w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border backdrop-blur-xl",
+                settings.darkMode ? "bg-black/90 border-white/10" : "bg-[#041c0c]/90 border-brand-gold/20"
               )}
             >
               <div className={cn(
                 "p-4 border-b flex items-center gap-3 relative",
-                settings.darkMode ? "border-gray-800 bg-[#222]" : "border-gray-100 bg-gray-50/50"
+                settings.darkMode ? "border-white/10 bg-black/40" : "border-brand-gold/10 bg-black/20"
               )}>
-                <Search className={cn("w-5 h-5 ml-2", settings.darkMode ? "text-gray-400" : "text-gray-400")} />
+                <Search className={cn("w-5 h-5 ml-2", settings.darkMode ? "text-gray-400" : "text-brand-gold/80")} />
                 <input
                   autoFocus
                   value={query}
@@ -165,7 +165,7 @@ export function GlobalSearch() {
                   onKeyDown={handleKeyDown}
                   placeholder="Pesquisar em todo o app..."
                   className="flex-1 bg-transparent border-none outline-none text-sm font-medium focus:ring-0 px-0"
-                  style={{ color: settings.darkMode ? 'white' : '#1a202c' }}
+                  style={{ color: 'white' }}
                 />
                 <button 
                   onClick={() => setIsOpen(false)}
@@ -226,34 +226,34 @@ export function GlobalSearch() {
                           className={cn(
                             "w-full text-left px-5 py-4 flex items-center gap-4 transition-colors",
                             isSelected 
-                              ? (settings.darkMode ? "bg-white/10" : "bg-black/5") 
-                              : "hover:bg-black/5 dark:hover:bg-white/5",
-                            index !== results.length - 1 && (settings.darkMode ? "border-b border-gray-800" : "border-b border-gray-50")
+                              ? "bg-white/10" 
+                              : "hover:bg-white/5",
+                            index !== results.length - 1 && "border-b border-white/5"
                           )}
                         >
                           <div className={cn(
                             "p-2.5 rounded-xl shrink-0 transition-colors",
                             isSelected 
-                              ? (settings.darkMode ? "bg-brand-copper/20 text-brand-copper" : "bg-brand-navy/10 text-brand-navy")
-                              : (settings.darkMode ? "bg-white/5 text-brand-copper" : "bg-gray-100 text-brand-navy")
+                              ? "bg-brand-copper/30 text-brand-gold shadow-[0_0_12px_rgba(212,175,55,0.3)]"
+                              : "bg-white/5 text-brand-gold/80"
                           )}>
                             <Icon className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className={cn("font-bold text-sm truncate", settings.darkMode && "text-white")}>
+                            <h4 className="font-bold text-sm truncate text-white">
                               {result.label}
                             </h4>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={cn("text-[9px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
+                              <span className="text-[9px] font-black uppercase tracking-widest text-brand-copper">
                                 {result.type}
                               </span>
-                              <span className={cn("text-[9px]")}>•</span>
-                              <span className={cn("text-[11px] truncate", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                              <span className="text-[9px] text-white/30">•</span>
+                              <span className="text-[11px] truncate text-white/70">
                                 {result.desc}
                               </span>
                             </div>
                           </div>
-                          <ArrowRight className={cn("w-4 h-4 opacity-30 shrink-0", settings.darkMode ? "text-white" : "text-brand-navy")} />
+                          <ArrowRight className="w-4 h-4 opacity-50 shrink-0 text-brand-gold" />
                         </button>
                       );
                     })}
@@ -262,9 +262,9 @@ export function GlobalSearch() {
               </div>
               <div className={cn(
                 "px-5 py-3 border-t text-center",
-                settings.darkMode ? "bg-[#222] border-gray-800" : "bg-gray-50/50 border-gray-100"
+                settings.darkMode ? "bg-black/40 border-white/5" : "bg-black/20 border-brand-gold/10"
               )}>
-                <span className={cn("text-[8px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-500" : "text-gray-400")}>
+                <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold/60">
                   Dica: Use Ctrl+K ou Cmd+K para abrir a pesquisa
                 </span>
               </div>

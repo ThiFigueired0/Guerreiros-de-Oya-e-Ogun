@@ -511,7 +511,7 @@ export default function PointsScreen() {
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
             className={cn(
               "fixed inset-0 z-[200] flex flex-col safe-area-top",
-              modoPalco ? "bg-black text-white" : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14] text-white"
+              modoPalco ? "bg-black text-white" : "bg-gradient-to-br from-brand-navy via-[#021f08] to-[#010903] text-white"
             )}
           >
             <div className={cn(

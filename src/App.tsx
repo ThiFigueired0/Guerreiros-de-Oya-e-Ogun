@@ -325,27 +325,31 @@ const TopHeader = React.memo(function TopHeader() {
       className={cn(
         "relative overflow-hidden shadow-xl flex flex-col items-center min-h-0 z-20 shrink-0",
         settings.darkMode 
-          ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
-          : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+          ? "bg-black" 
+          : "bg-[#1a1a1a]"
       )}
       style={{
         paddingTop: 'calc(env(safe-area-inset-top, 0px) + 85px)',
         paddingBottom: '2.5rem',
+        backgroundImage: "url('https://images.unsplash.com/photo-1525087740718-9e0f2c58c7ef?q=80&w=2000&auto=format&fit=crop')",
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
-        backgroundRepeat: 'no-repeat'
+        backgroundPosition: 'center 30%',
+        backgroundRepeat: 'no-repeat',
+        borderBottom: '4px solid #1a1a1a'
       }}
     >
+      {/* Stone Overlay for subtle darkening */}
+      <div className="absolute inset-0 bg-black/30 pointer-events-none mix-blend-multiply z-0" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none z-0" />
+
       {/* Texture Overlay */}
       <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none blur-[1px]" 
+        className="absolute inset-0 opacity-[0.15] pointer-events-none blur-[1px] z-0" 
         style={{
-          backgroundImage: "url('https://www.transparenttextures.com/patterns/p6.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'scroll'
+          backgroundImage: "url('https://www.transparenttextures.com/patterns/concrete-wall.png')",
+          backgroundSize: 'auto',
+          backgroundRepeat: 'repeat',
         }}
       />
 
@@ -457,7 +461,7 @@ const TopHeader = React.memo(function TopHeader() {
 
           <motion.div whileHover={{ scale: 1.05, rotate: 5 }} whileTap={{ scale: 0.95 }} className={cn(
             "w-36 h-36 rounded-full relative frame-3d mystical-aura cursor-pointer shadow-[0_10px_40px_rgba(212,175,55,0.4)]",
-            settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
+            settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#042813]"
           )}>
             {/* Glossy Overlay */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/5 via-white/20 to-transparent z-10 pointer-events-none mix-blend-overlay" />
@@ -528,7 +532,7 @@ function SocialButtons() {
         rel="noopener noreferrer"
         className={cn(
           "w-11 h-11 rounded-full overflow-hidden flex items-center justify-center relative group backdrop-blur-md",
-          "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+          "bg-black/40",
           "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50"
         )}
       >
@@ -554,7 +558,7 @@ function SocialButtons() {
         rel="noopener noreferrer"
         className={cn(
           "w-11 h-11 rounded-full overflow-hidden flex items-center justify-center relative group backdrop-blur-md",
-          "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+          "bg-black/40",
           "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50"
         )}
       >
@@ -640,7 +644,7 @@ function NotificationCenter({
       });
     }
     previousShowNotifications.current = showNotifications;
-  }, [showNotifications, setNotifications]);
+  }, [showNotifications]);
 
   const getNotificationModule = (notif: NotificationItem) => {
     if (notif.id.includes('finance')) return 'finance';
@@ -708,7 +712,7 @@ function NotificationCenter({
           onClick={() => setShowNotifications(true)}
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden glimmer-panel cursor-pointer",
-            "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+            "bg-black/40 backdrop-blur-md",
             "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50",
             "text-white hover:ring-[#D4AF37]"
           )}
@@ -1795,17 +1799,34 @@ function AppContent() {
       />
       <NotificationManager />
       <div className={cn(
-        "h-[100dvh] overflow-hidden bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
+        "h-[100dvh] overflow-hidden bg-[#010703] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
         settings.darkMode && "bg-black"
       )}>
         {/* Outer Glow Effects (Desktop/Tablet feel) */}
         <div className="fixed w-[400px] h-[400px] bg-brand-red rounded-full opacity-5 blur-[100px] top-0 left-0 pointer-events-none" />
         <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
 
-        <div className={cn(
-          "w-full h-full sm:h-[812px] max-h-[100dvh] max-w-lg flex flex-col relative overflow-hidden overscroll-none rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
-          settings.darkMode ? "bg-black" : "bg-brand-navy"
-        )}>
+        <div 
+          className={cn(
+            "w-full h-full sm:h-[812px] max-h-[100dvh] max-w-lg flex flex-col relative overflow-hidden overscroll-none rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy"
+          )}
+        >
+          <div className={cn(
+            "absolute inset-0 z-0 pointer-events-none overflow-hidden transition-colors duration-700",
+            settings.darkMode ? "bg-[#050505]" : "bg-[#f4f7f4]"
+          )}>
+            <img 
+              src="https://res.cloudinary.com/dpv8m5igw/image/upload/v1779901791/lush-green-leaves-stockcake_gkigfx.webp" 
+              className={cn(
+                "w-full h-full object-cover filter scale-105 transition-all duration-700",
+                settings.darkMode 
+                  ? "opacity-[0.15] grayscale-[0.8]" 
+                  : "opacity-[0.06] grayscale-[0.3]"
+              )}
+              referrerPolicy="no-referrer"
+              alt=""
+            />
+          </div>
            {authLoading ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
@@ -1832,8 +1853,7 @@ function AppContent() {
               {/* MAIN APP CONTENT (SCALES OVER MENU) */}
               <motion.div 
                 className={cn(
-                  "absolute inset-0 flex flex-col z-10 overflow-hidden shadow-[-20px_0_40px_rgba(0,0,0,0.5)]",
-                  "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+                  "absolute inset-0 flex flex-col z-10 overflow-hidden shadow-[-20px_0_40px_rgba(0,0,0,0.5)] bg-black"
                 )}
                 animate={{
                   scale: isMenuOpen ? 0.82 : 1,
@@ -1842,8 +1862,19 @@ function AppContent() {
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none" />
-                <EtherealEnergyBackground />
+                {/* Elegant Darkened and Blurred Leaf Background */}
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-black/50">
+                  <img 
+                    src="https://res.cloudinary.com/dpv8m5igw/image/upload/v1779901791/lush-green-leaves-stockcake_gkigfx.webp" 
+                    className="w-full h-full object-cover filter blur-[2px] scale-105 brightness-[0.7] saturate-[0.8]"
+                    referrerPolicy="no-referrer"
+                    alt=""
+                  />
+                  {/* Lightening mask overlay to match glassmorphism */}
+                  <div className="absolute inset-0 bg-white/10 z-0 pointer-events-none" />
+                </div>
+
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none z-0" />
                 <AnimatedLeaves />
                 
                 {/* Click overlay to close menu */}
@@ -1855,56 +1886,63 @@ function AppContent() {
                 )}
 
                 {/* Main Top Actions Row */}
-                <div className="absolute top-[max(env(safe-area-inset-top),16px)] left-0 w-full flex items-center justify-between px-4 z-[40] pointer-events-none">
-                  <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden glimmer-panel cursor-pointer group pointer-events-auto shrink-0",
-                      "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
-                      "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50",
-                      "text-white hover:ring-[#D4AF37]"
-                    )}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <motion.div 
-                      animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                      className="absolute inset-0 rounded-full z-0"
-                    />
-                    <div className="relative z-10 flex items-center justify-center group-hover:text-white transition-colors duration-300">
-                      <Menu className="w-5 h-5 text-current drop-shadow-sm" strokeWidth={2.5} />
+                <div 
+                  className="absolute top-0 left-0 w-full z-[40] bg-transparent"
+                >
+                  {/* Subtle vignette for header readability */}
+                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between px-4 pb-4 pt-[max(env(safe-area-inset-top),20px)] pointer-events-none">
+                    <button 
+                      onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden glimmer-panel cursor-pointer group pointer-events-auto shrink-0",
+                        "bg-black/40 backdrop-blur-md",
+                        "shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_20px_rgba(212,175,55,0.3)] ring-[1px] ring-[#D4AF37]/50",
+                        "text-white hover:ring-[#D4AF37]"
+                      )}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <motion.div 
+                        animate={{ boxShadow: ['0 0 0px rgba(212,175,55,0)', '0 0 10px rgba(212,175,55,0.3)', '0 0 0px rgba(212,175,55,0)'] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                        className="absolute inset-0 rounded-full z-0"
+                      />
+                      <div className="relative z-10 flex items-center justify-center group-hover:text-white transition-colors duration-300">
+                        <Menu className="w-5 h-5 text-current drop-shadow-sm" strokeWidth={2.5} />
+                      </div>
+                    </button>
+
+                    <div className="flex-1 flex flex-col items-center justify-center pointer-events-auto px-2">
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1.5 mb-0.5"
+                      >
+                        <motion.div animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }} transition={{ duration: 3, repeat: Infinity }}><Sparkles className="w-3 h-3 text-brand-gold drop-shadow-md" /></motion.div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-300 drop-shadow-sm">
+                          {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                        </span>
+                      </motion.div>
+                      <motion.h2 
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="text-lg tracking-tight flex items-center gap-1.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                        style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
+                      >
+                        <GreetingIcon className="w-4 h-4 text-brand-gold drop-shadow-md filter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
+                        <span>{greeting}, {displayName}!</span>
+                      </motion.h2>
                     </div>
-                  </button>
 
-                  <div className="flex-1 flex flex-col items-center justify-center pointer-events-auto px-2">
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-1.5 mb-0.5"
-                    >
-                      <motion.div animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }} transition={{ duration: 3, repeat: Infinity }}><Sparkles className="w-3 h-3 text-brand-gold drop-shadow-md" /></motion.div>
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 drop-shadow-sm">
-                        {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-                      </span>
-                    </motion.div>
-                    <motion.h2 
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="text-lg tracking-tight flex items-center gap-1.5 text-white drop-shadow-lg"
-                      style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}
-                    >
-                      <GreetingIcon className="w-4 h-4 text-brand-gold drop-shadow-md filter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
-                      <span>{greeting}, {displayName}!</span>
-                    </motion.h2>
-                  </div>
-
-                  <div className="flex items-center gap-3 pointer-events-auto shrink-0">
-                    <NotificationCenter 
-                      darkMode={settings.darkMode} 
-                      notifications={notifications} 
-                      setNotifications={setNotifications} 
-                    />
+                    <div className="flex items-center gap-3 pointer-events-auto shrink-0">
+                      <NotificationCenter 
+                        darkMode={settings.darkMode} 
+                        notifications={notifications} 
+                        setNotifications={setNotifications} 
+                      />
+                    </div>
                   </div>
                 </div>
                 

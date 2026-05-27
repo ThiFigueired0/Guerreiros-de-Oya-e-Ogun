@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { AppSettings, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO } from '../types';
 import { 
   Home, Calendar, Leaf, Anchor, Music, GraduationCap, FileText, Wallet, Settings, 
-  LogOut, Moon, Sun, ChevronRight 
+  LogOut, ChevronRight 
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -55,7 +55,7 @@ export function SidebarMenu({ settings, setSettings, fullName, isGuest, closeMen
       "w-[70%] sm:w-[50%] max-w-[320px] h-full flex flex-col relative overflow-hidden",
       settings.darkMode 
         ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
-        : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+        : "bg-gradient-to-br from-brand-navy via-[#021f08] to-[#010903]"
     )}>
       {/* Texture Overlay */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none" />
@@ -90,7 +90,7 @@ export function SidebarMenu({ settings, setSettings, fullName, isGuest, closeMen
             {settings.profilePhoto ? (
                <img src={settings.profilePhoto} className="w-full h-full object-cover" />
             ) : (
-               <div className="w-full h-full flex items-center justify-center text-brand-gold text-xl font-bold bg-[#001c38]">
+               <div className="w-full h-full flex items-center justify-center text-brand-gold text-xl font-bold bg-[#041c0c]">
                  {fullName.charAt(0).toUpperCase()}
                </div>
             )}
@@ -102,29 +102,6 @@ export function SidebarMenu({ settings, setSettings, fullName, isGuest, closeMen
             </span>
           </div>
         </div>
-
-        {/* Dark Mode Toggle */}
-        <div className="flex justify-between items-center mb-6 pl-1 pr-2">
-          <div className="flex items-center gap-3 text-white/90">
-            {settings.darkMode ? <Moon className="w-5 h-5 text-brand-gold drop-shadow-sm" /> : <Sun className="w-5 h-5 text-brand-gold drop-shadow-sm" />}
-            <span className="text-sm font-medium">Modo Escuro</span>
-          </div>
-          <button 
-            onClick={() => setSettings({...settings, darkMode: !settings.darkMode})}
-            className={cn(
-              "w-11 h-6 rounded-full transition-colors relative shadow-inner",
-              settings.darkMode ? "bg-brand-gold" : "bg-white/20"
-            )}
-          >
-            <motion.div 
-              className="w-5 h-5 rounded-full bg-white absolute top-[2px] shadow-sm flex items-center justify-center"
-              animate={{ left: settings.darkMode ? '22px' : '2px' }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            />
-          </button>
-        </div>
-
-        <div className="h-px bg-white/10 w-full mb-6" />
 
         {/* Navigation Options */}
         <div className="flex flex-col gap-1.5 w-full">
