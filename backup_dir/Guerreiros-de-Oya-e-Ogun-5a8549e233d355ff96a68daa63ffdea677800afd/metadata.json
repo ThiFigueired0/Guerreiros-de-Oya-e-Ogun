@@ -1,0 +1,9 @@
+{
+  "name": "Guerreiros de Oya e Ogun",
+  "description": "App para gestão de eventos, banhos de ervas, pontos cantados e anotações espirituais.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": []
+}
