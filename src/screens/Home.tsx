@@ -280,7 +280,7 @@ export default function HomeScreen() {
   return (
     <div 
       className={cn(
-        "p-4 pb-32 transition-colors duration-500 bg-transparent relative overflow-hidden min-h-screen"
+        "px-4 pt-0 pb-32 transition-colors duration-500 bg-transparent relative overflow-hidden min-h-screen"
       )}
     >
       {/* Permanent background particles floating infinitely representing spiritual force / Axé - GPU Optimized CSS Animations */}
@@ -320,7 +320,7 @@ export default function HomeScreen() {
       </div>
 
       {/* 1. Header Profiling & Next Event Unified */}
-      <header className="mb-8 mt-3 px-2 relative z-10">
+      <header className="mb-6 -mt-1 px-2 relative z-10">
         <div className={cn(
           "rounded-[32px] relative overflow-hidden flex flex-col transition-all duration-300 shadow-md",
           settings.darkMode 

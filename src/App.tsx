@@ -971,7 +971,7 @@ function SocialButtons() {
   }, [location.pathname]);
 
   return (
-    <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
+    <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-4 relative z-30 flex items-center justify-center pointer-events-none h-14">
       {/* Connecting gold line bridging the buttons */}
       <div className="absolute inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent top-1/2 -translate-y-1/2 z-0 pointer-events-none" />
       
@@ -2619,7 +2619,7 @@ function AppContent() {
                       id="app-content-wrapper"
                       className={cn(
                         "px-4 w-full flex-1 relative z-10",
-                        location.pathname === '/home' ? "pt-1" : "pt-4"
+                        location.pathname === '/home' ? "pt-0" : "pt-4"
                       )}
                     >
                       <AppRoutes />
