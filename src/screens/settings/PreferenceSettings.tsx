@@ -8,7 +8,6 @@ import { cn } from '../../lib/utils';
 export default function PreferenceSettings() {
   const [settings, setSettings] = useStorage<AppSettings>('templo_settings', {} as AppSettings);
 
-  const toggleDarkMode = () => setSettings({ ...settings, darkMode: !settings.darkMode });
   const toggleImmersiveMode = () => setSettings({ ...settings, immersiveMode: !settings.immersiveMode });
   const toggleNotifications = () => setSettings({ ...settings, pushNotifications: !settings.pushNotifications });
 
@@ -23,30 +22,6 @@ export default function PreferenceSettings() {
         </h3>
         
         <div className="space-y-6">
-          <div className="flex items-center justify-between p-4 rounded-3xl bg-gray-50/50">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-brand-navy/10 flex items-center justify-center text-brand-navy">
-                <Moon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Modo Escuro</p>
-                <p className="text-[10px] text-gray-600 dark:text-gray-400 font-medium uppercase tracking-widest">Interface Noturna</p>
-              </div>
-            </div>
-            <button 
-              onClick={toggleDarkMode}
-              className={cn(
-                "w-14 h-7 rounded-full p-1 transition-colors relative shadow-inner",
-                settings.darkMode ? "bg-brand-red" : "bg-gray-300"
-              )}
-            >
-              <motion.div 
-                animate={{ x: settings.darkMode ? 28 : 0 }}
-                className="w-5 h-5 bg-white rounded-full shadow-lg" 
-              />
-            </button>
-          </div>
-
           <div className="flex items-center justify-between p-4 rounded-3xl bg-gray-50/50">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-brand-copper/10 flex items-center justify-center text-brand-copper">

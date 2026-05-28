@@ -33,10 +33,18 @@ export function useStorage<T>(key: string, initialValue: T): [T, (value: T | ((v
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(storageKey);
-      return item ? JSON.parse(item) : initialValue;
+      let parsed = item ? JSON.parse(item) : initialValue;
+      if (key === 'templo_settings' && parsed) {
+        parsed.darkMode = true;
+      }
+      return parsed;
     } catch (error) {
       console.error(error);
-      return initialValue;
+      let val = initialValue;
+      if (key === 'templo_settings' && val) {
+        (val as any).darkMode = true;
+      }
+      return val;
     }
   });
 
@@ -50,8 +58,12 @@ export function useStorage<T>(key: string, initialValue: T): [T, (value: T | ((v
         if (key === 'templo_settings') {
           const { data, error } = await supabase.from(table).select('*').eq('user_id', user.id).single();
           if (data && !error && isMounted) {
-            setStoredValue(data.settings_data || data as unknown as T);
-            window.localStorage.setItem(storageKey, JSON.stringify(data.settings_data || data));
+            const sData = data.settings_data || data as unknown as T;
+            if (sData) {
+              (sData as any).darkMode = true;
+            }
+            setStoredValue(sData);
+            window.localStorage.setItem(storageKey, JSON.stringify(sData));
           }
         } else {
           const { data, error } = await supabase.from(table).select('*').eq('user_id', user.id);
@@ -74,7 +86,10 @@ export function useStorage<T>(key: string, initialValue: T): [T, (value: T | ((v
   // Sync to Supabase when value changes
   const setValue = useCallback(async (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      let valueToStore = value instanceof Function ? value(storedValue) : value;
+      if (key === 'templo_settings' && valueToStore) {
+        (valueToStore as any).darkMode = true;
+      }
       setStoredValue(valueToStore);
       window.localStorage.setItem(storageKey, JSON.stringify(valueToStore));
       window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key: storageKey, value: valueToStore } }));

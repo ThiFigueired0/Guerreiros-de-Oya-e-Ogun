@@ -132,11 +132,29 @@ export function SidebarMenu({ settings, setSettings, fullName, isGuest, closeMen
 
         {/* Social Links inside Sidebar */}
         <div className="flex items-center justify-center gap-4 mt-8 w-full border-t border-white/5 pt-6">
-           <a href="https://www.instagram.com/guerreirosdeoyaeogum/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-              <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} className="w-[120%] h-[120%] object-cover" alt="Instagram" />
+           <a 
+             href="https://www.instagram.com/guerreirosdeoyaeogum/" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             className="w-12 h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg flex items-center justify-center relative transition-all duration-300 backdrop-blur-md overflow-hidden hover:scale-105 active:scale-95"
+           >
+              {/* Double border inner contour */}
+              <div className="absolute inset-[2.5px] rounded-full border border-brand-gold/30 pointer-events-none z-0" />
+              <div className="relative z-10 w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                 <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} className="w-full h-full object-cover" alt="Instagram" />
+              </div>
            </a>
-           <a href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-              <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} className="w-full h-full object-cover rounded-full" alt="TikTok" />
+           <a 
+             href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             className="w-12 h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg flex items-center justify-center relative transition-all duration-300 backdrop-blur-md overflow-hidden hover:scale-105 active:scale-95"
+           >
+              {/* Double border inner contour */}
+              <div className="absolute inset-[2.5px] rounded-full border border-brand-gold/30 pointer-events-none z-0" />
+              <div className="relative z-10 w-6 h-6 rounded-full overflow-hidden flex items-center justify-center">
+                 <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} className="w-full h-full object-cover" alt="TikTok" />
+              </div>
            </a>
         </div>
 

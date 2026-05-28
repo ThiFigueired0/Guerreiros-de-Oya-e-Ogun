@@ -36,24 +36,12 @@ export const AssistantButton = ({ onClick }: { onClick: () => void }) => {
 };
 
 export const AssistantWrapper = () => {
-    const { showAssistantModal, setShowAssistantModal, isScrolled } = useAssistant();
+    const { showAssistantModal } = useAssistant();
 
     return (
         <>
             <AnimatePresence>
                 {showAssistantModal && <AssistantModal />}
-            </AnimatePresence>
-            <AnimatePresence>
-              {isScrolled && !showAssistantModal && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="fixed bottom-24 right-5 z-[9999]"
-                >
-                  <AssistantButton onClick={() => { setShowAssistantModal(true); console.log("AssistantButton clicado da navbar flutuante"); }} />
-                </motion.div>
-              )}
             </AnimatePresence>
         </>
     );

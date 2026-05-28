@@ -29,6 +29,440 @@ const LoadingFallback = () => (
     </div>
 );
 
+const getCandleConfig = (color: string) => {
+  const defaults = {
+    topStyle: { background: 'linear-gradient(to right, #d4d4d4, #f5f5f5, #d4d4d4)' },
+    bodyStyle: { background: 'linear-gradient(to bottom, #ffffff, #efefef 80%, rgba(239,239,239,0))' },
+    dripsLeftStyle: { background: 'linear-gradient(to bottom, #ffffff, #efefef, rgba(239,239,239,0.1))' },
+    dripsRightStyle: { background: 'linear-gradient(to bottom, #ffffff, #e5e5e5, rgba(229,229,229,0.15))' },
+    glowInner: 'from-amber-500/40 via-yellow-500/12 to-transparent',
+    glowOuter: 'from-amber-600/25 via-orange-600/5 to-transparent'
+  };
+
+  switch (color) {
+    case 'ogum':
+    case 'santa_sara':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #1e3a8a, #3b82f6, #1e3a8a)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #1d4ed8, #1e3a8a 80%, rgba(30,58,138,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #3b82f6, #1d4ed8, rgba(29,78,216,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #3b82f6, #1e3a8a, rgba(30,58,138,0.15))' },
+        glowInner: 'from-blue-500/40 via-blue-600/15 to-transparent',
+        glowOuter: 'from-blue-600/25 via-indigo-900/5 to-transparent'
+      };
+    case 'oya':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #7f1d1d, #ef4444, #7f1d1d)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #dc2626, #7f1d1d 80%, rgba(127,29,29,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #ef4444, #dc2626, rgba(220,38,38,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #ef4444, #7f1d1d, rgba(127,29,29,0.15))' },
+        glowInner: 'from-red-500/40 via-orange-500/15 to-transparent',
+        glowOuter: 'from-red-600/25 via-red-950/5 to-transparent'
+      };
+    case 'yemanja':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #0369a1, #38bdf8, #0369a1)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #0ea5e9, #0369a1 80%, rgba(3,105,161,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #38bdf8, #0ea5e9, rgba(14,165,233,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #38bdf8, #0369a1, rgba(3,105,161,0.15))' },
+        glowInner: 'from-sky-400/45 via-sky-500/15 to-transparent',
+        glowOuter: 'from-sky-500/25 via-sky-950/5 to-transparent'
+      };
+    case 'xango':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #451a03, #92400e, #451a03)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #78350f, #451a03 80%, rgba(69,26,3,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #92400e, #78350f, rgba(120,53,15,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #92400e, #451a03, rgba(69,26,3,0.15))' },
+        glowInner: 'from-orange-600/40 via-amber-800/15 to-transparent',
+        glowOuter: 'from-amber-800/25 via-stone-900/5 to-transparent'
+      };
+    case 'oxossi':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #064e3b, #10b981, #064e3b)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #047857, #064e3b 80%, rgba(6,78,59,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #10b981, #047857, rgba(4,120,87,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #10b981, #064e3b, rgba(6,78,59,0.15))' },
+        glowInner: 'from-emerald-500/45 via-emerald-600/15 to-transparent',
+        glowOuter: 'from-emerald-600/25 via-emerald-950/5 to-transparent'
+      };
+    case 'oxumare':
+    case 'caboclos':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #047857, #f59e0b, #047857)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #047857 50%, #f59e0b 50%)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #10b981, #047857, rgba(4,120,87,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #fbbf24, #f59e0b, rgba(245,158,11,0.15))' },
+        glowInner: 'from-yellow-500/40 via-green-500/15 to-transparent',
+        glowOuter: 'from-yellow-600/20 via-green-600/10 to-transparent'
+      };
+    case 'omolu':
+    case 'pretos_velhos':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #171717, #ffffff, #171717)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #171717 50%, #ffffff 50%)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #404040, #171717, rgba(23,23,23,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #ffffff, #e5e5e5, rgba(229,229,229,0.15))' },
+        glowInner: 'from-amber-500/40 via-yellow-500/12 to-transparent',
+        glowOuter: 'from-amber-600/25 via-orange-600/5 to-transparent'
+      };
+    case 'nana':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #6b21a8, #d8b4fe, #6b21a8)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #a855f7, #6b21a8 80%, rgba(107,33,168,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #d8b4fe, #a855f7, rgba(168,85,247,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #d8b4fe, #6b21a8, rgba(107,33,168,0.15))' },
+        glowInner: 'from-fuchsia-500/45 via-violet-500/15 to-transparent',
+        glowOuter: 'from-fuchsia-600/25 via-purple-950/5 to-transparent'
+      };
+    case 'oxum':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #b45309, #fef08a, #b45309)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #eab308, #b45309 80%, rgba(180,83,9,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #fde047, #eab308, rgba(234,179,8,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #fde047, #b45309, rgba(180,83,9,0.15))' },
+        glowInner: 'from-amber-400/50 via-yellow-500/15 to-transparent',
+        glowOuter: 'from-amber-500/25 via-orange-600/5 to-transparent'
+      };
+    case 'ere':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #ec4899, #38bdf8, #ec4899)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #f43f5e 50%, #0284c7 50%)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #fda4af, #f43f5e, rgba(244,63,94,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #7dd3fc, #0284c7, rgba(2,132,199,0.15))' },
+        glowInner: 'from-pink-400/40 via-sky-400/15 to-transparent',
+        glowOuter: 'from-pink-500/20 via-sky-500/10 to-transparent'
+      };
+    case 'marujo':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #0284c7, #ffffff, #0284c7)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #0284c7 50%, #ffffff 50%)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #38bdf8, #0284c7, rgba(2,132,199,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #ffffff, #efefef, rgba(239,239,239,0.15))' },
+        glowInner: 'from-sky-450/40 via-sky-200/15 to-transparent',
+        glowOuter: 'from-sky-500/20 via-slate-300/5 to-transparent'
+      };
+    case 'ciganos':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #ef4444, #eab308, #3b82f6)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #6366f1, #a855f7)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #ec4899, #f43f5e, rgba(244,63,94,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #a855f7, #6366f1, rgba(99,102,241,0.15))' },
+        glowInner: 'from-amber-500/50 via-purple-500/20 to-transparent',
+        glowOuter: 'from-red-500/20 via-blue-500/10 to-transparent'
+      };
+    case 'baianos':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #7c2d12, #f97316, #7c2d12)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #ea580c, #7c2d12 80%, rgba(124,45,18,0))' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #f97316, #ea580c, rgba(234,88,12,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #f97316, #7c2d12, rgba(124,45,18,0.15))' },
+        glowInner: 'from-orange-500/45 via-yellow-500/15 to-transparent',
+        glowOuter: 'from-orange-600/25 via-yellow-600/5 to-transparent'
+      };
+    case 'malandros':
+      return {
+        topStyle: { background: 'linear-gradient(to right, #7f1d1d, #ffffff, #171717)' },
+        bodyStyle: { background: 'linear-gradient(to bottom, #dc2626 33%, #ffffff 33%, #ffffff 66%, #171717 66%)' },
+        dripsLeftStyle: { background: 'linear-gradient(to bottom, #ef4444, #dc2626, rgba(220,38,38,0.1))' },
+        dripsRightStyle: { background: 'linear-gradient(to bottom, #404040, #171717, rgba(21,21,21,0.15))' },
+        glowInner: 'from-red-500/40 via-red-600/15 to-transparent',
+        glowOuter: 'from-red-600/25 via-stone-900/5 to-transparent'
+      };
+    default:
+      return defaults;
+  }
+};
+
+const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number }) => {
+  const isLeft = side === 'left';
+  const tiltAngle = isLeft ? 15 : -15; // Elegant diagonal slant inwards (left tilts right, right tilts left)
+  
+  const glowInner = 'from-amber-500/40 via-yellow-500/12 to-transparent';
+  const glowOuter = 'from-amber-600/25 via-orange-600/5 to-transparent';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: isLeft ? -25 : 25 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 1.0, delay: idx * 0.1, ease: "easeOut" }}
+      className={cn(
+        "absolute z-10 pointer-events-none select-none flex items-center justify-center",
+        isLeft ? "-left-4 sm:-left-8 md:-left-10 lg:-left-12" : "-right-4 sm:-right-8 md:-right-10 lg:-right-12",
+        "top-[50%] -translate-y-1/2"
+      )}
+    >
+      {/* Container - Slanted Diagonally */}
+      <div 
+        className="relative flex flex-col items-center z-20 pointer-events-none"
+        style={{
+          transform: `rotate(${tiltAngle}deg)`
+        }}
+      >
+        {/* LIGHTING REGION: Counter-rotated so the glow is upright */}
+        <div 
+          className="relative w-8 h-8 flex flex-col items-center justify-end z-30 origin-bottom overflow-visible"
+          style={{ transform: `rotate(${-tiltAngle}deg)` }}
+        >
+          {/* Inner Halo */}
+          <motion.div
+            animate={{
+              scale: [0.95, 1.15, 0.93, 1.1, 0.95],
+              opacity: [0.45, 0.7, 0.52, 0.62, 0.45],
+              x: [0, 6, -5, 4, 0],
+              y: [0, -4, 2, -3, 0]
+            }}
+            transition={{
+              duration: 3.2 + (idx * 0.5),
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-xl", glowInner)}
+            style={{ willChange: 'transform, opacity' }}
+          />
+
+          {/* Outer Halo */}
+          <motion.div
+            animate={{
+              scale: [0.97, 1.08, 0.94, 1.05, 0.97],
+              opacity: [0.18, 0.38, 0.22, 0.32, 0.18],
+              x: [0, -4, 3, -2, 0],
+              y: [0, 2, -4, 1, 0]
+            }}
+            transition={{
+              duration: 5.2 + (idx * 0.7),
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-3xl", glowOuter)}
+            style={{ willChange: 'transform, opacity' }}
+          />
+        </div>
+
+        {/* Drum Image (Slants with parent container; mirrored on the right side) */}
+        <div 
+          className="relative w-16 h-auto sm:w-20 md:w-22 lg:w-24 mt-2 filter drop-shadow-2xl"
+          style={{
+            transform: isLeft ? "scaleX(1)" : "scaleX(-1)"
+          }}
+        >
+           <img 
+              src="https://res.cloudinary.com/dpv8m5igw/image/upload/v1779976056/ChatGPT_Image_28_de_mai._de_2026_10_47_21_rpug5r.png" 
+              alt="Atabaque" 
+              className="w-full h-auto object-contain"
+              referrerPolicy="no-referrer"
+           />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = 'oxala' }: { side: 'left' | 'right'; top: string; idx?: number; isScrolling?: boolean; colorType?: string }) => {
+  const isLeft = side === 'left';
+  const tiltAngle = isLeft ? 15 : -15; // Elegant diagonal slant outwards
+  const cId = `${side}-${idx}`; // Unique ID for gradients
+  const baseConfig = getCandleConfig(colorType);
+  const config = {
+    ...baseConfig,
+    glowInner: 'from-amber-500/40 via-yellow-500/12 to-transparent',
+    glowOuter: 'from-amber-600/25 via-orange-600/5 to-transparent'
+  };
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: isLeft ? -15 : 15 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 1.0, delay: idx * 0.1, ease: "easeOut" }}
+      className={cn(
+        "absolute z-[55] pointer-events-none select-none flex items-center justify-center",
+        isScrolling
+          ? (isLeft ? "left-[114px] sm:left-[106px]" : "right-[114px] sm:right-[106px]")
+          : (isLeft ? "-left-1.5 sm:-left-3.5" : "-right-1.5 sm:-right-3.5"),
+        "top-0 -translate-y-1/2"
+      )}
+      style={{ top }}
+    >
+      {/* Freestanding Candle Assembly - Slanted Diagonally */}
+      <div 
+        className="relative flex flex-col items-center z-20 pointer-events-none"
+        style={{
+          transform: `rotate(${tiltAngle}deg)`
+        }}
+      >
+        {/* FLAME & HEAT REGION: Counter-rotated by -tiltAngle so the flame burns straight up! */}
+        <div 
+          className="relative w-8 h-12 flex flex-col items-center justify-end z-30 origin-bottom overflow-visible"
+          style={{ transform: `rotate(${-tiltAngle}deg)` }}
+        >
+          {/* Soft warm surrounding glow that pulses gently to simulate casting light (Clear and vivid inner halo) */}
+          <motion.div
+            animate={{
+              scale: [0.95, 1.12, 0.98, 1.06, 0.95],
+              opacity: [0.45, 0.65, 0.5, 0.58, 0.45]
+            }}
+            transition={{
+              duration: 3.5 + (idx * 0.4),
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-xl", config.glowInner)}
+            style={{ willChange: 'transform, opacity' }}
+          />
+
+          {/* A second, wider ambient halo mimicking warm golden light casting on the surrounding wall space */}
+          <motion.div
+            animate={{
+              scale: [0.97, 1.06, 0.99, 1.04, 0.97],
+              opacity: [0.18, 0.35, 0.22, 0.3, 0.18]
+            }}
+            transition={{
+              duration: 5.0 + (idx * 0.6),
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-3xl", config.glowOuter)}
+            style={{ willChange: 'transform, opacity' }}
+          />
+
+          {/* Majestic Layered Teardrop SVG Flame - Slow, serene sway & shiny GPU-friendly animation */}
+          <motion.div
+            animate={{
+              scaleY: [0.97, 1.06, 0.98, 1.04, 0.97],
+              scaleX: [0.98, 1.03, 0.97, 1.02, 0.98],
+              rotate: [-1.2, 1.2, -0.6, 1.0, -1.2],
+              x: [-0.2, 0.3, -0.1, 0.2, -0.2],
+              opacity: [0.96, 1, 0.97, 1, 0.96],
+            }}
+            transition={{
+              duration: 3.8 + (idx * 0.5),
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="relative w-7 h-11 origin-bottom flex items-center justify-center filter drop-shadow-[0_0_6px_#f59e0b] drop-shadow-[0_0_15px_rgba(234,88,12,0.7)] overflow-visible"
+          >
+            <svg 
+              className="w-full h-full overflow-visible" 
+              viewBox="0 -30 100 230" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id={`outerFlame-${cId}`} x1="50%" y1="100%" x2="50%" y2="0%">
+                  <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.95" />
+                  <stop offset="18%" stopColor="#d97706" stopOpacity="0.85" />
+                  <stop offset="50%" stopColor="#ea580c" stopOpacity="0.9" />
+                  <stop offset="82%" stopColor="#fbbf24" stopOpacity="0.98" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+                </linearGradient>
+
+                <linearGradient id={`innerFlame-${cId}`} x1="50%" y1="100%" x2="50%" y2="0%">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.9" />
+                  <stop offset="30%" stopColor="#ea580c" stopOpacity="0.8" />
+                  <stop offset="70%" stopColor="#fef08a" stopOpacity="1" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+                </linearGradient>
+
+                <radialGradient id={`blueBase-${cId}`} cx="50%" cy="100%" r="50%">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="1" />
+                  <stop offset="50%" stopColor="#1d4ed8" stopOpacity="0.75" />
+                  <stop offset="100%" stopColor="#1e40af" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+
+              {/* Outer Flame Contour */}
+              <path 
+                d="M50 190 C 22 165, 16 112, 16 82 C 16 42, 50 10, 50 10 C 50 10, 84 42, 84 82 C 84 112, 78 165, 50 190 Z" 
+                fill={`url(#outerFlame-${cId})`} 
+              />
+
+              {/* Inner Flame Core */}
+              <path 
+                d="M50 174 C 34 154, 28 114, 28 94 C 28 70, 50 36, 50 36 C 50 36, 72 70, 72 94 C 72 114, 66 154, 50 174 Z" 
+                fill={`url(#innerFlame-${cId})`}
+                opacity="0.85"
+              />
+
+              {/* Hot Blue Fuel Base */}
+              <ellipse cx="50" cy="182" rx="15" ry="9" fill={`url(#blueBase-${cId})`} />
+            </svg>
+          </motion.div>
+
+          {/* Highly detailed wick curving slightly */}
+          <div className="absolute bottom-0 w-[2px] h-4 z-10 flex flex-col items-center justify-between pointer-events-none">
+            <div className="w-[1.2px] h-3.5 bg-gradient-to-b from-neutral-950 via-neutral-800 to-neutral-400 rounded-t-sm rotate-[4deg]" />
+            {/* Tiny live red-hot burning coal point at wick vertex */}
+            <motion.div 
+              animate={{ 
+                scale: [0.9, 1.2, 0.9],
+                opacity: [0.8, 1, 0.8]
+              }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-[1px] w-[2px] h-[2px] rounded-full bg-[#ff3700] shadow-[0_0_2px_1px_rgba(239,68,68,0.4)]"
+            />
+          </div>
+        </div>
+
+        {/* 3D CYLINDRICAL CANDLE COLUMN (Premium translucent solid white wax) with oval top surface perspective */}
+        <div className={cn(
+          "relative select-none flex flex-col items-center",
+          isScrolling ? "w-[13px] sm:w-[14px] h-18 sm:h-20" : "w-[18px] h-24 sm:h-28"
+        )}>
+          {/* Top Ellipse representing the 3D top surface depth of the cylinder */}
+          <div 
+            className="absolute -top-[1.5px] w-full h-[3px] border border-neutral-400/20 rounded-full z-10 flex items-center justify-center"
+            style={config.topStyle}
+          >
+            {/* Sunken pool for wick */}
+            <div className="w-[12px] h-[1px] bg-neutral-900/40 rounded-full" />
+          </div>
+
+          {/* Main Wax Body with cylindrical 3D shading, drops, and bottom opacity fade */}
+          <div 
+            className="relative w-full h-full rounded-b-md overflow-hidden border-x border-white/20 shadow-2xl"
+            style={config.bodyStyle}
+          >
+            {/* Direct lateral cylindrical 3D shading layer */}
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-300/30 via-transparent to-neutral-300/30 pointer-events-none" />
+
+            {/* Subsurface molten wax glow (shining red/amber inside top section) */}
+            <div className="absolute top-0 inset-x-0 h-6 bg-gradient-to-b from-orange-400/30 via-amber-300/5 to-transparent blur-[0.4px]" />
+            
+            {/* Sharp 3D cylindrical reflection strip */}
+            <div className="absolute inset-y-0 left-[22%] w-[2px] bg-white/40 blur-[0.3px] opacity-90" />
+            
+            {/* Pool brim shadows */}
+            <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-b from-neutral-900/20 to-transparent" />
+
+            {/* Gorgeous dripping organic wax streams on side */}
+            <div 
+              className={cn(
+                "absolute top-0 left-0.5 w-[2px] rounded-full shadow-[0.5px_0.5px_1.5px_rgba(0,0,0,0.18)] animate-pulse",
+                isScrolling ? "h-8" : "h-14"
+              )}
+              style={config.dripsLeftStyle}
+            />
+            <div 
+              className={cn(
+                "absolute left-1 w-[1px] rounded-full opacity-60",
+                isScrolling ? "top-2.5 h-3" : "top-5 h-6"
+              )}
+              style={config.dripsLeftStyle}
+            />
+            <div 
+              className={cn(
+                "absolute top-0 right-0.5 w-[2px] rounded-full shadow-[-0.5px_0.5px_1.5px_rgba(0,0,0,0.18)]",
+                isScrolling ? "h-9" : "h-16"
+              )}
+              style={config.dripsRightStyle}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
   Anchor, Bell, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap
@@ -131,10 +565,12 @@ function Navigation() {
   return (
     <>
       <nav className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/70 backdrop-blur-2xl border border-white/40 z-[100] transition-colors duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-between px-3",
-        settings.darkMode && "bg-[#121212]/70 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+        "fixed bottom-6 left-1/2 -translate-x-1/2 min-w-[320px] max-w-sm h-[72px] rounded-full bg-white/80 backdrop-blur-2xl border border-brand-gold/50 z-[100] transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.15)] flex items-center justify-between px-3",
+        settings.darkMode && "bg-[#121212]/80 border-brand-gold/50 shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
       )}>
-        <div className="flex justify-between items-center w-full relative">
+        {/* Double border inner contour */}
+        <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 pointer-events-none z-0" />
+        <div className="flex justify-between items-center w-full relative z-10">
           {currentPrimaryTabs.map((tab) => {
             const isActive = location.pathname.startsWith(tab.path);
             const iconName = settings.tabIcons?.[tab.path];
@@ -230,10 +666,12 @@ function Navigation() {
               exit={{ opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={cn(
-                "fixed bottom-[110px] left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] bg-white/80 backdrop-blur-3xl rounded-[36px] overflow-hidden z-[100] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/50 pb-2",
-                settings.darkMode && "bg-[#1E1E1E]/80 border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+                "fixed bottom-[110px] left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] bg-white/85 backdrop-blur-3xl rounded-[36px] overflow-hidden z-[100] shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-brand-gold/50 pb-2",
+                settings.darkMode && "bg-[#1E1E1E]/90 border-brand-gold/50 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
               )}
             >
+              {/* Double border inner contour */}
+              <div className="absolute inset-[3px] rounded-[33px] border border-brand-gold/30 pointer-events-none z-0" />
               <div className={cn(
                 "px-6 py-4 flex items-center justify-end border-b",
                 settings.darkMode ? "border-white/5" : "border-gray-100"
@@ -317,7 +755,7 @@ const TopHeader = React.memo(function TopHeader() {
   }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
 
   const leaves = React.useMemo(() => {
-    return [...Array(15)].map((_, i) => ({
+    return [...Array(85)].map((_, i) => ({
       id: i,
       size: 15 + Math.random() * 20,
       duration: 20 + Math.random() * 30,
@@ -334,15 +772,16 @@ const TopHeader = React.memo(function TopHeader() {
 
   return (
     <div 
+      id="app-top-header"
       className={cn(
-        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[40dvh] sm:min-h-0 z-20",
+        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[30dvh] sm:min-h-0 z-20",
         settings.darkMode 
           ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
           : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
       )}
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 90px)',
-        paddingBottom: '4rem',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)',
+        paddingBottom: '11rem',
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
@@ -416,48 +855,19 @@ const TopHeader = React.memo(function TopHeader() {
         />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center">
-        {/* Title Moved above the logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex flex-col items-center mb-8 gap-2"
-        >
-          {fullName && (
-            <div className="bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-brand-gold/30 mb-2 flex items-center justify-center gap-1.5 focus-within:ring-2 ring-brand-gold/50 name-aura shadow-sm">
-              {isGuest ? (
-                <Ghost className="w-3 h-3 text-brand-gold/80" />
-              ) : settings.profilePhoto ? (
-                <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-brand-gold/40 shadow-inner">
-                  <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
-                </div>
-              ) : null}
-              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] pt-[1px]">{fullName}</span>
-            </div>
-          )}
-          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[16px] sm:text-[18px] md:text-[22px] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
-            Guerreiros de Oya e Ogum
-          </h2>
-          <motion.div 
-            animate={{ width: ['0%', '100%', '0%'] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
-          />
-        </motion.div>
-
+      <div className="relative z-10 flex flex-col items-center mt-2 sm:mt-3 pb-12">
         {/* Floating Logo Container */}
         <motion.div 
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative"
+          className="relative mb-32 sm:mb-36"
         >
           {/* Outer Glowing Ring */}
           <div className="absolute -inset-4 rounded-full bg-brand-copper/10 blur-xl animate-pulse" />
           <div className="absolute -inset-1 rounded-full border border-brand-copper/20 ring-4 ring-brand-copper/5" />
           
           {/* Rotating decorative icons - Herb Leaves */}
-          <div className="absolute -inset-8 pointer-events-none">
+          <div className="absolute -inset-6 pointer-events-none">
             <motion.div 
               animate={{ rotate: 360 }}
               transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
@@ -470,7 +880,7 @@ const TopHeader = React.memo(function TopHeader() {
                   style={{
                     top: '50%',
                     left: '50%',
-                    transform: `rotate(${i * 60}deg) translateY(-85px) rotate(-${i * 60}deg)`
+                    transform: `rotate(${i * 60}deg) translateY(-58px) rotate(-${i * 60}deg)`
                   }}
                 >
                   <Leaf className="w-4 h-4 text-brand-copper/30 drop-shadow-[0_0_5px_rgba(184,134,11,0.2)]" />
@@ -480,7 +890,7 @@ const TopHeader = React.memo(function TopHeader() {
           </div>
 
           <div className={cn(
-            "w-44 h-44 rounded-full relative frame-3d mystical-aura",
+            "w-28 h-28 rounded-full relative frame-3d mystical-aura",
             settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
           )}>
             {/* Glossy Overlay */}
@@ -511,6 +921,23 @@ const TopHeader = React.memo(function TopHeader() {
             </div>
           </div>
         </motion.div>
+
+        {/* Title Moved below the logo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col items-center gap-1"
+        >
+          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[16px] sm:text-[18px] md:text-[22px] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
+            Guerreiros de Oya e Ogum
+          </h2>
+          <motion.div 
+            animate={{ width: ['0%', '100%', '0%'] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
+          />
+        </motion.div>
       </div>
 
       {/* Decorative Bottom Transition */}
@@ -519,6 +946,10 @@ const TopHeader = React.memo(function TopHeader() {
       
       {/* Light glow at the boundary */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 max-w-2xl h-8 bg-brand-gold/20 blur-xl z-0 pointer-events-none" />
+
+      {/* Decorative Drums Flanking the Logo */}
+      <HeaderDrum side="left" idx={0} />
+      <HeaderDrum side="right" idx={1} />
 
     </div>
   );
@@ -556,6 +987,8 @@ function SocialButtons() {
 
   return (
     <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-8 relative z-30 flex items-center justify-center pointer-events-none h-14">
+      {/* Connecting gold line bridging the buttons */}
+      <div className="absolute inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent top-1/2 -translate-y-1/2 z-0 pointer-events-none" />
       
       {/* INSTAGRAM (Left) */}
       <motion.a
@@ -568,29 +1001,31 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
+          "h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative pointer-events-auto z-10 origin-center transition-all duration-300 backdrop-blur-md name-aura"
         )}
       >
+        {/* Double border inner contour */}
+        <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
         <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: shouldAnimate ? 1 : 0 }}
            transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
+           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px] z-10"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-sm">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
             {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
               <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
             )}
           </div>
           <div className="text-left relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">Instagram</h3>
+            <h3 className="text-xs sm:text-xs font-black tracking-tight leading-none text-white drop-shadow-sm font-sans">Instagram</h3>
           </div>
         </motion.div>
       </motion.a>
       
       {/* Separator / Gap visually addressed by parent flex */}
-
+ 
       {/* TIKTOK (Right) */}
       <motion.a
         initial={{ width: 0, opacity: 0 }}
@@ -602,20 +1037,22 @@ function SocialButtons() {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "h-12 rounded-full bg-gradient-to-br from-[#FFE4B5] via-[#FFD700] to-[#DAA520] text-[#1a2e4d] shadow-[0_10px_20px_-5px_rgba(218,165,32,0.5),inset_0_2px_4px_rgba(255,255,255,0.4)] border border-white/50 flex items-center overflow-hidden relative pointer-events-auto z-10 origin-center glimmer-panel mystical-aura-btn",
-          settings.darkMode && "from-[#B8860B] via-[#8B6508] to-[#664500] text-white shadow-[0_10px_20px_-5px_rgba(0,0,0,0.6),inset_0_2px_4px_rgba(255,255,255,0.1)] border-white/10"
+          "h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative pointer-events-auto z-10 origin-center transition-all duration-300 backdrop-blur-md name-aura"
         )}
       >
+        {/* Double border inner contour */}
+        <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
+        <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
         <motion.div 
            initial={{ opacity: 0 }}
            animate={{ opacity: shouldAnimate ? 1 : 0 }}
            transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px]"
+           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px] z-10"
         >
           <div className="text-right relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-sm font-black tracking-tight leading-none drop-shadow-sm">TikTok</h3>
+            <h3 className="text-xs sm:text-xs font-black tracking-tight leading-none text-white drop-shadow-sm font-sans">TikTok</h3>
           </div>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-sm">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
             {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
               <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
             )}
@@ -754,7 +1191,7 @@ function NotificationCenter({
 
   return (
     <>
-      <div className="absolute top-4 right-4 sm:right-6 z-[60]">
+      <div className="absolute top-[22px] right-4 sm:right-6 z-[60]">
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -1299,8 +1736,86 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
-  const { setShowAssistantModal, isScrolled } = useAssistant();
+  const { setShowAssistantModal, isScrolled, setIsScrolled } = useAssistant();
   const [isRecovering, setIsRecovering] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(340);
+  const scrollingCandlesRef = React.useRef<HTMLDivElement>(null);
+  const mainScrollRef = React.useRef<HTMLElement>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    // Reset scroll top of our main container on route change
+    const resetScroll = () => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = 0;
+      }
+      if (scrollingCandlesRef.current) {
+        scrollingCandlesRef.current.style.transform = 'translate3d(0, 0, 0)';
+      }
+      setIsScrolled(false);
+    };
+
+    resetScroll();
+    // Small timeout to catch late-rendering layouts
+    const timer = setTimeout(resetScroll, 50);
+    return () => clearTimeout(timer);
+  }, [location.pathname, setIsScrolled]);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const el = document.getElementById('app-top-header');
+      if (el) {
+        setHeaderHeight(el.offsetHeight);
+      }
+    };
+    // Initial measurement
+    updateHeaderHeight();
+    // Schedule a small delay to make sure rendering finishes compiling
+    const timer = setTimeout(updateHeaderHeight, 150);
+    const timer2 = setTimeout(updateHeaderHeight, 600);
+
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      clearTimeout(timer);
+      clearTimeout(timer2);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const mainEl = mainScrollRef.current;
+    if (!mainEl) return;
+
+    let lastScrollTop = -1;
+    let lastIsScrolled = false;
+
+    const handleScroll = () => {
+      const scrollTop = mainEl.scrollTop;
+      if (scrollTop !== lastScrollTop) {
+        lastScrollTop = scrollTop;
+        
+        // Zero-latency instant DOM updating!
+        if (scrollingCandlesRef.current) {
+          scrollingCandlesRef.current.style.transform = `translate3d(0, ${-scrollTop}px, 0)`;
+        }
+
+        const nextIsScrolled = scrollTop > 100;
+        if (nextIsScrolled !== lastIsScrolled) {
+          lastIsScrolled = nextIsScrolled;
+          setIsScrolled(nextIsScrolled);
+        }
+      }
+    };
+
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial sync
+    handleScroll();
+
+    return () => {
+      mainEl.removeEventListener('scroll', handleScroll);
+    };
+  }, [location.pathname, setIsScrolled]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
@@ -1787,6 +2302,23 @@ function AppContent() {
     }
   }, []);
 
+  const fullName = React.useMemo(() => {
+    if (isGuest) return "Modo Guest";
+    
+    // 1. Prefer explicitly set firstName + lastName from local settings (synced/manual)
+    const sName = [settings.firstName?.trim(), settings.lastName?.trim()].filter(Boolean).join(' ');
+    if (sName) return sName;
+    
+    // 2. Fallback to Supabase metadata (First/Last from manual signup or full_name from Google)
+    const metadata = user?.user_metadata;
+    const mFullName = [metadata?.first_name, metadata?.last_name].filter(Boolean).join(' ');
+    if (mFullName) return mFullName;
+    if (metadata?.full_name) return metadata.full_name;
+    if (metadata?.name) return metadata.name;
+    
+    return settings.nickname || "Guerreiro";
+  }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
+
   // Apply dark mode class to body for Tailwind dark: variants
   React.useEffect(() => {
     if (settings.darkMode) {
@@ -1815,53 +2347,151 @@ function AppContent() {
         <div className="fixed w-[400px] h-[400px] bg-brand-red rounded-full opacity-5 blur-[100px] top-0 left-0 pointer-events-none" />
         <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
 
-        <div className={cn(
-          "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy",
-          settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
-        )}>
-           {authLoading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
-            </div>
-          ) : isRecovering ? (
-            <ResetPassword onSuccess={() => setIsRecovering(false)} />
-          ) : (!user && !isGuest) ? (
-            <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
-          ) : (user && !isProfileComplete) ? (
-            <CompleteProfile />
-          ) : (
+        {/* Outer relative container that holds the side candles without clipping them */}
+        <div className="relative w-full h-[100dvh] sm:h-[812px] max-w-lg flex flex-col pointer-events-none justify-center">
+          {/* Lit White Candles on Left and Right sides (rendered OUTSIDE overflow-hidden) */}
+          {!authLoading && (user || isGuest) && isProfileComplete && (
             <>
-              {/* Top Floating Buttons */}
-              <GlobalSearch />
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center">
-                {!isScrolled && <AssistantButton onClick={() => setShowAssistantModal(true)} />}
-              </div>
-              <NotificationCenter 
-                darkMode={settings.darkMode} 
-                notifications={notifications} 
-                setNotifications={setNotifications} 
-              />
-
-              <Navigation />
-              
-              <AnimatePresence>
-                {activeUndo && (
-                  <UndoToast 
-                    key={activeUndo.id}
-                    action={activeUndo} 
-                    onUndo={handleUndo} 
-                    onFinish={finalizeDelete} 
-                  />
-                )}
-              </AnimatePresence>
-
-              <div className="flex-1 flex flex-col h-full overflow-hidden">
-                <TopHeader />
-                <SocialButtons />
-                <AppRoutes />
+              {/* Scrolling Candle Corridor - Hardware-accelerated overflow container eliminates expensive clip-path */}
+              <div 
+                className="absolute left-[-120px] right-[-120px] bottom-0 overflow-hidden pointer-events-none z-[55]"
+                style={{ 
+                  top: '0px'
+                }}
+              >
+                <div 
+                  className="absolute inset-x-0 bottom-0"
+                  style={{ top: '0px' }}
+                >
+                  <div
+                    ref={scrollingCandlesRef}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ 
+                      willChange: 'transform'
+                    }}
+                  >
+                    {[
+                      { side: 'left' as const, top: '530px', color: 'ogum' },
+                      { side: 'right' as const, top: '710px', color: 'oya' },
+                      { side: 'left' as const, top: '920px', color: 'yemanja' },
+                      { side: 'right' as const, top: '1080px', color: 'xango' },
+                      { side: 'left' as const, top: '1260px', color: 'oxossi' },
+                      { side: 'right' as const, top: '1420px', color: 'oxumare' },
+                      { side: 'left' as const, top: '1600px', color: 'omolu' },
+                      { side: 'right' as const, top: '1780px', color: 'nana' },
+                      { side: 'left' as const, top: '1960px', color: 'oxum' },
+                      { side: 'right' as const, top: '2120px', color: 'ere' },
+                      { side: 'left' as const, top: '2300px', color: 'marujo' },
+                      { side: 'right' as const, top: '2480px', color: 'ciganos' },
+                      { side: 'left' as const, top: '2660px', color: 'santa_sara' },
+                      { side: 'right' as const, top: '2840px', color: 'pretos_velhos' },
+                      { side: 'left' as const, top: '3020px', color: 'baianos' },
+                      { side: 'right' as const, top: '3200px', color: 'caboclos' },
+                      { side: 'left' as const, top: '3380px', color: 'malandros' },
+                      { side: 'right' as const, top: '3560px', color: 'oxala' },
+                    ].map((candle, index) => (
+                      <LitWhiteCandle 
+                        key={`scroll-candle-${index}`} 
+                        side={candle.side} 
+                        top={candle.top} 
+                        idx={index + 2} 
+                        isScrolling={true}
+                        colorType={candle.color}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </>
           )}
+
+          <div className={cn(
+            "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy pointer-events-auto",
+            settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
+          )}>
+             {authLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
+              </div>
+            ) : isRecovering ? (
+              <ResetPassword onSuccess={() => setIsRecovering(false)} />
+            ) : (!user && !isGuest) ? (
+              <AuthScreen onLogin={(guest) => { if (guest) setIsGuest(true); }} />
+            ) : (user && !isProfileComplete) ? (
+              <CompleteProfile />
+            ) : (
+              <>
+                {/* Fixed Top Header Bar */}
+                <div className={cn(
+                  "absolute top-0 inset-x-0 h-[84px] z-[60] pointer-events-none transition-all duration-300",
+                  isScrolled 
+                    ? (settings.darkMode 
+                        ? "bg-black/95 backdrop-blur-md border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)]" 
+                        : "bg-[#050B14]/95 backdrop-blur-md border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]")
+                    : "bg-transparent border-b border-transparent"
+                )}>
+                  {/* Top Floating Buttons inside the Header Bar */}
+                  <GlobalSearch />
+                  <div className="absolute top-[18px] left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center gap-1.5 shrink-0 pointer-events-none">
+                    <div className="pointer-events-auto">
+                      <AssistantButton onClick={() => setShowAssistantModal(true)} />
+                    </div>
+                    {fullName && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-brand-gold/30 flex items-center justify-center gap-1.5 focus-within:ring-2 ring-brand-gold/50 name-aura shadow-sm pointer-events-auto shrink-0 whitespace-nowrap"
+                      >
+                        {isGuest ? (
+                          <Ghost className="w-2 h-2 text-brand-gold/80" />
+                        ) : settings.profilePhoto ? (
+                          <div className="w-3 h-3 rounded-full overflow-hidden border border-brand-gold/40 shadow-inner leading-none">
+                            <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
+                          </div>
+                        ) : null}
+                        <span className="text-[7.5px] sm:text-[8px] font-bold uppercase tracking-[0.16em] text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] pt-[1px]">{fullName}</span>
+                      </motion.div>
+                    )}
+                  </div>
+                  <NotificationCenter 
+                    darkMode={settings.darkMode} 
+                    notifications={notifications} 
+                    setNotifications={setNotifications} 
+                  />
+                </div>
+
+                <Navigation />
+                
+                <AnimatePresence>
+                  {activeUndo && (
+                    <UndoToast 
+                      key={activeUndo.id}
+                      action={activeUndo} 
+                      onUndo={handleUndo} 
+                      onFinish={finalizeDelete} 
+                      
+                    />
+                  )}
+                </AnimatePresence>
+
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                  <main
+                    ref={mainScrollRef}
+                    className="flex-1 overflow-y-auto overflow-x-hidden pb-48 scrollbar-hide relative flex flex-col pt-0"
+                  >
+                    <TopHeader />
+                    <SocialButtons />
+                    <div className={cn(
+                      "px-4 w-full flex-1",
+                      location.pathname === '/home' ? "pt-1" : "pt-4"
+                    )}>
+                      <AppRoutes />
+                    </div>
+                  </main>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </UndoContext.Provider>

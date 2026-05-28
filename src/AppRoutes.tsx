@@ -21,25 +21,19 @@ export const AppRoutes = () => {
     return (
         <Suspense fallback={<LoadingFallback />}>
             <Routes>
-                <Route path="/home" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-1 pb-48 px-4 scrollbar-hide">
-                        <HomeScreen />
-                    </main>
-                } />
+                <Route path="/home" element={<HomeScreen />} />
                 <Route path="*" element={
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-48 px-4 scrollbar-hide">
-                        <Routes>
-                            <Route path="/" element={<Navigate to="/home" replace />} />
-                            <Route path="/calendar" element={<CalendarScreen />} />
-                            <Route path="/herbs" element={<HerbsScreen />} />
-                            <Route path="/trab" element={<TrabalhosScreen />} />
-                            <Route path="/points" element={<PointsScreen />} />
-                            <Route path="/studies" element={<StudiesScreen />} />
-                            <Route path="/notes" element={<NotesScreen />} />
-                            <Route path="/finance" element={<FinanceiroScreen />} />
-                            <Route path="/settings" element={<SettingsScreen />} />
-                        </Routes>
-                    </main>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/home" replace />} />
+                        <Route path="/calendar" element={<CalendarScreen />} />
+                        <Route path="/herbs" element={<HerbsScreen />} />
+                        <Route path="/trab" element={<TrabalhosScreen />} />
+                        <Route path="/points" element={<PointsScreen />} />
+                        <Route path="/studies" element={<StudiesScreen />} />
+                        <Route path="/notes" element={<NotesScreen />} />
+                        <Route path="/finance" element={<FinanceiroScreen />} />
+                        <Route path="/settings" element={<SettingsScreen />} />
+                    </Routes>
                 } />
             </Routes>
         </Suspense>

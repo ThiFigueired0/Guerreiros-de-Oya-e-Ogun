@@ -214,14 +214,10 @@ export default function HomeScreen() {
 
   return (
     <motion.div 
-      onScroll={(e) => {
-        const target = e.target as HTMLElement;
-        setIsScrolled(target.scrollTop > 100);
-      }}
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       className={cn(
-        "p-4 min-h-full pb-32 transition-colors duration-500 overflow-y-auto",
+        "p-4 pb-32 transition-colors duration-500",
         settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
       )}
     >
@@ -246,16 +242,7 @@ export default function HomeScreen() {
           </h2>
         </div>
 
-        {/* Premium Daily Message Card (Compact) */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowDailyFactModal(true)}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-[16px] bg-gradient-to-r from-[#001a33] to-[#003366] border border-[#D4AF37] shadow-lg"
-        >
-          <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-          <span className="text-white text-xs font-semibold whitespace-nowrap font-sans font-[600]">Mensagem Diária</span>
-        </motion.div>
+        {/* Premium Daily Message Card removed as per user request */}
       </header>
 
       {/* AI Response Display */}
