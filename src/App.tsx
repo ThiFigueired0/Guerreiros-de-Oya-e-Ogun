@@ -1068,10 +1068,10 @@ function NotificationCenter({
     const mocks: NotificationItem[] = [
       { id: `mock_calendar_event_${Date.now()}_1`, title: 'Evento: Gira de Desenvolvimento Iniciada', timestamp: Date.now(), category: 'calendário', read: false },
       { id: `mock_finance_${Date.now()}_2`, title: 'Finanças: Mensalidade recebida de João', timestamp: Date.now() - 1000, category: 'adição', read: false },
-      { id: `mock_herb_stock_${Date.now()}_3`, title: 'Estoque: Alecrim adicionado', timestamp: Date.now() - 2000, category: 'adição', read: false },
-      { id: `mock_ponto_${Date.now()}_4`, title: 'Pontos: Novo ponto de Oxóssi cadastrado', timestamp: Date.now() - 3000, category: 'adição', read: false },
-      { id: `mock_bicho_${Date.now()}_5`, title: 'Trabalhos: Novo Bicho registrado', timestamp: Date.now() - 4000, category: 'adição', read: false },
-      { id: `mock_system_${Date.now()}_6`, title: 'Sistema: Teste de Notificação', timestamp: Date.now() - 5000, category: 'sistema', read: false },
+      { id: `mock_herb_stock_${Date.now()}_3`, title: 'Estoque: Alecrim adicionado ao inventário', timestamp: Date.now() - 2000, category: 'adição', read: false },
+      { id: `mock_ponto_${Date.now()}_4`, title: 'Pontos: Novo ponto cantado de Oxóssi cadastrado', timestamp: Date.now() - 3000, category: 'adição', read: false },
+      { id: `mock_bicho_${Date.now()}_5`, title: 'Trabalhos: Novo Bicho registrado no Amaci', timestamp: Date.now() - 4000, category: 'adição', read: false },
+      { id: `mock_system_${Date.now()}_6`, title: 'Sistema: Teste de Notificação de Backup de Segurança', timestamp: Date.now() - 5000, category: 'sistema', read: false },
     ];
     setNotifications(prev => [...mocks, ...prev].slice(0, 100));
   };
@@ -1128,8 +1128,8 @@ function NotificationCenter({
     return 'system';
   };
 
-  const getRouteForModule = (module: string) => {
-    switch (module) {
+  const getRouteForModule = (notifModule: string) => {
+    switch (notifModule) {
       case 'calendar': return '/calendar';
       case 'finance': return '/financeiro';
       case 'stock': return '/herbs';
@@ -1144,8 +1144,8 @@ function NotificationCenter({
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
     }
     
-    const module = getNotificationModule(notif);
-    const route = getRouteForModule(module);
+    const notifModule = getNotificationModule(notif);
+    const route = getRouteForModule(notifModule);
     
     if (route && location.pathname !== route) {
       navigate(route);
@@ -1182,10 +1182,10 @@ function NotificationCenter({
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowNotifications(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura",
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura border",
             darkMode 
-              ? "bg-black/40 border border-white/10" 
-              : "bg-white/10 hover:bg-white/20"
+              ? "bg-black/40 border-white/10" 
+              : "bg-white/10 hover:bg-white/20 border-white/20"
           )}
         >
           <div className="relative">
@@ -1210,90 +1210,163 @@ function NotificationCenter({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm pointer-events-auto"
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/75 backdrop-blur-md pointer-events-auto"
             onClick={() => setShowNotifications(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              initial={{ scale: 0.95, opacity: 0, y: 40 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              exit={{ scale: 0.95, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 26, stiffness: 220 }}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[40px] overflow-hidden shadow-2xl relative border",
+                "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[36px] overflow-hidden shadow-2xl relative border",
                 darkMode 
-                  ? "bg-[#1A1A1A] text-white border-white/5" 
-                  : "bg-[#FDFDFD] text-slate-900 border-gray-100"
+                  ? "bg-gradient-to-b from-[#141414] to-[#0a0a0a] text-white border-neutral-800/80 shadow-[0_24px_60px_rgba(0,0,0,0.8)]" 
+                  : "bg-gradient-to-b from-white to-slate-50 text-slate-900 border-gray-100 shadow-[0_24px_50px_rgba(15,23,42,0.1)]"
               )}
             >
+              {/* Spiritual top elegant ambient aura */}
+              <div className="absolute top-0 inset-x-0 h-44 bg-gradient-to-b from-brand-copper/10 via-brand-copper/0 to-transparent pointer-events-none" />
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
+
               {/* Header */}
-              <div className="p-8 flex items-center justify-between border-b dark:border-white/5 shrink-0">
+              <div className="p-6 sm:p-8 flex items-center justify-between border-b shrink-0 relative z-10" style={{ borderColor: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-brand-gold/10 flex items-center justify-center">
-                    <Bell className="w-6 h-6 text-brand-gold" />
+                  <div className="w-12 h-12 rounded-2xl bg-brand-copper/10 text-brand-copper flex items-center justify-center shadow-inner">
+                    <Bell className="w-6 h-6 animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+                    <h3 className={cn("text-[9px] font-black uppercase tracking-[0.25em] mb-0.5", darkMode ? "text-brand-gold" : "text-brand-copper")}>
+                      Mural de Avisos
+                    </h3>
+                    <h2 className={cn("text-xl font-black tracking-tight flex items-center gap-2", darkMode ? "text-white" : "text-brand-navy")}>
                        Notificações
                        {isGuest && (
-                          <button onClick={generateMockNotifications} className="ml-2 text-[10px] bg-brand-navy/10 text-brand-navy dark:bg-brand-gold/20 dark:text-brand-gold px-2 py-1 rounded-lg hover:bg-brand-navy/20 dark:hover:bg-brand-gold/30 transition-colors uppercase tracking-widest font-black flex items-center gap-1" title="Adicionar notificações de teste (Apenas Visitante)">
-                             <Zap className="w-3 h-3" />
+                          <button 
+                            onClick={generateMockNotifications} 
+                            className="ml-2 text-[9px] bg-brand-copper/10 text-brand-copper dark:bg-brand-gold/25 dark:text-brand-gold px-2 py-1 rounded-full hover:bg-brand-copper/20 dark:hover:bg-brand-gold/35 transition-all uppercase tracking-widest font-black flex items-center gap-1 active:scale-90" 
+                            title="Adicionar notificações de teste (Apenas Visitante)"
+                          >
+                             <Zap className="w-3 h-3 animate-bounce" />
                              Simular
                           </button>
                        )}
                     </h2>
                   </div>
                 </div>
-                <button 
+                <motion.button 
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setShowNotifications(false)}
-                  className="w-12 h-12 rounded-2xl bg-brand-navy dark:bg-brand-gold flex items-center justify-center active:scale-90 transition-all text-white hover:shadow-lg shadow-brand-navy/20"
+                  className="w-11 h-11 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-white cursor-pointer hover:shadow-sm transition-colors duration-200"
                   aria-label="Fechar"
                 >
-                  <X className="w-6 h-6" />
-                </button>
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
 
               {/* Content */}
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 flex flex-col overflow-hidden relative z-10">
                 <div className="px-6 pt-6 shrink-0">
-                  <div className="mb-4 p-4 bg-brand-gold/5 dark:bg-white/5 rounded-[24px] border border-brand-gold/10 dark:border-white/5 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-gold/10 flex items-center justify-center shrink-0">
-                      <Info className="w-4 h-4 text-brand-gold" />
+                  {/* Styled automatic clean warning */}
+                  <div className="mb-4 p-4 bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-[24px] border border-brand-gold/10 dark:border-brand-gold/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-brand-copper/10 dark:bg-brand-gold/15 flex items-center justify-center shrink-0">
+                      <Info className="w-4 h-4 text-brand-copper dark:text-brand-gold" />
                     </div>
-                    <p className="text-[11px] font-medium leading-tight opacity-70">
+                    <p className={cn("text-[10px] sm:text-[11px] font-semibold leading-tight tracking-tight", darkMode ? "text-gray-350" : "text-slate-600")}>
                       Limpeza automática: as notificações expiram após 7 dias corridos.
                     </p>
                   </div>
 
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x mb-2">
+                  {/* Filter pill tabs */}
+                  <div className="flex gap-2 overflow-x-auto pb-3 mb-1.5 scrollbar-none snap-x antialiased relative">
                     {FILTERS.map(f => (
-                      <button
+                      <motion.button
                         key={f.id}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => setFilter(f.id as any)}
                         className={cn(
-                          "snap-start px-4 py-2 rounded-full whitespace-nowrap text-[11px] font-bold tracking-wider transition-all border",
+                          "relative snap-start px-4.5 py-2 rounded-full whitespace-nowrap text-[11px] font-black tracking-wider transition-colors duration-300 border cursor-pointer select-none overflow-hidden",
                           filter === f.id
-                            ? "bg-brand-gold text-white border-transparent shadow-md"
+                            ? "text-white border-transparent"
                             : darkMode
-                              ? "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10"
-                              : "bg-gray-50 text-slate-600 border-gray-200 hover:bg-gray-100"
+                              ? "bg-white/[0.04] text-slate-300 border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10"
+                              : "bg-slate-50 text-slate-500 border-slate-200/55 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
-                        {f.label}
-                      </button>
+                        {filter === f.id && (
+                          <motion.div
+                            layoutId="activeFilterPill"
+                            className="absolute inset-0 bg-gradient-to-r from-brand-copper to-brand-gold shadow-[0_4px_12px_rgba(184,115,51,0.25)]"
+                            transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                          />
+                        )}
+                        <span className="relative z-10">{f.label}</span>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
                   {filteredNotifications.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center py-12 text-center opacity-40">
-                      <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6">
-                        <BellOff className="w-8 h-8" />
+                    <div className="h-full flex flex-col items-center justify-center py-20 px-6 text-center select-none relative overflow-hidden">
+                      {/* Quiet pulsing celestial glow and rotating sacred rings */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-brand-gold/[0.01] dark:bg-brand-gold/[0.03] rounded-full blur-3xl pointer-events-none animate-pulse" />
+                      
+                      <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 35, ease: "linear" }}
+                        className="absolute w-56 h-56 border border-dashed border-brand-copper/10 dark:border-brand-gold/10 rounded-full pointer-events-none" 
+                      />
+                      <motion.div 
+                        animate={{ rotate: -360 }}
+                        transition={{ repeat: Infinity, duration: 55, ease: "linear" }}
+                        className="absolute w-44 h-44 border border-double border-brand-gold/5 dark:border-brand-copper/5 rounded-full pointer-events-none" 
+                      />
+
+                      {/* Floating dots of Axé */}
+                      <motion.div 
+                        animate={{ y: [-10, 10, -10], x: [-5, 5, -5], opacity: [0.2, 0.7, 0.2] }}
+                        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-[28%] left-[28%] w-1.5 h-1.5 rounded-full bg-brand-gold/40 pointer-events-none blur-[0.5px]"
+                      />
+                      <motion.div 
+                        animate={{ y: [8, -8, 8], x: [4, -4, 4], opacity: [0.15, 0.6, 0.15] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+                        className="absolute bottom-[28%] right-[25%] w-2 h-2 rounded-full bg-brand-copper/30 pointer-events-none blur-[0.5px]"
+                      />
+                      <motion.div 
+                        animate={{ y: [-12, 12, -12], opacity: [0.3, 0.8, 0.3] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+                        className="absolute top-1/2 right-[27%] w-1 h-1 rounded-full bg-brand-gold/50 pointer-events-none"
+                      />
+                      
+                      <div className="relative mb-8 z-10">
+                        <motion.div 
+                          whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                          animate={{ scale: [1, 1.05, 1], y: [0, -4, 0] }} 
+                          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                          className="w-20 h-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100/50 dark:border-white/5 shadow-inner cursor-pointer"
+                        >
+                          <BellOff className="w-8 h-8 text-gray-400 dark:text-gray-500 stroke-[1.5]" />
+                        </motion.div>
+                        <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500/80 border-2 border-white dark:border-[#0a0a0a]" />
+                        </span>
                       </div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em]">{filter === 'all' ? 'Céu Limpo' : 'Nenhuma notificação'}</p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-1">{filter === 'all' ? 'Sem notificações' : `Na categoria ${FILTERS.find(f => f.id === filter)?.label}`}</p>
+                      
+                      <h3 className={cn("text-[12px] font-black uppercase tracking-[0.25em] mb-2 relative z-10", darkMode ? "text-brand-gold" : "text-brand-copper")}>
+                        Céu Limpo
+                      </h3>
+                      <p className={cn("text-xs leading-relaxed max-w-sm font-semibold px-6 relative z-10 line-clamp-3", darkMode ? "text-gray-400" : "text-gray-500")}>
+                        {filter === 'all' 
+                          ? 'Sua jornada está tranquila. Nenhuma notificação aberta sob a benção dos Orixás.' 
+                          : `Sua categoria ${FILTERS.find(f => f.id === filter)?.label} não possui avisos ativos no momento.`}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-8">
@@ -1307,17 +1380,17 @@ function NotificationCenter({
                             <div className="flex items-center gap-2">
                               <button 
                                 onClick={markAllAsRead}
-                                className="flex items-center gap-2 px-3 py-1.5 text-brand-navy dark:text-brand-gold bg-brand-navy/5 dark:bg-brand-gold/10 rounded-xl hover:bg-brand-navy hover:text-white dark:hover:bg-brand-gold transition-all active:scale-95 group border border-brand-navy/10 dark:border-brand-gold/20 shadow-sm"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-brand-navy dark:text-brand-gold bg-brand-navy/5 dark:bg-brand-gold/10 rounded-xl hover:bg-brand-navy hover:text-white dark:hover:bg-brand-gold dark:hover:text-black transition-all active:scale-95 group border border-brand-navy/10 dark:border-brand-gold/20 shadow-sm cursor-pointer"
                               >
-                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+                                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
                                 <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Lidas</span>
                               </button>
                               {filter === 'all' && (
                                 <button 
                                   onClick={clearHistory}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm cursor-pointer"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
                                   <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Limpar</span>
                                 </button>
                               )}
@@ -1336,13 +1409,13 @@ function NotificationCenter({
                       {readNotifications.length > 0 && (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Anteriores</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Anteriores</span>
                             {!unreadNotifications.length && filter === 'all' && (
                                <button 
                                  onClick={clearHistory}
-                                 className="flex items-center gap-2 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm"
+                                 className="flex items-center gap-1.5 px-3 py-1.5 text-brand-red bg-red-50 dark:bg-brand-red/10 rounded-xl hover:bg-brand-red hover:text-white transition-all active:scale-95 group border border-red-100 dark:border-brand-red/20 shadow-sm cursor-pointer"
                                >
-                                 <Trash2 className="w-3.5 h-3.5" />
+                                 <Trash2 className="w-3.5 h-3.5 shrink-0" />
                                  <span className="text-[9px] font-black uppercase tracking-widest">Limpar</span>
                                </button>
                             )}
@@ -1373,34 +1446,40 @@ function NotificationCard({ notif, darkMode, isUnread, onClick, onDelete, module
     switch (module) {
       case 'calendar':
         return {
-          iconBg: darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-600',
+          iconBg: darkMode ? 'bg-amber-500/10 text-amber-400 border border-amber-500/15' : 'bg-amber-50 text-amber-600 border border-amber-100/50',
           dot: 'bg-amber-500',
+          bar: 'bg-amber-500',
         };
       case 'finance':
         return {
-          iconBg: darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600',
-          dot: 'bg-emerald-500',
+          iconBg: darkMode ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-600 border border-blue-100/50',
+          dot: 'bg-blue-500',
+          bar: 'bg-blue-550',
         };
       case 'stock':
         return {
-          iconBg: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-100 text-green-600',
+          iconBg: darkMode ? 'bg-green-500/10 text-green-400 border border-green-500/15' : 'bg-green-50 text-green-600 border border-green-100/50',
           dot: 'bg-green-600',
+          bar: 'bg-green-500',
         };
       case 'points':
         return {
-          iconBg: darkMode ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-600',
+          iconBg: darkMode ? 'bg-purple-500/10 text-purple-400 border border-purple-500/15' : 'bg-purple-50 text-purple-600 border border-purple-100/50',
           dot: 'bg-purple-500',
+          bar: 'bg-purple-500',
         };
       case 'work':
         return {
-          iconBg: darkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-100 text-orange-600',
+          iconBg: darkMode ? 'bg-orange-500/10 text-orange-400 border border-orange-500/15' : 'bg-orange-50 text-orange-600 border border-orange-100/50',
           dot: 'bg-orange-500',
+          bar: 'bg-orange-500',
         };
       case 'system':
       default:
         return {
-          iconBg: darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600',
-          dot: 'bg-blue-500',
+          iconBg: darkMode ? 'bg-slate-500/10 text-slate-400 border border-slate-500/15' : 'bg-slate-50 text-slate-600 border border-slate-100/50',
+          dot: 'bg-slate-500',
+          bar: 'bg-slate-500',
         };
     }
   };
@@ -1409,12 +1488,12 @@ function NotificationCard({ notif, darkMode, isUnread, onClick, onDelete, module
 
   const getIcon = () => {
     switch (module) {
-      case 'calendar': return <Calendar className="w-5 h-5" />;
-      case 'finance': return <Wallet className="w-5 h-5" />;
-      case 'stock': return <Leaf className="w-5 h-5" />;
-      case 'points': return <Music className="w-5 h-5" />;
-      case 'work': return <Flame className="w-5 h-5" />;
-      default: return <HistoryIcon className="w-5 h-5" />;
+      case 'calendar': return <Calendar className="w-5 h-5 stroke-[1.8]" />;
+      case 'finance': return <Wallet className="w-5 h-5 stroke-[1.8]" />;
+      case 'stock': return <Leaf className="w-5 h-5 stroke-[1.8]" />;
+      case 'points': return <Music className="w-5 h-5 stroke-[1.8]" />;
+      case 'work': return <Flame className="w-5 h-5 stroke-[1.8]" />;
+      default: return <HistoryIcon className="w-5 h-5 stroke-[1.8]" />;
     }
   };
 
@@ -1434,57 +1513,68 @@ function NotificationCard({ notif, darkMode, isUnread, onClick, onDelete, module
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      layout
+      initial={{ opacity: 0, scale: 0.96, y: 15 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, overflow: 'hidden' }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="relative group w-full"
     >
       <div className="absolute inset-y-0 right-0 flex items-center pr-4">
          <div 
-           className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500 cursor-pointer active:scale-95 transition-transform" 
+           className="w-10 h-10 rounded-full bg-red-100/60 dark:bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white dark:hover:bg-red-500/20 cursor-pointer active:scale-90 transition-all duration-200" 
            onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
          >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
          </div>
       </div>
 
       <motion.div
         drag="x"
-        dragConstraints={{ left: -70, right: 0 }}
-        dragElastic={0.1}
+        dragConstraints={{ left: -75, right: 0 }}
+        dragElastic={0.15}
+        whileHover={{ scale: 1.015, y: -2 }}
+        whileTap={{ scale: 0.99 }}
         onDragEnd={(e, info) => {
-          if (info.offset.x < -40) onDelete?.();
+          if (info.offset.x < -45) onDelete?.();
         }}
         onClick={onClick}
         className={cn(
-          "cursor-pointer p-4 rounded-[24px] border flex items-center gap-4 transition-all relative shadow-sm hover:shadow-md h-full z-10 w-full",
+          "cursor-pointer p-4 sm:p-5 rounded-[28px] border flex items-center gap-4 relative h-full z-10 w-full select-none transition-colors duration-300",
           darkMode 
-            ? "bg-[#1C1C1C] border-white/5 hover:border-white/10" 
-            : "bg-white border-slate-100 hover:border-slate-200",
-          isUnread && (darkMode ? "bg-[#252525]" : "bg-slate-50/80")
+            ? "bg-[#161616]/95 border-neutral-800/80 hover:border-neutral-700 hover:bg-[#1b1b1b] shadow-sm hover:shadow-md" 
+            : "bg-white border-slate-100 hover:border-slate-200 shadow-[0_2px_8px_rgba(241,245,249,0.2)] hover:shadow-md",
+          isUnread && (darkMode ? "bg-gradient-to-r from-[#1c1815] to-[#141414] border-amber-900/30" : "bg-gradient-to-r from-amber-50/30 to-white border-amber-100/70")
         )}
       >
+        {/* Left indicators side border */}
+        {isUnread && (
+          <div className={cn("absolute left-0 top-5 bottom-5 w-1 rounded-r-full", styles.bar)} />
+        )}
+
         <div className={cn(
-          "relative w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+          "relative w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
           styles.iconBg
         )}>
           {getIcon()}
           {isUnread && (
-            <div className={cn("absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2", styles.dot, darkMode ? "border-[#1C1C1C]" : "border-white")} />
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", styles.bar)}></span>
+              <span className={cn("relative inline-flex rounded-full h-3 w-3 border-2 border-white dark:border-[#161616]", styles.bar)}></span>
+            </span>
           )}
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col justify-center">
            <div className="flex items-center gap-2 mb-1">
              <span className={cn(
-               "text-[10px] uppercase font-black tracking-widest",
-               darkMode ? "text-slate-400" : "text-slate-500"
+               "text-[9px] uppercase font-black tracking-[0.2em] leading-none",
+               darkMode ? "text-slate-400 animate-pulse" : "text-slate-500 animate-pulse"
              )}>{getTitleText()}</span>
-             {isUnread && <div className={cn("w-1.5 h-1.5 rounded-full", styles.dot)} />}
+             {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
            </div>
            <p className={cn(
-             "text-[13px] font-bold leading-tight line-clamp-2",
+             "text-xs sm:text-[13px] font-bold leading-normal line-clamp-2 pr-1",
              isUnread 
                ? (darkMode ? "text-white" : "text-slate-900")
                : (darkMode ? "text-slate-300" : "text-slate-700")
@@ -1493,11 +1583,11 @@ function NotificationCard({ notif, darkMode, isUnread, onClick, onDelete, module
            </p>
         </div>
 
-        <div className="text-right shrink-0 flex flex-col items-end gap-1 pointer-events-none">
-          <span className={cn("text-[10px] font-semibold", darkMode ? "text-slate-500" : "text-slate-400")}>
+        <div className="text-right shrink-0 flex flex-col items-end justify-center gap-1 pl-1 pointer-events-none self-center">
+          <span className={cn("text-[9px] font-black uppercase tracking-widest", darkMode ? "text-slate-500" : "text-slate-400")}>
             {new Date(notif.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
           </span>
-          <span className={cn("text-[11px] font-black", darkMode ? "text-slate-400" : "text-slate-500")}>
+          <span className={cn("text-xs font-mono font-bold tracking-tight", darkMode ? "text-slate-400" : "text-slate-550", isUnread && "text-brand-orange")}>
             {new Date(notif.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>

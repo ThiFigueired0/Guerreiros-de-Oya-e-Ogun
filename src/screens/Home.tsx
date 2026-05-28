@@ -18,15 +18,15 @@ export default function HomeScreen() {
   const { setIsScrolled } = useAssistant();
   const navigate = useNavigate();
 
-  // 100 Permanent ambient particles representing Axé energy (Sparks of Oya with gold/copper & Ogum with blue)
+  // 30 Permanent ambient particles representing Axé energy (Sparks of Oya with gold/copper & Ogum with blue), optimized using pure CSS keyframe animations
   const ambientParticles = useMemo(() => {
-    return Array.from({ length: 100 }).map((_, i) => {
-      const size = Math.random() * 3.5 + 1.5; // 1.5px to 5.0px
+    return Array.from({ length: 30 }).map((_, i) => {
+      const size = Math.random() * 2.5 + 1.5; // 1.5px to 4.0px
       const x = Math.random() * 100;
       const y = Math.random() * 100;
-      const duration = Math.random() * 18 + 12; // 12s to 30s
+      const duration = Math.random() * 15 + 15; // 15s to 30s
       const delay = Math.random() * -30;
-      const maxOpacity = Math.random() * 0.35 + 0.15;
+      const maxOpacity = Math.random() * 0.25 + 0.12;
       
       const color = i % 3 === 0 
         ? 'rgba(212, 175, 55, 0.55)' // Divine Gold
@@ -36,54 +36,48 @@ export default function HomeScreen() {
 
       // Distribute types: 0=float, 1=wind, 2=twinkle, 3=pulse
       const typeNum = i % 4;
-      let initialStyle: { left: string; top: string } = { left: `${x}%`, top: `${y}%` };
-      let animate: any;
-      
+      let left = `${x}%`;
+      let top = `${y}%`;
+      let animationName: string;
+      const customVars: Record<string, string> = {
+        '--max-op': maxOpacity.toFixed(2),
+      };
+
       if (typeNum === 0) {
-        // Classical spiritual floating upward
-        animate = {
-          y: ['105vh', '-10vh'],
-          x: ['0%', i % 2 === 0 ? '30px' : '-30px', '0%'],
-          opacity: [0, maxOpacity, maxOpacity, 0],
-          scale: [1, 1.3, 0.9, 1],
-        };
+        animationName = 'floatUp';
+        customVars['--drift'] = `${i % 2 === 0 ? 35 : -35}px`;
       } else if (typeNum === 1) {
-        // Winds of Oya: horizontal sweep from left to right, rising slightly
-        animate = {
-          x: ['-15vw', '115vw'],
-          y: [`${y}%`, `${Math.max(0, y - 30)}%`],
-          opacity: [0, maxOpacity, maxOpacity * 0.6, 0],
-          scale: [0.7, 1.4, 0.7],
-        };
-        // Override initialStyle left
-        initialStyle.left = '-15vw';
+        animationName = 'windSweep';
+        left = '-15vw';
       } else if (typeNum === 2) {
-        // Twinkling points of light: rise slowly, oscillate size rapidly
-        animate = {
-          y: ['105vh', '-10vh'],
-          opacity: [0, maxOpacity, maxOpacity * 0.15, maxOpacity, 0],
-          scale: [0.5, 1.7, 0.5, 1.7, 0.5],
-        };
+        animationName = 'twinkle';
       } else {
-        // Stationary power circles: drift slightly, breathe rhythmically
-        animate = {
-          y: [`${y}%`, `${Math.min(100, y + 6)}%`, `${y}%`],
-          x: [`${x}%`, `${Math.min(100, x + 4)}%`, `${x}%`],
-          scale: [1, 1.9, 1],
-          opacity: [maxOpacity * 0.25, maxOpacity, maxOpacity * 0.25],
-        };
-        // Handled coordinate within keyframes relative to placement
-        initialStyle = { left: '0%', top: '0%' };
+        animationName = 'stationaryPower';
+        left = `${x}%`;
+        top = `${y}%`;
+        customVars['--drift-x'] = `${(Math.random() * 8 - 4).toFixed(1)}px`;
+        customVars['--drift-y'] = `${(Math.random() * 8 - 4).toFixed(1)}px`;
       }
+
+      const inlineStyle = {
+        position: 'absolute',
+        left,
+        top,
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: color,
+        borderRadius: '50%',
+        boxShadow: `0 0 ${size * 2.5}px ${color}`,
+        animation: `var(--anim-name, ${animationName}) ${duration}s infinite linear`,
+        animationDelay: `${delay}s`,
+        pointerEvents: 'none',
+        ...customVars,
+      } as React.CSSProperties;
 
       return {
         id: i,
-        size,
-        color,
-        duration,
-        delay,
-        initialStyle,
-        animate,
+        style: inlineStyle,
+        animationName
       };
     });
   }, []);
@@ -289,53 +283,106 @@ export default function HomeScreen() {
         "p-4 pb-32 transition-colors duration-500 bg-transparent relative overflow-hidden min-h-screen"
       )}
     >
-      {/* 100 Permanent background particles floating infinitely representing spiritual force / Axé */}
+      {/* Permanent background particles floating infinitely representing spiritual force / Axé - GPU Optimized CSS Animations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes floatUp {
+            0% { transform: translateY(105vh) translateX(0) scale(1); opacity: 0; }
+            15% { opacity: var(--max-op); }
+            85% { opacity: var(--max-op); }
+            100% { transform: translateY(-10vh) translateX(var(--drift)) scale(1.1); opacity: 0; }
+          }
+          @keyframes windSweep {
+            0% { transform: translateX(-15vw) translateY(0) scale(0.7); opacity: 0; }
+            15% { opacity: var(--max-op); }
+            85% { opacity: calc(var(--max-op) * 0.65); }
+            100% { transform: translateX(115vw) translateY(-25vh) scale(1.15); opacity: 0; }
+          }
+          @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: translateY(105vh) scale(0.6); }
+            30%, 70% { opacity: var(--max-op); }
+            50% { opacity: calc(var(--max-op) * 0.25); transform: translateY(45vh) scale(1.4); }
+          }
+          @keyframes stationaryPower {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: calc(var(--max-op) * 0.25); }
+            50% { transform: translate(var(--drift-x), var(--drift-y)) scale(1.55); opacity: var(--max-op); }
+          }
+        ` }} />
         {ambientParticles.map((p) => (
-          <motion.div
+          <div
             key={p.id}
-            className="absolute rounded-full"
             style={{
-              width: p.size,
-              height: p.size,
-              backgroundColor: p.color,
-              boxShadow: `0 0 ${p.size * 2.8}px ${p.color}`,
-              ...p.initialStyle,
-            }}
-            animate={p.animate}
-            transition={{
-              duration: p.duration,
-              repeat: Infinity,
-              delay: p.delay,
-              ease: "linear",
-            }}
+              ...p.style,
+              '--anim-name': p.animationName
+            } as React.CSSProperties}
           />
         ))}
       </div>
 
       {/* 1. Header Profiling */}
-      <header className="flex items-center justify-between mb-8 mt-2 px-2 gap-4 relative z-10">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            >
-              <Sparkles className="w-4 h-4 text-brand-copper" />
-            </motion.div>
-            <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-              {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-            </span>
+      <header className="mb-8 mt-3 px-2 relative z-10">
+        <div className={cn(
+          "p-6 rounded-[32px] relative overflow-hidden flex items-center justify-between gap-4 transition-all duration-300 shadow-md",
+          settings.darkMode 
+            ? "bg-gradient-to-br from-[#1c1815] via-[#121212] to-[#0d0f14]" 
+            : "bg-gradient-to-br from-[#faf6f2] via-white to-[#fbf8f5] shadow-amber-900/[0.02]"
+        )}>
+          {/* Subtle dynamic background light */}
+          <div className="absolute -left-12 -top-12 w-48 h-48 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-brand-copper/[0.03] dark:bg-[#3996ff]/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                className={cn(settings.darkMode ? "text-brand-gold-light" : "text-brand-copper")}
+              >
+                {greeting === "Bom dia" ? <Sun className="w-4 h-4" /> : greeting === "Boa tarde" ? <Sparkles className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+              </motion.div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-widest", 
+                settings.darkMode ? "text-brand-gold-light/60" : "text-brand-copper/80"
+              )}>
+                {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+              </span>
+            </div>
+            
+            <h2 className={cn(
+              "text-2xl tracking-tight leading-none mb-1.5 font-serif font-bold",
+              settings.darkMode ? "text-white" : "text-brand-navy"
+            )}>
+              {greeting}, <span className="text-brand-brown dark:text-brand-gold font-black">{displayName}</span>!
+            </h2>
+            <p className={cn(
+              "text-[10px] sm:text-xs font-semibold tracking-wide",
+              settings.darkMode ? "text-gray-400" : "text-brand-navy/60"
+            )}>
+              {greeting === "Bom dia" 
+                ? "Que o Axé ilumine seus passos hoje." 
+                : greeting === "Boa tarde" 
+                  ? "Que a sua tarde seja repleta de Axé e caminhos abertos." 
+                  : "Sob o manto protetor de Ogum e as bênçãos de Oya."}
+            </p>
           </div>
-          <h2 className={cn(
-            "text-2xl tracking-tight flex items-center gap-2",
-            settings.darkMode ? "text-white" : "text-brand-navy"
-          )} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-            {greeting}, {displayName}!
-          </h2>
-        </div>
 
-        {/* Premium Daily Message Card removed as per user request */}
+          {/* Quick round elegant avatar/badge indicating community profile */}
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/settings')}
+            className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer relative group overflow-hidden box-content",
+              settings.darkMode 
+                ? "bg-white/[0.05] text-brand-gold hover:shadow-[0_0_12px_rgba(212,175,55,0.15)]" 
+                : "bg-gradient-to-br from-[#CD7F32]/10 to-[#D4AF37]/10 text-brand-copper shadow-sm"
+            )}
+          >
+            <User className="w-5 h-5 text-current" />
+            {/* Soft pulsing notification dot or badge */}
+            <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-white dark:border-[#121212] bg-brand-gold animate-pulse shadow-sm" />
+          </motion.div>
+        </div>
       </header>
 
       {/* AI Response Display */}
@@ -348,10 +395,10 @@ export default function HomeScreen() {
             className="px-2 mb-6"
           >
             <div className={cn(
-              "p-5 rounded-[32px] border relative overflow-hidden",
+              "p-5 rounded-[32px] relative overflow-hidden",
               settings.darkMode 
-                ? "bg-[#1A1A1A] border-gray-800 text-gray-200" 
-                : "bg-white border-brand-copper/20 text-brand-navy shadow-xl shadow-brand-copper/5"
+                ? "bg-[#1A1A1A] text-gray-200" 
+                : "bg-white text-brand-navy shadow-xl shadow-brand-copper/5"
             )}>
               {/* Spiritual whisper background ripple */}
               <motion.div 
@@ -382,26 +429,16 @@ export default function HomeScreen() {
       </AnimatePresence>
 
       {/* 2. Bento Grid Dashboard */}
-      <section className="grid grid-cols-2 gap-3 mb-8 px-2 relative z-10">
+      <section className="grid grid-cols-2 gap-3.5 mb-8 px-2 relative z-10">
         {/* Widget 1: Próxima Gira */}
         <motion.div 
           onClick={() => navigate('/calendar')}
           className={cn(
-            "col-span-2 p-5 rounded-[28px] border relative overflow-hidden transition-all duration-300 active:scale-[0.98] group cursor-pointer",
+            "col-span-2 p-6 rounded-[32px] relative overflow-hidden transition-all duration-300 active:scale-[0.98] group cursor-pointer shadow-md",
             settings.darkMode 
-              ? "bg-[#1E140F] border-brand-gold/20 hover:border-brand-gold/40 hover:shadow-[0_8px_30px_rgba(212,175,55,0.06)] shadow-xl shadow-black/50" 
-              : "bg-[#FAF5F0] border-[#CD7F32]/20 shadow-md shadow-[#CD7F32]/5 hover:border-[#CD7F32]/45 hover:shadow-[0_8px_30px_rgba(205,127,50,0.08)]"
+              ? "bg-gradient-to-br from-[#1E140F] to-[#140E0A] hover:shadow-[0_12px_40px_rgba(212,175,55,0.08)] shadow-black/40" 
+              : "bg-gradient-to-br from-[#FAF5F0] to-[#F5ECE2] shadow-sm hover:shadow-[0_12px_40px_rgba(205,127,50,0.08)]"
           )}
-          animate={{
-            borderColor: settings.darkMode 
-              ? ["rgba(212,175,55,0.15)", "rgba(212,175,55,0.35)", "rgba(212,175,55,0.15)"]
-              : ["rgba(205,127,50,0.15)", "rgba(205,127,50,0.3)", "rgba(205,127,50,0.15)"],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
         >
           {/* Inner ambient spiritual warm breathing aura */}
           <motion.div 
@@ -412,27 +449,27 @@ export default function HomeScreen() {
 
           {/* Background Icon Decoration - Gentle looping rotation */}
           <motion.div 
-            className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-105 pointer-events-none"
+            className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-105 pointer-events-none text-brand-copper"
             animate={{ rotate: [-12, -7, -12] }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Calendar className={cn("w-44 h-44 stroke-[1]", settings.darkMode ? "text-brand-gold" : "text-[#CD7F32]")} />
+            <Calendar className="w-44 h-44 stroke-[1]" />
           </motion.div>
           
           <div className="relative z-10 flex flex-col justify-between h-full">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3.5">
               <div className="relative">
                 {/* Continuous radiating waves under the next event badge */}
                 <motion.div 
-                  className="absolute inset-0 rounded-xl bg-brand-gold/20 dark:bg-brand-gold/15 blur-[2px]"
+                  className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px]"
                   animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.7, 0.3] }}
                   transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <div className={cn(
-                  "p-1.5 rounded-xl border flex items-center justify-center shrink-0 relative z-10",
+                  "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
                   settings.darkMode 
-                    ? "bg-brand-gold/10 text-brand-gold border-brand-gold/20" 
-                    : "bg-brand-copper/10 text-[#CD7F32] border-[#CD7F32]/25"
+                    ? "bg-brand-gold/10 text-brand-gold" 
+                    : "bg-brand-copper/10 text-[#CD7F32]"
                 )}>
                   <Clock className="w-4 h-4 animate-pulse" />
                 </div>
@@ -446,33 +483,33 @@ export default function HomeScreen() {
             </div>
             
             {nextEvent ? (
-              <div>
+              <div className="space-y-2">
                 <h3 className={cn(
-                  "text-[14px] font-extrabold leading-snug mb-1.5 pr-12 font-sans tracking-tight",
+                  "text-[15px] font-extrabold leading-snug mb-1 font-sans tracking-tight pr-10",
                   settings.darkMode ? "text-white" : "text-brand-navy",
                   nextEvent.isCanceled && "line-through opacity-50"
                 )}>
                   {nextEvent.title}
                 </h3>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={cn(
-                    "text-[8px] font-bold leading-none px-2 py-1 rounded-md border",
+                    "text-[9px] font-bold leading-none px-2.5 py-1 rounded-lg",
                     settings.darkMode 
-                      ? "bg-white/5 border-white/5 text-gray-300" 
-                      : "bg-brand-navy/5 border-brand-navy/10 text-brand-navy/80"
+                      ? "bg-white/5 text-gray-300" 
+                      : "bg-brand-navy/5 text-brand-navy/80"
                   )}>
                     {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
                   </span>
                   <span className={cn(
-                    "text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-md border",
+                    "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg",
                     settings.darkMode 
-                      ? "bg-white/5 border-white/5 text-brand-gold-light" 
-                      : "bg-brand-copper/5 border-brand-copper/15 text-brand-copper"
+                      ? "bg-white/5 text-brand-gold-light" 
+                      : "bg-[#CD7F32]/10 text-brand-copper"
                   )}>
                     {nextEvent.category}
                   </span>
                   {nextEvent.isCanceled && (
-                    <span className="text-[8px] font-black uppercase tracking-wider bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-md text-red-400">
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 px-2.5 py-1 rounded-lg text-red-400">
                       Cancelado
                     </span>
                   )}
@@ -480,15 +517,9 @@ export default function HomeScreen() {
               </div>
             ) : (
               <div>
-                <h3 className={cn(
-                  "text-[14px] font-extrabold leading-snug mb-1 pr-12 font-sans tracking-tight",
-                  settings.darkMode ? "text-white/90" : "text-[#3E2723]"
-                )}>
-                  A Casa está em Harmonia
-                </h3>
                 <p className={cn(
-                  "text-[10px] leading-normal font-medium max-w-[280px]",
-                  settings.darkMode ? "text-gray-400" : "text-brand-navy/60"
+                  "text-[13px] font-bold leading-relaxed max-w-[280px] font-sans tracking-tight",
+                  settings.darkMode ? "text-white/80" : "text-[#3E2723]"
                 )}>
                   Nenhum evento agendado para os próximos dias.
                 </p>
@@ -501,17 +532,11 @@ export default function HomeScreen() {
         <motion.div 
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
           className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
+            "p-6 rounded-[32px] flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden shadow-sm",
             settings.darkMode 
-              ? "bg-[#141414] border-gray-800 hover:border-brand-gold/30" 
-              : "bg-white border-[#FAF5F0] hover:border-brand-gold/20 shadow-md shadow-brand-gold/5"
+              ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(212,175,55,0.04)]" 
+              : "bg-white hover:shadow-md"
           )}
-          animate={{
-            borderColor: settings.darkMode 
-              ? ["rgba(212,175,55,0.06)", "rgba(212,175,55,0.18)", "rgba(212,175,55,0.06)"]
-              : ["rgba(212,175,55,0.08)", "rgba(212,175,55,0.20)", "rgba(212,175,55,0.08)"]
-          }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
         >
           {/* Inner ambient spiritual gold aura */}
           <motion.div 
@@ -522,29 +547,29 @@ export default function HomeScreen() {
 
           {/* Background Icon Decoration - floating loop */}
           <motion.div 
-            className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 pointer-events-none"
+            className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 pointer-events-none text-brand-gold"
             animate={{ y: [0, -4, 0], rotate: [-12, -15, -12] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
-            <BookOpen className="w-44 h-44 stroke-[1] text-brand-gold" />
+            <BookOpen className="w-44 h-44 stroke-[1]" />
           </motion.div>
 
-          <div className="flex items-center justify-between mb-3 relative z-10">
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <motion.div 
               animate={{ rotate: [-3, 3, -3] }}
               transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border transition-colors", 
+                "w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-colors", 
                 (!lastBook?.coverImage && !lastBook?.coverColor) && (
                   settings.darkMode 
-                  ? "bg-brand-gold/10 text-brand-gold border-brand-gold/20" 
-                  : "bg-brand-gold text-white border-brand-gold/40 shadow-lg shadow-brand-gold/20"
+                  ? "bg-brand-gold/10 text-brand-gold" 
+                  : "bg-brand-gold text-white shadow-md shadow-brand-gold/10"
                 )
               )}
               style={lastBook?.coverColor && !lastBook?.coverImage ? { backgroundColor: lastBook.coverColor } : undefined}
             >
               {lastBook?.coverImage ? (
-                <img src={lastBook.coverImage} alt="Capa" className="w-full h-full object-cover" />
+                <img src={lastBook.coverImage} alt="Capa" className="w-[105%] h-[105%] object-cover" />
               ) : (
                 <GraduationCap className={cn(
                   "w-5 h-5", 
@@ -552,14 +577,35 @@ export default function HomeScreen() {
                 )} />
               )}
             </motion.div>
-            {lastBook && <span className="text-[10px] font-black text-brand-gold">{(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%</span>}
+            {lastBook && (
+              <span className={cn(
+                "text-[10px] font-black tracking-tight px-2 py-0.5 rounded-full",
+                settings.darkMode ? "bg-brand-gold/15 text-brand-gold-light" : "bg-brand-gold/10 text-brand-gold-dark"
+              )}>
+                {(lastBook.lastPage! / lastBook.totalPages! * 100).toFixed(0)}%
+              </span>
+            )}
           </div>
-          <div className="relative z-10">
-            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-brand-gold/70" : "text-brand-gold/80")}>Último Estudo</p>
-            <p className={cn(
-              "font-bold text-xs leading-tight line-clamp-2",
-              settings.darkMode ? "text-white" : "text-brand-navy"
-            )}>{lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}</p>
+          <div className="relative z-10 space-y-1.5 animate-none">
+            <div>
+              <p className={cn("text-[8px] font-black uppercase tracking-widest mb-0.5", settings.darkMode ? "text-brand-gold/70" : "text-brand-gold/85")}>Último Estudo</p>
+              <p className={cn(
+                "font-bold text-xs leading-tight line-clamp-2",
+                settings.darkMode ? "text-white" : "text-brand-navy"
+              )}>{lastBook ? lastBook.name.replace('.pdf', '') : "Comece a estudar"}</p>
+            </div>
+            
+            {/* Visual Progress Bar for study */}
+            {lastBook && (
+              <div className="w-full bg-neutral-200 dark:bg-neutral-800/80 h-1 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(lastBook.lastPage! / lastBook.totalPages! * 100)}%` }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  className="bg-gradient-to-r from-brand-gold to-brand-copper h-full rounded-full"
+                />
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -567,17 +613,11 @@ export default function HomeScreen() {
         <motion.div 
           onClick={() => setShowPixMenu(true)}
           className={cn(
-            "p-5 rounded-[28px] border flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden",
+            "p-6 rounded-[32px] flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden shadow-sm",
             settings.darkMode 
-              ? "bg-[#141414] border-gray-800 hover:border-emerald-500/30" 
-              : "bg-white border-emerald-50 shadow-md shadow-emerald-500/5 hover:border-emerald-200"
+              ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(16,185,129,0.04)]" 
+              : "bg-white shadow-[#CD7F32]/5 hover:shadow-md"
           )}
-          animate={{
-            borderColor: settings.darkMode 
-              ? ["rgba(16,185,129,0.06)", "rgba(16,185,129,0.2)", "rgba(16,185,129,0.06)"]
-              : ["rgba(16,185,129,0.08)", "rgba(16,185,129,0.22)", "rgba(16,185,129,0.08)"]
-          }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         >
           {/* Inner ambient spiritual emerald aura */}
           <motion.div 
@@ -588,27 +628,27 @@ export default function HomeScreen() {
 
           {/* Background Icon Decoration - floating loop */}
           <motion.div 
-            className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 pointer-events-none"
+            className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:scale-110 pointer-events-none text-emerald-600"
             animate={{ x: [0, -3, 0], y: [0, -2, 0], rotate: [-12, -9, -12] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
           >
             <div className="relative">
-              <Banknote className="w-44 h-44 stroke-[1] text-emerald-600" />
+              <Banknote className="w-44 h-44 stroke-[1]" />
               <div className="absolute inset-0 flex items-center justify-center pt-2">
-                <DollarSign className="w-16 h-16 stroke-[2] text-emerald-600 opacity-40" />
+                <DollarSign className="w-16 h-16 stroke-[2] opacity-40" />
               </div>
             </div>
           </motion.div>
 
-          <div className="flex items-center justify-between mb-3 relative z-10">
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <motion.div 
               animate={{ scale: [1, 1.08, 1] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
               className={cn(
-                "p-2 rounded-xl backdrop-blur-sm border transition-colors", 
+                "p-2 rounded-xl backdrop-blur-sm transition-colors", 
                 settings.darkMode 
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                  : "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20"
+                  ? "bg-emerald-500/10 text-emerald-400" 
+                  : "bg-emerald-500 text-white shadow-md shadow-emerald-500/15"
               )}
             >
               <Wallet className="w-5 h-5" />
@@ -616,7 +656,7 @@ export default function HomeScreen() {
             <ChevronRight className={cn("w-4 h-4 opacity-50", settings.darkMode ? "text-gray-400" : "text-emerald-600")} />
           </div>
           <div className="relative z-10">
-            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/80")}>Dados Bancários</p>
+            <p className={cn("text-[8px] font-black uppercase tracking-widest mb-1", settings.darkMode ? "text-emerald-500/70" : "text-emerald-600/85")}>Dados Bancários</p>
             <p className={cn(
               "font-bold text-sm leading-tight",
               settings.darkMode ? "text-white" : "text-brand-navy"
@@ -627,13 +667,13 @@ export default function HomeScreen() {
         {/* Area: Contatos e Localização */}
         <div className="col-span-2 space-y-4 mb-4">
           
-          {/* Endereço do Terreiro - Energetic Wave Pulsing Border */}
+          {/* Endereço do Terreiro */}
           <motion.div 
             className={cn(
-              "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden flex items-center gap-4 sm:gap-6 group hover:translate-y-[-2px]",
+              "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden flex items-center gap-4 sm:gap-6 group hover:translate-y-[-2px] shadow-sm",
               settings.darkMode 
-                ? "bg-[#141414] border border-gray-800 hover:border-red-500/30" 
-                : "bg-white border border-[#fce8e8] hover:border-[#fcd9d9] shadow-[0_8px_30px_rgba(239,68,68,0.04)]"
+                ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(239,68,68,0.05)]" 
+                : "bg-white shadow-[0_8px_30px_rgba(239,68,68,0.04)]"
             )}
             animate={{
               borderColor: settings.darkMode 
@@ -671,7 +711,7 @@ export default function HomeScreen() {
               
               {/* Radiating wave of energy radiating outward dynamically */}
               <motion.div 
-                className="absolute inset-0 rounded-[24px] sm:rounded-[28px] border-2 border-red-500/50"
+                className="absolute inset-0 rounded-[24px] sm:rounded-[28px] bg-red-500/10"
                 animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
               />
@@ -699,7 +739,7 @@ export default function HomeScreen() {
                     ? "bg-green-500 text-white shadow-md shadow-green-500/20" 
                     : settings.darkMode 
                       ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" 
-                      : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
+                      : "bg-gray-50 text-brand-navy hover:bg-red-50 hover:text-red-600 shadow-sm"
                 )}
               >
                 {copied === 'address' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> : <Copy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />}
@@ -710,7 +750,7 @@ export default function HomeScreen() {
                 rel="noopener noreferrer"
                 className={cn(
                   "w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-95 group/btn",
-                  settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" : "bg-white border border-gray-100 text-brand-navy hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-sm"
+                  settings.darkMode ? "bg-white/5 text-gray-300 hover:bg-red-500/20 hover:text-red-400" : "bg-gray-50 text-brand-navy hover:bg-red-50 hover:text-red-600 shadow-sm"
                 )}
               >
                 <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2]" />
@@ -738,13 +778,13 @@ export default function HomeScreen() {
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className={cn(
                 "relative w-full max-w-sm rounded-[36px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]",
-                settings.darkMode ? "bg-[#141414] border border-gray-800/80" : "bg-white border border-gray-100"
+                settings.darkMode ? "bg-[#141414]" : "bg-white"
               )}
             >
               {/* Top ambient luxury background aura */}
               <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-brand-copper/10 via-brand-copper/0 to-transparent pointer-events-none" />
 
-              <div className="p-6 pb-5 border-b flex flex-col gap-2 shrink-0 relative overflow-hidden" style={{ borderColor: settings.darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
+              <div className="p-6 pb-5 flex flex-col gap-2 shrink-0 relative overflow-hidden">
                 {/* Spiritual spark circle decoration */}
                 <div className="absolute -top-12 -right-12 w-32 h-32 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-2xl pointer-events-none" />
                 
@@ -782,10 +822,10 @@ export default function HomeScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: 0.05 }}
                   className={cn(
-                    "p-5 sm:p-6 rounded-[32px] border transition-all duration-300 relative overflow-hidden group/card flex flex-col",
+                    "p-5 sm:p-6 rounded-[32px] transition-all duration-300 relative overflow-hidden group/card flex flex-col",
                     settings.darkMode 
-                      ? "bg-gradient-to-br from-[#121c2c]/80 to-[#0b1019]/90 border-blue-900/40 hover:border-blue-500/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.15)]" 
-                      : "bg-gradient-to-br from-blue-50/70 to-white border-blue-100/80 hover:border-blue-200 hover:shadow-[0_12px_40px_rgba(59,130,246,0.08)]"
+                      ? "bg-gradient-to-br from-[#121c2c]/80 to-[#0b1019]/90 hover:shadow-[0_8px_30px_rgba(59,130,246,0.15)]" 
+                      : "bg-gradient-to-br from-blue-50/70 to-white shadow-md shadow-blue-500/5 hover:shadow-[0_12px_40px_rgba(59,130,246,0.08)]"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -793,7 +833,7 @@ export default function HomeScreen() {
                   <DollarSign className="absolute right-4 top-4 w-24 h-24 text-blue-500/[0.02] dark:text-blue-500/[0.03] pointer-events-none transform translate-x-4 -translate-y-4 group-hover/card:scale-110 transition-transform duration-500" />
 
                   <div className="flex items-center gap-3.5 mb-5 relative z-10">
-                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-blue-50/50 shrink-0 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover/card:scale-105">
+                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm shrink-0 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover/card:scale-105">
                       {settings.caixaLogo ? (
                         <img src={settings.caixaLogo} alt="Caixa" className="w-full h-full object-cover" />
                       ) : (
@@ -817,10 +857,10 @@ export default function HomeScreen() {
                   </div>
                   
                   <div className={cn(
-                    "p-4 rounded-[22px] flex items-center justify-between gap-4 mt-auto border transition-all duration-300",
+                    "p-4 rounded-[22px] flex items-center justify-between gap-4 mt-auto transition-all duration-300",
                     settings.darkMode 
-                      ? "bg-slate-950/40 border-slate-800/60" 
-                      : "bg-white border-blue-100/50 shadow-sm"
+                      ? "bg-slate-950/40" 
+                      : "bg-white shadow-sm"
                   )}>
                     <div className="overflow-hidden">
                       <p className="text-[8px] text-gray-400 font-extrabold uppercase tracking-[0.16em] mb-1">Chave Copiar PIX (CPF)</p>
@@ -852,10 +892,10 @@ export default function HomeScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: 0.15 }}
                   className={cn(
-                    "p-5 sm:p-6 rounded-[32px] border transition-all duration-300 relative overflow-hidden group/card flex flex-col",
+                    "p-5 sm:p-6 rounded-[32px] transition-all duration-300 relative overflow-hidden group/card flex flex-col",
                     settings.darkMode 
-                      ? "bg-gradient-to-br from-[#211124]/80 to-[#120715]/90 border-purple-950/40 hover:border-purple-500/30 hover:shadow-[0_8px_30px_rgba(138,5,190,0.15)]" 
-                      : "bg-gradient-to-br from-purple-50/70 to-white border-purple-100/80 hover:border-purple-200 hover:shadow-[0_12px_40px_rgba(138,5,190,0.08)]"
+                      ? "bg-gradient-to-br from-[#211124]/80 to-[#120715]/90 hover:shadow-[0_8px_30px_rgba(138,5,190,0.15)]" 
+                      : "bg-gradient-to-br from-purple-50/70 to-white shadow-md shadow-purple-500/5 hover:shadow-[0_12px_40px_rgba(138,5,190,0.08)]"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -863,7 +903,7 @@ export default function HomeScreen() {
                   <Banknote className="absolute right-4 top-4 w-24 h-24 text-purple-500/[0.02] dark:text-purple-500/[0.03] pointer-events-none transform translate-x-4 -translate-y-4 group-hover/card:scale-110 transition-transform duration-500" />
 
                   <div className="flex items-center gap-3.5 mb-5 relative z-10">
-                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-purple-50/50 shrink-0 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover/card:scale-105">
+                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm shrink-0 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover/card:scale-105">
                       {settings.nubankLogo ? (
                         <img src={settings.nubankLogo} alt="Nubank" className="w-full h-full object-cover" />
                       ) : (
@@ -886,10 +926,10 @@ export default function HomeScreen() {
                   </div>
                   
                   <div className={cn(
-                    "p-4 rounded-[22px] flex items-center justify-between gap-4 mt-auto border transition-all duration-300",
+                    "p-4 rounded-[22px] flex items-center justify-between gap-4 mt-auto transition-all duration-300",
                     settings.darkMode 
-                      ? "bg-purple-950/20 border-purple-900/10" 
-                      : "bg-white border-purple-100/50 shadow-sm"
+                      ? "bg-purple-950/20" 
+                      : "bg-white shadow-sm"
                   )}>
                     <div className="overflow-hidden">
                       <p className="text-[8px] text-gray-400 font-extrabold uppercase tracking-[0.16em] mb-1">Chave Copiar PIX (Celular)</p>
@@ -918,8 +958,8 @@ export default function HomeScreen() {
 
               {/* Secure checkout footer badge */}
               <div className={cn(
-                "p-4 border-t flex items-center gap-2.5 justify-center shrink-0 text-center relative z-10",
-                settings.darkMode ? "border-white/5 bg-black/30 text-gray-400" : "border-gray-100 bg-gray-50/50 text-gray-500"
+                "p-4 flex items-center gap-2.5 justify-center shrink-0 text-center relative z-10",
+                settings.darkMode ? "bg-black/30 text-gray-400" : "bg-gray-50/50 text-gray-500"
               )}>
                 <ShieldCheck className="w-4 h-4 text-emerald-500 stroke-[2] animate-pulse" />
                 <p className="text-[10px] sm:text-[11px] font-bold tracking-tight">
@@ -1327,71 +1367,68 @@ export default function HomeScreen() {
 
         {/* Contatos Úteis */}
         <div className={cn(
-          "p-5 sm:p-8 rounded-[32px] sm:rounded-[40px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto",
+          "p-6 sm:p-8 rounded-[32px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto shadow-sm",
           settings.darkMode 
-            ? "bg-gradient-to-br from-[#1A1A1A] to-[#111111] border border-white/5 hover:border-blue-500/30 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
-            : "bg-gradient-to-br from-[#f0f7ff] to-white border border-blue-100/50 hover:border-blue-200 shadow-[0_10px_40px_rgba(59,130,246,0.05)] hover:shadow-[0_20px_60px_rgba(59,130,246,0.1)]"
+            ? "bg-gradient-to-br from-[#1C1815] to-[#0D0F14] hover:shadow-[0_15px_45px_rgba(0,0,0,0.5)]" 
+            : "bg-gradient-to-br from-[#f8f9fc] via-white to-white hover:shadow-[0_15px_45px_rgba(59,130,246,0.06)]"
         )}>
           {/* Background Phone Decoration */}
-          <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">
+          <div className="absolute -right-8 -bottom-8 opacity-[0.02] dark:opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">
             <Phone className="w-40 h-40 sm:w-56 sm:h-56 stroke-[1]" />
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-5 mb-6 sm:mb-8 relative z-10">
+          <div className="flex items-center gap-4 sm:gap-5 mb-6 relative z-10">
             <div className={cn(
-              "w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl sm:rounded-[28px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-lg",
-              settings.darkMode ? "bg-blue-500/20 text-blue-400 shadow-blue-500/10" : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/30"
+              "w-12 h-12 flex items-center justify-center rounded-[20px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-md",
+              settings.darkMode 
+                ? "bg-blue-500/20 text-blue-400" 
+                : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/10"
             )}>
-              <Phone className="w-5 h-5 sm:w-7 sm:h-7 stroke-[2.5]" />
+              <Phone className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
-              <p className={cn("text-[8px] sm:text-[11px] font-black uppercase tracking-[0.25em] mb-0.5 sm:mb-1", settings.darkMode ? "text-blue-400/80" : "text-blue-600")}>
+              <p className={cn("text-[9px] font-black uppercase tracking-[0.25em] mb-0.5", settings.darkMode ? "text-blue-400/85" : "text-blue-600/90")}>
                 Canais de Apoio
               </p>
-              <h3 className={cn("text-lg sm:text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
+              <h3 className={cn("text-lg sm:text-xl font-black tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
                 Contatos Úteis
               </h3>
             </div>
           </div>
           
-          <div className="grid gap-3 sm:gap-4 relative z-10">
+          <div className="grid grid-cols-1 gap-4.5 relative z-10">
             {(settings.usefulContacts && settings.usefulContacts.length > 0 ? settings.usefulContacts : [
               { id: 'fixed-1', name: "Terreiro", phone: "(11) 98555-0847" },
               { id: 'fixed-2', name: "Mãe Stela", phone: "(11) 98235-0614" }
-            ]).map((contact, index) => {
-              const isEven = index % 2 === 1;
+            ]).map((contact) => {
               return (
                 <div key={contact.id} className={cn(
-                  "group/item relative flex items-center justify-between p-3.5 sm:p-4.5 rounded-[24px] sm:rounded-[32px] transition-all border",
-                  isEven && "flex-row-reverse",
-                  settings.darkMode 
-                    ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.06] hover:border-blue-500/30 shadow-xl" 
-                    : "bg-white border-white hover:border-blue-200 shadow-sm hover:shadow-xl shadow-blue-900/5"
+                   "relative flex items-center justify-between p-4 rounded-[24px] transition-all duration-300",
+                   settings.darkMode 
+                     ? "bg-[#181818]/60 hover:bg-[#1C1815]/80" 
+                     : "bg-white hover:bg-blue-50/5 shadow-sm"
                 )}>
-                  <div className={cn(
-                    "flex items-center gap-3 sm:gap-4 flex-1 truncate",
-                    isEven && "flex-row-reverse text-right"
-                  )}>
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-3">
                     <div className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover/item:scale-110 shadow-inner overflow-hidden",
+                      "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-inner overflow-hidden",
                       settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-50 text-gray-400"
                     )}>
                       {contact.photo ? (
                         <img src={contact.photo} className="w-full h-full object-cover" alt={contact.name} />
                       ) : (
-                        <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <User className="w-4.5 h-4.5" />
                       )}
                     </div>
-                    <div className="flex flex-col truncate">
+                    <div className="flex flex-col min-w-0">
                       <span className={cn(
-                        "text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] block mb-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity",
+                        "text-[9px] font-black uppercase tracking-widest block mb-0.5 opacity-60",
                         settings.darkMode ? "text-gray-400" : "text-brand-navy"
                       )}>
                         {contact.name}
-                        {contact.isFixed && <span className={cn("ml-1.5 text-[7px] text-brand-gold font-black", isEven && "mr-1.5 ml-0")}>(FIXO)</span>}
+                        {contact.isFixed && <span className="ml-1.5 text-[8px] text-brand-gold font-black">(FIXO)</span>}
                       </span>
                       <span className={cn(
-                        "font-bold text-[13px] sm:text-[16px] tracking-tight truncate",
+                        "font-bold text-[14px] tracking-tight truncate",
                         settings.darkMode ? "text-white" : "text-brand-navy"
                       )}>
                         {contact.phone}
@@ -1399,59 +1436,38 @@ export default function HomeScreen() {
                     </div>
                   </div>
                   
-                  <div className={cn(
-                    "flex items-center gap-1.5 sm:gap-2.5 shrink-0 relative z-10",
-                    isEven ? "mr-3 sm:mr-4" : "ml-3 sm:ml-4"
-                  )}>
-                    {!isEven && (
-                      <button 
-                        onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
-                        className={cn(
-                          "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
-                          copied === contact.id 
-                            ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
-                            : settings.darkMode 
-                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
-                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
-                        )}
-                      >
-                        {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button 
+                      onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
+                      className={cn(
+                        "w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] cursor-pointer",
+                        copied === contact.id 
+                          ? "bg-green-500 text-white shadow-md shadow-green-500/10" 
+                          : settings.darkMode 
+                            ? "bg-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/5" 
+                            : "bg-gray-50 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      )}
+                    >
+                      {copied === contact.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
                     
                     <a
                       href={`https://wa.me/55${contact.phone.replace(/\D/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl sm:rounded-2xl transition-all active:scale-[0.8] text-white shadow-lg overflow-hidden",
+                        "w-11 h-11 flex items-center justify-center rounded-2xl transition-all active:scale-[0.8] text-white shadow-sm overflow-hidden",
                         settings.whatsappLogo 
                           ? (settings.darkMode ? "bg-white/5 p-1.5" : "bg-gray-50 p-1.5")
-                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/20 hover:shadow-[#25D366]/40 hover:-translate-y-0.5"
+                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/10 hover:shadow-[#25D366]/20 hover:-translate-y-0.5"
                       )}
                     >
                       {settings.whatsappLogo ? (
                         <img src={settings.whatsappLogo} className="w-full h-full object-contain" alt="WA" />
                       ) : (
-                        <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current stroke-none" />
+                        <MessageCircle className="w-4.5 h-4.5 fill-current stroke-none" />
                       )}
                     </a>
-
-                    {isEven && (
-                      <button 
-                        onClick={() => copyToClipboard(contact.phone.replace(/\D/g, ''), contact.id)}
-                        className={cn(
-                          "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-[0.85] border",
-                          copied === contact.id 
-                            ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20" 
-                            : settings.darkMode 
-                              ? "bg-white/5 border-white/5 text-gray-500 hover:text-blue-400 hover:border-blue-400/30" 
-                              : "bg-gray-50/50 border-gray-100/50 text-gray-400 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
-                        )}
-                      >
-                        {copied === contact.id ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                    )}
                   </div>
                 </div>
               );
