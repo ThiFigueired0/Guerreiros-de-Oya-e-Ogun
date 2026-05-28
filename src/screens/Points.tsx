@@ -266,8 +266,8 @@ export default function PointsScreen() {
   };
   return (
     <motion.div className={cn(
-      "p-4 min-h-full pb-32 transition-colors duration-500",
-      settings.darkMode ? "bg-[#121212] text-white" : "bg-[#F9F9F9] text-brand-navy"
+      "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent",
+      settings.darkMode ? "text-white" : "text-brand-navy"
     )}>
       {/* Stage Mode Toggle Banner */}
       <div className={cn(

@@ -52,8 +52,7 @@ export default function SettingsScreen() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={cn(
-        "p-4 bg-[#F9F9F9] min-h-[calc(100dvh-180px)] transition-colors duration-500",
-        settings.darkMode && "bg-[#121212]"
+        "p-4 bg-transparent min-h-[calc(100dvh-180px)] transition-colors duration-500"
       )}
     >
       <div className="flex items-center justify-between mb-8 px-2 pt-2">

@@ -16,6 +16,7 @@ import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 import { AppRoutes } from './AppRoutes';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
+import { BackgroundSparks } from './components/BackgroundSparks';
 import AuthScreen from './screens/Auth';
 import CompleteProfile from './screens/CompleteProfile';
 import ResetPassword from './screens/ResetPassword';
@@ -347,44 +348,28 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
               fill="none" 
               xmlns="http://www.w3.org/2000/svg"
             >
-              <defs>
-                <linearGradient id={`outerFlame-${cId}`} x1="50%" y1="100%" x2="50%" y2="0%">
-                  <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.95" />
-                  <stop offset="18%" stopColor="#d97706" stopOpacity="0.85" />
-                  <stop offset="50%" stopColor="#ea580c" stopOpacity="0.9" />
-                  <stop offset="82%" stopColor="#fbbf24" stopOpacity="0.98" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
-                </linearGradient>
-
-                <linearGradient id={`innerFlame-${cId}`} x1="50%" y1="100%" x2="50%" y2="0%">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.9" />
-                  <stop offset="30%" stopColor="#ea580c" stopOpacity="0.8" />
-                  <stop offset="70%" stopColor="#fef08a" stopOpacity="1" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
-                </linearGradient>
-
-                <radialGradient id={`blueBase-${cId}`} cx="50%" cy="100%" r="50%">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity="1" />
-                  <stop offset="50%" stopColor="#1d4ed8" stopOpacity="0.75" />
-                  <stop offset="100%" stopColor="#1e40af" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-
-              {/* Outer Flame Contour */}
+              {/* Outer Flame Contour - Vibrant custom reddish orange */}
               <path 
                 d="M50 190 C 22 165, 16 112, 16 82 C 16 42, 50 10, 50 10 C 50 10, 84 42, 84 82 C 84 112, 78 165, 50 190 Z" 
-                fill={`url(#outerFlame-${cId})`} 
+                fill="#ea580c" 
               />
 
-              {/* Inner Flame Core */}
+              {/* Inner Flame Core - Warm glowing yellow */}
               <path 
                 d="M50 174 C 34 154, 28 114, 28 94 C 28 70, 50 36, 50 36 C 50 36, 72 70, 72 94 C 72 114, 66 154, 50 174 Z" 
-                fill={`url(#innerFlame-${cId})`}
-                opacity="0.85"
+                fill="#fef08a"
+                opacity="0.9"
               />
 
-              {/* Hot Blue Fuel Base */}
-              <ellipse cx="50" cy="182" rx="15" ry="9" fill={`url(#blueBase-${cId})`} />
+              {/* Innermost Core - Glowing bright white heat core */}
+              <path 
+                d="M50 150 C 38 135, 34 110, 34 94 C 34 76, 50 56, 50 56 C 50 56, 66 76, 66 94 C 66 110, 62 135, 50 150 Z" 
+                fill="#ffffff"
+                opacity="0.95"
+              />
+
+              {/* Hot Blue Fuel Base - Beautiful electric/royal blue */}
+              <ellipse cx="50" cy="182" rx="14" ry="8" fill="#2563eb" opacity="0.95" />
             </svg>
           </motion.div>
 
@@ -1191,7 +1176,7 @@ function NotificationCenter({
 
   return (
     <>
-      <div className="absolute top-[22px] right-4 sm:right-6 z-[60]">
+      <div className="absolute top-[22px] right-4 sm:right-6 z-[60] pointer-events-auto">
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -1226,7 +1211,7 @@ function NotificationCenter({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm pointer-events-auto"
             onClick={() => setShowNotifications(false)}
           >
             <motion.div
@@ -2532,17 +2517,18 @@ function AppContent() {
                   )}
                 </AnimatePresence>
 
-                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                  <BackgroundSparks />
                   <main
                     ref={mainScrollRef}
-                    className="flex-1 overflow-y-auto overflow-x-hidden pb-48 scrollbar-hide relative flex flex-col pt-0"
+                    className="flex-1 overflow-y-auto overflow-x-hidden pb-48 scrollbar-hide relative z-10 flex flex-col pt-0 bg-transparent"
                   >
                     <TopHeader />
                     <SocialButtons />
                     <div 
                       id="app-content-wrapper"
                       className={cn(
-                        "px-4 w-full flex-1",
+                        "px-4 w-full flex-1 relative z-10",
                         location.pathname === '/home' ? "pt-1" : "pt-4"
                       )}
                     >

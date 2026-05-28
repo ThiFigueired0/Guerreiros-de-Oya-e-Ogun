@@ -114,7 +114,7 @@ export function GlobalSearch() {
 
   return (
     <>
-      <div className="absolute top-[22px] left-4 sm:left-6 z-[60]">
+      <div className="absolute top-[22px] left-4 sm:left-6 z-[60] pointer-events-auto">
         <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -132,7 +132,7 @@ export function GlobalSearch() {
 
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20 px-4 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[200] flex items-start justify-center pt-20 px-4 bg-black/40 backdrop-blur-sm pointer-events-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -217,8 +217,7 @@ export default function HomeScreen() {
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       className={cn(
-        "p-4 pb-32 transition-colors duration-500",
-        settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
+        "p-4 pb-32 transition-colors duration-500 bg-transparent"
       )}
     >
       {/* 1. Header Profiling */}

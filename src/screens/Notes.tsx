@@ -269,8 +269,7 @@ export default function NotesScreen() {
 
   return (
     <motion.div className={cn(
-      "p-4 bg-[#F9F9F9] min-h-full pb-32 transition-colors duration-500",
-      settings.darkMode && "bg-[#121212]"
+      "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500"
     )}>
       <div className="flex items-center justify-between mb-6 px-1">
         <h2 className={cn("text-2xl font-bold text-brand-navy", settings.darkMode && "text-white")}>Bloco de Notas</h2>

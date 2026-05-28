@@ -444,8 +444,7 @@ export default function TrabalhosScreen() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       className={cn(
-        "p-4 min-h-full pb-32 transition-colors duration-500",
-        settings.darkMode ? "bg-[#121212]" : "bg-[#F9F9F9]"
+        "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent"
       )}
     >
       <div className="mb-8">

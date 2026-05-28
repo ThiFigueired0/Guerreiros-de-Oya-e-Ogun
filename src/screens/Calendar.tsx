@@ -444,8 +444,7 @@ export default function CalendarScreen() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.02 }}
       className={cn(
-        "p-4 bg-[#F9F9F9] min-h-full pb-32 transition-colors duration-500",
-        settings.darkMode && "bg-[#121212]"
+        "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500"
       )}
     >
       <div className="flex items-center justify-between mb-8 px-2">
