@@ -2,7 +2,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp, Sun, Sword, ShieldCheck } from 'lucide-react';
+import { Heart, Home, Calendar, Leaf, Music, MessageSquare, CreditCard, Copy, CheckCircle2, BookOpen, Search, X, GraduationCap, Anchor, ChevronRight, ChevronLeft, Sparkles, Clock, Wallet, MapPin, ExternalLink, Phone, HeartOff, User, MessageCircle, Bot, Loader2, Banknote, DollarSign, GripVertical, Mic, ArrowUp, Sun, Sword, ShieldCheck, Moon, CloudSun } from 'lucide-react';
 import { DailyMessageModal } from '../components/DailyMessageModal';
 import { useStorage } from '../hooks/useStorage';
 import { useIdbStorage } from '../hooks/useIdbStorage';
@@ -319,27 +319,29 @@ export default function HomeScreen() {
         ))}
       </div>
 
-      {/* 1. Header Profiling */}
+      {/* 1. Header Profiling & Next Event Unified */}
       <header className="mb-8 mt-3 px-2 relative z-10">
         <div className={cn(
-          "p-6 rounded-[32px] relative overflow-hidden flex items-center justify-between gap-4 transition-all duration-300 shadow-md",
+          "rounded-[32px] relative overflow-hidden flex flex-col transition-all duration-300 shadow-md",
           settings.darkMode 
-            ? "bg-gradient-to-br from-[#1c1815] via-[#121212] to-[#0d0f14]" 
-            : "bg-gradient-to-br from-[#faf6f2] via-white to-[#fbf8f5] shadow-amber-900/[0.02]"
+            ? greeting === "Bom dia" ? "bg-gradient-to-br from-[#2a2415] via-[#121212] to-[#0d0f14]"
+              : greeting === "Boa tarde" ? "bg-gradient-to-br from-[#2a1a15] via-[#121212] to-[#0d0f14]"
+              : "bg-gradient-to-br from-[#151a2a] via-[#121212] to-[#0d0f14]"
+            : greeting === "Bom dia" ? "bg-gradient-to-br from-[#fefce8] via-white to-[#f0fdf4] shadow-amber-900/[0.02]"
+              : greeting === "Boa tarde" ? "bg-gradient-to-br from-[#fff7ed] via-white to-[#fef2f2] shadow-orange-900/[0.02]"
+              : "bg-gradient-to-br from-[#f5f3ff] via-white to-[#eff6ff] shadow-indigo-900/[0.02]"
         )}>
           {/* Subtle dynamic background light */}
           <div className="absolute -left-12 -top-12 w-48 h-48 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-brand-copper/[0.03] dark:bg-[#3996ff]/5 rounded-full blur-3xl pointer-events-none" />
           
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                className={cn(settings.darkMode ? "text-brand-gold-light" : "text-brand-copper")}
-              >
-                {greeting === "Bom dia" ? <Sun className="w-4 h-4" /> : greeting === "Boa tarde" ? <Sparkles className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-              </motion.div>
+          {/* Profiling Section */}
+          <div className="p-6 pb-5 flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0 z-10">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className={cn(settings.darkMode ? "text-brand-gold-light" : "text-brand-copper")}>
+                  {greeting === "Bom dia" ? <Sun className="w-4 h-4" /> : greeting === "Boa tarde" ? <CloudSun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </div>
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-widest", 
                 settings.darkMode ? "text-brand-gold-light/60" : "text-brand-copper/80"
@@ -372,7 +374,7 @@ export default function HomeScreen() {
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/settings')}
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer relative group overflow-hidden box-content",
+              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer relative z-10 group overflow-hidden box-content",
               settings.darkMode 
                 ? "bg-white/[0.05] text-brand-gold hover:shadow-[0_0_12px_rgba(212,175,55,0.15)]" 
                 : "bg-gradient-to-br from-[#CD7F32]/10 to-[#D4AF37]/10 text-brand-copper shadow-sm"
@@ -381,6 +383,98 @@ export default function HomeScreen() {
             <User className="w-5 h-5 text-current" />
             {/* Soft pulsing notification dot or badge */}
             <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-white dark:border-[#121212] bg-brand-gold animate-pulse shadow-sm" />
+          </motion.div>
+          </div>
+
+          {/* Separator / Divider */}
+          <div className={cn("h-px w-full", settings.darkMode ? "bg-white/[0.04]" : "bg-black/[0.04]")} />
+
+          {/* Next Event Section */}
+          <motion.div 
+            onClick={() => navigate('/calendar')}
+            className={cn(
+              "p-6 pt-5 cursor-pointer relative z-10 group overflow-hidden transition-colors",
+              settings.darkMode 
+                ? "bg-[#0c0c0c]/30 hover:bg-white/[0.02]" 
+                : "bg-[#fbfbfb]/50 hover:bg-white"
+            )}
+          >
+            {/* Background Icon Decoration */}
+            <motion.div 
+              className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-105 pointer-events-none text-brand-copper"
+              animate={{ rotate: [-12, -7, -12] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Calendar className="w-44 h-44 stroke-[1]" />
+            </motion.div>
+
+            <div className="flex items-center gap-2 mb-3.5 relative z-10">
+              <div className="relative">
+                <motion.div 
+                  className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px]"
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <div className={cn(
+                  "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
+                  settings.darkMode 
+                    ? "bg-brand-gold/10 text-brand-gold" 
+                    : "bg-brand-copper/10 text-[#CD7F32]"
+                )}>
+                  <Clock className="w-4 h-4 animate-pulse" />
+                </div>
+              </div>
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-widest",
+                settings.darkMode ? "text-brand-gold/80" : "text-[#CD7F32]/90"
+              )}>
+                Próximo Evento
+              </span>
+            </div>
+            
+            {nextEvent ? (
+              <div className="space-y-2 relative z-10">
+                <h3 className={cn(
+                  "text-[15px] font-extrabold leading-snug mb-1 font-sans tracking-tight pr-10",
+                  settings.darkMode ? "text-white" : "text-brand-navy",
+                  nextEvent.isCanceled && "line-through opacity-50"
+                )}>
+                  {nextEvent.title}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn(
+                    "text-[9px] font-bold leading-none px-2.5 py-1 rounded-lg",
+                    settings.darkMode 
+                      ? "bg-white/5 text-gray-300" 
+                      : "bg-brand-navy/5 text-brand-navy/80"
+                  )}>
+                    {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
+                  </span>
+                  <span className={cn(
+                    "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                    settings.darkMode 
+                      ? "bg-white/5 text-brand-gold-light" 
+                      : "bg-[#CD7F32]/10 text-brand-copper"
+                  )}>
+                    {nextEvent.category}
+                  </span>
+                  {nextEvent.isCanceled && (
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 px-2.5 py-1 rounded-lg text-red-400">
+                      Cancelado
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="relative z-10">
+                <p className={cn(
+                  "text-[13px] font-bold leading-relaxed max-w-[280px] font-sans tracking-tight",
+                  settings.darkMode ? "text-white/80" : "text-[#3E2723]"
+                )}>
+                  Nenhum evento agendado para os próximos dias.
+                </p>
+              </div>
+            )}
           </motion.div>
         </div>
       </header>
@@ -430,104 +524,6 @@ export default function HomeScreen() {
 
       {/* 2. Bento Grid Dashboard */}
       <section className="grid grid-cols-2 gap-3.5 mb-8 px-2 relative z-10">
-        {/* Widget 1: Próxima Gira */}
-        <motion.div 
-          onClick={() => navigate('/calendar')}
-          className={cn(
-            "col-span-2 p-6 rounded-[32px] relative overflow-hidden transition-all duration-300 active:scale-[0.98] group cursor-pointer shadow-md",
-            settings.darkMode 
-              ? "bg-gradient-to-br from-[#1E140F] to-[#140E0A] hover:shadow-[0_12px_40px_rgba(212,175,55,0.08)] shadow-black/40" 
-              : "bg-gradient-to-br from-[#FAF5F0] to-[#F5ECE2] shadow-sm hover:shadow-[0_12px_40px_rgba(205,127,50,0.08)]"
-          )}
-        >
-          {/* Inner ambient spiritual warm breathing aura */}
-          <motion.div 
-            className="absolute inset-0 bg-gradient-to-tr from-[#CD7F32]/0 via-[#CD7F32]/[0.03] to-brand-gold/[0.03] pointer-events-none"
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          />
-
-          {/* Background Icon Decoration - Gentle looping rotation */}
-          <motion.div 
-            className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-105 pointer-events-none text-brand-copper"
-            animate={{ rotate: [-12, -7, -12] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Calendar className="w-44 h-44 stroke-[1]" />
-          </motion.div>
-          
-          <div className="relative z-10 flex flex-col justify-between h-full">
-            <div className="flex items-center gap-2 mb-3.5">
-              <div className="relative">
-                {/* Continuous radiating waves under the next event badge */}
-                <motion.div 
-                  className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px]"
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.7, 0.3] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <div className={cn(
-                  "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
-                  settings.darkMode 
-                    ? "bg-brand-gold/10 text-brand-gold" 
-                    : "bg-brand-copper/10 text-[#CD7F32]"
-                )}>
-                  <Clock className="w-4 h-4 animate-pulse" />
-                </div>
-              </div>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest",
-                settings.darkMode ? "text-brand-gold/80" : "text-[#CD7F32]/90"
-              )}>
-                Próximo Evento
-              </span>
-            </div>
-            
-            {nextEvent ? (
-              <div className="space-y-2">
-                <h3 className={cn(
-                  "text-[15px] font-extrabold leading-snug mb-1 font-sans tracking-tight pr-10",
-                  settings.darkMode ? "text-white" : "text-brand-navy",
-                  nextEvent.isCanceled && "line-through opacity-50"
-                )}>
-                  {nextEvent.title}
-                </h3>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={cn(
-                    "text-[9px] font-bold leading-none px-2.5 py-1 rounded-lg",
-                    settings.darkMode 
-                      ? "bg-white/5 text-gray-300" 
-                      : "bg-brand-navy/5 text-brand-navy/80"
-                  )}>
-                    {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
-                  </span>
-                  <span className={cn(
-                    "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg",
-                    settings.darkMode 
-                      ? "bg-white/5 text-brand-gold-light" 
-                      : "bg-[#CD7F32]/10 text-brand-copper"
-                  )}>
-                    {nextEvent.category}
-                  </span>
-                  {nextEvent.isCanceled && (
-                    <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 px-2.5 py-1 rounded-lg text-red-400">
-                      Cancelado
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <p className={cn(
-                  "text-[13px] font-bold leading-relaxed max-w-[280px] font-sans tracking-tight",
-                  settings.darkMode ? "text-white/80" : "text-[#3E2723]"
-                )}>
-                  Nenhum evento agendado para os próximos dias.
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
         {/* Widget 2: Estudo / Progresso */}
         <motion.div 
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
