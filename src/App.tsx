@@ -188,8 +188,8 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
       transition={{ duration: 1.0, delay: idx * 0.1, ease: "easeOut" }}
       className={cn(
         "absolute z-10 pointer-events-none select-none flex items-center justify-center",
-        isLeft ? "-left-4 sm:-left-8 md:-left-10 lg:-left-12" : "-right-4 sm:-right-8 md:-right-10 lg:-right-12",
-        "top-[50%] -translate-y-1/2"
+        isLeft ? "-left-6 sm:-left-10 md:-left-12 lg:-left-14" : "-right-6 sm:-right-10 md:-right-12 lg:-right-14",
+        "top-[58%] -translate-y-1/2"
       )}
     >
       {/* Container - Slanted Diagonally */}
@@ -241,7 +241,7 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
 
         {/* Drum Image (Slants with parent container; mirrored on the right side) */}
         <div 
-          className="relative w-16 h-auto sm:w-20 md:w-22 lg:w-24 mt-2 filter drop-shadow-2xl"
+          className="relative w-20 h-auto sm:w-26 md:w-28 lg:w-32 mt-2 filter drop-shadow-2xl"
           style={{
             transform: isLeft ? "scaleX(1)" : "scaleX(-1)"
           }}
@@ -1747,18 +1747,46 @@ function AppContent() {
     // Reset scroll top of our main container on route change
     const resetScroll = () => {
       if (mainScrollRef.current) {
-        mainScrollRef.current.scrollTop = 0;
+        if (location.pathname === '/home') {
+          mainScrollRef.current.scrollTop = 0;
+          setIsScrolled(false);
+          if (scrollingCandlesRef.current) {
+            scrollingCandlesRef.current.style.transform = 'translate3d(0, 0, 0)';
+          }
+        } else {
+          const contentEl = document.getElementById("app-content-wrapper");
+          if (contentEl) {
+            // Scroll down past the header to the content.
+            // Since top header bar is 84px tall, align content right below it.
+            const targetScrollTop = contentEl.offsetTop - 84;
+            mainScrollRef.current.scrollTop = targetScrollTop;
+            setIsScrolled(targetScrollTop > 100);
+            if (scrollingCandlesRef.current) {
+              scrollingCandlesRef.current.style.transform = `translate3d(0, ${-targetScrollTop}px, 0)`;
+            }
+          } else {
+            // Fallback scroll
+            const fallbackScrollTop = 380;
+            mainScrollRef.current.scrollTop = fallbackScrollTop;
+            setIsScrolled(true);
+            if (scrollingCandlesRef.current) {
+              scrollingCandlesRef.current.style.transform = `translate3d(0, ${-fallbackScrollTop}px, 0)`;
+            }
+          }
+        }
       }
-      if (scrollingCandlesRef.current) {
-        scrollingCandlesRef.current.style.transform = 'translate3d(0, 0, 0)';
-      }
-      setIsScrolled(false);
     };
 
     resetScroll();
-    // Small timeout to catch late-rendering layouts
+    // Multiple timeouts to catch late-rendering layouts across varying devices
     const timer = setTimeout(resetScroll, 50);
-    return () => clearTimeout(timer);
+    const timer2 = setTimeout(resetScroll, 150);
+    const timer3 = setTimeout(resetScroll, 300);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, [location.pathname, setIsScrolled]);
 
   useEffect(() => {
@@ -2425,11 +2453,41 @@ function AppContent() {
                 <div className={cn(
                   "absolute top-0 inset-x-0 h-[84px] z-[60] pointer-events-none transition-all duration-300",
                   isScrolled 
-                    ? (settings.darkMode 
-                        ? "bg-black/95 backdrop-blur-md border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.5)]" 
-                        : "bg-[#050B14]/95 backdrop-blur-md border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]")
-                    : "bg-transparent border-b border-transparent"
+                    ? "border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]" 
+                    : "border-b border-transparent"
                 )}>
+                  {/* Matching Banner Background Overlay for Scroll */}
+                  <div className={cn(
+                    "absolute inset-0 transition-opacity duration-300 pointer-events-none",
+                    isScrolled ? "opacity-100" : "opacity-0"
+                  )}>
+                    <div className="absolute inset-x-0 top-0 h-[84px] overflow-hidden backdrop-blur-md">
+                      {/* Inner simulator container reproduces TopHeader container styling and proportions */}
+                      <div 
+                        className={cn(
+                          "absolute top-0 inset-x-0",
+                          settings.darkMode 
+                            ? "bg-gradient-to-b from-[#0A0A0A]/95 to-black/95" 
+                            : "bg-gradient-to-br from-brand-navy/95 via-[#001c38]/95 to-[#000a14]/95"
+                        )}
+                        style={{ height: `${headerHeight}px` }}
+                      >
+                        {/* Texture Overlay */}
+                        <div 
+                          className="absolute inset-0 opacity-[0.03] blur-[1px]" 
+                          style={{
+                            backgroundImage: "url('https://www.transparenttextures.com/patterns/p6.png')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center top'
+                          }}
+                        />
+                        {/* Perfect matching ambient glows running under the same coordinates as TopHeader */}
+                        <div className="absolute -top-20 -left-20 w-80 h-80 bg-brand-copper/25 rounded-full blur-[100px]" />
+                        <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-red/15 rounded-full blur-[80px]" />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Top Floating Buttons inside the Header Bar */}
                   <GlobalSearch />
                   <div className="absolute top-[18px] left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center gap-1.5 shrink-0 pointer-events-none">
@@ -2481,10 +2539,13 @@ function AppContent() {
                   >
                     <TopHeader />
                     <SocialButtons />
-                    <div className={cn(
-                      "px-4 w-full flex-1",
-                      location.pathname === '/home' ? "pt-1" : "pt-4"
-                    )}>
+                    <div 
+                      id="app-content-wrapper"
+                      className={cn(
+                        "px-4 w-full flex-1",
+                        location.pathname === '/home' ? "pt-1" : "pt-4"
+                      )}
+                    >
                       <AppRoutes />
                     </div>
                   </main>

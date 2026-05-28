@@ -3,10 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAssistant } from '../lib/AssistantContext';
+import { useStorage } from '../hooks/useStorage';
+import { AppSettings } from '../types';
 
 import AssistantModal from './AssistantModal';
 
 export const AssistantButton = ({ onClick }: { onClick: () => void }) => {
+  const [settings] = useStorage<AppSettings>('templo_settings', { darkMode: false } as AppSettings);
+
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
@@ -14,8 +18,10 @@ export const AssistantButton = ({ onClick }: { onClick: () => void }) => {
       onClick={onClick}
       className={cn(
         "group flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
-        "w-10 h-10 glimmer-panel",
-        "bg-gradient-to-r from-[#0f172a] via-[#1a2e4d] to-[#0f172a] bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite]",
+        "w-10 h-10 backdrop-blur-md",
+        settings.darkMode 
+          ? "bg-black/40 border border-white/10" 
+          : "bg-white/10 hover:bg-white/20",
         "shadow-[0_8px_16px_rgba(0,0,0,0.6),0_0_30px_rgba(212,175,55,0.4)] ring-[1px] ring-[#D4AF37]/50"
       )}
     >
