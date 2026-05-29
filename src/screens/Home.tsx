@@ -320,7 +320,7 @@ export default function HomeScreen() {
       </div>
 
       {/* 1. Header Profiling & Next Event Unified */}
-      <header className="mb-6 -mt-1 px-2 relative z-10">
+      <header className="mb-6 mt-2 px-2 relative z-10">
         <div className={cn(
           "rounded-[32px] relative overflow-hidden flex flex-col transition-all duration-300 shadow-md",
           settings.darkMode 
