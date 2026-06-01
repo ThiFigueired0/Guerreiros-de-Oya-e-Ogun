@@ -948,7 +948,7 @@ const TopHeader = React.memo(function TopHeader() {
       </div>
 
       {/* Decorative Bottom Transition */}
-      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#02050E] to-transparent z-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#020202] to-transparent z-20 pointer-events-none" />
       
       {/* Light glow at the boundary */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 max-w-2xl h-8 bg-brand-gold/20 blur-xl z-0 pointer-events-none" />
@@ -2458,16 +2458,13 @@ function AppContent() {
       />
       <NotificationManager />
       <div className={cn(
-        "min-h-[100dvh] bg-gradient-to-b from-[#02050E] via-[#050B14] to-[#0A1128] flex flex-col items-center justify-center p-0 sm:p-4 font-sans relative",
-        settings.darkMode && "bg-gradient-to-b from-[#02050E] via-[#050B14] to-[#0A1128]"
+        "min-h-[100dvh] bg-[#020202] flex flex-col items-center justify-center p-0 sm:p-4 font-sans relative",
+        settings.darkMode && "bg-[#020202]"
       )}>
-        {/* Diffused colored lights */}
-        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-amber-500/10 rounded-full blur-[120px] top-[-10%] left-[-10%] pointer-events-none z-0" />
-        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-blue-500/10 rounded-full blur-[120px] bottom-[-10%] right-[-10%] pointer-events-none z-0" />
-
-        {/* Outer Glow Effects (Desktop/Tablet feel) */}
-        <div className="fixed w-[400px] h-[400px] bg-brand-red rounded-full opacity-5 blur-[100px] top-0 left-0 pointer-events-none z-0" />
-        <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none z-0" />
+        {/* Diffused gold lights */}
+        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-brand-gold/10 rounded-full blur-[120px] top-[10%] left-[-20%] pointer-events-none z-0" />
+        <div className="fixed w-[50vw] h-[50vw] max-w-[500px] max-h-[500px] bg-brand-gold/10 rounded-full blur-[100px] bottom-[20%] right-[-10%] pointer-events-none z-0" />
+        <div className="fixed w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] bg-brand-gold/5 rounded-full blur-[150px] top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
 
         {/* Outer relative container that holds the side candles without clipping them */}
         <div className="relative w-full h-[100dvh] sm:h-[812px] max-w-lg flex flex-col pointer-events-none justify-center z-10">
