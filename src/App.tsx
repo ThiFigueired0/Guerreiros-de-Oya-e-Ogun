@@ -4,12 +4,12 @@ import {
   Calendar, Droplets, Music, FileText, Settings, Heart, X, Trash2, Star,
   Shield, Info, Book, Map, Hash, User, Users, Home, Layout, LayoutGrid,
   Anchor, Bell, BellOff, Bird, Bomb, Bone, Bug, Cloud, Coffee, Coins, Compass, Crown, Diamond, Eye, Feather, Flame, Flower2, Ghost, Gift, GlassWater, GraduationCap, Hammer, Key, Leaf, Library, Lock, Palette, PawPrint, PenTool, Rocket, Scissors, Send, Target, Ticket, TreePine, Umbrella, Wallet, Zap,
-  History as HistoryIcon, LogOut, Bot, ArrowUp
+  History as HistoryIcon, LogOut, Bot, ArrowUp, CalendarClock, ChevronRight, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO } from './types';
+import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO, ReadyBath } from './types';
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
@@ -23,6 +23,7 @@ import ResetPassword from './screens/ResetPassword';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
 import { AssistantButton, AssistantWrapper } from './components/AssistantFeatures';
+import { LogoMedia } from './components/LogoMedia';
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center h-screen w-full bg-[#001529]">
@@ -188,12 +189,10 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
       animate={{ 
         opacity: 1, 
         x: 0,
-        scale: [1, 1.02, 1],
       }}
       transition={{ 
         opacity: { duration: 1.0, delay: idx * 0.1, ease: "easeOut" },
-        x: { duration: 1.0, delay: idx * 0.1, ease: "easeOut" },
-        scale: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: idx * 0.2 }
+        x: { duration: 1.0, delay: idx * 0.1, ease: "easeOut" }
       }}
       className={cn(
         "absolute z-10 pointer-events-none select-none flex flex-col items-center justify-center origin-bottom",
@@ -201,18 +200,14 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
         "bottom-[-50px] sm:bottom-[-60px]"
       )}
     >
-      {/* Container - Slanted Diagonally */}
-      <motion.div 
+      {/* Container - Slanted Diagonally with hardware accelerated CSS animation */}
+      <div 
         className="relative flex flex-col items-center z-20 pointer-events-none group origin-bottom"
-        initial={{ rotate: tiltAngle }}
-        animate={{
-          rotate: [tiltAngle, tiltAngle + (isLeft ? 2.5 : -2.5), tiltAngle]
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: idx * 0.3
+        style={{
+          transform: `rotate(${tiltAngle}deg)`,
+          animation: `${isLeft ? "drumSwayLeft" : "drumSwayRight"} 5s infinite ease-in-out`,
+          animationDelay: `${idx * 0.3}s`,
+          willChange: "transform"
         }}
       >
         {/* LIGHTING REGION: Counter-rotated so the glow is upright */}
@@ -221,37 +216,21 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
           style={{ transform: `rotate(${-tiltAngle}deg)` }}
         >
           {/* Inner Halo */}
-          <motion.div
-            animate={{
-              scale: [0.95, 1.15, 0.93, 1.1, 0.95],
-              opacity: [0.45, 0.7, 0.52, 0.62, 0.45],
-              x: [0, 6, -5, 4, 0],
-              y: [0, -4, 2, -3, 0]
+          <div
+            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-[4px] sm:blur-xl", glowInner)}
+            style={{ 
+              animation: `drumInnerGlow ${3.2 + (idx * 0.5)}s infinite ease-in-out`,
+              willChange: "transform, opacity" 
             }}
-            transition={{
-              duration: 3.2 + (idx * 0.5),
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-xl", glowInner)}
-            style={{ willChange: 'transform, opacity' }}
           />
 
           {/* Outer Halo */}
-          <motion.div
-            animate={{
-              scale: [0.97, 1.08, 0.94, 1.05, 0.97],
-              opacity: [0.18, 0.38, 0.22, 0.32, 0.18],
-              x: [0, -4, 3, -2, 0],
-              y: [0, 2, -4, 1, 0]
+          <div
+            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-[8px] sm:blur-3xl", glowOuter)}
+            style={{ 
+              animation: `drumOuterGlow ${5.2 + (idx * 0.7)}s infinite ease-in-out`,
+              willChange: "transform, opacity" 
             }}
-            transition={{
-              duration: 5.2 + (idx * 0.7),
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-3xl", glowOuter)}
-            style={{ willChange: 'transform, opacity' }}
           />
         </div>
 
@@ -272,20 +251,15 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
               referrerPolicy="no-referrer"
            />
         </div>
-      </motion.div>
+      </div>
       
       {/* Ground Shadow for Anchoring */}
-      <motion.div 
+      <div 
         className="absolute -bottom-8 w-24 h-6 bg-black/80 rounded-[100%] blur-[10px] z-0"
-        animate={{
-          scale: [0.8, 1, 0.8],
-          opacity: [0.6, 0.9, 0.6]
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: idx * 0.2
+        style={{
+          animation: "drumGlowInner 4s infinite ease-in-out",
+          animationDelay: `${idx * 0.2}s`,
+          willChange: "transform, opacity"
         }}
       />
       <motion.div 
@@ -344,51 +318,30 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
           style={{ transform: `rotate(${-tiltAngle}deg)`, willChange: 'transform' }}
         >
           {/* Soft warm surrounding glow that pulses gently to simulate casting light (Clear and vivid inner halo) */}
-          <motion.div
-            animate={{
-              scale: [0.95, 1.12, 0.98, 1.06, 0.95],
-              opacity: [0.45, 0.65, 0.5, 0.58, 0.45]
+          <div
+            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-[4px] sm:blur-xl pointer-events-none", config.glowInner)}
+            style={{ 
+              animation: `candleGlowInner ${3.5 + (idx * 0.4)}s infinite ease-in-out`,
+              willChange: "transform, opacity" 
             }}
-            transition={{
-              duration: 3.5 + (idx * 0.4),
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-xl", config.glowInner)}
-            style={{ willChange: 'transform, opacity' }}
           />
 
           {/* A second, wider ambient halo mimicking warm golden light casting on the surrounding wall space */}
-          <motion.div
-            animate={{
-              scale: [0.97, 1.06, 0.99, 1.04, 0.97],
-              opacity: [0.18, 0.35, 0.22, 0.3, 0.18]
-            }}
-            transition={{
-              duration: 5.0 + (idx * 0.6),
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-3xl", config.glowOuter)}
-            style={{ willChange: 'transform, opacity' }}
+          <div
+            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-[8px] sm:blur-3xl pointer-events-none", config.glowOuter)}
+            style={{ 
+              animation: `candleGlowOuter ${5.0 + (idx * 0.6)}s infinite ease-in-out`,
+              willChange: "transform, opacity" 
+}}
           />
 
           {/* Majestic Layered Teardrop SVG Flame - Slow, serene sway & shiny GPU-friendly animation */}
-          <motion.div
-            animate={{
-              scaleY: [0.97, 1.06, 0.98, 1.04, 0.97],
-              scaleX: [0.98, 1.03, 0.97, 1.02, 0.98],
-              rotate: [-1.2, 1.2, -0.6, 1.0, -1.2],
-              x: [-0.2, 0.3, -0.1, 0.2, -0.2],
-              opacity: [0.96, 1, 0.97, 1, 0.96],
+          <div
+            className="relative w-7 h-11 origin-bottom flex items-center justify-center filter drop-shadow-[0_0_6px_#f59e0b] drop-shadow-[0_0_15px_rgba(234,88,12,0.7)] overflow-visible pointer-events-none"
+            style={{ 
+              animation: `candleFlameSway ${3.8 + (idx * 0.5)}s infinite ease-in-out`,
+              willChange: "transform, opacity" 
             }}
-            transition={{
-              duration: 3.8 + (idx * 0.5),
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="relative w-7 h-11 origin-bottom flex items-center justify-center filter drop-shadow-[0_0_6px_#f59e0b] drop-shadow-[0_0_15px_rgba(234,88,12,0.7)] overflow-visible"
-            style={{ willChange: 'transform, opacity' }}
           >
             <svg 
               className="w-full h-full overflow-visible" 
@@ -419,20 +372,18 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
               {/* Hot Blue Fuel Base - Beautiful electric/royal blue */}
               <ellipse cx="50" cy="182" rx="14" ry="8" fill="#2563eb" opacity="0.95" />
             </svg>
-          </motion.div>
+          </div>
 
           {/* Highly detailed wick curving slightly */}
           <div className="absolute bottom-0 w-[2px] h-4 z-10 flex flex-col items-center justify-between pointer-events-none">
             <div className="w-[1.2px] h-3.5 bg-gradient-to-b from-neutral-950 via-neutral-800 to-neutral-400 rounded-t-sm rotate-[4deg]" />
             {/* Tiny live red-hot burning coal point at wick vertex */}
-            <motion.div 
-              animate={{ 
-                scale: [0.9, 1.2, 0.9],
-                opacity: [0.8, 1, 0.8]
+            <div 
+              className="absolute top-[1px] w-[2px] h-[2px] rounded-full bg-[#ff3700] shadow-[0_0_2px_1px_rgba(239,68,68,0.4)] pointer-events-none"
+              style={{ 
+                animation: "candleGlowInner 1.5s infinite ease-in-out",
+                willChange: "transform, opacity" 
               }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-[1px] w-[2px] h-[2px] rounded-full bg-[#ff3700] shadow-[0_0_2px_1px_rgba(239,68,68,0.4)]"
-              style={{ willChange: 'transform, opacity' }}
             />
           </div>
         </div>
@@ -840,7 +791,7 @@ const TopHeader = React.memo(function TopHeader() {
         <div className="smoke-effect-2" />
 
         {/* Floating Leaves across the entire banner - Higher visibility */}
-        {(settings.immersiveMode !== false) && leaves.map((leaf) => (
+        {(settings.immersiveMode !== false && (typeof window === 'undefined' || window.innerWidth >= 640)) && leaves.map((leaf) => (
           <div
             key={`leaf-fixed-${leaf.id}`}
             className="leaf-floating absolute z-0"
@@ -905,25 +856,10 @@ const TopHeader = React.memo(function TopHeader() {
             
             <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-black">
               {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
-                (() => {
-                  const src = settings.logoBase64 || DEFAULT_TEMPLO_LOGO;
-                  return src.includes('.mp4') ? (
-                    <video 
-                      src={src} 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
-                      className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
-                    />
-                  ) : (
-                    <img 
-                      src={src} 
-                      alt="Logo Templo" 
-                      className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
-                    />
-                  );
-                })()
+                <LogoMedia 
+                  src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                  className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
+                />
               )}
             </div>
           </div>
@@ -1795,25 +1731,11 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
 
                 <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-[#0a0f18]">
                   {logo && (
-                    logo.includes('.mp4') ? (
-                      <video 
-                        src={logo} 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline
-                        className="w-full h-full object-cover logo-optimized rounded-full"
-                      />
-                    ) : (
-                      <motion.img 
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1.2, ease: "easeOut" }}
-                        src={logo} 
-                        alt="Logo" 
-                        className="w-full h-full object-contain logo-optimized" 
-                      />
-                    )
+                    <LogoMedia 
+                      src={logo} 
+                      className="w-full h-full object-cover logo-optimized rounded-full"
+                      animate={true}
+                    />
                   )}
                 </div>
               </motion.div>
@@ -1880,6 +1802,26 @@ function AppContent() {
   const scrollingCandlesRef = React.useRef<HTMLDivElement>(null);
   const mainScrollRef = React.useRef<HTMLElement>(null);
   const location = useLocation();
+
+  const [showRoutineModal, setShowRoutineModal] = useState(false);
+  const [readyBaths] = useStorage<ReadyBath[]>('templo_ready_baths', [
+    { id: 'r1', title: 'Banho de descarrego', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
+    { id: 'r2', title: 'Banho de desenvolvimento', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
+    { id: 'r3', title: 'Banho energizador', quantity: 0, price: 17, isFixed: true, category: 'Gerais' },
+  ]);
+
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== undefined) {
+        setShowRoutineModal(customEvent.detail);
+      }
+    };
+    window.addEventListener('toggle-routine-modal', handleToggle);
+    return () => {
+      window.removeEventListener('toggle-routine-modal', handleToggle);
+    };
+  }, []);
 
   useEffect(() => {
     // Reset scroll top of our main container on route change
@@ -2572,9 +2514,12 @@ function AppContent() {
             </>
           )}
 
-          <div className={cn(
-            "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-transparent flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] sm:border-white/5 pointer-events-auto"
-          )}>
+          <div 
+            id="app-frame"
+            className={cn(
+              "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-transparent flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] sm:border-white/5 pointer-events-auto"
+            )}
+          >
              {authLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <InitialLoader show={true} logo={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} />
@@ -2733,6 +2678,248 @@ function AppContent() {
                       onFinish={finalizeDelete} 
                       
                     />
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {showRoutineModal && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4 bg-black/20 backdrop-blur-xl pointer-events-auto"
+                      onClick={() => {
+                        setShowRoutineModal(false);
+                        window.dispatchEvent(new CustomEvent('toggle-routine-modal', { detail: false }));
+                      }}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0, y: 40 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 40 }}
+                        transition={{ type: "spring", damping: 26, stiffness: 220 }}
+                        onClick={e => e.stopPropagation()}
+                        className={cn(
+                          "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[36px] overflow-hidden shadow-2xl relative border z-50",
+                          settings.darkMode 
+                            ? "bg-[#141414] text-white border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)]" 
+                            : "bg-[#f8f9fa] text-slate-900 border-white/40 shadow-[0_24px_50px_rgba(15,23,42,0.1)]"
+                        )}
+                      >
+                        {/* Spiritual top elegant ambient aura */}
+                        <div className="absolute top-0 inset-x-0 h-44 bg-gradient-to-b from-brand-copper/10 via-brand-copper/0 to-transparent pointer-events-none" />
+                        <div className="absolute -top-16 -right-16 w-36 h-36 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
+
+                        {/* Header */}
+                        <div className="p-6 sm:p-8 flex items-center justify-between border-b shrink-0 relative z-30" style={{ borderColor: 'rgba(212,175,55,0.15)' }}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 text-brand-gold flex items-center justify-center shadow-[inset_0_0_15px_rgba(212,175,55,0.3)] border border-brand-gold/40 shrink-0 relative overflow-hidden group">
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-gold/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                              <CalendarClock className="w-6 h-6 text-brand-gold drop-shadow-[0_2px_4px_rgba(212,175,55,0.4)] stroke-[2.5]" />
+                            </div>
+                            <div className="pt-1">
+                              <h3 className={cn("text-xl sm:text-2xl font-serif font-bold tracking-tight flex items-center gap-3 drop-shadow-sm", settings.darkMode ? "text-brand-gold" : "text-amber-900")}>
+                                 Semana de Gira
+                              </h3>
+                            </div>
+                          </div>
+                          
+                          <motion.button 
+                            whileHover={{ scale: 1.1, rotate: 90 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setShowRoutineModal(false);
+                              window.dispatchEvent(new CustomEvent('toggle-routine-modal', { detail: false }));
+                            }}
+                            className={cn(
+                              "relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-500 z-50 shrink-0 ml-4 group overflow-hidden shadow-md",
+                              "bg-gradient-to-br from-red-400 to-red-600 border-2 border-white/20 dark:border-red-400/30 shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)]"
+                            )}
+                            aria-label="Fechar"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                            <div className="absolute inset-[1px] rounded-full border border-white/20 dark:border-white/10 pointer-events-none" />
+                            <X className="w-5 h-5 stroke-[2.5] text-white relative z-10 drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
+                          </motion.button>
+                        </div>
+
+                        {/* Content List */}
+                        <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar relative z-20 space-y-4 pb-8">
+                          {[
+                            { 
+                              shortDay: ['SEG', 'TER', 'QUA'], 
+                              bath: 'Banho de descarrego', 
+                              id: 'b1', 
+                              hoverColor: settings.darkMode ? "group-hover:text-[#d4af37]" : "group-hover:text-amber-950",
+                              hoverBorder: settings.darkMode ? "hover:border-[#d4af37]/35 shadow-[0_0_15px_rgba(212,175,55,0.1)]" : "hover:border-amber-900/30",
+                              theme: 'navy'
+                            },
+                            { 
+                              shortDay: 'QUIN', 
+                              bath: 'Banho de desenvolvimento', 
+                              id: 'b2', 
+                              hoverColor: settings.darkMode ? "group-hover:text-white" : "group-hover:text-brand-gold",
+                              hoverBorder: settings.darkMode ? "hover:border-brand-gold/30 shadow-[0_0_15px_rgba(212,175,55,0.1)]" : "hover:border-brand-gold/50",
+                              theme: 'gold'
+                            },
+                            { 
+                              shortDay: 'SEX', 
+                              bath: 'Banho energizador', 
+                              id: 'b4', 
+                              hoverColor: settings.darkMode ? "group-hover:text-[#d4af37]" : "group-hover:text-amber-950",
+                              hoverBorder: settings.darkMode ? "hover:border-[#d4af37]/35 shadow-[0_0_15px_rgba(212,175,55,0.1)]" : "hover:border-amber-900/30",
+                              theme: 'navy'
+                            },
+                            { 
+                              shortDay: 'SAB', 
+                              bath: 'Banho da Gira', 
+                              id: undefined, 
+                              hoverColor: settings.darkMode ? "group-hover:text-white" : "group-hover:text-brand-gold",
+                              hoverBorder: settings.darkMode ? "hover:border-brand-gold/30" : "hover:border-brand-gold/50",
+                              theme: 'gold'
+                            },
+                          ].map((item, idx) => {
+                            const currentDayIndex = new Date().getDay(); // 0 is Sun, 1 is Mon, etc.
+                            
+                            const isToday = (() => {
+                              if (Array.isArray(item.shortDay)) {
+                                const dayIndices: Record<string, number> = { 'SEG': 1, 'TER': 2, 'QUA': 3 };
+                                return item.shortDay.some(d => dayIndices[d] === currentDayIndex);
+                              } else {
+                                const dayIndices: Record<string, number> = { 'QUIN': 4, 'SEX': 5, 'SAB': 6, 'DOM': 0 };
+                                return dayIndices[item.shortDay] === currentDayIndex;
+                              }
+                            })();
+
+                            // Find inventory item
+                            const readyItem = readyBaths.find(r => 
+                              r.title.toLowerCase().trim() === item.bath.toLowerCase().trim()
+                            ) || readyBaths.find(r => 
+                              r.title.toLowerCase().includes(item.bath.toLowerCase()) || 
+                              item.bath.toLowerCase().includes(r.title.toLowerCase())
+                            );
+
+                            return (
+                              <motion.div 
+                                key={idx}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.08, duration: 0.35, ease: "easeOut" }}
+                                onClick={() => {
+                                  if (item.id) {
+                                    window.dispatchEvent(new CustomEvent('select-routine-bath', { detail: { id: item.id } }));
+                                    setShowRoutineModal(false);
+                                    window.dispatchEvent(new CustomEvent('toggle-routine-modal', { detail: false }));
+                                  }
+                                }}
+                                className={cn(
+                                  "flex items-center gap-4 p-4 rounded-[24px] border transition-all duration-305 relative overflow-hidden group select-none",
+                                  !settings.darkMode && item.theme === 'navy' && "bg-gradient-to-r from-slate-50 to-slate-100/50 border-slate-200/60",
+                                  !settings.darkMode && item.theme === 'gold' && "bg-gradient-to-r from-amber-50/40 to-amber-100/10 border-amber-200/40",
+                                  item.id && "cursor-pointer active:scale-[0.98]",
+                                  settings.darkMode && "bg-[#1f1f21] border-[#29292c]",
+                                  isToday && (
+                                    settings.darkMode 
+                                      ? "border-[#d4af37]/60 bg-[#1e1c18] shadow-[0_0_20px_rgba(212,175,55,0.12)]" 
+                                      : "border-brand-copper/50 bg-[#fffcf5] shadow-[0_4px_20px_rgba(184,115,51,0.08)]"
+                                  ),
+                                  item.id && item.hoverBorder
+                                )}
+                              >
+                                {/* Decorative inner glow for active row */}
+                                {isToday && (
+                                  <div className={cn(
+                                    "absolute top-0 left-0 w-1.5 h-full",
+                                    settings.darkMode ? "bg-[#d4af37]" : "bg-brand-copper"
+                                  )} />
+                                )}
+
+                                {/* Day Bubble */}
+                                <div className={cn(
+                                  "rounded-xl flex items-center justify-center shrink-0 transition-transform overflow-hidden relative",
+                                  Array.isArray(item.shortDay) ? "w-11 py-2 flex-col gap-1" : "w-11 h-11",
+                                  item.theme === 'navy' && (settings.darkMode ? "bg-[#18293e] text-[#9bc1e8] border border-[#233d5d]" : "bg-gradient-to-br from-[#0B1E36] to-[#1a365d] text-white shadow-sm"),
+                                  item.theme === 'gold' && (settings.darkMode ? "bg-[#2d2212] text-[#e8c67d] border border-[#48371c]" : "bg-gradient-to-br from-[#ae8624] to-[#cfa135] text-white shadow-sm"),
+                                  isToday && "scale-105"
+                                )}>
+                                  {Array.isArray(item.shortDay) ? (
+                                    item.shortDay.map((day, dIdx) => (
+                                      <span key={dIdx} className="relative z-15 text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-center leading-none">{day}</span>
+                                    ))
+                                  ) : (
+                                    <span className="relative z-15 text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-widest text-center leading-none">{item.shortDay}</span>
+                                  )}
+                                  {!settings.darkMode && <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-40"></div>}
+                                </div>
+
+                                {/* Content Area */}
+                                <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pr-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className={cn(
+                                      "text-sm sm:text-[14px] font-extrabold uppercase tracking-wide transition-colors leading-tight",
+                                      item.id && item.hoverColor,
+                                      settings.darkMode ? "text-white" : "text-brand-navy"
+                                    )}>
+                                      {item.bath}
+                                    </p>
+                                    {isToday && (
+                                      <span className={cn(
+                                        "text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse shrink-0",
+                                        settings.darkMode ? "bg-amber-500/20 text-brand-gold border border-brand-gold/30" : "bg-amber-100 text-amber-800 border border-amber-300"
+                                      )}>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                                        Hoje
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Dynamic Stock Indicator */}
+                                  <div className="flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-widest select-none pt-0.5">
+                                    {readyItem ? (
+                                      readyItem.quantity > 0 ? (
+                                        <span className="text-[#34d399]/90 flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                                          {readyItem.quantity} {readyItem.quantity === 1 ? 'Pacotinho' : 'Pacotinhos'} em Estoque
+                                        </span>
+                                      ) : (
+                                        <span className="text-[#f87171] flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>
+                                          Reposição Necessária
+                                        </span>
+                                      )
+                                    ) : (
+                                      <span className={cn(
+                                        settings.darkMode ? "text-[#bfa030]/80" : "text-brand-copper/80",
+                                        "flex items-center gap-1"
+                                      )}>
+                                        Consagrado no Terreiro
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {item.id ? (
+                                  <div className={cn(
+                                    "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 shrink-0",
+                                    "text-gray-400 group-hover:translate-x-1 cursor-pointer",
+                                    settings.darkMode 
+                                      ? "bg-white/[0.04] group-hover:bg-[#d4af37]/20 group-hover:text-[#d4af37]" 
+                                      : "bg-slate-100 group-hover:bg-brand-navy/10 group-hover:text-brand-navy"
+                                  )}>
+                                    <ChevronRight className="w-4 h-4" />
+                                  </div>
+                                ) : (
+                                  <div className="w-7 h-7 flex items-center justify-center shrink-0 text-amber-500/30">
+                                    <CheckCircle2 className="w-4.5 h-4.5 stroke-[1.5]" />
+                                  </div>
+                                )}
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    </motion.div>
                   )}
                 </AnimatePresence>
 

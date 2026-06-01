@@ -379,3 +379,49 @@
   background-image: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog2.png');
   animation: smokePan2 60s linear infinite;
 }
+
+@keyframes candleGlowInner {
+  0%, 100% { transform: scale(0.95); opacity: 0.45; }
+  25% { transform: scale(1.12); opacity: 0.65; }
+  50% { transform: scale(0.98); opacity: 0.5; }
+  75% { transform: scale(1.06); opacity: 0.58; }
+}
+
+@keyframes candleGlowOuter {
+  0%, 100% { transform: scale(0.97); opacity: 0.18; }
+  25% { transform: scale(1.06); opacity: 0.35; }
+  50% { transform: scale(0.99); opacity: 0.22; }
+  75% { transform: scale(1.04); opacity: 0.3; }
+}
+
+@keyframes candleFlameSway {
+  0%, 100% { transform: scaleY(0.97) scaleX(0.98) rotate(-1.2deg) translateX(-0.2px); opacity: 0.96; }
+  25% { transform: scaleY(1.06) scaleX(1.03) rotate(1.2deg) translateX(0.3px); opacity: 1; }
+  50% { transform: scaleY(0.98) scaleX(0.97) rotate(-0.6deg) translateX(-0.1px); opacity: 0.97; }
+  75% { transform: scaleY(1.04) scaleX(1.02) rotate(1.0deg) translateX(0.2px); opacity: 1; }
+}
+
+@keyframes drumSwayLeft {
+  0%, 100% { transform: rotate(15deg); }
+  50% { transform: rotate(17.5deg); }
+}
+
+@keyframes drumSwayRight {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(-17.5deg); }
+}
+
+@keyframes drumInnerGlow {
+  0%, 100% { transform: scale(0.95) translate(0px, 0px); opacity: 0.45; }
+  25% { transform: scale(1.15) translate(6px, -4px); opacity: 0.7; }
+  50% { transform: scale(0.93) translate(-5px, 2px); opacity: 0.52; }
+  75% { transform: scale(1.1) translate(4px, -3px); opacity: 0.62; }
+}
+
+@keyframes drumOuterGlow {
+  0%, 100% { transform: scale(0.97) translate(0px, 0px); opacity: 0.18; }
+  25% { transform: scale(1.08) translate(-4px, 2px); opacity: 0.38; }
+  50% { transform: scale(0.94) translate(3px, -4px); opacity: 0.22; }
+  75% { transform: scale(1.05) translate(-2px, 1px); opacity: 0.32; }
+}
+

@@ -20,7 +20,9 @@ export default function HomeScreen() {
 
   // 30 Permanent ambient particles representing Axé energy (Sparks of Oya with gold/copper & Ogum with blue), optimized using pure CSS keyframe animations
   const ambientParticles = useMemo(() => {
-    return Array.from({ length: 30 }).map((_, i) => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const particleCount = isMobile ? 12 : 30;
+    return Array.from({ length: particleCount }).map((_, i) => {
       const size = Math.random() * 2.5 + 1.5; // 1.5px to 4.0px
       const x = Math.random() * 100;
       const y = Math.random() * 100;
@@ -67,7 +69,7 @@ export default function HomeScreen() {
         height: `${size}px`,
         backgroundColor: color,
         borderRadius: '50%',
-        boxShadow: `0 0 ${size * 2.5}px ${color}`,
+        boxShadow: isMobile ? 'none' : `0 0 ${size * 2.5}px ${color}`,
         animation: `var(--anim-name, ${animationName}) ${duration}s infinite linear`,
         animationDelay: `${delay}s`,
         pointerEvents: 'none',
@@ -322,7 +324,7 @@ export default function HomeScreen() {
       {/* 1. Header Profiling & Next Event Unified */}
       <header className="mb-6 mt-2 px-2 relative z-10">
         <div className={cn(
-          "rounded-2xl relative overflow-hidden flex flex-col transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
+          "rounded-2xl relative overflow-hidden flex flex-col transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
         )}>
           {/* Subtle dynamic background light */}
           <div className="absolute -left-12 -top-12 w-48 h-48 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
@@ -477,7 +479,7 @@ export default function HomeScreen() {
           >
             <div className={cn(
               "p-5 relative overflow-hidden text-gray-200",
-              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
             )}>
               {/* Spiritual whisper background ripple */}
               <motion.div 
@@ -514,7 +516,7 @@ export default function HomeScreen() {
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
           className={cn(
             "p-6 flex flex-col justify-between active:scale-[0.98] group overflow-hidden",
-            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
           )}
         >
           {/* Inner ambient spiritual gold aura */}
@@ -593,7 +595,7 @@ export default function HomeScreen() {
           onClick={() => setShowPixMenu(true)}
           className={cn(
             "p-6 flex flex-col justify-between active:scale-[0.98] group overflow-hidden",
-            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
           )}
         >
           {/* Inner ambient spiritual emerald aura */}
@@ -648,7 +650,7 @@ export default function HomeScreen() {
           <motion.div 
             className={cn(
               "p-6 sm:p-8 flex items-center gap-4 sm:gap-6 group z-10",
-              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative overflow-hidden hover:translate-y-[-2px] hover:bg-white/10 hover:border-amber-500/30"
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative overflow-hidden hover:translate-y-[-2px] hover:bg-white/10 hover:border-amber-500/30"
             )}
             animate={{
               borderColor: settings.darkMode 
@@ -798,7 +800,7 @@ export default function HomeScreen() {
                   transition={{ duration: 0.45, delay: 0.05 }}
                   className={cn(
                     "p-5 sm:p-6 flex flex-col relative overflow-hidden group/card",
-                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -866,7 +868,7 @@ export default function HomeScreen() {
                   transition={{ duration: 0.45, delay: 0.15 }}
                   className={cn(
                     "p-5 sm:p-6 flex flex-col relative overflow-hidden group/card",
-                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -1149,7 +1151,7 @@ export default function HomeScreen() {
           <motion.div 
             className={cn(
               "p-6 sm:p-8 flex flex-col items-center justify-center text-center mr-4 mt-2",
-              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative overflow-hidden"
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative overflow-hidden"
             )}
             animate={{
               borderColor: settings.darkMode
@@ -1323,7 +1325,7 @@ export default function HomeScreen() {
         {/* Contatos Úteis */}
         <div className={cn(
           "p-6 sm:p-8 flex flex-col items-center mt-8 max-w-lg mx-auto overflow-hidden group hover:translate-y-[-2px]",
-          "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+          "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
         )}>
           {/* Background Phone Decoration */}
           <div className="absolute -right-8 -bottom-8 opacity-[0.02] dark:opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">

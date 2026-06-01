@@ -4,6 +4,7 @@ import { ArrowLeft, Leaf, Mail, Lock, User, Ghost, Loader2, Calendar } from 'luc
 import { cn } from '../lib/utils';
 import { useStorage } from '../hooks/useStorage';
 import { AppSettings, DEFAULT_TEMPLO_LOGO } from '../types';
+import { LogoMedia } from '../components/LogoMedia';
 import { supabase } from '../lib/supabase';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 
@@ -182,25 +183,10 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                     "w-24 h-24 mb-4 rounded-full border border-brand-copper/30 shadow-lg flex items-center justify-center p-1 relative overflow-hidden",
                     settings.darkMode ? "bg-gray-900 border-white/10" : "bg-white"
                   )}>
-                    {(() => {
-                      const src = settings.logoBase64 || DEFAULT_TEMPLO_LOGO;
-                      return src.includes('.mp4') ? (
-                        <video 
-                          src={src} 
-                          autoPlay 
-                          loop 
-                          muted 
-                          playsInline
-                          className="w-full h-full object-cover rounded-full filter drop-shadow-md"
-                        />
-                      ) : (
-                        <img 
-                          src={src} 
-                          alt="Logo Templo" 
-                          className="w-full h-full object-contain filter drop-shadow-md"
-                        />
-                      );
-                    })()}
+                    <LogoMedia 
+                      src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                      className="w-full h-full object-cover rounded-full filter drop-shadow-md"
+                    />
                   </div>
                   <h2 className={cn("text-3xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     Bem-vindo
@@ -337,25 +323,10 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
                     "w-20 h-20 mb-4 rounded-full border border-brand-copper/30 shadow-lg flex items-center justify-center p-1 relative overflow-hidden",
                     settings.darkMode ? "bg-gray-900 border-white/10" : "bg-white"
                   )}>
-                    {(() => {
-                      const src = settings.logoBase64 || DEFAULT_TEMPLO_LOGO;
-                      return src.includes('.mp4') ? (
-                        <video 
-                          src={src} 
-                          autoPlay 
-                          loop 
-                          muted 
-                          playsInline
-                          className="w-full h-full object-cover rounded-full filter drop-shadow-md"
-                        />
-                      ) : (
-                        <img 
-                          src={src} 
-                          alt="Logo Templo" 
-                          className="w-full h-full object-contain filter drop-shadow-md"
-                        />
-                      );
-                    })()}
+                    <LogoMedia 
+                      src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                      className="w-full h-full object-cover rounded-full filter drop-shadow-md"
+                    />
                   </div>
                   <h2 className={cn("text-2xl font-black tracking-tighter", settings.darkMode ? "text-white" : "text-brand-navy")}>
                     Criar Conta

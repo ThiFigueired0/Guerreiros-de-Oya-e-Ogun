@@ -103,16 +103,32 @@ export default function CalendarScreen() {
     return ranges;
   }, [events]);
 
-  const isDayInPreceito = (day: Date) => {
+  const isDayInPreceito = React.useCallback((day: Date) => {
     const time = day.getTime();
     return preceitoRanges.some(range => time >= range.start && time <= range.end);
-  };
+  }, [preceitoRanges]);
+
+  // Pre-classify events by date string to avoid recursive array filtering inside calendar grids
+  const eventsByDateStr = React.useMemo(() => {
+    const map: Record<string, Event[]> = {};
+    events.forEach(e => {
+      if (e.date) {
+        if (!map[e.date]) {
+          map[e.date] = [];
+        }
+        map[e.date].push(e);
+      }
+    });
+    return map;
+  }, [events]);
   
   // Calculate padding days to align the first day of the month with the correct column
   const startDayOfWeek = monthStart.getDay(); // 0 is Sunday, 1 is Monday, etc.
   const paddingDays = Array.from({ length: startDayOfWeek });
 
-  const eventsInMonth = events.filter(e => isSameMonth(parseEventDate(e.date), currentDate));
+  const eventsInMonth = React.useMemo(() => {
+    return events.filter(e => isSameMonth(parseEventDate(e.date), currentDate));
+  }, [events, currentDate]);
 
   const suggestDevTitle = (dateStr: string) => {
     if (!dateStr) return 'Gira de desenvolvimento';
@@ -421,22 +437,22 @@ export default function CalendarScreen() {
     }
   };
 
-  const getEventsForDay = (day: Date, ignoreFilter = false) => {
-    return events.filter(e => {
-      const isDay = isSameDay(parseEventDate(e.date), day);
-      if (!isDay) return false;
-      if (ignoreFilter || selectedCategories.includes('Todos')) return true;
-      return selectedCategories.includes(e.category);
-    });
-  };
+  const getEventsForDay = React.useCallback((day: Date, ignoreFilter = false) => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const dayEvents = eventsByDateStr[dateStr] || [];
+    if (ignoreFilter || selectedCategories.includes('Todos')) return dayEvents;
+    return dayEvents.filter(e => selectedCategories.includes(e.category));
+  }, [eventsByDateStr, selectedCategories]);
 
-  const filteredEventsInMonth = eventsInMonth
-    .filter(e => {
-      const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = selectedCategories.includes('Todos') || selectedCategories.includes(e.category);
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a,b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
+  const filteredEventsInMonth = React.useMemo(() => {
+    return eventsInMonth
+      .filter(e => {
+        const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = selectedCategories.includes('Todos') || selectedCategories.includes(e.category);
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a,b) => parseEventDate(a.date).getTime() - parseEventDate(b.date).getTime());
+  }, [eventsInMonth, search, selectedCategories]);
 
   return (
     <motion.div
@@ -447,9 +463,9 @@ export default function CalendarScreen() {
         "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500 relative overflow-hidden"
       )}
     >
-      {/* Decorative Aura background */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
-      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-brand-copper/[0.02] dark:bg-brand-copper/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2" />
+      {/* Decorative Aura background - Highly optimized with GPU acceleration to prevent mobile rendering bottlenecks */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 transform-gpu will-change-transform" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-brand-copper/[0.02] dark:bg-brand-copper/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
 
       <div className="flex items-center justify-between mb-8 px-2 relative z-10">
         <div className="flex flex-col">
@@ -555,10 +571,10 @@ export default function CalendarScreen() {
         <div className="my-12 border-t-2 border-dashed border-gray-100 dark:border-white/5 opacity-50 relative z-10" />
 
         <div className="transition-colors duration-500 relative z-10">
-          <p className="text-[10px] font-black uppercase text-brand-copper dark:text-brand-gold tracking-[0.2em] mb-6 px-2 flex items-center gap-2">
+          <div className="text-[10px] font-black uppercase text-brand-copper dark:text-brand-gold tracking-[0.2em] mb-6 px-2 flex items-center gap-2">
              <div className="w-1.5 h-1.5 rounded-full bg-brand-copper dark:bg-brand-gold blur-[1px]" />
              Legenda do Calendário
-          </p>
+          </div>
           
           <div className="flex flex-wrap sm:flex-nowrap gap-8 px-2 border-b border-gray-100 dark:border-white/5 pb-6 mb-6">
             <div className="flex items-center gap-3">
