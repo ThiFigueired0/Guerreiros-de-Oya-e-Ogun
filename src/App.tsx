@@ -771,8 +771,8 @@ const TopHeader = React.memo(function TopHeader() {
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Background Video */}
-      <div className="absolute inset-0 z-0 overflow-hidden opacity-[0.15] pointer-events-none">
+      {/* Background Video - Opt-out on mobile */}
+      <div className="absolute inset-0 z-0 overflow-hidden opacity-[0.15] pointer-events-none hidden sm:block">
         <video
           autoPlay
           loop
@@ -786,9 +786,9 @@ const TopHeader = React.memo(function TopHeader() {
 
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-        {/* Smoke Layers */}
-        <div className="smoke-effect-1" />
-        <div className="smoke-effect-2" />
+        {/* Smoke Layers - Disabled on mobile to prevent extreme lag/flickering */}
+        <div className="smoke-effect-1 hidden sm:block" />
+        <div className="smoke-effect-2 hidden sm:block" />
 
         {/* Floating Leaves across the entire banner - Higher visibility */}
         {(settings.immersiveMode !== false && (typeof window === 'undefined' || window.innerWidth >= 640)) && leaves.map((leaf) => (

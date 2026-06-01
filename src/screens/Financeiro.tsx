@@ -648,10 +648,9 @@ export default function Financeiro() {
                 </div>
                 {mensalidadesPendentes.map((record) => (
                   <motion.div
-                    layout
                     key={record.id}
                     className={cn(
-                      "p-4 rounded-[28px] border transition-all flex items-center justify-between",
+                      "p-4 rounded-[28px] border transition-colors duration-200 flex items-center justify-between",
                       settings.darkMode ? "bg-black/40 border-gray-800" : "bg-white border-gray-100 shadow-sm"
                     )}
                   >
@@ -702,10 +701,9 @@ export default function Financeiro() {
                 )}
                 {mensalidadesPagas.map((record) => (
                   <motion.div
-                    layout
                     key={record.id}
                     className={cn(
-                      "p-4 rounded-[28px] border transition-all flex items-center justify-between",
+                      "p-4 rounded-[28px] border transition-colors duration-200 flex items-center justify-between",
                       settings.darkMode ? "bg-green-500/5 border-green-500/20" : "bg-green-50 border-green-100"
                     )}
                   >
@@ -858,10 +856,9 @@ export default function Financeiro() {
                 ) : (
                   extras.map((record) => (
                     <motion.div
-                      layout
                       key={record.id}
                       className={cn(
-                        "p-4 rounded-[28px] border transition-all flex items-center justify-between group",
+                        "p-4 rounded-[28px] border transition-colors duration-200 flex items-center justify-between group",
                         record.status === 'paid' 
                           ? (settings.darkMode ? "bg-green-500/5 border-green-500/20" : "bg-green-50 border-green-100") 
                           : (settings.darkMode ? "bg-black/40 border-gray-800" : "bg-white border-gray-100 shadow-sm")

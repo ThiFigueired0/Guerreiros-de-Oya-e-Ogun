@@ -1118,10 +1118,9 @@ export default function HerbsScreen() {
                   
                   return (
                     <motion.div 
-                      layout
                       key={bath.id} 
                       className={cn(
-                        "p-6 rounded-3xl relative overflow-hidden border border-gray-100 transition-all duration-500 shadow-md",
+                        "p-6 rounded-3xl relative overflow-hidden border border-gray-100 transition-colors duration-350 shadow-md",
                         thermalBorder,
                         bath.isFavorite 
                           ? (settings.darkMode ? "bg-[#1f1715]" : "bg-brand-copper/[0.03]") 
@@ -1516,10 +1515,9 @@ export default function HerbsScreen() {
               const isOutOfStockFixed = rb.isFixed && rb.quantity === 0;
               return (
                 <motion.div
-                  layout
                   key={rb.id}
                   className={cn(
-                    "p-6 rounded-3xl relative overflow-hidden border flex flex-col gap-4 group transition-all shadow-md",
+                    "p-6 rounded-3xl relative overflow-hidden border flex flex-col gap-4 group transition-colors duration-300 shadow-md",
                     statusBorder,
                     settings.darkMode 
                       ? "bg-[#161616] border-brand-gold/15 shadow-[0_4px_20px_rgba(0,0,0,0.3)]" 
@@ -1773,10 +1771,9 @@ export default function HerbsScreen() {
 
                 return (
                   <motion.div
-                    layout
                     key={herb.id}
                     className={cn(
-                      "p-5 rounded-2xl border flex items-center justify-between transition-all shadow-sm",
+                      "p-5 rounded-2xl border flex items-center justify-between transition-colors duration-200 shadow-sm",
                       settings.darkMode 
                         ? "bg-[#161616] border-white/5 hover:border-amber-500/10" 
                         : "bg-white border-gray-100/80 hover:border-brand-copper/15",

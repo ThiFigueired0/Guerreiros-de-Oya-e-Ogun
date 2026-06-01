@@ -21,7 +21,7 @@ export default function HomeScreen() {
   // 30 Permanent ambient particles representing Axé energy (Sparks of Oya with gold/copper & Ogum with blue), optimized using pure CSS keyframe animations
   const ambientParticles = useMemo(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    const particleCount = isMobile ? 12 : 30;
+    const particleCount = isMobile ? 0 : 30;
     return Array.from({ length: particleCount }).map((_, i) => {
       const size = Math.random() * 2.5 + 1.5; // 1.5px to 4.0px
       const x = Math.random() * 100;
