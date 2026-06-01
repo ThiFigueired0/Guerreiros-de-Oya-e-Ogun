@@ -1229,7 +1229,7 @@ function NotificationCenter({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/75 backdrop-blur-md pointer-events-auto"
+            className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-black/20 backdrop-blur-xl pointer-events-auto"
             onClick={() => setShowNotifications(false)}
           >
             <motion.div
@@ -1241,8 +1241,8 @@ function NotificationCenter({
               className={cn(
                 "w-full max-w-lg h-[75vh] sm:h-[80vh] flex flex-col rounded-[36px] overflow-hidden shadow-2xl relative border",
                 darkMode 
-                  ? "bg-gradient-to-b from-[#141414] to-[#0a0a0a] text-white border-neutral-800/80 shadow-[0_24px_60px_rgba(0,0,0,0.8)]" 
-                  : "bg-gradient-to-b from-white to-slate-50 text-slate-900 border-gray-100 shadow-[0_24px_50px_rgba(15,23,42,0.1)]"
+                  ? "bg-[#141414] text-white border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)]" 
+                  : "bg-[#f8f9fa] text-slate-900 border-white/40 shadow-[0_24px_50px_rgba(15,23,42,0.1)]"
               )}
             >
               {/* Spiritual top elegant ambient aura */}
@@ -1250,21 +1250,19 @@ function NotificationCenter({
               <div className="absolute -top-16 -right-16 w-36 h-36 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
 
               {/* Header */}
-              <div className="p-6 sm:p-8 flex items-center justify-between border-b shrink-0 relative z-10" style={{ borderColor: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }}>
+              <div className="p-6 sm:p-8 flex items-center justify-between border-b shrink-0 relative z-10" style={{ borderColor: darkMode ? 'rgba(212,175,55,0.15)' : 'rgba(212,175,55,0.15)' }}>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-brand-copper/10 text-brand-copper flex items-center justify-center shadow-inner">
-                    <Bell className="w-6 h-6 animate-pulse" />
+                  <div className="w-14 h-14 rounded-2xl bg-brand-gold/10 dark:bg-brand-gold/15 text-brand-gold flex items-center justify-center shadow-[inset_0_0_15px_rgba(212,175,55,0.3)] border border-brand-gold/40 shrink-0 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-gold/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    <Bell className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(212,175,55,0.4)] stroke-[2.5]" />
                   </div>
-                  <div>
-                    <h3 className={cn("text-[9px] font-black uppercase tracking-[0.25em] mb-0.5", darkMode ? "text-brand-gold" : "text-brand-copper")}>
-                      Mural de Avisos
-                    </h3>
-                    <h2 className={cn("text-xl font-black tracking-tight flex items-center gap-2", darkMode ? "text-white" : "text-brand-navy")}>
+                  <div className="pt-1">
+                    <h2 className={cn("text-2xl sm:text-[28px] font-serif font-bold tracking-tight flex items-center gap-3 drop-shadow-sm", darkMode ? "text-brand-gold" : "text-brand-navy")}>
                        Notificações
                        {isGuest && (
                           <button 
                             onClick={generateMockNotifications} 
-                            className="ml-2 text-[9px] bg-brand-copper/10 text-brand-copper dark:bg-brand-gold/25 dark:text-brand-gold px-2 py-1 rounded-full hover:bg-brand-copper/20 dark:hover:bg-brand-gold/35 transition-all uppercase tracking-widest font-black flex items-center gap-1 active:scale-90" 
+                            className="ml-2 text-[9px] bg-brand-copper/10 text-brand-copper dark:bg-brand-gold/20 dark:text-brand-gold px-2.5 py-1 rounded-full hover:bg-brand-copper/20 dark:hover:bg-brand-gold/30 transition-all uppercase tracking-widest font-bold flex items-center gap-1.5 active:scale-90 border border-brand-copper/20 dark:border-brand-gold/20 shadow-sm shrink-0" 
                             title="Adicionar notificações de teste (Apenas Visitante)"
                           >
                              <Zap className="w-3 h-3 animate-bounce" />
@@ -1278,10 +1276,15 @@ function NotificationCenter({
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setShowNotifications(false)}
-                  className="w-11 h-11 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-white cursor-pointer hover:shadow-sm transition-colors duration-200"
+                  className={cn(
+                    "relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-500 z-50 shrink-0 ml-4 group overflow-hidden shadow-md",
+                    "bg-gradient-to-br from-red-400 to-red-600 border-2 border-white/20 dark:border-red-400/30 shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)]"
+                  )}
                   aria-label="Fechar"
                 >
-                  <X className="w-5 h-5" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/30 to-white/0 -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                  <div className="absolute inset-[1px] rounded-full border border-white/20 dark:border-white/10 pointer-events-none" />
+                  <X className="w-5 h-5 stroke-[2.5] text-white relative z-10 drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
                 </motion.button>
               </div>
 
@@ -1289,40 +1292,41 @@ function NotificationCenter({
               <div className="flex-1 flex flex-col overflow-hidden relative z-10">
                 <div className="px-6 pt-6 shrink-0">
                   {/* Styled automatic clean warning */}
-                  <div className="mb-4 p-4 bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-[24px] border border-brand-gold/10 dark:border-brand-gold/10 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-copper/10 dark:bg-brand-gold/15 flex items-center justify-center shrink-0">
+                  <div className="mb-5 p-4 bg-gradient-to-r from-brand-gold/5 via-brand-gold/[0.02] to-transparent dark:from-brand-gold/10 dark:via-brand-gold/[0.05] dark:to-transparent rounded-2xl border border-brand-gold/20 dark:border-brand-gold/10 flex items-center gap-4 relative overflow-hidden shadow-inner">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-gold to-brand-copper" />
+                    <div className="w-8 h-8 rounded-full bg-brand-gold/20 dark:bg-brand-gold/10 flex items-center justify-center shrink-0 shadow-sm">
                       <Info className="w-4 h-4 text-brand-copper dark:text-brand-gold" />
                     </div>
-                    <p className={cn("text-[10px] sm:text-[11px] font-semibold leading-tight tracking-tight", darkMode ? "text-gray-350" : "text-slate-600")}>
+                    <p className={cn("text-[10px] sm:text-[11px] font-semibold leading-relaxed tracking-wide", darkMode ? "text-gray-300" : "text-slate-600")}>
                       Limpeza automática: as notificações expiram após 7 dias corridos.
                     </p>
                   </div>
 
                   {/* Filter pill tabs */}
-                  <div className="flex gap-2 overflow-x-auto pb-3 mb-1.5 scrollbar-none snap-x antialiased relative">
+                  <div className="flex gap-2.5 overflow-x-auto pb-4 mb-2 scrollbar-none snap-x antialiased relative px-2 -mx-2">
                     {FILTERS.map(f => (
                       <motion.button
                         key={f.id}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.96 }}
                         onClick={() => setFilter(f.id as any)}
                         className={cn(
-                          "relative snap-start px-4.5 py-2 rounded-full whitespace-nowrap text-[11px] font-black tracking-wider transition-colors duration-300 border cursor-pointer select-none overflow-hidden",
+                          "relative snap-start px-5 py-2.5 rounded-full text-[11px] font-black tracking-widest transition-all duration-300 border cursor-pointer select-none overflow-hidden shrink-0 shadow-sm",
                           filter === f.id
                             ? "text-white border-transparent"
                             : darkMode
-                              ? "bg-white/[0.04] text-slate-300 border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10"
-                              : "bg-slate-50 text-slate-500 border-slate-200/55 hover:bg-slate-100 hover:text-slate-900"
+                              ? "bg-[#161616] text-slate-400 border-white/5 hover:bg-[#222] hover:border-white/10"
+                              : "bg-white text-slate-500 border-slate-200/60 hover:bg-slate-50 hover:text-slate-900"
                         )}
                       >
                         {filter === f.id && (
                           <motion.div
                             layoutId="activeFilterPill"
-                            className="absolute inset-0 bg-gradient-to-r from-brand-copper to-brand-gold shadow-[0_4px_12px_rgba(184,115,51,0.25)]"
+                            className="absolute inset-0 bg-gradient-to-r from-brand-copper via-[#D4AF37] to-brand-gold shadow-[inset_0_1px_3px_rgba(255,255,255,0.4)]"
                             transition={{ type: "spring", stiffness: 350, damping: 28 }}
                           />
                         )}
-                        <span className="relative z-10">{f.label}</span>
+                        <span className="relative z-10 drop-shadow-sm">{f.label}</span>
                       </motion.button>
                     ))}
                   </div>
@@ -1330,59 +1334,72 @@ function NotificationCenter({
 
                 <div className="flex-1 overflow-y-auto p-6 pt-2 custom-scrollbar">
                   {filteredNotifications.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center py-20 px-6 text-center select-none relative overflow-hidden">
+                    <div className="h-full flex flex-col items-center justify-center py-24 px-6 text-center select-none relative overflow-hidden">
                       {/* Quiet pulsing celestial glow and rotating sacred rings */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-brand-gold/[0.01] dark:bg-brand-gold/[0.03] rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-brand-gold/10 to-transparent dark:from-brand-gold/15 rounded-full blur-3xl pointer-events-none" />
                       
                       <motion.div 
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 35, ease: "linear" }}
-                        className="absolute w-56 h-56 border border-dashed border-brand-copper/10 dark:border-brand-gold/10 rounded-full pointer-events-none" 
+                        animate={{ rotate: 360, opacity: [0.1, 0.4, 0.1] }}
+                        transition={{ repeat: Infinity, duration: 45, ease: "linear" }}
+                        className="absolute w-56 h-56 border border-dashed border-brand-copper/20 dark:border-brand-gold/20 rounded-full pointer-events-none" 
                       />
                       <motion.div 
-                        animate={{ rotate: -360 }}
-                        transition={{ repeat: Infinity, duration: 55, ease: "linear" }}
-                        className="absolute w-44 h-44 border border-double border-brand-gold/5 dark:border-brand-copper/5 rounded-full pointer-events-none" 
+                        animate={{ rotate: -360, scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 25, ease: "easeInOut" }}
+                        className="absolute w-44 h-44 border border-brand-gold/10 dark:border-brand-copper/10 rounded-full pointer-events-none" 
                       />
 
                       {/* Floating dots of Axé */}
                       <motion.div 
-                        animate={{ y: [-10, 10, -10], x: [-5, 5, -5], opacity: [0.2, 0.7, 0.2] }}
-                        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute top-[28%] left-[28%] w-1.5 h-1.5 rounded-full bg-brand-gold/40 pointer-events-none blur-[0.5px]"
+                        animate={{ y: [-15, 15, -15], x: [-10, 10, -10], opacity: [0, 0.8, 0], scale: [0.8, 1.2, 0.8] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-[20%] left-[25%] w-2 h-2 rounded-full bg-brand-gold/60 pointer-events-none blur-[1px]"
                       />
                       <motion.div 
-                        animate={{ y: [8, -8, 8], x: [4, -4, 4], opacity: [0.15, 0.6, 0.15] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-                        className="absolute bottom-[28%] right-[25%] w-2 h-2 rounded-full bg-brand-copper/30 pointer-events-none blur-[0.5px]"
+                        animate={{ y: [12, -12, 12], x: [8, -8, 8], opacity: [0, 0.5, 0], scale: [0.9, 1.1, 0.9] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                        className="absolute bottom-[20%] right-[22%] w-3 h-3 rounded-full bg-brand-copper/40 pointer-events-none blur-[1px]"
                       />
                       <motion.div 
-                        animate={{ y: [-12, 12, -12], opacity: [0.3, 0.8, 0.3] }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-                        className="absolute top-1/2 right-[27%] w-1 h-1 rounded-full bg-brand-gold/50 pointer-events-none"
+                        animate={{ y: [-20, 20, -20], opacity: [0, 0.9, 0] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+                        className="absolute top-[55%] right-[20%] w-1.5 h-1.5 rounded-full bg-brand-gold/80 pointer-events-none"
                       />
                       
-                      <div className="relative mb-8 z-10">
+                      <div className="relative mb-10 z-10 w-24 h-24">
+                        <div className="absolute inset-0 rounded-full bg-brand-copper/5 dark:bg-brand-gold/5 blur-xl pointer-events-none" />
                         <motion.div 
-                          whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
-                          animate={{ scale: [1, 1.05, 1], y: [0, -4, 0] }} 
-                          transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                          className="w-20 h-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100/50 dark:border-white/5 shadow-inner cursor-pointer"
+                          whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+                          animate={{ y: [0, -6, 0] }} 
+                          transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                          className={cn(
+                            "w-full h-full rounded-[2.5rem] flex items-center justify-center border shadow-[0_10px_30px_rgba(0,0,0,0.2)] relative cursor-default overflow-hidden",
+                            darkMode 
+                              ? "bg-gradient-to-br from-[#1c1c1c] to-[#121212] border-[#333]" 
+                              : "bg-gradient-to-br from-white to-[#f8f9fa] border-slate-100/50"
+                          )}
                         >
-                          <BellOff className="w-8 h-8 text-gray-400 dark:text-gray-500 stroke-[1.5]" />
+                          {/* Inner glow */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-brand-gold/10 via-transparent to-brand-copper/5 pointer-events-none" />
+                          <BellOff className={cn("w-10 h-10 stroke-[1.5] transition-colors duration-500 relative z-10 drop-shadow-sm", darkMode ? "text-[#444] group-hover:text-brand-gold" : "text-slate-300 group-hover:text-brand-copper")} />
+                          
+                          <div className="absolute inset-0 rounded-[2.5rem] border border-white/20 dark:border-white/5 pointer-events-none mix-blend-overlay shadow-[inset_0_0_15px_rgba(255,255,255,0.3)]" />
                         </motion.div>
-                        <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
-                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500/80 border-2 border-white dark:border-[#0a0a0a]" />
+                        <span className="absolute -bottom-2 -right-2 flex h-6 w-6">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40 blur-[2px]" />
+                          <span className="relative flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-tr from-emerald-500 to-emerald-400 border-[3px] border-white dark:border-[#121212] shadow-md">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_5px_rgba(255,255,255,0.8)]" />
+                          </span>
                         </span>
                       </div>
                       
-                      <h3 className={cn("text-[12px] font-black uppercase tracking-[0.25em] mb-2 relative z-10", darkMode ? "text-brand-gold" : "text-brand-copper")}>
-                        Céu Limpo
+                      <h3 className={cn("text-[13px] font-black uppercase tracking-[0.35em] mb-4 relative z-10 drop-shadow-sm", darkMode ? "text-brand-gold" : "text-brand-navy")}>
+                        Canto de Paz
                       </h3>
-                      <p className={cn("text-xs leading-relaxed max-w-sm font-semibold px-6 relative z-10 line-clamp-3", darkMode ? "text-gray-400" : "text-gray-500")}>
+                      <p className={cn("text-[13px] leading-relaxed max-w-[260px] font-medium px-4 relative z-10 mx-auto", darkMode ? "text-slate-400" : "text-slate-500")}>
                         {filter === 'all' 
-                          ? 'Sua jornada está tranquila. Nenhuma notificação aberta sob a benção dos Orixás.' 
-                          : `Sua categoria ${FILTERS.find(f => f.id === filter)?.label} não possui avisos ativos no momento.`}
+                          ? 'Sua jornada visualiza um céu limpo. Nenhuma notificação encontrada sob as bençãos dos Orixás.' 
+                          : `Sua categoria "${FILTERS.find(f => f.id === filter)?.label}" não possui avisos ativos no momento.`}
                       </p>
                     </div>
                   ) : (
@@ -1686,7 +1703,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
   React.useEffect(() => {
     if (!show) return;
     const startTime = Date.now();
-    const duration = 1500;
+    const duration = 4000;
     
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -1699,10 +1716,10 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
   }, [show]);
 
   const leaves = React.useMemo(() => {
-    return [...Array(8)].map((_, i) => ({
+    return [...Array(60)].map((_, i) => ({
       id: i,
-      size: 8 + Math.random() * 18,
-      duration: 15 + Math.random() * 15,
+      size: 8 + Math.random() * 20,
+      duration: 10 + Math.random() * 20,
       delay: Math.random() * -20,
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
@@ -1718,12 +1735,16 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
           onClick={onSkip}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh] cursor-pointer"
-          style={{ backgroundColor: '#001529' }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className={cn(
+            "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh] cursor-pointer",
+            settings.darkMode 
+              ? "bg-gradient-to-b from-[#0B1221] via-[#060A14] to-[#020202]" 
+              : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+          )}
         >
           {/* Global Animated Background */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
             {settings.immersiveMode !== false && leaves.map((leaf) => (
               <div
                 key={`splash-leaf-${leaf.id}`}
@@ -1738,82 +1759,109 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
                   top: leaf.top,
                 } as React.CSSProperties}
               >
-                <Leaf className="text-brand-copper/30 fill-brand-copper/10 w-full h-full" />
+                <Leaf className="text-brand-copper/50 fill-brand-copper/10 w-full h-full opacity-60" />
               </div>
             ))}
             
-            {/* Optimized background glow without blur to save mobile memory */}
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.15, 1],
-                opacity: [0.05, 0.1, 0.05],
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-copper/20 rounded-full"
-            />
+            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 -top-20 w-[600px] h-[600px] bg-brand-gold/5 rounded-full blur-[150px]" />
+            <div className="absolute top-[60%] left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-brand-copper/10 rounded-full blur-[120px]" />
           </div>
 
           {/* Logo & Content */}
-          <div className="relative z-10 flex flex-col items-center">
+          <div className="relative z-20 flex flex-col items-center">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 1, ease: "easeOut", type: "spring", bounce: 0.3 }}
               className="relative"
             >
-              {/* Pulse Glow - Magical */}
-              <div className="absolute -inset-10 bg-gradient-to-br from-brand-copper/30 to-brand-gold/20 rounded-full blur-2xl" />
+              {/* Outer Glowing Ring */}
+              <div className="absolute -inset-6 rounded-full bg-brand-copper/10 blur-2xl pointer-events-none" />
+              <div className="absolute -inset-2 rounded-full border border-brand-gold/40 ring-4 ring-brand-gold/10 pointer-events-none" />
 
               <motion.div 
                 animate={{ scale: [1, 1.02, 1] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-48 h-48 sm:w-56 sm:h-56 rounded-full frame-3d flex items-center justify-center overflow-hidden relative"
-              >
-                {logo && (
-                  logo.includes('.mp4') ? (
-                    <video 
-                      src={logo} 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
-                      className="w-full h-full object-cover logo-optimized rounded-full"
-                    />
-                  ) : (
-                    <img src={logo} alt="Logo" className="w-full h-full object-contain logo-optimized" />
-                  )
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                className={cn(
+                  "w-48 h-48 sm:w-56 sm:h-56 rounded-full relative frame-3d flex items-center justify-center overflow-hidden shadow-2xl",
+                  settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
                 )}
+              >
+                {/* Border / Gold Glow */}
+                <div className="absolute inset-0 rounded-full border border-brand-gold/50 shadow-[inset_0_0_20px_rgba(212,175,55,0.2)] pointer-events-none z-30" />
+                
+                {/* Glossy Overlay */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 via-transparent to-transparent z-10 pointer-events-none mix-blend-overlay" />
+
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-[#0a0f18]">
+                  {logo && (
+                    logo.includes('.mp4') ? (
+                      <video 
+                        src={logo} 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline
+                        className="w-full h-full object-cover logo-optimized rounded-full"
+                      />
+                    ) : (
+                      <motion.img 
+                        initial={{ opacity: 0, scale: 1.05 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1.2, ease: "easeOut" }}
+                        src={logo} 
+                        alt="Logo" 
+                        className="w-full h-full object-contain logo-optimized" 
+                      />
+                    )
+                  )}
+                </div>
               </motion.div>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-              className="mt-12 text-center"
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="mt-14 text-center relative z-20"
             >
-              <h1 className="bg-gradient-to-r from-yellow-100 via-[#E8C359] to-[#D4AF37] bg-clip-text text-transparent font-serif text-[14px] sm:text-[16px] md:text-[18px] tracking-[0.15em] font-bold uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] flex items-center justify-center gap-2 pb-1">
+              <h1 className="bg-gradient-to-r from-yellow-100 via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[15px] sm:text-[17px] md:text-[19px] tracking-[0.18em] font-bold uppercase drop-shadow-sm flex items-center justify-center gap-2 pb-1 text-center px-4">
                 GUERREIROS DE OYA E OGUM
               </h1>
               
-              {/* Progress Bar */}
-              <div className="w-56 h-[3px] bg-white/10 mx-auto mt-8 rounded-full overflow-hidden relative shadow-inner">
+              {/* Progress Bar Container */}
+              <div className="w-64 h-[2px] bg-white/10 mx-auto mt-10 rounded-full overflow-hidden relative">
+                {/* Shimmer effect background */}
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full"
+                  animate={{ translateX: ['-100%', '100%'] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                />
+                
+                {/* Active Progress */}
                 <div 
-                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-brand-copper via-brand-gold to-[#FFF8D6] transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(255,215,0,0.8)] relative"
+                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-brand-gold to-[#FFF8D6] transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(212,175,55,0.5)] relative"
                   style={{ width: `${progress}%` }}
                 >
-                  <div className="absolute right-0 top-0 bottom-0 w-10 bg-white/50 blur-[2px]" />
+                  {/* Progress tip glow */}
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white/80 rounded-full blur-[4px]" />
                 </div>
               </div>
               
-              <div className="flex flex-col items-center mt-6 gap-2">
-                <p className="text-brand-gold/60 text-[10px] font-bold uppercase tracking-[0.3em]">
+              <motion.div 
+                className="flex flex-col items-center mt-8 gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 0.8 }}
+              >
+                <p className="text-brand-gold/80 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.3em] font-sans drop-shadow-sm">
                   {progress < 100 ? "Preparando sua experiência..." : "Entrando..."}
                 </p>
-                <p className="text-white/20 text-[8px] font-black uppercase tracking-[0.4em]">
+                <div className="w-8 h-[1px] bg-brand-gold/20 my-0.5" />
+                <p className="text-white/40 text-[8px] sm:text-[9px] font-medium uppercase tracking-[0.4em] font-sans">
                   Tenda de Umbanda • Oya e Ogum
                 </p>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
@@ -2053,10 +2101,10 @@ function AppContent() {
       setHasRemovedPreloader(true);
     }
 
-    // Stage 1: Mark app as ready after 1.5 seconds
+    // Stage 1: Mark app as ready after 4 seconds
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 1500);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -2646,16 +2694,24 @@ function AppContent() {
                       <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-brand-gold/30 flex items-center justify-center gap-1.5 focus-within:ring-2 ring-brand-gold/50 name-aura shadow-sm pointer-events-auto shrink-0 whitespace-nowrap"
+                        className="relative p-[1.5px] rounded-full flex items-center justify-center pointer-events-auto shrink-0 overflow-hidden shadow-[0_6px_16px_rgba(0,0,0,0.6)] group hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 cursor-pointer"
                       >
-                        {isGuest ? (
-                          <Ghost className="w-2 h-2 text-brand-gold/80" />
-                        ) : settings.profilePhoto ? (
-                          <div className="w-3 h-3 rounded-full overflow-hidden border border-brand-gold/40 shadow-inner leading-none">
-                            <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
-                          </div>
-                        ) : null}
-                        <span className="text-[7.5px] sm:text-[8px] font-bold uppercase tracking-[0.16em] text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] pt-[1px]">{fullName}</span>
+                        {/* Moving Gradient Border Aura */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-brand-gold via-brand-copper to-brand-gold bg-[length:200%_auto] animate-[shimmerBackground_3s_linear_infinite]" />
+                        
+                        {/* Inner Container */}
+                        <div className="relative bg-neutral-900/90 backdrop-blur-md px-3 sm:px-4 py-[6px] sm:py-[7px] rounded-full flex items-center gap-2.5 border border-black/40">
+                          {isGuest ? (
+                            <Ghost className="w-3 h-3 text-brand-gold drop-shadow-md relative top-[0.5px]" />
+                          ) : settings.profilePhoto ? (
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden border border-brand-gold/50 shadow-[0_0_8px_rgba(212,175,55,0.4)] leading-none shrink-0 relative top-[0.5px]">
+                              <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
+                            </div>
+                          ) : null}
+                          <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-white via-brand-gold to-white bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite] bg-clip-text text-transparent pt-[1.5px] leading-none drop-shadow-sm">
+                            {fullName}
+                          </span>
+                        </div>
                       </motion.div>
                     )}
                   </div>

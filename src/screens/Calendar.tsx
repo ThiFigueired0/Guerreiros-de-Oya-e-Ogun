@@ -444,20 +444,32 @@ export default function CalendarScreen() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.02 }}
       className={cn(
-        "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500"
+        "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500 relative overflow-hidden"
       )}
     >
-      <div className="flex items-center justify-between mb-8 px-2">
+      {/* Decorative Aura background */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-brand-copper/[0.02] dark:bg-brand-copper/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2" />
+
+      <div className="flex items-center justify-between mb-8 px-2 relative z-10">
         <div className="flex flex-col">
+          <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Calendário Orixás</p>
           <button 
             onClick={() => setShowDatePicker(true)}
             className={cn(
-              "text-3xl font-black text-brand-navy capitalize font-serif tracking-tight flex items-center gap-3 hover:opacity-70 transition-all active:scale-95 group",
-              settings.darkMode && "text-white"
+              "text-3xl sm:text-4xl font-black text-brand-navy capitalize font-serif tracking-tight flex items-center gap-3 hover:opacity-80 transition-all active:scale-95 group drop-shadow-sm",
+              settings.darkMode && "text-brand-gold"
             )}
           >
             {format(currentDate, 'MMMM', { locale: ptBR })}
-            <span className="text-brand-copper font-sans font-black text-sm px-3 py-1 bg-brand-copper/10 rounded-full group-hover:bg-brand-copper/20 transition-colors">{format(currentDate, 'yyyy')}</span>
+            <span className={cn(
+              "font-sans font-black text-xs sm:text-sm px-3.5 py-1.5 rounded-full transition-colors drop-shadow-sm",
+              settings.darkMode 
+                ? "bg-brand-copper/10 text-brand-copper group-hover:bg-brand-copper/20" 
+                : "bg-brand-navy/5 text-brand-navy group-hover:bg-brand-navy/10"
+            )}>
+              {format(currentDate, 'yyyy')}
+            </span>
             <ChevronDown className="w-5 h-5 text-gray-300 group-hover:text-brand-copper transition-colors" />
           </button>
         </div>
@@ -466,20 +478,28 @@ export default function CalendarScreen() {
           <button 
             onClick={() => setCurrentDate(new Date())}
             className={cn(
-              "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-              settings.darkMode ? "bg-white/5 text-gray-300 border border-white/10" : "bg-white text-brand-navy border border-gray-100 shadow-sm"
+              "px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md group relative overflow-hidden",
+              settings.darkMode 
+                ? "bg-white/5 text-brand-gold border border-white/10 hover:bg-white/10 hover:border-brand-gold/30 hover:shadow-brand-gold/20" 
+                : "bg-white text-brand-navy border border-gray-100 hover:border-gray-200 hover:bg-gray-50 hover:text-brand-copper"
             )}
           >
-            Hoje
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-gold/0 via-brand-gold/20 to-brand-gold/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            <span className="relative z-10 drop-shadow-sm">Hoje</span>
           </button>
         </div>
       </div>
 
       <div className={cn(
-        "bg-white p-6 rounded-[40px] shadow-sm mb-10 border border-gray-100 transition-colors duration-500",
-        settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+        "p-6 sm:p-8 rounded-[40px] shadow-lg mb-10 border transition-all duration-500 relative overflow-hidden",
+        settings.darkMode 
+          ? "bg-[#161616] border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" 
+          : "bg-white border-gray-100 shadow-[0_20px_50px_rgba(15,23,42,0.1)]"
       )}>
-        <div className="grid grid-cols-7 gap-1 mb-8">
+        {/* Inner glow on the container */}
+        <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-brand-gold/30 to-transparent opacity-50" />
+        
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-8 relative z-10">
           {['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'].map((d, i) => (
             <div key={`${d}-${i}`} className="text-center text-[8px] uppercase font-black text-gray-400 tracking-[0.2em] mb-4">{d}</div>
           ))}
@@ -496,22 +516,25 @@ export default function CalendarScreen() {
                 key={day.toString()}
                 onClick={() => handleDayClick(day)}
                 className={cn(
-                  "aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300 active:scale-95 group overflow-hidden",
+                  "aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300 active:scale-95 group overflow-hidden border border-transparent",
                   isToday 
-                    ? (settings.darkMode ? "bg-brand-copper text-brand-navy ring-4 ring-brand-copper/20" : "bg-brand-navy text-white shadow-lg ring-4 ring-brand-navy/10") 
+                    ? (settings.darkMode ? "bg-gradient-to-br from-brand-copper to-[#ab6524] text-white shadow-[0_0_20px_rgba(205,127,50,0.4)] border-brand-copper/50 font-bold" : "bg-gradient-to-br from-brand-navy to-[#1e2a4a] text-white shadow-lg ring-4 ring-brand-navy/10 border-brand-navy/50") 
                     : hasPreceito
-                      ? (settings.darkMode ? "bg-brand-gold/25 text-brand-gold border-2 border-brand-gold/40 shadow-[0_0_15px_-5px_rgba(212,175,55,0.3)]" : "bg-brand-gold/20 text-brand-navy border-2 border-brand-gold/30 shadow-sm")
-                      : (settings.darkMode ? "hover:bg-white/5" : "hover:bg-gray-50")
+                      ? (settings.darkMode ? "bg-brand-gold/10 text-brand-gold border-brand-gold/30 shadow-[inset_0_0_15px_rgba(212,175,55,0.15)] group-hover:bg-brand-gold/20" : "bg-brand-gold/10 text-brand-navy border-brand-gold/30 shadow-[inset_0_0_15px_rgba(212,175,55,0.1)] group-hover:bg-brand-gold/20")
+                      : (settings.darkMode ? "hover:bg-white/5 hover:border-white/10" : "hover:bg-slate-50 hover:border-slate-200")
                 )}
               >
+                {isToday && (
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+                )}
                 <span className={cn(
-                  "text-[13px] font-black tabular-nums transition-transform group-hover:scale-110", 
-                  !isToday && (settings.darkMode ? "text-gray-200" : "text-brand-navy"),
-                  isToday && "text-[15px]"
+                  "text-[13px] font-black tabular-nums transition-transform relative z-10 group-hover:scale-110", 
+                  !isToday && (settings.darkMode ? "text-gray-300 group-hover:text-white" : "text-slate-600 group-hover:text-brand-navy"),
+                  isToday && "text-[15px] drop-shadow-sm"
                 )}>{format(day, 'd')}</span>
                 
                 {dayEvents.length > 0 && !isToday && (
-                  <div className="absolute bottom-1.5 flex gap-1 justify-center px-1">
+                  <div className="absolute bottom-1.5 flex gap-1 justify-center px-1 z-10">
                     {Array.from(new Set(dayEvents.map(e => e.category))).slice(0, 3).map((cat, i) => (
                       <div 
                         key={i} 
@@ -529,30 +552,35 @@ export default function CalendarScreen() {
           })}
         </div>
 
-        <div className="my-12 border-t-2 border-dashed border-gray-100 dark:border-white/5" />
+        <div className="my-12 border-t-2 border-dashed border-gray-100 dark:border-white/5 opacity-50 relative z-10" />
 
-        <div className="transition-colors duration-500">
-          <p className="text-[10px] font-black uppercase text-brand-copper tracking-[0.2em] mb-6 px-2">Legenda do Calendário</p>
+        <div className="transition-colors duration-500 relative z-10">
+          <p className="text-[10px] font-black uppercase text-brand-copper dark:text-brand-gold tracking-[0.2em] mb-6 px-2 flex items-center gap-2">
+             <div className="w-1.5 h-1.5 rounded-full bg-brand-copper dark:bg-brand-gold blur-[1px]" />
+             Legenda do Calendário
+          </p>
           
-          <div className="flex flex-wrap sm:flex-nowrap gap-8 px-2 border-b border-gray-100 dark:border-white/5 pb-4 mb-4">
+          <div className="flex flex-wrap sm:flex-nowrap gap-8 px-2 border-b border-gray-100 dark:border-white/5 pb-6 mb-6">
             <div className="flex items-center gap-3">
               <div className={cn(
-                "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shadow-lg ring-4",
+                "w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shadow-lg ring-4 border border-transparent",
                 settings.darkMode 
-                  ? "bg-brand-copper text-brand-navy ring-brand-copper/20" 
-                  : "bg-brand-navy text-white ring-brand-navy/10"
+                  ? "bg-gradient-to-br from-brand-copper to-[#ab6524] text-white shadow-[0_4px_15px_rgba(205,127,50,0.3)] border-brand-copper/50 font-bold" 
+                  : "bg-gradient-to-br from-brand-navy to-[#1e2a4a] text-white shadow-[0_4px_10px_rgba(15,23,42,0.2)] border-brand-navy/50 font-bold"
               )}></div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-brand-navy dark:text-white tracking-widest">Dia Atual</span>
-                <span className="text-[8px] font-medium text-gray-400">Marca a data de hoje</span>
+                <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none drop-shadow-sm", settings.darkMode ? "text-brand-copper" : "text-brand-navy")}>Dia Atual</span>
+                <span className="text-[8px] font-semibold text-gray-500 dark:text-gray-400 mt-1">Marca a data de hoje</span>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-brand-gold/25 border-2 border-brand-gold/40 flex items-center justify-center text-xs text-brand-navy dark:text-brand-gold font-black shadow-[0_0_15px_-5px_rgba(212,175,55,0.3)]"></div>
+              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/30 flex items-center justify-center text-xs text-brand-navy dark:text-brand-gold font-black shadow-[inset_0_0_15px_rgba(212,175,55,0.15)] relative overflow-hidden">
+                 <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none" />
+              </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-brand-navy dark:text-white tracking-widest">Preceito</span>
-                <span className="text-[8px] font-medium text-gray-400">Preceito</span>
+                <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none drop-shadow-sm", settings.darkMode ? "text-white" : "text-slate-700")}>Preceito</span>
+                <span className="text-[8px] font-semibold text-gray-500 dark:text-gray-400 mt-1">Dias de preceito</span>
               </div>
             </div>
           </div>
@@ -571,26 +599,29 @@ export default function CalendarScreen() {
         </div>
       </div>
 
-      <div ref={agendaRef} className="space-y-6 px-1 pt-6">
-        <div className="flex items-center justify-between mb-4">
+      <div ref={agendaRef} className="space-y-6 px-1 pt-6 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-6">
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-              <h3 className={cn("text-xs font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>Agenda Mensal</h3>
+              <h3 className={cn("text-[13px] font-black uppercase tracking-[0.2em] relative", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>
+                <span className="relative z-10 drop-shadow-sm">Agenda Mensal</span>
+                <span className="absolute -bottom-1 left-0 w-1/2 h-0.5 bg-gradient-to-r from-brand-copper to-transparent" />
+              </h3>
               <button 
                 onClick={() => setIsManaging(!isManaging)}
                 className={cn(
-                  "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full transition-all active:scale-95",
+                  "text-[9px] font-black uppercase tracking-widest px-3.5 py-1.5 rounded-full transition-all active:scale-95 border",
                   isManaging 
-                    ? "bg-brand-copper text-brand-navy" 
-                    : (settings.darkMode ? "bg-white/5 text-gray-400" : "bg-gray-100 text-gray-400")
+                    ? "bg-brand-copper text-brand-navy border-brand-copper/30 shadow-md shadow-brand-copper/20" 
+                    : (settings.darkMode ? "bg-white/5 text-brand-gold border-white/10 hover:bg-white/10" : "bg-white text-gray-500 border-gray-200 hover:text-brand-navy hover:bg-gray-50 shadow-sm")
                 )}
               >
                 {isManaging ? 'Concluído' : 'Gerenciar'}
               </button>
             </div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Guerreiros de Oya e Ogum</p>
+            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2 ml-0.5">Guerreiros de Oya e Ogum</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-3">
             <input 
               type="file" 
               accept=".txt" 
@@ -601,22 +632,22 @@ export default function CalendarScreen() {
             <button 
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                "flex items-center gap-2 px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-                settings.darkMode ? "bg-white/5 text-brand-copper border border-white/10" : "bg-white text-brand-navy border border-gray-100"
+                "flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-md border group",
+                settings.darkMode ? "bg-[#161616] hover:bg-[#202020] text-brand-gold border-white/10" : "bg-white hover:bg-gray-50 text-brand-navy border-gray-200"
               )}
               title="Importar de arquivo .txt"
             >
-              <Upload className="w-4 h-4" /> Importar
+              <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" /> <span className="hidden sm:inline">Importar</span>
             </button>
             <button 
               onClick={exportAgenda}
               className={cn(
-                "flex items-center gap-2 px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-                settings.darkMode ? "bg-white/5 text-brand-copper border border-white/10" : "bg-white text-brand-navy border border-gray-100"
+                "flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-md border group",
+                settings.darkMode ? "bg-[#161616] hover:bg-[#202020] text-brand-gold border-white/10" : "bg-white hover:bg-gray-50 text-brand-navy border-gray-200"
               )}
               title="Exportar para arquivo .txt"
             >
-              <Download className="w-4 h-4" /> Exportar
+              <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" /> <span className="hidden sm:inline">Exportar</span>
             </button>
             <button 
               onClick={() => {
@@ -635,16 +666,17 @@ export default function CalendarScreen() {
                 setShowModal(true);
               }}
               className={cn(
-                "flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg",
-                settings.darkMode ? "bg-brand-copper text-brand-navy shadow-brand-copper/20" : "bg-brand-navy text-white shadow-brand-navy/10"
+                "flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-[0_4px_15px_rgba(212,175,55,0.4)] border border-transparent overflow-hidden group relative ml-2",
+                settings.darkMode ? "bg-gradient-to-r from-brand-gold to-brand-copper text-black border-brand-gold/50" : "bg-gradient-to-r from-brand-navy to-[#1e2a4a] text-brand-gold shadow-[0_4px_15px_rgba(15,23,42,0.3)]"
               )}
             >
-              <Plus className="w-4 h-4" /> Agendar
+              <div className="absolute inset-0 bg-white/20 -translate-x-[120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-in-out" />
+              <Plus className="w-4 h-4 relative z-10" /> <span className="relative z-10 drop-shadow-sm">Agendar</span>
             </button>
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2 mask-edges">
           {Array.from(new Set(['Todos', ...settings.eventCategories, 'Lembrete'])).map(cat => {
             const isSelected = selectedCategories.includes(cat);
             return (
@@ -652,15 +684,15 @@ export default function CalendarScreen() {
                 key={cat}
                 onClick={() => toggleCategory(cat)}
                 className={cn(
-                  "px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2.5",
+                  "px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2.5",
                   isSelected
-                    ? (settings.darkMode ? "bg-brand-copper border-brand-copper text-brand-navy shadow-lg shadow-brand-copper/20" : "bg-brand-navy border-brand-navy text-white shadow-lg shadow-brand-navy/10")
-                    : (settings.darkMode ? "bg-white/5 border-white/10 text-gray-400 hover:border-white/20" : "bg-white border-gray-100 text-gray-500 hover:border-gray-200 shadow-sm")
+                    ? (settings.darkMode ? "bg-gradient-to-r from-brand-gold/20 to-brand-copper/20 border-brand-gold/40 text-brand-gold shadow-lg shadow-brand-gold/10" : "bg-brand-navy border-brand-navy text-white shadow-md shadow-brand-navy/10")
+                    : (settings.darkMode ? "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-white" : "bg-white border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-gray-50 shadow-sm")
                 )}
               >
                 {cat !== 'Todos' && (
                   <div 
-                    className="w-2 h-2 rounded-full ring-2 ring-white/20" 
+                    className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20" 
                     style={{ backgroundColor: getCategoryColor(cat) }} 
                   />
                 )}
@@ -671,28 +703,29 @@ export default function CalendarScreen() {
         </div>
 
 
-        <div className="relative mb-8 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4 group-focus-within:text-brand-copper transition-colors" />
+        <div className="relative mb-10 group">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-brand-copper transition-colors" />
           <input 
             placeholder="Pesquisar na agenda..." 
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={cn(
-              "w-full bg-white border border-gray-100 rounded-[24px] p-5 pl-12 text-xs font-medium outline-none focus:ring-1 focus:ring-brand-copper shadow-sm transition-all",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white shadow-none focus:border-brand-copper"
+              "w-full bg-white border border-gray-100 rounded-[28px] p-5 pl-16 text-sm font-medium outline-none focus:ring-2 focus:ring-brand-copper/20 focus:border-brand-copper shadow-sm transition-all",
+              settings.darkMode && "bg-[#161616] border-white/5 text-white shadow-none focus:border-brand-copper focus:bg-[#1e1e1e]"
             )}
           />
         </div>
 
         {filteredEventsInMonth.length === 0 ? (
           <div className={cn(
-            "bg-white rounded-[40px] p-16 text-center border-2 border-dashed border-gray-100 flex flex-col items-center justify-center",
-            settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+            "bg-white rounded-[40px] p-20 text-center border-2 border-dashed border-gray-100 flex flex-col items-center justify-center relative overflow-hidden",
+            settings.darkMode && "bg-[#161616] border-white/5"
           )}>
-            <div className="w-16 h-16 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-4">
-              <CalendarIcon className="w-8 h-8 text-gray-300" />
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-gold/[0.02] to-transparent pointer-events-none" />
+            <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center mb-6 shadow-inner relative z-10">
+              <CalendarIcon className="w-8 h-8 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
             </div>
-            <p className="text-brand-navy/40 dark:text-white/20 text-[10px] font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px]">Nenhum evento agendado para este período</p>
+            <p className="text-gray-400 dark:text-gray-500 text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed max-w-[200px] relative z-10">Nenhum evento agendado para este período</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
@@ -710,27 +743,33 @@ export default function CalendarScreen() {
                     }
                   }}
                   className={cn(
-                    "bg-white p-5 rounded-[32px] shadow-sm border border-gray-100 flex items-center gap-6 active:scale-[0.99] transition-all hover:translate-x-1 cursor-pointer",
-                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
-                    isPast && "opacity-40 grayscale-[0.3]"
+                    "p-5 rounded-[28px] shadow-sm border flex items-center gap-5 active:scale-[0.99] transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer group relative overflow-hidden",
+                    settings.darkMode 
+                      ? "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:border-white/10" 
+                      : "bg-white border-gray-100 hover:border-gray-200",
+                    isPast && "opacity-50 grayscale-[0.5]"
                   )}
                 >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 dark:bg-brand-gold/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  
                   <div className={cn(
-                    "flex flex-col items-center justify-center min-w-[60px] h-[60px] rounded-2xl bg-gray-50/50",
-                    settings.darkMode && "bg-white/5"
+                    "flex flex-col items-center justify-center min-w-[56px] h-[56px] rounded-[18px] border",
+                    settings.darkMode 
+                      ? "bg-[#202020] border-white/5 shadow-inner" 
+                      : "bg-gray-50/50 border-gray-100/50"
                   )}>
-                    <span className={cn("text-2xl font-black text-brand-navy leading-none", settings.darkMode && "text-white")}>{format(eventDate, 'dd')}</span>
-                    <span className="text-[9px] font-black text-brand-copper uppercase tracking-tighter mt-1">{format(eventDate, 'eee', { locale: ptBR })}</span>
+                    <span className={cn("text-[22px] font-black leading-none tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{format(eventDate, 'dd')}</span>
+                    <span className="text-[8px] font-black text-brand-copper uppercase tracking-widest mt-1">{format(eventDate, 'eee', { locale: ptBR })}</span>
                   </div>
                   
-              <div className="flex-1 overflow-hidden">
-                    <div className="flex flex-col gap-1.5 mb-3">
+              <div className="flex-1 overflow-hidden relative z-10">
+                    <div className="flex flex-col gap-1.5 mb-2">
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-2 h-2 rounded-full" 
                           style={{ backgroundColor: getCategoryColor(event.category) }}
                         />
-                        <span className={cn("text-[9px] font-black uppercase tracking-[0.15em]", settings.darkMode ? "text-brand-copper" : "text-brand-copper")}>
+                        <span className={cn("text-[9px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-brand-gold" : "text-brand-copper")}>
                           {event.category}
                         </span>
                       </div>
@@ -768,19 +807,19 @@ export default function CalendarScreen() {
                         className="flex items-center gap-2"
                       >
                         <button 
-                          onClick={() => openEditModal(event)}
+                          onClick={(e) => { e.stopPropagation(); openEditModal(event); }}
                           className={cn(
-                            "p-3 rounded-xl transition-all active:scale-90",
-                            settings.darkMode ? "bg-white/5 text-gray-400 hover:text-brand-copper" : "bg-gray-50 text-gray-400 hover:text-brand-navy"
+                            "p-3.5 rounded-xl transition-all active:scale-90 border",
+                            settings.darkMode ? "bg-white/5 border-white/10 text-gray-400 hover:text-brand-gold hover:border-brand-gold/30 hover:bg-brand-gold/10" : "bg-white border-gray-200 text-gray-500 hover:text-brand-navy hover:bg-gray-50 shadow-sm"
                           )}
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => deleteEvent(event)}
+                          onClick={(e) => { e.stopPropagation(); deleteEvent(event); }}
                           className={cn(
-                            "p-3 rounded-xl transition-all active:scale-90",
-                            settings.darkMode ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" : "bg-red-50 text-red-500 hover:bg-brand-red shadow-sm"
+                            "p-3.5 rounded-xl transition-all active:scale-90 border",
+                            settings.darkMode ? "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300" : "bg-white border-red-100 text-red-500 hover:bg-red-50 shadow-sm"
                           )}
                         >
                           <Trash2 className="w-4 h-4" />
