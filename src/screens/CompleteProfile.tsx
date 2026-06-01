@@ -48,8 +48,7 @@ export default function CompleteProfile() {
 
   return (
     <div className={cn(
-      "fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 bg-gradient-to-b",
-      settings.darkMode ? "from-[#0A0A0A] to-[#121212]" : "from-gray-50 to-white"
+      "fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 bg-transparent"
     )}>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

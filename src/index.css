@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;1,300;1,400&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -13,6 +13,8 @@
   --color-brand-red: #B22222;
   --font-serif: "Playfair Display", serif;
   --font-sans: "Montserrat", sans-serif;
+  --font-cinzel: "Cinzel", serif;
+  --font-philosopher: "Philosopher", sans-serif;
 }
 
 @keyframes etherealSpin {
@@ -220,6 +222,15 @@
   animation: shimmerBackground 4s linear infinite;
 }
 
+@keyframes swayFlags {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.animate-sway {
+  animation: swayFlags 2.5s ease-in-out infinite;
+}
+
 /* Adjust aura for frame-3d specifically */
 .frame-3d.mystical-aura::before {
   inset: -10px;
@@ -234,21 +245,22 @@
 
 /* Maintain essential animations and PDF viewer tweaks */
 @keyframes leafFloatGlobal {
-  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-  20% { opacity: 0.3; }
-  80% { opacity: 0.3; }
-  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.3; }
+  50% { transform: translate(var(--mx, 20px), var(--my, -20px)) rotate(180deg); opacity: 0.6; }
+  90% { opacity: 0.3; }
+  100% { transform: translate(0, 0) rotate(360deg); opacity: 0; }
 }
 
 .leaf-floating {
   position: absolute;
   pointer-events: none;
-  animation: leafFloatGlobal var(--duration, 20s) linear infinite;
+  animation: leafFloatGlobal var(--duration, 20s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
   left: var(--left, 50%);
   width: var(--size, 20px);
   height: var(--size, 20px);
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
 @keyframes floating {
@@ -329,4 +341,41 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+}
+
+@keyframes smokePan1 {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes smokePan2 {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+.smoke-effect-1, .smoke-effect-2 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200vw;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+  background-size: cover;
+  background-repeat: repeat-x;
+  background-position: bottom;
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  will-change: transform;
+  transform: translateZ(0); /* Hardware Acceleration */
+}
+
+.smoke-effect-1 {
+  background-image: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png');
+  animation: smokePan1 80s linear infinite;
+}
+
+.smoke-effect-2 {
+  background-image: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog2.png');
+  animation: smokePan2 60s linear infinite;
 }

@@ -130,77 +130,8 @@ export default function AuthScreen({ onLogin }: { onLogin: (isGuest?: boolean) =
     }
   };
 
-  const leaves = useMemo(() => {
-    return [...Array(15)].map((_, i) => ({
-      id: i,
-      size: 32 + Math.random() * 40, // even larger size
-      duration: 15 + Math.random() * 30,
-      delay: Math.random() * -20,
-      opacity: 0.15 + Math.random() * 0.25,
-      pathX: Math.random() * 400 - 200, 
-      pathY: Math.random() * 400 - 200,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      rotate: Math.random() * 360,
-      scale: 0.8 + Math.random() * 0.5
-    }));
-  }, []);
-
   return (
-    <div className="flex-1 flex flex-col items-center justify-center h-full relative overflow-hidden w-full">
-      {/* Full-screen Background with animations */}
-      <div className={cn(
-        "absolute inset-0 flex flex-col overflow-hidden transition-colors duration-700",
-        settings.darkMode 
-          ? "bg-gradient-to-b from-[#0A0A0A] to-[#1A1A1A]" 
-          : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
-      )}>
-        {/* Texture Overlay */}
-        <div 
-          className="absolute inset-0 opacity-[0.03] pointer-events-none blur-[1px]" 
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat',
-            backgroundSize: '128px 128px'
-          }}
-        />
-
-        {/* Floating leaves */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {leaves.map((leaf) => (
-            <motion.div
-              key={leaf.id}
-              initial={{ 
-                left: leaf.left,
-                top: leaf.top,
-                rotate: leaf.rotate,
-                scale: leaf.scale,
-                opacity: 0
-              }}
-              animate={{ 
-                x: [0, leaf.pathX, 0],
-                y: [0, leaf.pathY, 0],
-                rotate: [0, 180, 360],
-                opacity: [0, leaf.opacity, leaf.opacity, 0]
-              }}
-              transition={{ 
-                duration: leaf.duration, 
-                repeat: Infinity, 
-                ease: "easeInOut",
-                delay: leaf.delay
-              }}
-              className="absolute z-0"
-              style={{ left: leaf.left, top: leaf.top }}
-            >
-              <Leaf 
-                className="text-brand-copper/60 fill-brand-copper/10" 
-                style={{ width: leaf.size, height: leaf.size }} 
-              />
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
+    <div className="flex-1 flex flex-col items-center justify-center h-full relative overflow-hidden w-full bg-transparent">
       {/* Back Button for Signup */}
       <div className="absolute top-8 left-6 z-20">
         <AnimatePresence mode="wait">

@@ -16,7 +16,7 @@ import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 import { AppRoutes } from './AppRoutes';
 import { NotificationManager } from './components/NotificationManager';
 import { GlobalSearch } from './components/GlobalSearch';
-import { BackgroundSparks } from './components/BackgroundSparks';
+import { StarryNightBg } from './components/StarryNightBg';
 import AuthScreen from './screens/Auth';
 import CompleteProfile from './screens/CompleteProfile';
 import ResetPassword from './screens/ResetPassword';
@@ -185,19 +185,34 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
   return (
     <motion.div
       initial={{ opacity: 0, x: isLeft ? -25 : 25 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 1.0, delay: idx * 0.1, ease: "easeOut" }}
+      animate={{ 
+        opacity: 1, 
+        x: 0,
+        scale: [1, 1.02, 1],
+      }}
+      transition={{ 
+        opacity: { duration: 1.0, delay: idx * 0.1, ease: "easeOut" },
+        x: { duration: 1.0, delay: idx * 0.1, ease: "easeOut" },
+        scale: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: idx * 0.2 }
+      }}
       className={cn(
-        "absolute z-10 pointer-events-none select-none flex items-center justify-center",
-        isLeft ? "-left-6 sm:-left-10 md:-left-12 lg:-left-14" : "-right-6 sm:-right-10 md:-right-12 lg:-right-14",
-        "top-[58%] -translate-y-1/2"
+        "absolute z-10 pointer-events-none select-none flex flex-col items-center justify-center origin-bottom",
+        isLeft ? "-left-10 sm:-left-16 md:-left-20 lg:-left-24" : "-right-10 sm:-right-16 md:-right-20 lg:-right-24",
+        "bottom-[-50px] sm:bottom-[-60px]"
       )}
     >
       {/* Container - Slanted Diagonally */}
-      <div 
-        className="relative flex flex-col items-center z-20 pointer-events-none"
-        style={{
-          transform: `rotate(${tiltAngle}deg)`
+      <motion.div 
+        className="relative flex flex-col items-center z-20 pointer-events-none group origin-bottom"
+        initial={{ rotate: tiltAngle }}
+        animate={{
+          rotate: [tiltAngle, tiltAngle + (isLeft ? 2.5 : -2.5), tiltAngle]
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: idx * 0.3
         }}
       >
         {/* LIGHTING REGION: Counter-rotated so the glow is upright */}
@@ -242,19 +257,50 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
 
         {/* Drum Image (Slants with parent container; mirrored on the right side) */}
         <div 
-          className="relative w-20 h-auto sm:w-26 md:w-28 lg:w-32 mt-2 filter drop-shadow-2xl"
+          className="relative w-24 h-auto sm:w-28 md:w-32 lg:w-36 mt-2 brightness-110 contrast-125 transition-transform"
           style={{
             transform: isLeft ? "scaleX(1)" : "scaleX(-1)"
           }}
         >
+           {/* Inner ambient glow that grounds the drum in the background field */}
+           <div className="absolute inset-0 top-[20%] bg-black/60 blur-[30px] rounded-full -z-10 transform scale-75 translate-y-[10%]" />
+           
            <img 
               src="https://res.cloudinary.com/dpv8m5igw/image/upload/v1779976056/ChatGPT_Image_28_de_mai._de_2026_10_47_21_rpug5r.png" 
               alt="Atabaque" 
-              className="w-full h-auto object-contain"
+              className="w-full h-auto object-contain relative z-10"
               referrerPolicy="no-referrer"
            />
         </div>
-      </div>
+      </motion.div>
+      
+      {/* Ground Shadow for Anchoring */}
+      <motion.div 
+        className="absolute -bottom-8 w-24 h-6 bg-black/80 rounded-[100%] blur-[10px] z-0"
+        animate={{
+          scale: [0.8, 1, 0.8],
+          opacity: [0.6, 0.9, 0.6]
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: idx * 0.2
+        }}
+      />
+      <motion.div 
+        className="absolute -bottom-4 w-12 h-3 bg-black rounded-[100%] blur-[4px] z-20"
+        animate={{
+          scale: [0.85, 1.05, 0.85],
+          opacity: [0.8, 1, 0.8]
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: idx * 0.2
+        }}
+      />
     </motion.div>
   );
 };
@@ -282,19 +328,20 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
           : (isLeft ? "-left-1.5 sm:-left-3.5" : "-right-1.5 sm:-right-3.5"),
         "top-0 -translate-y-1/2"
       )}
-      style={{ top }}
+      style={{ top, willChange: 'transform, opacity' }}
     >
       {/* Freestanding Candle Assembly - Slanted Diagonally */}
       <div 
         className="relative flex flex-col items-center z-20 pointer-events-none"
         style={{
-          transform: `rotate(${tiltAngle}deg)`
+          transform: `rotate(${tiltAngle}deg)`,
+          willChange: 'transform'
         }}
       >
         {/* FLAME & HEAT REGION: Counter-rotated by -tiltAngle so the flame burns straight up! */}
         <div 
           className="relative w-8 h-12 flex flex-col items-center justify-end z-30 origin-bottom overflow-visible"
-          style={{ transform: `rotate(${-tiltAngle}deg)` }}
+          style={{ transform: `rotate(${-tiltAngle}deg)`, willChange: 'transform' }}
         >
           {/* Soft warm surrounding glow that pulses gently to simulate casting light (Clear and vivid inner halo) */}
           <motion.div
@@ -341,6 +388,7 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
               ease: "easeInOut"
             }}
             className="relative w-7 h-11 origin-bottom flex items-center justify-center filter drop-shadow-[0_0_6px_#f59e0b] drop-shadow-[0_0_15px_rgba(234,88,12,0.7)] overflow-visible"
+            style={{ willChange: 'transform, opacity' }}
           >
             <svg 
               className="w-full h-full overflow-visible" 
@@ -384,6 +432,7 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
               }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               className="absolute top-[1px] w-[2px] h-[2px] rounded-full bg-[#ff3700] shadow-[0_0_2px_1px_rgba(239,68,68,0.4)]"
+              style={{ willChange: 'transform, opacity' }}
             />
           </div>
         </div>
@@ -740,18 +789,16 @@ const TopHeader = React.memo(function TopHeader() {
   }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
 
   const leaves = React.useMemo(() => {
-    return [...Array(85)].map((_, i) => ({
+    return [...Array(12)].map((_, i) => ({
       id: i,
-      size: 15 + Math.random() * 20,
-      duration: 20 + Math.random() * 30,
+      size: 6 + Math.random() * 16,
+      duration: 20 + Math.random() * 20,
       delay: Math.random() * -20,
       opacity: 0.15 + Math.random() * 0.25,
-      pathX: Math.random() * 200 - 100,
-      pathY: Math.random() * 150 - 75,
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
-      rotate: Math.random() * 360,
-      scale: 0.5 + Math.random() * 0.5
+      mx: `${Math.random() * 100 - 50}px`,
+      my: `${Math.random() * 100 - 50}px`
     }));
   }, []);
 
@@ -759,96 +806,71 @@ const TopHeader = React.memo(function TopHeader() {
     <div 
       id="app-top-header"
       className={cn(
-        "relative overflow-hidden shadow-2xl flex flex-col items-center min-h-[30dvh] sm:min-h-0 z-20",
+        "relative overflow-hidden flex flex-col items-center min-h-[30dvh] sm:min-h-0 z-20",
         settings.darkMode 
           ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
           : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
       )}
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)',
-        paddingBottom: '11rem',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 100px)',
+        paddingBottom: '14rem',
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Texture Overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.03] pointer-events-none blur-[1px]" 
-        style={{
-          backgroundImage: "url('https://www.transparenttextures.com/patterns/p6.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center top',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'scroll'
-        }}
-      />
-
-      {/* Decorative Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Floating Leaves across the entire banner - Higher visibility */}
-        {(settings.immersiveMode !== false) && leaves.map((leaf) => (
-          <motion.div
-            key={`leaf-fixed-${leaf.id}`}
-            initial={{ 
-              left: leaf.left,
-              top: leaf.top,
-              rotate: leaf.rotate,
-              opacity: 0,
-              scale: leaf.scale
-            }}
-            animate={{ 
-              x: [0, leaf.pathX, 0],
-              y: [0, leaf.pathY, 0],
-              rotate: [0, 180, 360],
-              opacity: [0, leaf.opacity, leaf.opacity, 0]
-            }}
-            transition={{ 
-              duration: leaf.duration, 
-              repeat: Infinity, 
-              ease: "easeInOut",
-              delay: leaf.delay
-            }}
-            className="absolute z-0"
-          >
-            <Leaf 
-              className="text-brand-copper/60 fill-brand-copper/10" 
-              style={{ 
-                width: leaf.size, 
-                height: leaf.size,
-              }} 
-            />
-          </motion.div>
-        ))}
-
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.3, 1],
-            opacity: [0.1, 0.25, 0.1],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-20 -left-20 w-80 h-80 bg-brand-copper rounded-full blur-[100px]"
-        />
-        <motion.div 
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-red rounded-full blur-[80px]"
-        />
+      {/* Background Video */}
+      <div className="absolute inset-0 z-0 overflow-hidden opacity-[0.15] pointer-events-none">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src="https://res.cloudinary.com/dpv8m5igw/video/upload/v1780271294/9e98484151b9ea8647f4a81a9e6863bd_byrkb4.mp4" type="video/mp4" />
+        </video>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center mt-2 sm:mt-3 pb-12">
+      {/* Decorative Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+        {/* Smoke Layers */}
+        <div className="smoke-effect-1" />
+        <div className="smoke-effect-2" />
+
+        {/* Floating Leaves across the entire banner - Higher visibility */}
+        {(settings.immersiveMode !== false) && leaves.map((leaf) => (
+          <div
+            key={`leaf-fixed-${leaf.id}`}
+            className="leaf-floating absolute z-0"
+            style={{
+              '--left': leaf.left,
+              '--duration': `${leaf.duration}s`,
+              '--delay': `${leaf.delay}s`,
+              '--size': `${leaf.size}px`,
+              '--mx': leaf.mx,
+              '--my': leaf.my,
+              top: leaf.top,
+            } as React.CSSProperties}
+          >
+            <Leaf className="text-brand-copper/60 fill-brand-copper/10 w-full h-full opacity-60" />
+          </div>
+        ))}
+
+        <div className="absolute -top-20 -left-20 w-80 h-80 bg-brand-copper rounded-full blur-[100px] opacity-[0.15]" />
+        <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-red rounded-full blur-[80px] opacity-[0.15]" />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center mt-4 sm:mt-6 pb-12 w-full">
         {/* Floating Logo Container */}
         <motion.div 
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative mb-32 sm:mb-36"
+          className="relative mb-6 sm:mb-8"
         >
           {/* Outer Glowing Ring */}
-          <div className="absolute -inset-4 rounded-full bg-brand-copper/10 blur-xl animate-pulse" />
+          <div className="absolute -inset-4 rounded-full bg-brand-copper/10 blur-xl" />
           <div className="absolute -inset-1 rounded-full border border-brand-copper/20 ring-4 ring-brand-copper/5" />
           
           {/* Rotating decorative icons - Herb Leaves */}
@@ -875,13 +897,13 @@ const TopHeader = React.memo(function TopHeader() {
           </div>
 
           <div className={cn(
-            "w-28 h-28 rounded-full relative frame-3d mystical-aura",
+            "w-24 h-24 sm:w-28 sm:h-28 rounded-full relative frame-3d mystical-aura transform",
             settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
           )}>
             {/* Glossy Overlay */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/5 via-white/20 to-transparent z-10 pointer-events-none mix-blend-overlay" />
             
-            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative">
+            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-black">
               {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
                 (() => {
                   const src = settings.logoBase64 || DEFAULT_TEMPLO_LOGO;
@@ -892,13 +914,13 @@ const TopHeader = React.memo(function TopHeader() {
                       loop 
                       muted 
                       playsInline
-                      className="w-full h-full object-cover filter drop-shadow-md rounded-full"
+                      className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
                     />
                   ) : (
                     <img 
                       src={src} 
                       alt="Logo Templo" 
-                      className="w-full h-full object-cover filter drop-shadow-md rounded-full"
+                      className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
                     />
                   );
                 })()
@@ -914,20 +936,19 @@ const TopHeader = React.memo(function TopHeader() {
           transition={{ delay: 0.3 }}
           className="flex flex-col items-center gap-1"
         >
-          <h2 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[16px] sm:text-[18px] md:text-[22px] uppercase tracking-[0.25em] sm:tracking-[0.3em] font-extrabold text-center px-2 whitespace-nowrap drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] animate-shimmer-text">
-            Guerreiros de Oya e Ogum
+          <h2 className="bg-gradient-to-r from-yellow-100 via-[#E8C359] to-[#D4AF37] bg-clip-text text-transparent font-serif text-[12px] sm:text-[14px] md:text-[16px] uppercase tracking-[0.15em] font-bold text-center px-4 drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] pb-1">
+            GUERREIROS DE OYA E OGUM
           </h2>
           <motion.div 
             animate={{ width: ['0%', '100%', '0%'] }}
             transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            className="h-[1px] w-full bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
+            className="h-[1px] w-full max-w-[200px] bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
           />
         </motion.div>
       </div>
 
       {/* Decorative Bottom Transition */}
-      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent z-20" />
-      <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#02050E] to-transparent z-20 pointer-events-none" />
       
       {/* Light glow at the boundary */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 max-w-2xl h-8 bg-brand-gold/20 blur-xl z-0 pointer-events-none" />
@@ -972,9 +993,6 @@ function SocialButtons() {
 
   return (
     <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-4 relative z-30 flex items-center justify-center pointer-events-none h-14">
-      {/* Connecting gold line bridging the buttons */}
-      <div className="absolute inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent top-1/2 -translate-y-1/2 z-0 pointer-events-none" />
-      
       {/* INSTAGRAM (Left) */}
       <motion.a
         initial={{ width: 0, opacity: 0 }}
@@ -1176,7 +1194,7 @@ function NotificationCenter({
 
   return (
     <>
-      <div className="absolute top-[22px] right-4 sm:right-6 z-[60] pointer-events-auto">
+      <div className="absolute top-[36px] right-4 sm:right-6 z-[60] pointer-events-auto">
         <motion.div 
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -1314,7 +1332,7 @@ function NotificationCenter({
                   {filteredNotifications.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center py-20 px-6 text-center select-none relative overflow-hidden">
                       {/* Quiet pulsing celestial glow and rotating sacred rings */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-brand-gold/[0.01] dark:bg-brand-gold/[0.03] rounded-full blur-3xl pointer-events-none animate-pulse" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-brand-gold/[0.01] dark:bg-brand-gold/[0.03] rounded-full blur-3xl pointer-events-none" />
                       
                       <motion.div 
                         animate={{ rotate: 360 }}
@@ -1347,7 +1365,6 @@ function NotificationCenter({
                       <div className="relative mb-8 z-10">
                         <motion.div 
                           whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
-                          transition={{ type: "spring", stiffness: 300, damping: 15 }}
                           animate={{ scale: [1, 1.05, 1], y: [0, -4, 0] }} 
                           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                           className="w-20 h-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center border border-slate-100/50 dark:border-white/5 shadow-inner cursor-pointer"
@@ -1684,10 +1701,13 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
   const leaves = React.useMemo(() => {
     return [...Array(8)].map((_, i) => ({
       id: i,
-      size: 15 + Math.random() * 25,
-      duration: 12 + Math.random() * 12,
+      size: 8 + Math.random() * 18,
+      duration: 15 + Math.random() * 15,
       delay: Math.random() * -20,
       left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      mx: `${Math.random() * 100 - 50}px`,
+      my: `${Math.random() * 100 - 50}px`
     }));
   }, []);
 
@@ -1713,7 +1733,9 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
                   '--duration': `${leaf.duration}s`,
                   '--delay': `${leaf.delay}s`,
                   '--size': `${leaf.size}px`,
-                  top: '100%'
+                  '--mx': leaf.mx,
+                  '--my': leaf.my,
+                  top: leaf.top,
                 } as React.CSSProperties}
               >
                 <Leaf className="text-brand-copper/30 fill-brand-copper/10 w-full h-full" />
@@ -1740,14 +1762,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               className="relative"
             >
               {/* Pulse Glow - Magical */}
-              <motion.div 
-                animate={{ 
-                  opacity: [0.3, 0.6, 0.3],
-                  scale: [0.9, 1.1, 0.9]
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -inset-10 bg-gradient-to-br from-brand-copper/30 to-brand-gold/20 rounded-full blur-2xl"
-              />
+              <div className="absolute -inset-10 bg-gradient-to-br from-brand-copper/30 to-brand-gold/20 rounded-full blur-2xl" />
 
               <motion.div 
                 animate={{ scale: [1, 1.02, 1] }}
@@ -1777,8 +1792,8 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               transition={{ delay: 0.4, duration: 0.8 }}
               className="mt-12 text-center"
             >
-              <h1 className="bg-gradient-to-r from-brand-gold-light via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-xl sm:text-2xl tracking-[0.4em] sm:tracking-[0.5em] font-bold uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] flex items-center justify-center gap-2 pb-1 animate-shimmer-text" style={{ fontFamily: "'Playfair Display', serif" }}>
-                GUERREIROS DE OYA E OGUN
+              <h1 className="bg-gradient-to-r from-yellow-100 via-[#E8C359] to-[#D4AF37] bg-clip-text text-transparent font-serif text-[14px] sm:text-[16px] md:text-[18px] tracking-[0.15em] font-bold uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] flex items-center justify-center gap-2 pb-1">
+                GUERREIROS DE OYA E OGUM
               </h1>
               
               {/* Progress Bar */}
@@ -1832,8 +1847,8 @@ function AppContent() {
           const contentEl = document.getElementById("app-content-wrapper");
           if (contentEl) {
             // Scroll down past the header to the content.
-            // Since top header bar is 84px tall, align content right below it.
-            const targetScrollTop = contentEl.offsetTop - 84;
+            // Since top header bar is 100px tall, align content right below it.
+            const targetScrollTop = contentEl.offsetTop - 100;
             mainScrollRef.current.scrollTop = targetScrollTop;
             setIsScrolled(targetScrollTop > 100);
             if (scrollingCandlesRef.current) {
@@ -2443,15 +2458,19 @@ function AppContent() {
       />
       <NotificationManager />
       <div className={cn(
-        "min-h-[100dvh] bg-[#050B14] flex flex-col items-center justify-center p-0 sm:p-4 font-sans",
-        settings.darkMode && "bg-black"
+        "min-h-[100dvh] bg-gradient-to-b from-[#02050E] via-[#050B14] to-[#0A1128] flex flex-col items-center justify-center p-0 sm:p-4 font-sans relative",
+        settings.darkMode && "bg-gradient-to-b from-[#02050E] via-[#050B14] to-[#0A1128]"
       )}>
+        {/* Diffused colored lights */}
+        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-amber-500/10 rounded-full blur-[120px] top-[-10%] left-[-10%] pointer-events-none z-0" />
+        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-blue-500/10 rounded-full blur-[120px] bottom-[-10%] right-[-10%] pointer-events-none z-0" />
+
         {/* Outer Glow Effects (Desktop/Tablet feel) */}
-        <div className="fixed w-[400px] h-[400px] bg-brand-red rounded-full opacity-5 blur-[100px] top-0 left-0 pointer-events-none" />
-        <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none" />
+        <div className="fixed w-[400px] h-[400px] bg-brand-red rounded-full opacity-5 blur-[100px] top-0 left-0 pointer-events-none z-0" />
+        <div className="fixed w-[400px] h-[400px] bg-brand-copper rounded-full opacity-5 blur-[100px] bottom-0 right-0 pointer-events-none z-0" />
 
         {/* Outer relative container that holds the side candles without clipping them */}
-        <div className="relative w-full h-[100dvh] sm:h-[812px] max-w-lg flex flex-col pointer-events-none justify-center">
+        <div className="relative w-full h-[100dvh] sm:h-[812px] max-w-lg flex flex-col pointer-events-none justify-center z-10">
           {/* Lit White Candles on Left and Right sides (rendered OUTSIDE overflow-hidden) */}
           {!authLoading && (user || isGuest) && isProfileComplete && (
             <>
@@ -2509,8 +2528,7 @@ function AppContent() {
           )}
 
           <div className={cn(
-            "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-[#F9F9F9] flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] border-brand-navy pointer-events-auto",
-            settings.darkMode ? "bg-[#121212] border-black" : "bg-[#F9F9F9]"
+            "w-full h-full min-h-[100dvh] sm:h-[812px] sm:min-h-0 max-w-lg bg-transparent flex flex-col relative overflow-hidden rounded-none sm:rounded-[40px] shadow-2xl border-0 sm:border-[8px] sm:border-white/5 pointer-events-auto"
           )}>
              {authLoading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -2526,7 +2544,7 @@ function AppContent() {
               <>
                 {/* Fixed Top Header Bar */}
                 <div className={cn(
-                  "absolute top-0 inset-x-0 h-[84px] z-[60] pointer-events-none transition-all duration-300",
+                  "absolute top-0 inset-x-0 h-[100px] z-[60] pointer-events-none transition-all duration-300",
                   isScrolled 
                     ? "border-b border-brand-gold/20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]" 
                     : "border-b border-transparent"
@@ -2536,7 +2554,7 @@ function AppContent() {
                     "absolute inset-0 transition-opacity duration-300 pointer-events-none",
                     isScrolled ? "opacity-100" : "opacity-0"
                   )}>
-                    <div className="absolute inset-x-0 top-0 h-[84px] overflow-hidden backdrop-blur-md">
+                    <div className="absolute inset-x-0 top-0 h-[100px] overflow-hidden backdrop-blur-md">
                       {/* Inner simulator container reproduces TopHeader container styling and proportions */}
                       <div 
                         className={cn(
@@ -2563,9 +2581,67 @@ function AppContent() {
                     </div>
                   </div>
 
+                  {/* Bandeirinhas de Terreiro (Umbanda/Festa) */}
+                  <div className="absolute top-0 left-0 w-full h-[60px] z-[61] pointer-events-none opacity-90">
+                    <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" className="absolute top-0 left-0">
+                       <path d="M0,0 Q25,18 50,0 Q75,18 100,0" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+                    </svg>
+                    <div className="absolute top-0 left-0 w-full h-full text-white">
+                      {Array.from({ length: 26 }).map((_, i) => {
+                        const count = 26;
+                        const tGlobal = (i + 0.5) / count; // 0 to 1
+                        
+                        let tLocal;
+                        if (tGlobal < 0.5) {
+                          tLocal = tGlobal * 2;
+                        } else {
+                          tLocal = (tGlobal - 0.5) * 2;
+                        }
+                        
+                        // Arco de Bezier Quadratica com max y para casar com SVG
+                        // Como o Q do SVG vai até 18, o y máximo (t=0.5) é 18 * 0.5 * 0.5 * 2 = 9 na tela
+                        const yOffset = 18 * 2 * tLocal * (1 - tLocal);
+                        
+                        // Derivada direcional aproximada para a rotação:
+                        const slopeApproximation = (1 - 2 * tLocal) * 12;
+                        
+                        // Rigorosamente alternado (1 vermelha, 1 branca sucessivamente):
+                        const isRed = i % 2 === 0;
+
+                        const clipPath = 'polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%)';
+                        
+                        const colorClass = isRed ? "bg-red-800/70" : "bg-white/70";
+
+                        return (
+                          <div 
+                            key={i} 
+                            className="absolute drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" 
+                            style={{ 
+                              left: `calc(${tGlobal * 100}% - 6px)`,
+                              top: `${yOffset}px`,
+                              width: '12px',
+                              height: '16px',
+                              transform: `rotate(${-slopeApproximation}deg)`,
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <div 
+                              className={`w-full h-full animate-sway ${colorClass}`}
+                              style={{
+                                clipPath: clipPath,
+                                transformOrigin: 'top center',
+                                animationDelay: `${i * 0.15}s`
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Top Floating Buttons inside the Header Bar */}
                   <GlobalSearch />
-                  <div className="absolute top-[18px] left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center gap-1.5 shrink-0 pointer-events-none">
+                  <div className="absolute top-[32px] left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center gap-1.5 shrink-0 pointer-events-none">
                     <div className="pointer-events-auto">
                       <AssistantButton onClick={() => setShowAssistantModal(true)} />
                     </div>
@@ -2608,7 +2684,7 @@ function AppContent() {
                 </AnimatePresence>
 
                 <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-                  <BackgroundSparks />
+                  <StarryNightBg />
                   <main
                     ref={mainScrollRef}
                     className="flex-1 overflow-y-auto overflow-x-hidden pb-48 scrollbar-hide relative z-10 flex flex-col pt-0 bg-transparent"

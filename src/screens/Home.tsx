@@ -322,14 +322,7 @@ export default function HomeScreen() {
       {/* 1. Header Profiling & Next Event Unified */}
       <header className="mb-6 mt-2 px-2 relative z-10">
         <div className={cn(
-          "rounded-[32px] relative overflow-hidden flex flex-col transition-all duration-300 shadow-md",
-          settings.darkMode 
-            ? greeting === "Bom dia" ? "bg-gradient-to-br from-[#2a2415] via-[#121212] to-[#0d0f14]"
-              : greeting === "Boa tarde" ? "bg-gradient-to-br from-[#2a1a15] via-[#121212] to-[#0d0f14]"
-              : "bg-gradient-to-br from-[#151a2a] via-[#121212] to-[#0d0f14]"
-            : greeting === "Bom dia" ? "bg-gradient-to-br from-[#fefce8] via-white to-[#f0fdf4] shadow-amber-900/[0.02]"
-              : greeting === "Boa tarde" ? "bg-gradient-to-br from-[#fff7ed] via-white to-[#fef2f2] shadow-orange-900/[0.02]"
-              : "bg-gradient-to-br from-[#f5f3ff] via-white to-[#eff6ff] shadow-indigo-900/[0.02]"
+          "rounded-2xl relative overflow-hidden flex flex-col transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
         )}>
           {/* Subtle dynamic background light */}
           <div className="absolute -left-12 -top-12 w-48 h-48 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
@@ -394,9 +387,7 @@ export default function HomeScreen() {
             onClick={() => navigate('/calendar')}
             className={cn(
               "p-6 pt-5 cursor-pointer relative z-10 group overflow-hidden transition-colors",
-              settings.darkMode 
-                ? "bg-[#0c0c0c]/30 hover:bg-white/[0.02]" 
-                : "bg-[#fbfbfb]/50 hover:bg-white"
+              "bg-white/[0.02] hover:bg-white/[0.06]"
             )}
           >
             {/* Background Icon Decoration */}
@@ -410,11 +401,7 @@ export default function HomeScreen() {
 
             <div className="flex items-center gap-2 mb-3.5 relative z-10">
               <div className="relative">
-                <motion.div 
-                  className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px]"
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.7, 0.3] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                />
+                <div className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px] opacity-60 pointer-events-none" />
                 <div className={cn(
                   "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
                   settings.darkMode 
@@ -489,10 +476,8 @@ export default function HomeScreen() {
             className="px-2 mb-6"
           >
             <div className={cn(
-              "p-5 rounded-[32px] relative overflow-hidden",
-              settings.darkMode 
-                ? "bg-[#1A1A1A] text-gray-200" 
-                : "bg-white text-brand-navy shadow-xl shadow-brand-copper/5"
+              "p-5 relative overflow-hidden text-gray-200",
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
             )}>
               {/* Spiritual whisper background ripple */}
               <motion.div 
@@ -528,10 +513,8 @@ export default function HomeScreen() {
         <motion.div 
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
           className={cn(
-            "p-6 rounded-[32px] flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden shadow-sm",
-            settings.darkMode 
-              ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(212,175,55,0.04)]" 
-              : "bg-white hover:shadow-md"
+            "p-6 flex flex-col justify-between active:scale-[0.98] group overflow-hidden",
+            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
           )}
         >
           {/* Inner ambient spiritual gold aura */}
@@ -609,10 +592,8 @@ export default function HomeScreen() {
         <motion.div 
           onClick={() => setShowPixMenu(true)}
           className={cn(
-            "p-6 rounded-[32px] flex flex-col justify-between relative transition-all active:scale-[0.98] group overflow-hidden shadow-sm",
-            settings.darkMode 
-              ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(16,185,129,0.04)]" 
-              : "bg-white shadow-[#CD7F32]/5 hover:shadow-md"
+            "p-6 flex flex-col justify-between active:scale-[0.98] group overflow-hidden",
+            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
           )}
         >
           {/* Inner ambient spiritual emerald aura */}
@@ -666,10 +647,8 @@ export default function HomeScreen() {
           {/* Endereço do Terreiro */}
           <motion.div 
             className={cn(
-              "p-6 sm:p-8 rounded-[36px] transition-all duration-300 relative overflow-hidden flex items-center gap-4 sm:gap-6 group hover:translate-y-[-2px] shadow-sm",
-              settings.darkMode 
-                ? "bg-[#141414] hover:shadow-[0_8px_30px_rgba(239,68,68,0.05)]" 
-                : "bg-white shadow-[0_8px_30px_rgba(239,68,68,0.04)]"
+              "p-6 sm:p-8 flex items-center gap-4 sm:gap-6 group z-10",
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative overflow-hidden hover:translate-y-[-2px] hover:bg-white/10 hover:border-amber-500/30"
             )}
             animate={{
               borderColor: settings.darkMode 
@@ -774,7 +753,7 @@ export default function HomeScreen() {
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className={cn(
                 "relative w-full max-w-sm rounded-[36px] overflow-hidden shadow-2xl flex flex-col max-h-[85vh]",
-                settings.darkMode ? "bg-[#141414]" : "bg-white"
+                "bg-[#050B14]/80 backdrop-blur-2xl border border-white/10"
               )}
             >
               {/* Top ambient luxury background aura */}
@@ -818,10 +797,8 @@ export default function HomeScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: 0.05 }}
                   className={cn(
-                    "p-5 sm:p-6 rounded-[32px] transition-all duration-300 relative overflow-hidden group/card flex flex-col",
-                    settings.darkMode 
-                      ? "bg-gradient-to-br from-[#121c2c]/80 to-[#0b1019]/90 hover:shadow-[0_8px_30px_rgba(59,130,246,0.15)]" 
-                      : "bg-gradient-to-br from-blue-50/70 to-white shadow-md shadow-blue-500/5 hover:shadow-[0_12px_40px_rgba(59,130,246,0.08)]"
+                    "p-5 sm:p-6 flex flex-col relative overflow-hidden group/card",
+                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -888,10 +865,8 @@ export default function HomeScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, delay: 0.15 }}
                   className={cn(
-                    "p-5 sm:p-6 rounded-[32px] transition-all duration-300 relative overflow-hidden group/card flex flex-col",
-                    settings.darkMode 
-                      ? "bg-gradient-to-br from-[#211124]/80 to-[#120715]/90 hover:shadow-[0_8px_30px_rgba(138,5,190,0.15)]" 
-                      : "bg-gradient-to-br from-purple-50/70 to-white shadow-md shadow-purple-500/5 hover:shadow-[0_12px_40px_rgba(138,5,190,0.08)]"
+                    "p-5 sm:p-6 flex flex-col relative overflow-hidden group/card",
+                    "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
                   )}
                 >
                   {/* Watermark Logo Decorative */}
@@ -1049,11 +1024,7 @@ export default function HomeScreen() {
                     }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <motion.div 
-                      className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" 
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.85, 0.6] }}
-                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                    />
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none opacity-60 pointer-events-none" />
                     
                     <motion.div 
                       className={cn(
@@ -1097,11 +1068,7 @@ export default function HomeScreen() {
                     }}
                     transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <motion.div 
-                      className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" 
-                      animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.85, 0.6] }}
-                      transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
-                    />
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-rose-500/20 rounded-full blur-3xl pointer-events-none opacity-60 pointer-events-none" />
 
                     <motion.div 
                       className={cn(
@@ -1145,11 +1112,7 @@ export default function HomeScreen() {
                     }}
                     transition={{ duration: 4.4, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <motion.div 
-                      className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" 
-                      animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.85, 0.6] }}
-                      transition={{ duration: 5.4, repeat: Infinity, ease: "easeInOut" }}
-                    />
+                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none opacity-60 pointer-events-none" />
 
                     <motion.div 
                       className={cn(
@@ -1185,8 +1148,8 @@ export default function HomeScreen() {
         ) : (
           <motion.div 
             className={cn(
-              "p-6 sm:p-8 rounded-[32px] border flex flex-col items-center justify-center text-center mr-4 mt-2 relative overflow-hidden",
-              settings.darkMode ? "bg-white/5 border-white/10" : "bg-white/80 border-gray-100 shadow-sm"
+              "p-6 sm:p-8 flex flex-col items-center justify-center text-center mr-4 mt-2",
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative overflow-hidden"
             )}
             animate={{
               borderColor: settings.darkMode
@@ -1196,11 +1159,7 @@ export default function HomeScreen() {
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
             {/* Ambient gold/copper floating sphere behind it */}
-            <motion.div 
-              className="absolute -top-12 -left-12 w-24 h-24 bg-brand-copper/10 rounded-full blur-2xl pointer-events-none"
-              animate={{ y: [0, 15, 0], scale: [1, 1.2, 1] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-            />
+            <div className="absolute -top-12 -left-12 w-24 h-24 bg-brand-copper/10 rounded-full blur-2xl pointer-events-none opacity-60 pointer-events-none" />
             <motion.div 
               className={cn(
                 "w-16 h-16 rounded-full flex items-center justify-center mb-4 relative z-10",
@@ -1269,8 +1228,8 @@ export default function HomeScreen() {
                  onClick={() => navigate('/calendar', { state: { scrollToAgenda: true } })}
                  className={cn(
                    "w-full flex items-center gap-4 p-4 rounded-[28px] border transition-all active:scale-[0.98] text-left group relative overflow-hidden",
-                   settings.darkMode ? "bg-[#1A1A1A] border-gray-800 hover:border-gray-700" : "bg-white border-gray-100 shadow-sm hover:border-brand-copper/30 hover:shadow-md",
-                   isEventToday && (settings.darkMode ? "border-brand-copper/30 bg-brand-copper/10" : "border-brand-copper/30 bg-brand-copper/5 shadow-brand-copper/10")
+                   "bg-white/[0.02] border-white/5 hover:border-amber-500/30 hover:bg-white/[0.06]",
+                   isEventToday && "border-amber-500/50 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
                  )}
               >
                 {/* Decoration line for today */}
@@ -1363,10 +1322,8 @@ export default function HomeScreen() {
 
         {/* Contatos Úteis */}
         <div className={cn(
-          "p-6 sm:p-8 rounded-[32px] transition-all duration-300 relative overflow-hidden group hover:translate-y-[-2px] mt-8 max-w-lg mx-auto shadow-sm",
-          settings.darkMode 
-            ? "bg-gradient-to-br from-[#1C1815] to-[#0D0F14] hover:shadow-[0_15px_45px_rgba(0,0,0,0.5)]" 
-            : "bg-gradient-to-br from-[#f8f9fc] via-white to-white hover:shadow-[0_15px_45px_rgba(59,130,246,0.06)]"
+          "p-6 sm:p-8 flex flex-col items-center mt-8 max-w-lg mx-auto overflow-hidden group hover:translate-y-[-2px]",
+          "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
         )}>
           {/* Background Phone Decoration */}
           <div className="absolute -right-8 -bottom-8 opacity-[0.02] dark:opacity-[0.03] group-hover:scale-110 group-hover:rotate-6 transition-transform duration-700 pointer-events-none">
@@ -1400,9 +1357,7 @@ export default function HomeScreen() {
               return (
                 <div key={contact.id} className={cn(
                    "relative flex items-center justify-between p-4 rounded-[24px] transition-all duration-300",
-                   settings.darkMode 
-                     ? "bg-[#181818]/60 hover:bg-[#1C1815]/80" 
-                     : "bg-white hover:bg-blue-50/5 shadow-sm"
+                   "bg-white/[0.02] hover:bg-white/[0.06] border border-white/5"
                 )}>
                   <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-3">
                     <div className={cn(
