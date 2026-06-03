@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, ChevronDown, User, Send, RotateCcw, X, Mic, Paperclip, Camera, Volume2, Pause, Loader2, Copy, Check, Maximize, Minimize, Menu, Search, MessageSquare, Plus, Trash2, Shrink } from 'lucide-react';
+import { Bot, ChevronDown, User, Send, RotateCcw, X, Mic, Paperclip, Camera, Volume2, Pause, Loader2, Copy, Check, Maximize, Minimize, Menu, Search, MessageSquare, Plus, Trash2, Shrink, Leaf } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { useAssistant } from '../lib/AssistantContext';
 import { useAuth } from '../lib/AuthContext';
-import { DEFAULT_ASSISTANT_AVATAR } from '../types';
+import { DEFAULT_ASSISTANT_AVATAR, AppSettings } from '../types';
+import { useStorage } from '../hooks/useStorage';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SmartSuggestions } from './SmartSuggestions';
@@ -50,27 +51,57 @@ const TypewriterMarkdown = ({ content, onComplete }: { content: string, onComple
   return <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>;
 };
 
-const LeafAnimation = () => {
+const LeafAnimation = React.memo(() => {
+    // Generate static values once per mount
+    const leaves = React.useMemo(() => [...Array(40)].map(() => {
+        const startX = Math.random() * 100;
+        const endX = startX + (Math.random() * 40 - 20);
+        const startY = Math.random() * 100;
+        const endY = startY + (Math.random() * 40 - 20);
+        const duration = 20 + Math.random() * 20;
+        const delay = Math.random() * 15;
+        const size = 15 + Math.random() * 25;
+        return { startX, endX, startY, endY, duration, delay, size };
+    }), []);
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-            {[...Array(6)].map((_, i) => (
-                <div
+            {leaves.map((leaf, i) => (
+                <motion.div
                     key={i}
-                    className="leaf-particle"
+                    className="absolute text-brand-gold"
+                    initial={{
+                        top: `${leaf.startY}%`,
+                        left: `${leaf.startX}%`,
+                        rotate: 0,
+                        opacity: 0,
+                        scale: 0.8
+                    }}
+                    animate={{
+                        top: [`${leaf.startY}%`, `${leaf.endY}%`, `${leaf.startY}%`],
+                        left: [`${leaf.startX}%`, `${leaf.endX}%`, `${leaf.startX}%`],
+                        rotate: [0, 180, 360],
+                        opacity: [0.1, 0.4, 0.1],
+                        scale: [0.8, 1, 0.8]
+                    }}
+                    transition={{
+                        duration: leaf.duration,
+                        repeat: Infinity,
+                        delay: leaf.delay,
+                        ease: "linear"
+                    }}
                     style={{
-                        '--duration': `${25 + Math.random() * 20}s`,
-                        '--delay': `${Math.random() * 15}s`,
-                        '--left': `${Math.random() * 100}%`
-                    } as React.CSSProperties}
+                        width: leaf.size,
+                        height: leaf.size,
+                        filter: 'drop-shadow(0 2px 5px rgba(212,175,55,0.2))'
+                    }}
                 >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 opacity-80">
-                        <path d="M17 8C17 8 21 0 12 0C3 0 7 8 7 8C7 8 3 16 12 24C21 16 17 8 17 8Z" />
-                    </svg>
-                </div>
+                    <Leaf className="w-full h-full opacity-40 mix-blend-screen" />
+                </motion.div>
             ))}
         </div>
     );
-};
+});
 
 const highlightEntities = (text: string) => {
   const entities = [
@@ -204,7 +235,7 @@ const MessageAudioButton = ({ text, isComplete }: { text: string; isComplete: bo
       onClick={handleClick}
       disabled={isLoading}
       title={isPlaying ? "Pausar" : "Ouvir"}
-      className="p-1.5 rounded-full hover:bg-[#D4AF37]/20 text-[#D4AF37] transition-all focus:outline-none disabled:opacity-50 self-start mt-1 flex-shrink-0"
+      className="p-1.5 rounded-full hover:bg-brand-gold/20 text-brand-gold transition-all focus:outline-none disabled:opacity-50 self-start mt-1 flex-shrink-0"
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -276,7 +307,7 @@ const DownloadPdfButton = ({ content }: { content: string }) => {
     <button
       onClick={handleDownload}
       disabled={isGenerating}
-      className="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#B49020] hover:brightness-110 active:scale-95 text-black rounded-xl font-medium text-[13px] tracking-tight transition-all shadow-[0_4px_10px_rgba(212,175,55,0.2)] focus:outline-none self-start"
+      className="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-brand-gold to-brand-gold-medium hover:brightness-110 active:scale-95 text-black rounded-xl font-medium text-[13px] tracking-tight transition-all shadow-[0_4px_10px_rgba(212,175,55,0.2)] focus:outline-none self-start"
     >
       {isGenerating ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Download className="w-[18px] h-[18px]" />}
       Baixar Documento (PDF)
@@ -375,6 +406,7 @@ const PressableMessageWrapper = ({ text, children, disabled }: { text: string, c
 
 const AssistantModal = () => {
     const { user } = useAuth();
+    const [settings] = useStorage<AppSettings>('templo_settings', {} as AppSettings);
     const navigate = useNavigate();
     const { 
         showAssistantModal, setShowAssistantModal, 
@@ -447,7 +479,6 @@ const AssistantModal = () => {
     }, [showAssistantModal]);
     
     const assistantAvatarRef = useRef<HTMLInputElement>(null);
-    const userAvatarRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const isAutoScrollEnabledRef = useRef(true);
@@ -656,43 +687,13 @@ const AssistantModal = () => {
     return (
         <>
         <AnimatePresence>
-        {showAssistantModal && isPipMode && (
-           <motion.div
-              drag
-              dragConstraints={{ left: -window.innerWidth + 80, right: 0, top: -window.innerHeight + 80, bottom: 0 }}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="fixed bottom-24 right-5 w-16 h-16 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.5)] border-2 border-[#D4AF37] z-[99999] cursor-pointer group"
-              onClick={() => setIsPipMode(false)}
-            >
-               <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center bg-[#0f172a]">
-                 <div className="absolute inset-0 bg-[#D4AF37]/10 animate-pulse" />
-                 {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
-                    ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10 pointer-events-none" /> 
-                    : <Bot className="w-8 h-8 text-[#D4AF37] relative z-10 pointer-events-none" />
-                 }
-                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm z-20">
-                    <Maximize className="w-6 h-6 text-white" />
-                 </div>
-               </div>
-               <button 
-                  onClick={(e) => { e.stopPropagation(); setShowAssistantModal(false); setIsPipMode(false); }} 
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-30 shadow-md"
-               >
-                  <X className="w-4 h-4" />
-               </button>
-            </motion.div>
-        )}
-        </AnimatePresence>
-        <AnimatePresence>
         {showAssistantModal && (
-        <div className={cn("fixed inset-0 z-[9999] flex flex-col justify-end lg:items-center lg:justify-center", isFullScreen ? "p-0" : "p-0 lg:p-6 pb-0", isPipMode ? "opacity-0 pointer-events-none" : "opacity-100 transition-opacity duration-300")}>
+        <div className={cn("fixed inset-0 z-[9999] flex flex-col justify-end lg:items-center lg:justify-center", isFullScreen ? "p-0" : "p-0 lg:p-6 pb-0", "opacity-100 transition-opacity duration-300")}>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setShowAssistantModal(false); setIsPipMode(false); }}
+              onClick={() => { setShowAssistantModal(false); }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
@@ -710,24 +711,55 @@ const AssistantModal = () => {
                 }
               }}
               className={cn(
-                "relative w-full bg-[#0f172a]/90 backdrop-blur-[16px] flex flex-row shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3)] border-[0.5px] border-white/10 border-t-[#D4AF37] font-sans tracking-[-0.02em] overflow-hidden transition-all duration-300",
+                "relative w-full overflow-hidden flex flex-row shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3)] border-[0.5px] border-white/5 border-t-brand-gold font-sans tracking-[-0.02em] transition-all duration-300",
                 isFullScreen 
                   ? "max-w-none h-[100dvh] rounded-none border-x-0 border-b-0" 
-                  : "lg:max-w-4xl h-[85dvh] lg:h-[80vh] rounded-t-[24px] lg:rounded-[24px]"
+                  : "lg:max-w-4xl h-[85dvh] lg:h-[80vh] rounded-t-[32px] lg:rounded-[32px]"
               )}
             >
+              <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[#0a0500]">
+                {/* Moving Gold Gradient Background without CSS blur */}
+                <motion.div
+                  className="absolute -inset-[50%] z-0 origin-center"
+                  style={{
+                    background: 'radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.05) 30%, transparent 60%)',
+                  }}
+                  animate={{ 
+                    rotate: [0, 360],
+                    scale: [1, 1.2, 1] 
+                  }}
+                  transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                />
+                
+                <motion.div
+                  className="absolute -inset-[100%] z-0 origin-center"
+                  style={{
+                    background: 'radial-gradient(ellipse at 30% 30%, rgba(217, 119, 6, 0.15) 0%, transparent 40%)',
+                  }}
+                  animate={{ 
+                    rotate: [360, 0],
+                    scale: [1.2, 1, 1.2] 
+                  }}
+                  transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                />
+                
+                <div className="absolute inset-0 z-10">
+                  <LeafAnimation />
+                </div>
+              </div>
+
               <AnimatePresence>
                 {showSidebar && (
                   <motion.div
                     initial={{ width: 0, opacity: 0 }}
                     animate={{ width: 260, opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
-                    className="flex flex-col border-r border-white/10 bg-[#070a13]/95 shrink-0 overflow-hidden"
+                    className="flex flex-col border-r border-white/5 bg-black/40 backdrop-blur-md shrink-0 overflow-hidden relative z-10"
                   >
                     <div className="p-4 flex flex-col gap-4 h-full min-w-[260px]">
                       <button 
                         onClick={() => { createNewSession(); setShowSidebar(false); }}
-                        className="flex items-center gap-2 p-2.5 rounded-lg bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] transition-colors border border-[#D4AF37]/30"
+                        className="flex items-center gap-2 p-2.5 rounded-lg bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold transition-colors border border-brand-gold/30"
                       >
                         <Plus className="w-4 h-4" />
                         <span className="text-sm font-medium">Novo Chat</span>
@@ -740,7 +772,7 @@ const AssistantModal = () => {
                           placeholder="Buscar histórico..." 
                           value={searchTerm}
                           onChange={e => setSearchTerm(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white/90 placeholder:text-white/40 focus:outline-none focus:border-[#D4AF37]/50"
+                          className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white/90 placeholder:text-white/40 focus:outline-none focus:border-brand-gold/50"
                         />
                       </div>
 
@@ -775,36 +807,41 @@ const AssistantModal = () => {
                 )}
               </AnimatePresence>
 
-              <div className="flex flex-col flex-1 min-w-0 h-full relative">
-                <div className="bg-[#070a13]/95 backdrop-blur-[15px] border-b-[0.5px] border-white/5 px-6 py-3.5 flex flex-col shrink-0 relative z-10 group/header">
+              <div className="flex flex-col flex-1 min-w-0 h-full relative z-10">
+                <div className="bg-black/60 backdrop-blur-xl border-b-[0.5px] border-brand-gold/10 px-6 py-4 flex flex-col shrink-0 relative z-20 group/header shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-[14px]">
                       <button 
                         onClick={() => setShowSidebar(!showSidebar)}
-                        className="p-2 -ml-2 rounded-lg hover:bg-white/5 text-white/50 transition-colors focus:outline-none"
+                        className="p-2 -ml-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all focus:outline-none"
                       >
                         <Menu className="w-5 h-5" />
                       </button>
                     <div className="relative group cursor-pointer" onClick={() => assistantAvatarRef.current?.click()}>
-                      <div className="w-14 h-14 rounded-full border-[1.5px] border-[#D4AF37] overflow-hidden bg-gradient-to-tr from-[#D4AF37]/10 to-transparent flex items-center justify-center relative shadow-[0_0_15px_rgba(212,175,55,0.25)] transition-transform group-hover:scale-105">
-                        <div className="absolute inset-0 bg-[#D4AF37]/10 animate-pulse" />
-                        {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
-                          ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10" /> 
-                          : <Bot className="w-7 h-7 text-[#D4AF37] relative z-10" />
-                        }
-                        <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="w-5 h-5 text-white" />
+                      <div className="w-[46px] h-[46px] rounded-full p-[2px] bg-gradient-to-b from-brand-gold/80 to-brand-gold/20 shrink-0 shadow-[0_4px_15px_rgba(212,175,55,0.25)] transition-transform duration-300 group-hover:scale-105 group-hover:shadow-[0_4px_25px_rgba(212,175,55,0.4)]">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-[#0a0600] relative flex items-center justify-center">
+                          <div className="absolute inset-0 bg-brand-gold/10 animate-pulse" />
+                          {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
+                            ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover relative z-10" /> 
+                            : <Bot className="w-5 h-5 text-brand-gold relative z-10" />
+                          }
+                          <div className="absolute inset-0 bg-black/50 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="w-4 h-4 text-white" />
+                          </div>
                         </div>
                       </div>
                       <input type="file" ref={assistantAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setAssistantAvatar)} />
                     </div>
-                    <div>
-                      <h3 className="text-[16px] font-sans font-[600] text-[#D4AF37] tracking-[-0.02em] flex items-center gap-2 leading-none">
+                    <div className="flex flex-col pt-0.5">
+                      <h3 className="text-[17px] font-sans font-[600] text-transparent bg-clip-text bg-gradient-to-r from-brand-gold to-[#fcd373] tracking-tight flex items-center gap-2 leading-tight">
                         Mini Chefinho
                       </h3>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <span className="text-[11px] text-[#64748b] tracking-wide font-medium leading-none flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]/80 animate-pulse shadow-[0_0_6px_rgba(212,175,55,0.4)]" />
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className="relative flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 z-10" />
+                          <div className="absolute w-3 h-3 rounded-full bg-emerald-500/40 animate-ping" />
+                        </div>
+                        <span className="text-[11px] text-white/50 tracking-widest font-medium leading-none uppercase">
                           Online
                         </span>
                       </div>
@@ -825,30 +862,16 @@ const AssistantModal = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 opacity-100 transition-opacity duration-300">
-                    <div className="relative group cursor-pointer mr-2" onClick={() => userAvatarRef.current?.click()}>
-                      <div className="w-10 h-10 rounded-full border-[1px] border-[#D4AF37]/50 bg-gradient-to-br from-[#D4AF37] to-[#B49020] overflow-hidden flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-105">
-                        {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover relative z-10" /> : <User className="w-5 h-5 text-black/80 relative z-10" />}
-                        <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <input type="file" ref={userAvatarRef} className="hidden" accept="image/*" onChange={(e) => handleAvatarChange(e, setUserAvatar)} />
-                    </div>
                     <button onClick={clearChat} title="Limpar Chat" className="p-2 bg-transparent rounded-full text-white/50 hover:text-white hover:bg-white/5 transition-all focus:outline-none">
                       <RotateCcw className="w-[18px] h-[18px]" />
                     </button>
                     <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? "Restaurar tamanho" : "Tela cheia"} className="p-2 bg-transparent rounded-full text-white/50 hover:text-white hover:bg-white/5 transition-all focus:outline-none">
                       {isFullScreen ? <Minimize className="w-[18px] h-[18px]" /> : <Maximize className="w-[18px] h-[18px]" />}
                     </button>
-                    <button onClick={() => setIsPipMode(true)} title="Minimizar (PiP)" className="p-2 bg-transparent rounded-full text-white/50 hover:text-white hover:bg-white/5 transition-all focus:outline-none">
-                      <ChevronDown className="w-[22px] h-[22px]" />
-                    </button>
                   </div>
                 </div>
               </div>
-              
-              <LeafAnimation />
-              
+
               <div 
                 ref={containerRef}
                 onScroll={handleScroll}
@@ -857,17 +880,27 @@ const AssistantModal = () => {
                 <div className="space-y-6">
                   {messages.length === 0 && !isChatLoading && (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex flex-col items-center justify-center text-center mt-10"
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="flex flex-col items-center justify-center text-center mt-[10vh] max-w-sm mx-auto"
                     >
-                      <div className="w-20 h-20 rounded-full border border-[#D4AF37]/20 bg-gradient-to-tr from-[#D4AF37]/10 to-transparent flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(212,175,55,0.1)] relative">
-                        <div className="absolute inset-0 rounded-full bg-[#D4AF37]/5 animate-pulse" />
-                        <Bot className="w-10 h-10 text-[#D4AF37] relative z-10" />
+                      <div className="relative mb-6 group">
+                        <div className="absolute inset-0 bg-brand-gold/20 rounded-full blur-2xl group-hover:bg-brand-gold/30 transition-colors duration-500" />
+                        <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-b from-brand-gold/60 to-brand-gold/10 relative z-10 animate-fade-in shadow-[0_8px_30px_rgba(212,175,55,0.2)] hover:scale-105 transition-transform duration-500">
+                          <div className="w-full h-full rounded-full bg-[#0a0600] flex items-center justify-center overflow-hidden">
+                            {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) 
+                              ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> 
+                              : <Bot className="w-12 h-12 text-brand-gold/80" />
+                            }
+                          </div>
+                        </div>
                       </div>
-                      <h2 className="text-2xl font-sans font-bold text-white mb-2 tracking-tight">O que vamos fazer hoje?</h2>
-                      <p className="text-[#94a3b8] text-sm max-w-[280px] leading-relaxed">
-                        Sou o Mini Chefinho, seu assistente terreiro. Posso te ajudar com dúvidas, horários, banhos, e muito mais.
+                      <h2 className="text-2xl font-sans font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 mb-3 tracking-tight">
+                        O que vamos fazer hoje?
+                      </h2>
+                      <p className="text-white/40 text-[15px] max-w-[280px] leading-relaxed font-normal">
+                        Sou o Mini Chefinho, seu assistente de terreiro. Posso te ajudar com dúvidas, horários, banhos, e muito mais.
                       </p>
                     </motion.div>
                   )}
@@ -888,24 +921,24 @@ const AssistantModal = () => {
                         )}
                       >
                          {m.role === 'assistant' && (
-                           <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37] bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
-                               {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-[#D4AF37]" />}
+                           <div className="w-8 h-8 rounded-full border-[1.5px] border-brand-gold bg-[#161616] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
+                               {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />}
                            </div>
                          )}
                          {m.role === 'user' && (
-                           <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37]/50 bg-gradient-to-br from-[#D4AF37] to-[#B49020] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
-                               {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-black/80" />}
+                           <div className="w-8 h-8 rounded-full border-[1.5px] border-brand-gold/50 bg-gradient-to-br from-brand-gold to-brand-gold-medium overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] mt-1">
+                               {settings.profilePhoto ? <img src={settings.profilePhoto} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-black/80" />}
                            </div>
                          )}
                         <PressableMessageWrapper text={m.role === 'assistant' ? mainContent : m.content} disabled={i === 0}>
                           <div className={cn(
                             "px-4 py-3 rounded-[20px] overflow-hidden backdrop-blur-md relative z-10 w-full flex flex-col gap-3",
                             m.role === 'assistant' 
-                              ? "bg-[#f1f5f9]/95 text-[#0f172a] rounded-tl-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]" 
-                              : "bg-gradient-to-br from-[#D4AF37] to-[#B49020] text-black rounded-tr-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]"
+                              ? "bg-white/95 text-[#161616] rounded-tl-sm shadow-sm" 
+                              : "bg-gradient-to-br from-brand-gold to-brand-gold-medium text-brand-navy rounded-tr-sm shadow-sm"
                           )}>
                             {m.role === 'assistant' ? (
-                              <div className="prose prose-sm prose-p:leading-relaxed prose-headings:text-[#0f172a] prose-headings:font-[600] prose-a:text-[#D4AF37] prose-strong:text-[#D4AF37] prose-strong:font-[700] prose-strong:-tracking-[0.01em] max-w-none text-[#0f172a] font-sans tracking-[-0.02em] prose-td:border prose-td:border-slate-200 prose-th:border prose-th:border-slate-200 prose-table:border-collapse prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-code:text-[#D4AF37] prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-[400] prose-code:rounded">
+                              <div className="prose prose-sm prose-p:leading-relaxed prose-headings:text-[#161616] prose-headings:font-[600] prose-a:text-brand-gold prose-strong:text-brand-gold-dark prose-strong:font-[700] prose-strong:-tracking-[0.01em] max-w-none text-brand-navy font-sans tracking-[-0.02em] prose-td:border prose-td:border-slate-200 prose-th:border prose-th:border-slate-200 prose-table:border-collapse prose-th:bg-slate-100 prose-th:p-2 prose-td:p-2 prose-code:text-brand-gold-dark prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-[400] prose-code:rounded">
                                 {!m.isTyped ? (
                                     <TypewriterMarkdown 
                                       content={mainContent} 
@@ -957,7 +990,7 @@ const AssistantModal = () => {
                                   setIsChatStarted(true);
                                   handleChatSend(s);
                                }}
-                               className="px-3 py-1.5 bg-[#0f172a]/70 hover:bg-[#0f172a] text-[12px] font-sans text-white/90 font-medium rounded-[12px] border-[0.5px] border-[#D4AF37]/40 hover:border-[#D4AF37]/80 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none text-left"
+                               className="px-3 py-1.5 bg-[#161616]/70 hover:bg-[#161616] text-[12px] font-sans text-white/90 font-medium rounded-[12px] border-[0.5px] border-brand-gold/40 hover:border-brand-gold/80 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none text-left"
                             >
                               {s}
                             </button>
@@ -975,14 +1008,14 @@ const AssistantModal = () => {
                       transition={{ duration: 0.4 }}
                       className="flex items-start gap-2.5 text-[14px] lg:text-[15px] max-w-[95%] lg:max-w-[85%] relative self-start font-sans"
                     >
-                       <div className="w-8 h-8 rounded-full border-[1.5px] border-[#D4AF37] bg-[#0f172a] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] relative z-10 mt-1">
-                           {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-[#D4AF37]" />}
+                       <div className="w-8 h-8 rounded-full border-[1.5px] border-brand-gold bg-[#161616] overflow-hidden shrink-0 flex items-center justify-center shadow-[0_2px_5px_rgba(0,0,0,0.2)] relative z-10 mt-1">
+                           {(assistantAvatar || DEFAULT_ASSISTANT_AVATAR) ? <img src={assistantAvatar || DEFAULT_ASSISTANT_AVATAR} className="w-full h-full object-cover" /> : <Bot className="w-4 h-4 text-brand-gold" />}
                        </div>
-                       <div className="px-4 py-3 rounded-[20px] bg-[#f1f5f9]/95 text-[#0f172a] rounded-tl-sm shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] flex flex-col justify-center min-h-[44px] backdrop-blur-md relative z-10">
+                       <div className="px-4 py-3 rounded-[20px] bg-white/95 text-brand-navy rounded-tl-sm shadow-sm flex flex-col justify-center min-h-[44px] backdrop-blur-md relative z-10">
                            <div className="flex items-center gap-1.5 h-full pt-1">
-                               <motion.div className="w-2 h-2 rounded-full bg-[#0f172a]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0 }} />
-                               <motion.div className="w-2 h-2 rounded-full bg-[#0f172a]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.2 }} />
-                               <motion.div className="w-2 h-2 rounded-full bg-[#0f172a]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.4 }} />
+                               <motion.div className="w-2 h-2 rounded-full bg-[#161616]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0 }} />
+                               <motion.div className="w-2 h-2 rounded-full bg-[#161616]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.2 }} />
+                               <motion.div className="w-2 h-2 rounded-full bg-[#161616]/40" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: 0.4 }} />
                            </div>
                        </div>
                     </motion.div>
@@ -1015,7 +1048,7 @@ const AssistantModal = () => {
                   <div className="flex items-center gap-2 mb-2 w-full overflow-x-auto scrollbar-hide">
                      {attachments.map((att, idx) => (
                         <div key={idx} className="relative shrink-0 flex items-center gap-2 bg-[#000000]/40 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10 shadow-sm">
-                           {att.type === 'image' ? <Camera className="w-3.5 h-3.5 text-[#D4AF37]" /> : <Paperclip className="w-3.5 h-3.5 text-[#D4AF37]" />}
+                           {att.type === 'image' ? <Camera className="w-3.5 h-3.5 text-brand-gold" /> : <Paperclip className="w-3.5 h-3.5 text-brand-gold" />}
                            <span className="text-[12px] font-sans font-medium text-white/90 truncate max-w-[120px]">{att.file.name}</span>
                            <button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="ml-1 text-white/50 hover:text-red-400 focus:outline-none">
                              <X className="w-3.5 h-3.5" />
@@ -1027,13 +1060,13 @@ const AssistantModal = () => {
                 
                 <div 
                   className={cn(
-                    "flex items-end gap-3 relative transition-all duration-300",
+                    "flex items-end gap-3 relative transition-all duration-500",
                     isFocused ? "pb-2" : "pb-0"
                   )}
                 >
                   <div className={cn(
-                    "flex items-end gap-1 flex-1 bg-[#070a13]/90 border-[0.5px] rounded-2xl transition-all duration-300 px-2 py-1 shadow-inner",
-                    isFocused ? "border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.05)] bg-[#070a13]" : "border-white/10"
+                    "flex items-end gap-1 flex-1 bg-black/60 backdrop-blur-xl border-[0.5px] rounded-2xl transition-all duration-500 px-2 py-1 group/input",
+                    isFocused ? "border-brand-gold/50 shadow-[0_4px_30px_rgba(212,175,55,0.15)] bg-black/80" : "border-white/10 hover:border-white/20 hover:bg-black/70"
                   )}>
                     <input 
                       type="file" 
@@ -1047,7 +1080,7 @@ const AssistantModal = () => {
                          }
                       }} 
                     />
-                    <button onClick={() => pdfInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Anexar PDF">
+                    <button onClick={() => pdfInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-brand-gold transition-colors rounded-full focus:outline-none shrink-0" title="Anexar PDF">
                       <Paperclip className="w-[18px] h-[18px]" />
                     </button>
                     
@@ -1063,7 +1096,7 @@ const AssistantModal = () => {
                          }
                       }} 
                     />
-                    <button onClick={() => imageInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-[#D4AF37] transition-colors rounded-full focus:outline-none shrink-0" title="Câmera / Imagem">
+                    <button onClick={() => imageInputRef.current?.click()} className="p-2 mb-1 text-white/50 hover:text-brand-gold transition-colors rounded-full focus:outline-none shrink-0" title="Câmera / Imagem">
                       <Camera className="w-[18px] h-[18px]" />
                     </button>
                     <div className="relative flex-1 flex flex-col">
@@ -1086,11 +1119,11 @@ const AssistantModal = () => {
                                   className={cn(
                                     "w-full text-left px-3 py-2.5 flex flex-col transition-colors border-l-2",
                                     i === selectedCommandIndex 
-                                      ? "bg-white/10 border-[#D4AF37]" 
+                                      ? "bg-white/10 border-brand-gold" 
                                       : "hover:bg-white/5 border-transparent"
                                   )}
                                 >
-                                  <span className="text-[#D4AF37] font-medium text-sm">{c.cmd}</span>
+                                  <span className="text-brand-gold font-medium text-sm">{c.cmd}</span>
                                   <span className="text-white/60 text-[11px] truncate">{c.desc}</span>
                                 </button>
                               ))}
@@ -1113,7 +1146,7 @@ const AssistantModal = () => {
                         }}
                         disabled={isRecording || isTranscribing || isProcessingAttachments}
                         placeholder={isRecording ? "Gravando áudio..." : isTranscribing ? "Transcrevendo..." : isProcessingAttachments ? "Processando anexos..." : "Pergunte ao Mini Chefinho..."}
-                        className="w-full bg-transparent px-2 py-3 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-tight font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-[#D4AF37] scrollbar-hide flex items-center justify-center align-middle"
+                        className="w-full bg-transparent px-2 py-3 min-h-[44px] max-h-[120px] resize-none text-[15px] leading-tight font-sans font-[400] tracking-[-0.02em] text-white placeholder-white/30 focus:outline-none caret-brand-gold scrollbar-hide flex items-center justify-center align-middle"
                         rows={1}
                       />
                     </div>
@@ -1124,8 +1157,8 @@ const AssistantModal = () => {
                         className={cn(
                           "p-2 transition-all rounded-full focus:outline-none relative",
                           isRecording 
-                            ? "text-[#D4AF37]" 
-                            : isTranscribing ? "text-white/30 cursor-not-allowed" : "text-white/50 hover:text-[#D4AF37]"
+                            ? "text-brand-gold" 
+                            : isTranscribing ? "text-white/30 cursor-not-allowed" : "text-white/50 hover:text-brand-gold"
                         )} 
                         title="Mensagem de voz"
                       >
@@ -1140,7 +1173,7 @@ const AssistantModal = () => {
                         className={cn(
                           "flex items-center justify-center transition-all duration-300 p-2 rounded-full",
                           (chatInput.trim() || attachments.length > 0) 
-                            ? "bg-transparent text-[#D4AF37] hover:scale-105" 
+                            ? "bg-transparent text-brand-gold hover:scale-105" 
                             : "bg-transparent text-white/50 cursor-not-allowed"
                         )}
                       >

@@ -15,7 +15,7 @@ export default function PreferenceSettings() {
     <div className="space-y-6">
       <section className={cn(
         "bg-white rounded-[32px] p-6 shadow-sm border border-gray-100",
-        settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+        settings.darkMode && "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
       )}>
         <h3 className="text-[10px] font-black text-brand-copper uppercase mb-8 tracking-[0.2em] flex items-center gap-2">
           <Smartphone className="w-3 h-3" /> Sistema & Visual

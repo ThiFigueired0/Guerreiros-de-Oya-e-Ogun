@@ -140,7 +140,7 @@ export const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ onSuggestion
            <button 
              key={`${action}-${index}`}
              onClick={() => onSuggestionClick(action)}
-             className="shrink-0 w-[200px] sm:w-[180px] p-2.5 bg-[#0f172a]/50 hover:bg-[#0f172a] text-[13px] font-sans text-white/90 font-medium rounded-[14px] border-[0.5px] border-[#D4AF37]/30 hover:border-[#D4AF37]/80 hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none whitespace-normal text-left leading-normal snap-start"
+             className="shrink-0 w-[200px] sm:w-[180px] p-2.5 bg-[#161616]/70 hover:bg-[#161616] text-[13px] font-sans text-white/90 font-medium rounded-[14px] border-[0.5px] border-brand-gold/30 hover:border-brand-gold/80 hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all duration-300 focus:outline-none whitespace-normal text-left leading-normal snap-start"
            >
              {action}
            </button>

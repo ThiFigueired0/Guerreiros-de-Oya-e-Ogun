@@ -1402,7 +1402,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
         {/* INSTAGRAM (Left) */}
         <motion.a
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: shouldAnimate ? 108 : 0, opacity: shouldAnimate ? 1 : 0 }}
+          animate={{ width: shouldAnimate ? (!isSticky ? 134 : 100) : 0, opacity: shouldAnimate ? 1 : 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
           whileHover={{ scale: 1.04, x: -2 }}
           whileTap={{ scale: 0.98 }}
@@ -1410,7 +1410,8 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "h-9 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-right transition-all duration-300 backdrop-blur-md name-aura"
+            "rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-right transition-all duration-300 backdrop-blur-md name-aura",
+            !isSticky ? "h-[46px]" : "h-9"
           )}
           style={{ marginRight: '-12px' }}
         >
@@ -1421,15 +1422,15 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
              initial={{ opacity: 0 }}
              animate={{ opacity: shouldAnimate ? 1 : 0 }}
              transition={{ duration: 0.3, delay: 0.5 }}
-             className="h-full flex items-center justify-start gap-1.5 pl-3 pr-4 relative w-full z-10"
+             className={cn("h-full flex items-center justify-start relative w-full z-10", !isSticky ? "gap-2.5 pl-3.5 pr-4" : "gap-1.5 pl-3 pr-4")}
           >
-            <div className="w-5 h-5 bg-black/50 border border-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
+            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[26px] h-[26px] rounded-[10px]" : "w-[20px] h-[20px] rounded-lg")}>
               {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
                 <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
               )}
             </div>
             <div className="text-left relative z-10 whitespace-nowrap">
-              <h3 className="text-[9px] sm:text-[10px] font-black tracking-wider leading-none text-white drop-shadow-sm font-sans">Instagram</h3>
+              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[12px] sm:text-[13px]" : "text-[9px] sm:text-[10px]")}>Instagram</h3>
             </div>
           </motion.div>
         </motion.a>
@@ -1442,7 +1443,8 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
             onClick={() => setShowAssistantModal(true)}
             className={cn(
               "flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
-              "w-12 h-12 backdrop-blur-md bg-gradient-to-b from-[#1e1915] via-[#0d0a09] to-[#040404]",
+              !isSticky ? "w-[56px] h-[56px]" : "w-[44px] h-[44px]",
+              "backdrop-blur-md bg-gradient-to-b from-[#1e1915] via-[#0d0a09] to-[#040404]",
               "shadow-[0_12px_36px_rgba(0,0,0,0.6),0_0_25px_rgba(212,175,55,0.35)]",
               "border border-brand-gold/60 hover:border-brand-gold/80"
             )}
@@ -1479,7 +1481,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
               }}
               transition={{ duration: 0.65, ease: "easeInOut" }}
             >
-              <Bot className="w-5.5 h-5.5 stroke-[2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
+              <Bot className={cn("stroke-[2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]", !isSticky ? "w-[26px] h-[26px]" : "w-5 h-5")} />
             </motion.div>
           </motion.button>
         </div>
@@ -1487,7 +1489,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
         {/* TIKTOK (Right) */}
         <motion.a
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: shouldAnimate ? 108 : 0, opacity: shouldAnimate ? 1 : 0 }}
+          animate={{ width: shouldAnimate ? (!isSticky ? 122 : 94) : 0, opacity: shouldAnimate ? 1 : 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
           whileHover={{ scale: 1.04, x: 2 }}
           whileTap={{ scale: 0.98 }}
@@ -1495,7 +1497,8 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            "h-9 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-left transition-all duration-300 backdrop-blur-md name-aura"
+            "rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-left transition-all duration-300 backdrop-blur-md name-aura",
+            !isSticky ? "h-[46px]" : "h-9"
           )}
           style={{ marginLeft: '-12px' }}
         >
@@ -1506,12 +1509,12 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
              initial={{ opacity: 0 }}
              animate={{ opacity: shouldAnimate ? 1 : 0 }}
              transition={{ duration: 0.3, delay: 0.5 }}
-             className="h-full flex items-center justify-end gap-1.5 pr-3 pl-4 relative w-full z-10"
+             className={cn("h-full flex items-center justify-end relative w-full z-10", !isSticky ? "gap-2.5 pl-4 pr-4" : "gap-1.5 pl-4 pr-3")}
           >
             <div className="text-right relative z-10 whitespace-nowrap">
-              <h3 className="text-[9px] sm:text-[10px] font-black tracking-wider leading-none text-white drop-shadow-sm font-sans">TikTok</h3>
+              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[12px] sm:text-[13px]" : "text-[9px] sm:text-[10px]")}>TikTok</h3>
             </div>
-            <div className="w-5 h-5 bg-black/50 border border-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
+            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[26px] h-[26px] rounded-[10px]" : "w-[20px] h-[20px] rounded-[8.5px]")}>
               {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
                 <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
               )}

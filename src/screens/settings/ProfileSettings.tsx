@@ -172,7 +172,7 @@ export default function ProfileSettings() {
         
         <div className={cn(
           "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100",
-          settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+          settings.darkMode && "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
         )}>
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -266,7 +266,7 @@ export default function ProfileSettings() {
         
         <div className={cn(
           "bg-white rounded-[40px] p-8 shadow-sm border border-gray-100",
-          settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+          settings.darkMode && "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
         )}>
           <div className="space-y-6">
             <div className="space-y-3">

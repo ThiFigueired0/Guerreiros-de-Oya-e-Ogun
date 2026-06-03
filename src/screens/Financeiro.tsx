@@ -471,7 +471,7 @@ export default function Financeiro() {
       <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-white/[0.02] dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
 
       {/* Main Header Area */}
-      <header className="mb-6 sm:mb-8 mt-2 sm:mt-4 pl-1 relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <header className="mb-6 sm:mb-8 mt-2 sm:mt-4 pl-1 relative z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 className={cn("text-3xl sm:text-4xl font-black font-serif tracking-tight", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>
             Financeiro
