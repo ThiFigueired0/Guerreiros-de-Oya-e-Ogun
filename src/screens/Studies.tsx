@@ -234,8 +234,8 @@ function AlphabetScroller({
         className={cn(
           "flex flex-col items-center py-2 px-1 gap-0.5 rounded-l-2xl shadow-xl border-y border-l transition-all duration-300",
           darkMode 
-            ? "bg-[#1A1A1A]/80 border-gray-800 shadow-black/40 backdrop-blur-md" 
-            : "bg-white/80 border-gray-100 shadow-brand-copper/10 backdrop-blur-md"
+            ? "bg-[#161616]/80 border-white/5 shadow-black/40 backdrop-blur-md" 
+            : "bg-white/80 border-gray-100 shadow-brand-gold/10 backdrop-blur-md"
         )}
       >
         {ALPHABET.map((letter) => {
@@ -249,9 +249,9 @@ function AlphabetScroller({
               className={cn(
                 "relative flex items-center justify-center w-5 h-4 sm:w-6 sm:h-5 text-[9px] font-black transition-all select-none rounded-md",
                 isAvailable 
-                  ? darkMode ? "text-brand-copper" : "text-brand-copper"
+                  ? darkMode ? "text-brand-gold" : "text-brand-gold"
                   : "text-gray-300 opacity-30",
-                isActive && "bg-brand-copper text-white scale-110 shadow-lg shadow-brand-copper/30 z-10"
+                isActive && "bg-brand-gold text-white scale-110 shadow-lg shadow-brand-gold/30 z-10"
               )}
             >
               {letter}
@@ -263,10 +263,10 @@ function AlphabetScroller({
                     initial={{ opacity: 0, x: 20, scale: 0.5 }}
                     animate={{ opacity: 1, x: -50, scale: 1 }}
                     exit={{ opacity: 0, x: 20, scale: 0.5 }}
-                    className="absolute right-full mr-4 w-12 h-12 rounded-full bg-brand-copper text-white flex items-center justify-center text-xl font-black shadow-2xl border-4 border-white dark:border-[#1A1A1A]"
+                    className="absolute right-full mr-4 w-12 h-12 rounded-full bg-brand-gold text-white flex items-center justify-center text-xl font-black shadow-2xl border-4 border-white dark:border-[#161616]"
                   >
                     {letter}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-full w-4 h-4 bg-brand-copper rotate-45 -ml-2 -z-10 shadow-2xl" />
+                    <div className="absolute top-1/2 -translate-y-1/2 left-full w-4 h-4 bg-brand-gold rotate-45 -ml-2 -z-10 shadow-2xl" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -381,28 +381,30 @@ export default function StudiesScreen() {
 
   // Sync glossary with DEFAULT_GLOSSARY
   useEffect(() => {
-    // If completely empty, initialize everything
-    if (glossaryTerms.length === 0) {
-      const initializedTerms = DEFAULT_GLOSSARY.map((term, index) => ({
-        ...term,
-        id: `default-${index}-${Date.now()}`
-      }));
-      setGlossaryTerms(initializedTerms);
-      return;
-    }
+    setGlossaryTerms(prev => {
+      // If completely empty, initialize everything
+      if (prev.length === 0) {
+        return DEFAULT_GLOSSARY.map((term, index) => ({
+          ...term,
+          id: `default-${index}-${Date.now()}`
+        }));
+      }
 
-    // Check for missing terms from the default set (by name)
-    const existingTermNames = new Set(glossaryTerms.map(t => t.term));
-    const missingTerms = DEFAULT_GLOSSARY.filter(t => !existingTermNames.has(t.term));
+      // Check for missing terms from the default set (by name)
+      const existingTermNames = new Set(prev.map(t => t.term));
+      const missingTerms = DEFAULT_GLOSSARY.filter(t => !existingTermNames.has(t.term));
 
-    if (missingTerms.length > 0) {
-      const newTermsToAdd = missingTerms.map((term, index) => ({
-        ...term,
-        id: `default-sync-${index}-${Date.now()}`
-      }));
-      setGlossaryTerms(prev => [...prev, ...newTermsToAdd]);
-    }
-  }, [DEFAULT_GLOSSARY.length]);
+      if (missingTerms.length > 0) {
+        const newTermsToAdd = missingTerms.map((term, index) => ({
+          ...term,
+          id: `default-sync-${index}-${Date.now()}`
+        }));
+        return [...prev, ...newTermsToAdd];
+      }
+      
+      return prev;
+    });
+  }, []);
 
   const GLOSSARY_CATEGORIES = useMemo(() => [
     'Orixás e Divindades',
@@ -428,16 +430,18 @@ export default function StudiesScreen() {
 
   // Harmonize categories in LocalStorage once
   useEffect(() => {
-    if (glossaryTerms.length > 0) {
-      const needsHarmonization = glossaryTerms.some(t => !t.category || !GLOSSARY_CATEGORIES.includes(t.category));
-      if (needsHarmonization) {
-        setGlossaryTerms(prev => prev.map(t => ({
-          ...t,
-          category: (t.category && GLOSSARY_CATEGORIES.includes(t.category)) ? t.category : harmonizeCategory(t.category || '')
-        })));
-      }
-    }
-  }, [glossaryTerms.length, GLOSSARY_CATEGORIES, harmonizeCategory, setGlossaryTerms]);
+    setGlossaryTerms(prev => {
+      if (prev.length === 0) return prev;
+      
+      const needsHarmonization = prev.some(t => !t.category || !GLOSSARY_CATEGORIES.includes(t.category));
+      if (!needsHarmonization) return prev;
+      
+      return prev.map(t => ({
+        ...t,
+        category: (t.category && GLOSSARY_CATEGORIES.includes(t.category)) ? t.category : harmonizeCategory(t.category || '')
+      }));
+    });
+  }, []);
 
   // UI state
   const [activeSubTab, setActiveSubTab] = useState<'library' | 'greetings' | 'contents' | 'glossary'>('library');
@@ -1358,66 +1362,79 @@ export default function StudiesScreen() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-6 pb-32"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={cn(
+        "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent relative"
+      )}
     >
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className={cn("text-2xl font-black text-brand-navy", settings.darkMode && "text-white")}>Estudos</h1>
-          <p className="text-xs text-gray-400">PDFs, Saudações e Fundamentos</p>
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 transform-gpu will-change-transform" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-white/[0.02] dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
+
+      <header className="flex justify-between items-center mb-8 px-2 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col">
+            <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Conhecimento & Fundamentos</p>
+            <h2 className={cn(
+              "text-3xl sm:text-4xl font-black font-serif tracking-tight",
+              settings.darkMode ? "text-brand-gold" : "text-brand-navy"
+            )}>
+              Estudos
+            </h2>
+          </div>
         </div>
       </header>
 
       {/* Submenu Tabs */}
-      <div className="flex gap-1.5 p-1 bg-gray-100/50 dark:bg-white/5 rounded-2xl mb-8 border border-gray-100 dark:border-white/5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8 relative z-10">
         <button 
           onClick={() => setActiveSubTab('library')}
           className={cn(
-            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
+            "p-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border",
             activeSubTab === 'library' 
-              ? "bg-brand-navy text-white shadow-md" 
-              : "text-gray-400 hover:text-brand-navy"
+              ? (settings.darkMode ? "bg-white/10 text-brand-gold border-white/20 shadow-md" : "bg-brand-navy text-white border-brand-navy shadow-md")
+              : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50")
           )}
         >
-          <Book className="w-3.5 h-3.5" />
-          <span className="leading-none">Biblioteca</span>
+          <Book className={cn("w-4 h-4", activeSubTab === 'library' ? "opacity-100" : "opacity-40")} />
+          <span>Biblioteca</span>
         </button>
         <button 
           onClick={() => setActiveSubTab('greetings')}
           className={cn(
-            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
+            "p-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border",
             activeSubTab === 'greetings' 
-              ? "bg-brand-navy text-white shadow-md" 
-              : "text-gray-400 hover:text-brand-navy"
+              ? (settings.darkMode ? "bg-white/10 text-brand-gold border-white/20 shadow-md" : "bg-brand-navy text-white border-brand-navy shadow-md")
+              : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50")
           )}
         >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span className="leading-none">Saudações</span>
+          <MessageSquare className={cn("w-4 h-4", activeSubTab === 'greetings' ? "opacity-100" : "opacity-40")} />
+          <span>Saudações</span>
         </button>
         <button 
           onClick={() => setActiveSubTab('contents')}
           className={cn(
-            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
+            "p-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border",
             activeSubTab === 'contents' 
-              ? "bg-brand-navy text-white shadow-md" 
-              : "text-gray-400 hover:text-brand-navy"
+              ? (settings.darkMode ? "bg-white/10 text-brand-gold border-white/20 shadow-md" : "bg-brand-navy text-white border-brand-navy shadow-md")
+              : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50")
           )}
         >
-          <LayoutList className="w-3.5 h-3.5" />
-          <span className="leading-none">Conteúdos</span>
+          <LayoutList className={cn("w-4 h-4", activeSubTab === 'contents' ? "opacity-100" : "opacity-40")} />
+          <span>Conteúdos</span>
         </button>
         <button 
           onClick={() => setActiveSubTab('glossary')}
           className={cn(
-            "flex-1 px-2 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5",
+            "p-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border",
             activeSubTab === 'glossary' 
-              ? "bg-brand-navy text-white shadow-md" 
-              : "text-gray-400 hover:text-brand-navy"
+              ? (settings.darkMode ? "bg-white/10 text-brand-gold border-white/20 shadow-md" : "bg-brand-navy text-white border-brand-navy shadow-md")
+              : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-white text-gray-500 border-gray-100 hover:bg-gray-50")
           )}
         >
-          <ScrollText className="w-3.5 h-3.5" />
-          <span className="leading-none">Glossário</span>
+          <ScrollText className={cn("w-4 h-4", activeSubTab === 'glossary' ? "opacity-100" : "opacity-40")} />
+          <span>Glossário</span>
         </button>
       </div>
 
@@ -1458,38 +1475,36 @@ export default function StudiesScreen() {
           >
             {/* Library Header & Stats */}
             <div className="px-1">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-brand-navy/5 flex items-center justify-center">
-                    <Book className="w-5 h-5 text-brand-navy" />
-                  </div>
-                  <div>
-                    <h2 className={cn("text-lg font-black text-brand-navy", settings.darkMode && "text-white")}>Minha Estante</h2>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Organização de leituras</p>
-                  </div>
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                <div>
+                  <h2 className={cn("text-2xl font-black tracking-tight mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Minha Estante</h2>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] ml-0.5">Organização de leituras</p>
                 </div>
                 <button 
                   onClick={() => setShowBookModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-xl shadow-lg shadow-brand-navy/20 active:scale-95 transition-all text-xs font-black uppercase tracking-widest"
+                  className={cn(
+                    "px-6 py-3.5 rounded-[20px] text-white flex items-center justify-center gap-2 active:scale-95 transition-all outline-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-navy/20",
+                    settings.darkMode ? "bg-brand-gold text-brand-navy shadow-brand-gold/20 hover:bg-brand-gold/90" : "bg-brand-navy hover:bg-brand-navy/90"
+                  )}
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Novo</span>
+                  <span>Novo Resumo</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-4 gap-2 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
                 {[
-                  { label: 'Total', value: libraryStats.total, color: 'bg-brand-navy' },
-                  { label: 'Lendo', value: libraryStats.inProgress, color: 'bg-brand-copper' },
-                  { label: 'Pendente', value: libraryStats.pending, color: 'bg-gray-400' },
-                  { label: 'Lido', value: libraryStats.completed, color: 'bg-green-500' }
+                  { label: 'Total', value: libraryStats.total },
+                  { label: 'Lendo', value: libraryStats.inProgress },
+                  { label: 'Pendente', value: libraryStats.pending },
+                  { label: 'Lido', value: libraryStats.completed }
                 ].map((stat, i) => (
                   <div key={i} className={cn(
-                    "p-2 rounded-xl flex flex-col items-center gap-1 border border-gray-100",
-                    settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-white"
+                    "p-5 rounded-[24px] flex flex-col justify-center border transition-all hover:-translate-y-0.5 hover:shadow-md",
+                    settings.darkMode ? "bg-[#161616] border-white/5" : "bg-white border-gray-100 shadow-sm"
                   )}>
-                    <span className="text-[7px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">{stat.label}</span>
-                    <span className={cn("text-sm font-black", settings.darkMode ? "text-white" : "text-brand-navy")}>{stat.value}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">{stat.label}</span>
+                    <span className={cn("text-2xl font-black", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>{stat.value}</span>
                   </div>
                 ))}
               </div>
@@ -1499,7 +1514,7 @@ export default function StudiesScreen() {
             {inProgressBooks.length > 0 && (
               <section className="px-1 overflow-visible">
                 <div className="flex items-center gap-2 mb-4">
-                  <History className="w-4 h-4 text-brand-copper" />
+                  <History className="w-4 h-4 text-brand-gold" />
                   <h3 className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-300" : "text-brand-navy")}>
                     Continuar de onde parou
                   </h3>
@@ -1513,11 +1528,11 @@ export default function StudiesScreen() {
                       onClick={() => openBookDetails(book)}
                       className={cn(
                         "flex-shrink-0 w-[280px] p-4 rounded-[32px] border border-gray-100 shadow-lg flex items-center gap-4 cursor-pointer relative overflow-hidden group",
-                        settings.darkMode ? "bg-gradient-to-br from-[#1A1A1A] to-[#111] border-gray-800" : "bg-gradient-to-br from-white to-gray-50"
+                        settings.darkMode ? "bg-gradient-to-br from-[#161616] to-[#111] border-white/5" : "bg-gradient-to-br from-white to-gray-50"
                       )}
                     >
                       {/* Visual Background Decoration */}
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-copper/5 rounded-full blur-2xl -mr-8 -mt-8" />
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-gold/5 rounded-full blur-2xl -mr-8 -mt-8" />
                       
                       <div 
                         className="w-16 h-24 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden shrink-0"
@@ -1543,7 +1558,7 @@ export default function StudiesScreen() {
                         
                         <div className="space-y-1">
                           <div className="flex justify-between items-center px-0.5">
-                            <span className="text-[7px] font-black text-brand-copper uppercase tracking-widest">
+                            <span className="text-[7px] font-black text-brand-gold uppercase tracking-widest">
                               {book.lastPage || 0}/{book.totalPages || '?'}
                             </span>
                             {(book.totalPages || 0) > 0 && (
@@ -1556,12 +1571,12 @@ export default function StudiesScreen() {
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
-                              className="h-full bg-brand-copper rounded-full"
+                              className="h-full bg-brand-gold rounded-full"
                             />
                           </div>
                         </div>
 
-                        <span className="flex items-center gap-1 mt-0.5 text-[8px] font-black uppercase tracking-widest text-brand-copper">
+                        <span className="flex items-center gap-1 mt-0.5 text-[8px] font-black uppercase tracking-widest text-brand-gold">
                           Continuar <ChevronRight className="w-2.5 h-2.5" />
                         </span>
                       </div>
@@ -1574,15 +1589,17 @@ export default function StudiesScreen() {
             {/* Books List Section */}
             <section className="px-1">
               <div className="relative mb-8">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input 
                   type="text"
                   placeholder="Pesquisar na minha estante..."
                   value={bookSearch}
                   onChange={(e) => setBookSearch(e.target.value)}
                   className={cn(
-                    "w-full bg-white border border-gray-100 py-4 pl-12 pr-4 rounded-2xl text-xs font-bold transition-all shadow-sm focus:outline-none focus:ring-4 focus:ring-brand-copper/10",
-                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                    "w-full rounded-[24px] p-5 pl-14 shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border",
+                    settings.darkMode 
+                      ? "bg-[#161616] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+                      : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
                   )}
                 />
               </div>
@@ -1638,7 +1655,7 @@ export default function StudiesScreen() {
                             {catBooks.length === 0 ? (
                               <div className={cn(
                                 "mx-1 p-10 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-2",
-                                settings.darkMode && "border-gray-800"
+                                settings.darkMode && "border-white/5"
                               )}>
                                 <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">Nenhum livro</p>
                               </div>
@@ -1651,7 +1668,7 @@ export default function StudiesScreen() {
                                     onClick={() => openBookDetails(book)}
                                     className={cn(
                                       "bg-white p-3 rounded-[28px] shadow-sm border border-gray-100 flex flex-col gap-3 group relative cursor-pointer active:shadow-md transition-all",
-                                      settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl",
+                                      settings.darkMode && "bg-[#161616] border-white/5 shadow-xl",
                                       book.readingStatus === 'completed' && "opacity-75 grayscale-[0.3]"
                                     )}
                                   >
@@ -1691,7 +1708,7 @@ export default function StudiesScreen() {
                                             <motion.div 
                                               initial={{ width: 0 }}
                                               animate={{ width: `${Math.min(100, book.totalPages && book.totalPages > 0 ? ((book.lastPage || 0) / book.totalPages) * 100 : 0)}%` }}
-                                              className="h-full bg-brand-copper"
+                                              className="h-full bg-brand-gold"
                                             />
                                           </div>
                                         </div>
@@ -1700,8 +1717,8 @@ export default function StudiesScreen() {
                                     
                                     <div className="px-1 pb-1">
                                       <h3 className={cn(
-                                        "text-[10px] font-black text-brand-navy line-clamp-2 leading-[1.3] group-hover:text-brand-copper transition-colors", 
-                                        settings.darkMode && "text-white group-hover:text-brand-copper"
+                                        "text-[10px] font-black text-brand-navy line-clamp-2 leading-[1.3] group-hover:text-brand-gold transition-colors", 
+                                        settings.darkMode && "text-white group-hover:text-brand-gold"
                                       )}>
                                         {book.name.replace('.pdf', '')}
                                       </h3>
@@ -1738,12 +1755,11 @@ export default function StudiesScreen() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
           >
-            {/* Greetings Section */}
-            <section>
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-brand-copper" />
-                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Saudações</h2>
+            <section className="px-1">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4 px-2">
+                <div>
+                  <h2 className={cn("text-2xl font-black tracking-tight mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Saudações</h2>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] ml-0.5">Templo & Orixás</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -1751,22 +1767,28 @@ export default function StudiesScreen() {
                     setNewGreeting({ category: 'Orixás', entity: '', greeting: '', summary: '', imageUrl: '', beads: '', firma: '' });
                     setShowGreetingModal(true);
                   }}
-                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full"
+                  className={cn(
+                    "px-6 py-3.5 rounded-[20px] text-white flex items-center justify-center gap-2 active:scale-95 transition-all outline-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-navy/20",
+                    settings.darkMode ? "bg-brand-gold text-brand-navy shadow-brand-gold/20 hover:bg-brand-gold/90" : "bg-brand-navy hover:bg-brand-navy/90"
+                  )}
                 >
-                  Adicionar
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar</span>
                 </button>
               </div>
 
               <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input 
                   type="text"
                   placeholder="Buscar saudações..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className={cn(
-                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
-                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                    "w-full rounded-[24px] p-5 pl-14 shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border",
+                    settings.darkMode 
+                      ? "bg-[#161616] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+                      : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
                   )}
                 />
               </div>
@@ -1783,15 +1805,15 @@ export default function StudiesScreen() {
                       onClick={() => toggleCategory(cat)}
                       className={cn(
                         "w-full flex items-center justify-between p-4 rounded-[24px] transition-all",
-                        isExpanded ? "bg-brand-copper/5 mb-3" : "bg-white shadow-sm border border-gray-100",
-                        settings.darkMode && !isExpanded && "bg-[#1A1A1A] border-gray-800 shadow-lg",
-                        settings.darkMode && isExpanded && "bg-brand-copper/10"
+                        isExpanded ? "bg-brand-gold/5 mb-3" : "bg-white shadow-sm border border-gray-100",
+                        settings.darkMode && !isExpanded && "bg-[#161616] border-white/5 shadow-lg",
+                        settings.darkMode && isExpanded && "bg-brand-gold/10"
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-2 h-2 rounded-full",
-                          cat === 'Orixás' ? 'bg-brand-copper' : cat === 'Entidades' ? 'bg-brand-red' : 'bg-brand-navy'
+                          cat === 'Orixás' ? 'bg-brand-gold' : cat === 'Entidades' ? 'bg-brand-red' : 'bg-brand-navy'
                         )} />
                         <h3 className={cn("font-black text-[11px] uppercase tracking-widest pt-0.5", settings.darkMode ? "text-white" : "text-brand-navy")}>
                           {cat}
@@ -1822,13 +1844,13 @@ export default function StudiesScreen() {
                               }}
                               className={cn(
                                 "bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 flex items-center justify-between group cursor-pointer active:scale-[0.99] transition-transform",
-                                settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-lg"
+                                settings.darkMode && "bg-[#161616] border-white/5 shadow-lg"
                               )}
                             >
                               <div className="flex items-center gap-3">
                                 <div className={cn(
                                   "w-10 h-10 rounded-full border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center bg-gray-50 dark:bg-white/5",
-                                  settings.darkMode && "border-gray-800"
+                                  settings.darkMode && "border-white/5"
                                 )}>
                                   {(settings.orixaPhotos && settings.orixaPhotos[g.entity]) ? (
                                     <img src={settings.orixaPhotos[g.entity]} alt={g.entity} className="w-full h-full object-cover" />
@@ -1839,7 +1861,7 @@ export default function StudiesScreen() {
                                   )}
                                 </div>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="text-[10px] text-brand-copper font-bold uppercase tracking-wider">{g.entity}</span>
+                                  <span className="text-[10px] text-brand-gold font-bold uppercase tracking-wider">{g.entity}</span>
                                   <span className={cn("text-sm font-black text-brand-navy", settings.darkMode && "text-white")}>{g.greeting}</span>
                                 </div>
                               </div>
@@ -1851,7 +1873,7 @@ export default function StudiesScreen() {
                                   }}
                                   className={cn(
                                     "p-2 transition-colors",
-                                    settings.darkMode ? "text-gray-400 hover:text-brand-copper" : "text-gray-400 hover:text-brand-copper"
+                                    settings.darkMode ? "text-gray-400 hover:text-brand-gold" : "text-gray-400 hover:text-brand-gold"
                                   )}
                                 >
                                   <Edit2 className="w-3 h-3" />
@@ -1889,11 +1911,11 @@ export default function StudiesScreen() {
             exit={{ opacity: 0, x: 10 }}
           >
             {/* Study Contents Section */}
-            <section className="mb-10">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-brand-copper" />
-                  <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Conteúdos Relevantes</h2>
+            <section className="px-1 mb-10">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4 px-2">
+                <div>
+                  <h2 className={cn("text-2xl font-black tracking-tight mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Conteúdos Relevantes</h2>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] ml-0.5">Fundamentos & Rezas</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -1901,22 +1923,28 @@ export default function StudiesScreen() {
                     setContentForm({ title: '', category: 'Fundamento', content: '' });
                     setShowContentModal(true);
                   }}
-                  className="text-[10px] uppercase font-black tracking-widest text-brand-red bg-brand-red/5 px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform"
+                  className={cn(
+                    "px-6 py-3.5 rounded-[20px] text-white flex items-center justify-center gap-2 active:scale-95 transition-all outline-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-navy/20",
+                    settings.darkMode ? "bg-brand-gold text-brand-navy shadow-brand-gold/20 hover:bg-brand-gold/90" : "bg-brand-navy hover:bg-brand-navy/90"
+                  )}
                 >
-                  Adicionar
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar</span>
                 </button>
               </div>
 
               <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input 
                   type="text"
                   placeholder="Buscar fundamentos, rezas, magias..."
                   value={contentSearch}
                   onChange={(e) => setContentSearch(e.target.value)}
                   className={cn(
-                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20",
-                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                    "w-full rounded-[24px] p-5 pl-14 shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border",
+                    settings.darkMode 
+                      ? "bg-[#161616] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+                      : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
                   )}
                 />
               </div>
@@ -1925,7 +1953,7 @@ export default function StudiesScreen() {
                 {filteredStudyContents.length === 0 ? (
                   <div className={cn(
                     "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
-                    settings.darkMode && "border-gray-800"
+                    settings.darkMode && "border-white/5"
                   )}>
                     <ScrollText className="w-12 h-12 text-gray-200" />
                     <div className="space-y-1">
@@ -1940,7 +1968,7 @@ export default function StudiesScreen() {
                       onClick={() => setSelectedContent(content)}
                       className={cn(
                         "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
-                        settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                        settings.darkMode && "bg-[#161616] border-white/5 shadow-xl"
                       )}
                     >
                       <div className="flex justify-between items-start">
@@ -1949,7 +1977,7 @@ export default function StudiesScreen() {
                             "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit",
                             content.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
                             content.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
-                            'bg-brand-copper/10 text-brand-copper'
+                            'bg-brand-gold/10 text-brand-gold'
                           )}>
                             {content.category}
                           </span>
@@ -1965,7 +1993,7 @@ export default function StudiesScreen() {
                               setContentForm({ ...content });
                               setShowContentModal(true);
                             }}
-                            className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-copper transition-colors"
+                            className="p-2 bg-gray-50 dark:bg-white/5 text-gray-400 rounded-xl hover:text-brand-gold transition-colors"
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>
@@ -1984,20 +2012,20 @@ export default function StudiesScreen() {
                       <div className="flex flex-wrap gap-2 mt-1">
                         {content.attachments && content.attachments.length > 0 && (
                           <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/10">
-                            <Upload className="w-2.5 h-2.5 text-brand-copper" />
+                            <Upload className="w-2.5 h-2.5 text-brand-gold" />
                             <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{content.attachments.length} Anexos</span>
                           </div>
                         )}
                         {content.links && content.links.length > 0 && (
                           <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-100 dark:border-white/10">
-                            <ExternalLink className="w-2.5 h-2.5 text-brand-copper" />
+                            <ExternalLink className="w-2.5 h-2.5 text-brand-gold" />
                             <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{content.links.length} Links</span>
                           </div>
                         )}
                       </div>
 
                       <div className="mt-2 flex items-center justify-between border-t border-gray-50 dark:border-white/5 pt-3">
-                        <div className="flex items-center gap-1.5 text-brand-copper">
+                        <div className="flex items-center gap-1.5 text-brand-gold">
                           <span className="text-[9px] font-black uppercase tracking-widest">Ver detalhes</span>
                           <ChevronRight className="w-3 h-3" />
                         </div>
@@ -2017,14 +2045,11 @@ export default function StudiesScreen() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
           >
-            <section className="mb-10 px-2">
-              <div className="flex items-center justify-between mb-4">
+            <section className="px-1 mb-10">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4 px-2">
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-brand-copper" />
-                    <h2 className={cn("font-bold text-brand-navy", settings.darkMode && "text-white")}>Glossário umbandista</h2>
-                  </div>
-                  <span className="text-[10px] text-gray-400 mt-0.5">
+                  <h2 className={cn("text-2xl font-black tracking-tight mb-1", settings.darkMode ? "text-white" : "text-brand-navy")}>Glossário</h2>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] ml-0.5">
                     {filteredGlossaryTerms.length} de {glossaryTerms.length} termos
                   </span>
                 </div>
@@ -2032,7 +2057,7 @@ export default function StudiesScreen() {
                   <button 
                     onClick={() => setIsManageModeGlossary(!isManageModeGlossary)}
                     className={cn(
-                      "text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform",
+                      "px-6 py-3.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all",
                       isManageModeGlossary 
                         ? (settings.darkMode ? "bg-white/10 text-white" : "bg-gray-100 text-brand-navy")
                         : (settings.darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-brand-navy")
@@ -2047,25 +2072,28 @@ export default function StudiesScreen() {
                       setShowGlossaryModal(true);
                     }}
                     className={cn(
-                      "text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform",
-                      settings.darkMode ? "text-brand-copper bg-brand-copper/10" : "text-brand-copper bg-brand-copper/10"
+                      "px-6 py-3.5 rounded-[20px] text-white flex items-center justify-center gap-2 active:scale-95 transition-all outline-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-navy/20",
+                      settings.darkMode ? "bg-brand-gold text-brand-navy shadow-brand-gold/20 hover:bg-brand-gold/90" : "bg-brand-navy hover:bg-brand-navy/90"
                     )}
                   >
-                    Adicionar
+                    <Plus className="w-4 h-4" />
+                    <span>Adicionar</span>
                   </button>
                 </div>
               </div>
 
               <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input 
                   type="text"
                   placeholder="Buscar termo..."
                   value={glossarySearch}
                   onChange={(e) => setGlossarySearch(e.target.value)}
                   className={cn(
-                    "w-full bg-white border border-gray-100 py-3 pl-10 pr-4 rounded-2xl text-[11px] font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-copper/20 flex-1",
-                    settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+                    "w-full rounded-[24px] p-5 pl-14 shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border flex-1",
+                    settings.darkMode 
+                      ? "bg-[#161616] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+                      : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
                   )}
                 />
               </div>
@@ -2073,8 +2101,8 @@ export default function StudiesScreen() {
               {/* Category Filter */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <LayoutList className="w-3 h-3 text-brand-copper" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-copper">Filtrar por Categoria</span>
+                  <LayoutList className="w-3 h-3 text-brand-gold" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Filtrar por Categoria</span>
                 </div>
                 <div className="flex overflow-x-auto gap-2 no-scrollbar pb-2">
                   {glossaryCategories.map((cat) => (
@@ -2084,9 +2112,9 @@ export default function StudiesScreen() {
                       className={cn(
                         "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all flex items-center gap-2",
                         glossaryCategoryFilter === cat.name
-                          ? "bg-brand-copper text-white shadow-md shadow-brand-copper/20 scale-105"
+                          ? "bg-brand-gold text-white shadow-md shadow-brand-gold/20 scale-105"
                           : settings.darkMode 
-                            ? "bg-[#1A1A1A] text-gray-400 border border-gray-800" 
+                            ? "bg-[#161616] text-gray-400 border border-white/5" 
                             : "bg-white text-gray-500 border border-gray-100 shadow-sm"
                       )}
                     >
@@ -2095,7 +2123,7 @@ export default function StudiesScreen() {
                         "px-1.5 py-0.5 rounded-lg text-[8px]",
                         glossaryCategoryFilter === cat.name
                           ? "bg-white/20 text-white"
-                          : "bg-brand-copper/10 text-brand-copper"
+                          : "bg-brand-gold/10 text-brand-gold"
                       )}>
                         {cat.count}
                       </span>
@@ -2108,7 +2136,7 @@ export default function StudiesScreen() {
                 {filteredGlossaryTerms.length === 0 ? (
                   <div className={cn(
                     "p-12 border-2 border-dashed border-gray-100 rounded-[32px] flex flex-col items-center justify-center gap-4 text-center",
-                    settings.darkMode && "border-gray-800"
+                    settings.darkMode && "border-white/5"
                   )}>
                     <BookOpen className="w-12 h-12 text-gray-200" />
                     <div className="space-y-1">
@@ -2125,12 +2153,12 @@ export default function StudiesScreen() {
                           <div className={cn(
                             "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm border",
                             settings.darkMode 
-                              ? "bg-brand-copper/10 border-brand-copper/20 text-brand-copper" 
-                              : "bg-white border-brand-copper/10 text-brand-copper shadow-brand-copper/5"
+                              ? "bg-brand-gold/10 border-brand-gold/20 text-brand-gold" 
+                              : "bg-white border-brand-gold/10 text-brand-gold shadow-brand-gold/5"
                           )}>
                             {letter}
                           </div>
-                          <div className="h-px flex-1 bg-gradient-to-r from-brand-copper/10 to-transparent" />
+                          <div className="h-px flex-1 bg-gradient-to-r from-brand-gold/10 to-transparent" />
                         </div>
                         
                         <div className="grid grid-cols-1 gap-4">
@@ -2140,14 +2168,14 @@ export default function StudiesScreen() {
                               onClick={() => setSelectedGlossaryTerm(term)}
                               className={cn(
                                 "p-5 bg-white rounded-[28px] border border-gray-100 shadow-sm flex flex-col gap-3 group relative cursor-pointer active:scale-[0.99] transition-all",
-                                settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+                                settings.darkMode && "bg-[#161616] border-white/5 shadow-xl"
                               )}
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
                                   {term.category && (
                                     <span className={cn(
-                                      "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit bg-brand-copper/10 text-brand-copper"
+                                      "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg w-fit bg-brand-gold/10 text-brand-gold"
                                     )}>
                                       {term.category}
                                     </span>
@@ -2165,7 +2193,7 @@ export default function StudiesScreen() {
                                         setGlossaryForm({ ...term });
                                         setShowGlossaryModal(true);
                                       }}
-                                      className="p-2.5 bg-white dark:bg-white/10 text-gray-400 hover:text-brand-copper rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors"
+                                      className="p-2.5 bg-white dark:bg-white/10 text-gray-400 hover:text-brand-gold rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors"
                                     >
                                       <Edit2 className="w-4 h-4" />
                                     </button>
@@ -2198,15 +2226,15 @@ export default function StudiesScreen() {
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="mt-3 pt-3 border-t border-brand-copper/10"
+                                    className="mt-3 pt-3 border-t border-brand-gold/10"
                                   >
                                     <div className="flex items-center gap-2 mb-2">
-                                      <Sparkles className="w-3 h-3 text-brand-copper" />
-                                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-copper">Insight do Assistente</span>
+                                      <Sparkles className="w-3 h-3 text-brand-gold" />
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold">Insight do Assistente</span>
                                     </div>
                                     <p className={cn(
                                       "text-[11px] font-bold leading-relaxed italic",
-                                      settings.darkMode ? "text-brand-copper/80" : "text-brand-navy"
+                                      settings.darkMode ? "text-brand-gold/80" : "text-brand-navy"
                                     )}>
                                       {aiGlossaryResponses[term.id]}
                                     </p>
@@ -2242,8 +2270,8 @@ export default function StudiesScreen() {
                                   className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95",
                                     aiGlossaryResponses[term.id] 
-                                      ? "bg-brand-copper text-white" 
-                                      : "bg-brand-copper/10 text-brand-copper hover:bg-brand-copper/20"
+                                      ? "bg-brand-gold text-white" 
+                                      : "bg-brand-gold/10 text-brand-gold hover:bg-brand-gold/20"
                                   )}
                                 >
                                   {loadingAiTermId === term.id ? (
@@ -2284,7 +2312,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] overflow-hidden shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -2316,8 +2344,8 @@ export default function StudiesScreen() {
                 )}
                 
                 <div className="flex flex-col gap-4">
-                  <div className="bg-brand-copper/10 px-4 py-3 rounded-2xl border border-brand-copper/20">
-                    <p className="text-[10px] text-brand-copper font-black uppercase tracking-widest mb-1">Saudação</p>
+                  <div className="bg-brand-gold/10 px-4 py-3 rounded-2xl border border-brand-gold/20">
+                    <p className="text-[10px] text-brand-gold font-black uppercase tracking-widest mb-1">Saudação</p>
                     <p className={cn("text-lg font-black text-brand-navy", settings.darkMode && "text-white")}>
                       {selectedGreeting.greeting}
                     </p>
@@ -2379,7 +2407,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -2397,7 +2425,7 @@ export default function StudiesScreen() {
               <div className="space-y-6">
                 {/* Google Books Search */}
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Buscar dados (Opcional)</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Buscar dados (Opcional)</label>
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
@@ -2406,7 +2434,7 @@ export default function StudiesScreen() {
                       onChange={(e) => setBookSearchQuery(e.target.value)}
                       placeholder="Busque por título ou autor..."
                       className={cn(
-                        "w-full bg-gray-50 border-0 py-3 pl-11 pr-10 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        "w-full bg-gray-50 border-0 py-3 pl-11 pr-10 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                         settings.darkMode && "bg-black text-white"
                       )}
                     />
@@ -2422,7 +2450,7 @@ export default function StudiesScreen() {
                       </button>
                     )}
                     {isSearchingGoogleBooks && (
-                      <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-copper animate-spin" />
+                      <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gold animate-spin" />
                     )}
                   </div>
 
@@ -2434,7 +2462,7 @@ export default function StudiesScreen() {
                         exit={{ opacity: 0, y: -10 }}
                         className={cn(
                           "mt-2 max-h-48 overflow-y-auto rounded-2xl border border-gray-100 shadow-xl bg-white z-10 custom-scrollbar",
-                          settings.darkMode && "bg-[#1A1A1A] border-gray-800"
+                          settings.darkMode && "bg-[#161616] border-white/5"
                         )}
                       >
                         {googleBooksResults.map((book) => (
@@ -2466,14 +2494,14 @@ export default function StudiesScreen() {
 
                 {/* Book Title */}
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Título do Livro</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Título do Livro</label>
                   <input 
                     type="text"
                     value={bookTitleDraft}
                     onChange={(e) => setBookTitleDraft(e.target.value)}
                     placeholder="Ex: O Livro dos Espíritos"
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                   />
@@ -2481,14 +2509,14 @@ export default function StudiesScreen() {
 
                 {/* Book Author */}
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Autor(a)</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Autor(a)</label>
                   <input 
                     type="text"
                     value={bookAuthorDraft}
                     onChange={(e) => setBookAuthorDraft(e.target.value)}
                     placeholder="Ex: Allan Kardec"
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      "w-full bg-gray-50 border-0 py-3 px-4 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                   />
@@ -2496,23 +2524,23 @@ export default function StudiesScreen() {
 
                 {/* PDF Selection */}
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Arquivo PDF</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Arquivo PDF</label>
                   {isProcessingBook ? (
                     <div className={cn(
-                      "flex flex-col items-center justify-center p-8 border-2 border-dashed border-brand-copper/30 rounded-3xl bg-brand-copper/5 cursor-wait transition-all",
-                      settings.darkMode && "bg-brand-copper/10"
+                      "flex flex-col items-center justify-center p-8 border-2 border-dashed border-brand-gold/30 rounded-3xl bg-brand-gold/5 cursor-wait transition-all",
+                      settings.darkMode && "bg-brand-gold/10"
                     )}>
-                      <Book className="w-6 h-6 text-brand-copper animate-pulse mb-3" />
-                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-copper animate-pulse">
+                      <Book className="w-6 h-6 text-brand-gold animate-pulse mb-3" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold animate-pulse">
                         {typeof isProcessingBook === 'string' ? isProcessingBook : 'Carregando...'}
                       </span>
                     </div>
                   ) : !bookPdfDraft ? (
                     <label className={cn(
-                      "flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/50 cursor-pointer hover:bg-brand-copper/5 hover:border-brand-copper/30 transition-all group",
-                      settings.darkMode && "bg-black/50 border-gray-800"
+                      "flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/50 cursor-pointer hover:bg-brand-gold/5 hover:border-brand-gold/30 transition-all group",
+                      settings.darkMode && "bg-black/50 border-white/5"
                     )}>
-                      <Upload className="w-6 h-6 text-brand-copper/40 group-hover:scale-110 transition-transform mb-3" />
+                      <Upload className="w-6 h-6 text-brand-gold/40 group-hover:scale-110 transition-transform mb-3" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-brand-navy/60">Escolher PDF</span>
                       <input 
                         type="file" 
@@ -2533,7 +2561,7 @@ export default function StudiesScreen() {
                           </div>
                           {bookPdfDraft.tempId && (
                             <div className="mt-1 flex items-center gap-1.5">
-                              <FileText className="w-3 h-3 text-brand-copper" />
+                              <FileText className="w-3 h-3 text-brand-gold" />
                               <span className="text-[10px] text-gray-400 font-medium">PDF vinculado</span>
                             </div>
                           )}
@@ -2556,13 +2584,13 @@ export default function StudiesScreen() {
 
                 {/* Cover Customization */}
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Capa do Livro</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Capa do Livro</label>
                   
                   <div className="flex gap-4">
                     {/* Cover Preview / Image Upload */}
                     <label className={cn(
                       "w-20 h-28 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all shrink-0 relative overflow-hidden shadow-inner",
-                      settings.darkMode && "border-gray-800 hover:bg-black/40"
+                      settings.darkMode && "border-white/5 hover:bg-black/40"
                     )} style={{ backgroundColor: !bookCoverDraft ? bookColorDraft : 'transparent' }}>
                       {bookCoverDraft ? (
                         <img src={bookCoverDraft} className="w-full h-full object-cover" />
@@ -2589,7 +2617,7 @@ export default function StudiesScreen() {
                             }}
                             className={cn(
                               "w-6 h-6 rounded-full border-2 transition-all",
-                              bookColorDraft === color.value ? "border-brand-copper scale-110 shadow-md" : "border-transparent"
+                              bookColorDraft === color.value ? "border-brand-gold scale-110 shadow-md" : "border-transparent"
                             )}
                             style={{ backgroundColor: color.value }}
                             title={color.name}
@@ -2639,7 +2667,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-md bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -2655,7 +2683,7 @@ export default function StudiesScreen() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Categoria</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Categoria</label>
                   <div className="flex gap-2">
                     {categories.map(c => (
                       <button
@@ -2676,26 +2704,26 @@ export default function StudiesScreen() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Orixá / Entidade</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Orixá / Entidade</label>
                     <input 
                       type="text"
                       value={newGreeting.entity}
                       onChange={(e) => setNewGreeting({ ...newGreeting, entity: e.target.value })}
                       className={cn(
-                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                         settings.darkMode && "bg-black text-white"
                       )}
                       placeholder="Ex: Ogum"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Saudação</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Saudação</label>
                     <input 
                       type="text"
                       value={newGreeting.greeting}
                       onChange={(e) => setNewGreeting({ ...newGreeting, greeting: e.target.value })}
                       className={cn(
-                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                         settings.darkMode && "bg-black text-white"
                       )}
                       placeholder="Ex: Ogun ye!"
@@ -2705,26 +2733,26 @@ export default function StudiesScreen() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Miçangas</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Miçangas</label>
                     <input 
                       type="text"
                       value={newGreeting.beads || ''}
                       onChange={(e) => setNewGreeting({ ...newGreeting, beads: e.target.value })}
                       className={cn(
-                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                         settings.darkMode && "bg-black text-white"
                       )}
                       placeholder="Cores das miçangas"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Firma</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Firma</label>
                     <input 
                       type="text"
                       value={newGreeting.firma || ''}
                       onChange={(e) => setNewGreeting({ ...newGreeting, firma: e.target.value })}
                       className={cn(
-                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                        "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                         settings.darkMode && "bg-black text-white"
                       )}
                       placeholder="Cor da firma"
@@ -2733,13 +2761,13 @@ export default function StudiesScreen() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Resumo / Detalhes</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Resumo / Detalhes</label>
                   <textarea 
                     value={newGreeting.summary}
                     onChange={(e) => setNewGreeting({ ...newGreeting, summary: e.target.value })}
                     rows={4}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none",
+                      "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-brand-gold/20 outline-none resize-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Escreva um breve resumo..."
@@ -2747,10 +2775,10 @@ export default function StudiesScreen() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Imagem</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Imagem</label>
                   <label className={cn(
                     "flex items-center gap-4 p-4 border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all",
-                    settings.darkMode && "border-gray-800 hover:bg-black/40"
+                    settings.darkMode && "border-white/5 hover:bg-black/40"
                   )}>
                     {newGreeting.imageUrl ? (
                       <img src={newGreeting.imageUrl} className="w-12 h-12 rounded-lg object-cover" />
@@ -2787,7 +2815,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -2846,13 +2874,13 @@ export default function StudiesScreen() {
                           if (e.key === 'Escape') setIsEditingName(false);
                         }}
                         className={cn(
-                          "w-full bg-gray-50 border-2 border-brand-copper/20 py-2 px-3 rounded-xl text-sm font-bold focus:outline-none focus:border-brand-copper transition-all text-center",
+                          "w-full bg-gray-50 border-2 border-brand-gold/20 py-2 px-3 rounded-xl text-sm font-bold focus:outline-none focus:border-brand-gold transition-all text-center",
                           settings.darkMode && "bg-black text-white"
                         )}
                       />
                       <button 
                         onClick={handleUpdateBookName}
-                        className="p-2 bg-brand-copper text-white rounded-xl active:scale-95 transition-all"
+                        className="p-2 bg-brand-gold text-white rounded-xl active:scale-95 transition-all"
                       >
                         <Save className="w-4 h-4" />
                       </button>
@@ -2865,7 +2893,7 @@ export default function StudiesScreen() {
                         </h2>
                         <button 
                           onClick={() => setIsEditingName(true)}
-                          className="p-1.5 bg-gray-50 text-gray-400 rounded-lg active:text-brand-copper transition-colors"
+                          className="p-1.5 bg-gray-50 text-gray-400 rounded-lg active:text-brand-gold transition-colors"
                         >
                           <Edit2 className="w-3 h-3" />
                         </button>
@@ -2892,7 +2920,7 @@ export default function StudiesScreen() {
                     }}
                     className={cn(
                       "w-5 h-5 rounded-full border-2 transition-all",
-                      selectedBookForAction.coverColor === color.value ? "border-brand-copper scale-110" : "border-transparent"
+                      selectedBookForAction.coverColor === color.value ? "border-brand-gold scale-110" : "border-transparent"
                     )}
                     style={{ backgroundColor: color.value }}
                   />
@@ -2905,7 +2933,7 @@ export default function StudiesScreen() {
                     onClick={() => toggleBookFavorite(selectedBookForAction.id)}
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-2xl transition-colors",
-                      selectedBookForAction.isFavorite ? "bg-brand-red/5" : "bg-gray-50 hover:bg-brand-copper/5"
+                      selectedBookForAction.isFavorite ? "bg-brand-red/5" : "bg-gray-50 hover:bg-brand-gold/5"
                     )}
                   >
                     <div className={cn(
@@ -2924,7 +2952,7 @@ export default function StudiesScreen() {
 
                   <button 
                     onClick={() => openBook(selectedBookForAction)}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl hover:bg-brand-copper/5 transition-colors"
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl hover:bg-brand-gold/5 transition-colors"
                   >
                     <div className="p-2 bg-white rounded-xl shadow-sm">
                       <ExternalLink className="w-3.5 h-3.5 text-brand-navy" />
@@ -2934,11 +2962,11 @@ export default function StudiesScreen() {
                 </div>
 
                 <div className="bg-gray-50 rounded-[28px] p-4 flex flex-col gap-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 block">Status da Leitura</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 block">Status da Leitura</label>
                   <div className="flex gap-2">
                     {[
                       { id: 'not_started', label: 'Não lido', color: 'gray' },
-                      { id: 'in_progress', label: 'Lendo', color: 'brand-copper' },
+                      { id: 'in_progress', label: 'Lendo', color: 'brand-gold' },
                       { id: 'completed', label: 'Lido', color: 'green' }
                     ].map(st => (
                       <button
@@ -2987,7 +3015,7 @@ export default function StudiesScreen() {
                       {(selectedBookForAction.totalPages || 0) > 0 && (
                         <div className="px-2">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-black text-brand-copper uppercase tracking-widest">Progresso</span>
+                            <span className="text-[9px] font-black text-brand-gold uppercase tracking-widest">Progresso</span>
                             <span className="text-[9px] font-black text-brand-navy">
                               {Math.round(((selectedBookForAction.lastPage || 0) / (selectedBookForAction.totalPages || 1)) * 100)}%
                             </span>
@@ -2996,7 +3024,7 @@ export default function StudiesScreen() {
                             <motion.div 
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.min(100, ((selectedBookForAction.lastPage || 0) / (selectedBookForAction.totalPages || 1)) * 100)}%` }}
-                              className="h-full bg-brand-copper shadow-[0_0_8px_rgba(184,134,11,0.3)]"
+                              className="h-full bg-brand-gold shadow-[0_0_8px_rgba(184,134,11,0.3)]"
                             />
                           </div>
                         </div>
@@ -3007,7 +3035,7 @@ export default function StudiesScreen() {
 
                 <button 
                   onClick={() => setShowBookNotesModal(true)}
-                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-brand-copper/5 transition-colors group"
+                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-brand-gold/5 transition-colors group"
                 >
                   <div className="p-3 bg-white rounded-xl shadow-sm">
                     <Edit2 className="w-4 h-4 text-brand-navy" />
@@ -3034,7 +3062,7 @@ export default function StudiesScreen() {
                             href={link.startsWith('http') ? link : `https://${link}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-brand-copper hover:underline"
+                            className="flex items-center gap-2 text-brand-gold hover:underline"
                           >
                             <ExternalLink className="w-3 h-3" />
                             <span className="text-[10px] font-bold truncate max-w-[200px]">{link}</span>
@@ -3060,7 +3088,7 @@ export default function StudiesScreen() {
                             }}
                             className="flex items-center gap-2 p-2 bg-white dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 group"
                           >
-                            {attach.type === 'image' ? <Eye className="w-3 h-3 text-brand-copper" /> : <FileText className="w-3 h-3 text-brand-copper" />}
+                            {attach.type === 'image' ? <Eye className="w-3 h-3 text-brand-gold" /> : <FileText className="w-3 h-3 text-brand-gold" />}
                             <span className="text-[8px] font-bold text-brand-navy dark:text-gray-400 truncate">{attach.name}</span>
                           </button>
                         ))}
@@ -3097,7 +3125,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -3121,7 +3149,7 @@ export default function StudiesScreen() {
                     onChange={(e) => setBookNotesDraft(e.target.value)}
                     rows={6}
                     className={cn(
-                      "w-full bg-gray-50 border-0 p-6 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-brand-copper/20 transition-all outline-none resize-none",
+                      "w-full bg-gray-50 border-0 p-6 rounded-3xl text-sm font-medium focus:ring-2 focus:ring-brand-gold/20 transition-all outline-none resize-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Escreva suas observações aqui..."
@@ -3130,7 +3158,7 @@ export default function StudiesScreen() {
 +
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Links (Opcional)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Links (Opcional)</label>
                     <div className="flex gap-2 mb-3">
                       <input 
                         type="text"
@@ -3145,7 +3173,7 @@ export default function StudiesScreen() {
                       />
                       <button 
                         onClick={addBookLink}
-                        className="p-3 bg-brand-copper text-white rounded-xl active:scale-95 transition-all"
+                        className="p-3 bg-brand-gold text-white rounded-xl active:scale-95 transition-all"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -3163,7 +3191,7 @@ export default function StudiesScreen() {
                   </div>
 +
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
                     <div className="grid grid-cols-2 gap-3">
                       {bookAttachmentsDraft.map((attach, idx) => (
                         <div key={idx} className="relative group">
@@ -3175,7 +3203,7 @@ export default function StudiesScreen() {
                               <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
                             ) : (
                               <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
-                                <FileText className="w-6 h-6 text-brand-copper/40" />
+                                <FileText className="w-6 h-6 text-brand-gold/40" />
                               </div>
                             )}
                             <span className="text-[8px] font-bold text-gray-400 truncate w-full text-center">{attach.name}</span>
@@ -3190,7 +3218,7 @@ export default function StudiesScreen() {
                       ))}
                       <label className={cn(
                         "flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all",
-                        settings.darkMode && "border-gray-800 hover:bg-black/40"
+                        settings.darkMode && "border-white/5 hover:bg-black/40"
                       )}>
                         <Upload className="w-6 h-6 text-gray-300" />
                         <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
@@ -3229,7 +3257,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl sm:rounded-[32px] overflow-hidden shadow-2xl relative flex flex-col my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <div className="p-8 pb-4 border-b border-gray-50 flex items-center justify-between">
@@ -3238,7 +3266,7 @@ export default function StudiesScreen() {
                     "text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-lg",
                     selectedContent.category === 'Magia' ? 'bg-purple-50 text-purple-600' :
                     selectedContent.category === 'Reza' ? 'bg-blue-50 text-blue-600' :
-                    'bg-brand-copper/10 text-brand-copper'
+                    'bg-brand-gold/10 text-brand-gold'
                   )}>
                     {selectedContent.category}
                   </span>
@@ -3264,7 +3292,7 @@ export default function StudiesScreen() {
 
                 {selectedContent.links && selectedContent.links.length > 0 && (
                   <div className="mb-8">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-4">Links de Referência</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-gold mb-4">Links de Referência</h4>
                     <div className="flex flex-col gap-3">
                       {selectedContent.links.map((link, idx) => (
                         <a 
@@ -3273,12 +3301,12 @@ export default function StudiesScreen() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className={cn(
-                            "flex items-center gap-3 p-4 rounded-2xl bg-gray-50 group hover:bg-brand-copper/5 transition-all text-left",
+                            "flex items-center gap-3 p-4 rounded-2xl bg-gray-50 group hover:bg-brand-gold/5 transition-all text-left",
                             settings.darkMode && "bg-black/40"
                           )}
                         >
                           <div className="p-2 bg-white dark:bg-white/10 rounded-xl">
-                            <ExternalLink className="w-4 h-4 text-brand-copper" />
+                            <ExternalLink className="w-4 h-4 text-brand-gold" />
                           </div>
                           <span className={cn("text-[11px] font-bold text-brand-navy truncate", settings.darkMode && "text-gray-300")}>
                             {link}
@@ -3291,7 +3319,7 @@ export default function StudiesScreen() {
 
                 {selectedContent.attachments && selectedContent.attachments.length > 0 && (
                   <div className="mb-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-copper mb-4">Anexos</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-gold mb-4">Anexos</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {selectedContent.attachments.map((attach, idx) => (
                         <button 
@@ -3312,7 +3340,7 @@ export default function StudiesScreen() {
                             }
                           }}
                           className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 hover:bg-brand-copper/5 transition-all",
+                            "flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 hover:bg-brand-gold/5 transition-all",
                             settings.darkMode && "bg-black/40"
                           )}
                         >
@@ -3320,7 +3348,7 @@ export default function StudiesScreen() {
                             <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
                           ) : (
                             <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
-                              <FileText className="w-8 h-8 text-brand-copper/40" />
+                              <FileText className="w-8 h-8 text-brand-gold/40" />
                             </div>
                           )}
                           <span className={cn("text-[10px] font-bold text-brand-navy truncate w-full px-1", settings.darkMode && "text-gray-400")}>
@@ -3356,7 +3384,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-md bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -3372,13 +3400,13 @@ export default function StudiesScreen() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Título</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Título</label>
                   <input 
                     type="text"
                     value={contentForm.title}
                     onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      "w-full bg-gray-50 border-0 py-4 px-6 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Ex: Rezado de Ogum"
@@ -3386,7 +3414,7 @@ export default function StudiesScreen() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Categoria</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Categoria</label>
                   <div className="flex flex-wrap gap-2">
                     {CONTENT_CATEGORIES.map(c => (
                       <button
@@ -3396,7 +3424,7 @@ export default function StudiesScreen() {
                           "px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
                           contentForm.category === c 
                             ? "bg-brand-navy text-white border-brand-navy shadow-lg" 
-                            : "bg-white border-gray-100 text-gray-400 hover:border-brand-copper/30"
+                            : "bg-white border-gray-100 text-gray-400 hover:border-brand-gold/30"
                         )}
                       >
                         {c}
@@ -3406,13 +3434,13 @@ export default function StudiesScreen() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Conteúdo</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Conteúdo</label>
                   <textarea 
                     value={contentForm.content}
                     onChange={(e) => setContentForm({ ...contentForm, content: e.target.value })}
                     rows={8}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-5 px-6 rounded-[32px] text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none leading-relaxed",
+                      "w-full bg-gray-50 border-0 py-5 px-6 rounded-[32px] text-xs font-medium focus:ring-2 focus:ring-brand-gold/20 outline-none resize-none leading-relaxed",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Escreva as rezas, fundamentos, ou procedimentos..."
@@ -3421,7 +3449,7 @@ export default function StudiesScreen() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Links (Opcional)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Links (Opcional)</label>
                     <div className="flex gap-2 mb-3">
                       <input 
                         type="text"
@@ -3436,7 +3464,7 @@ export default function StudiesScreen() {
                       />
                       <button 
                         onClick={addLink}
-                        className="p-3 bg-brand-copper text-white rounded-xl active:scale-95 transition-all"
+                        className="p-3 bg-brand-gold text-white rounded-xl active:scale-95 transition-all"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -3454,7 +3482,7 @@ export default function StudiesScreen() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-3 block">Anexos (PDFs ou Imagens)</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       {contentForm.attachments?.map((attach, idx) => (
                         <div key={idx} className="relative group">
@@ -3466,7 +3494,7 @@ export default function StudiesScreen() {
                               <img src={attach.data} className="w-full aspect-square object-cover rounded-lg" alt={attach.name} />
                             ) : (
                               <div className="w-full aspect-square bg-white dark:bg-white/10 rounded-lg flex items-center justify-center">
-                                <FileText className="w-6 h-6 text-brand-copper/40" />
+                                <FileText className="w-6 h-6 text-brand-gold/40" />
                               </div>
                             )}
                             <span className="text-[8px] font-bold text-gray-400 truncate w-full text-center">{attach.name}</span>
@@ -3481,7 +3509,7 @@ export default function StudiesScreen() {
                       ))}
                       <label className={cn(
                         "flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all",
-                        settings.darkMode && "border-gray-800 hover:bg-black/40"
+                        settings.darkMode && "border-white/5 hover:bg-black/40"
                       )}>
                         <Upload className="w-6 h-6 text-gray-300" />
                         <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mt-2">Upload</span>
@@ -3520,7 +3548,7 @@ export default function StudiesScreen() {
               exit={{ scale: 0.9, opacity: 0 }}
               className={cn(
                 "w-full max-w-sm bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 shadow-2xl relative my-8 sm:my-0",
-                settings.darkMode && "bg-[#1A1A1A]"
+                settings.darkMode && "bg-[#161616]"
               )}
             >
               <button 
@@ -3537,7 +3565,7 @@ export default function StudiesScreen() {
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1">Termo</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1">Termo</label>
                     {duplicateError && (
                       <motion.span 
                         initial={{ opacity: 0, x: 20 }}
@@ -3551,7 +3579,7 @@ export default function StudiesScreen() {
                       <button 
                         onClick={handleAiGenerate}
                         disabled={isGeneratingAi}
-                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-copper hover:text-brand-navy transition-colors bg-brand-copper/5 px-2 py-1 rounded-full mr-2"
+                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-gold hover:text-brand-navy transition-colors bg-brand-gold/5 px-2 py-1 rounded-full mr-2"
                       >
                         {isGeneratingAi ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -3567,7 +3595,7 @@ export default function StudiesScreen() {
                     value={glossaryForm.term}
                     onChange={(e) => setGlossaryForm({ ...glossaryForm, term: e.target.value })}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none",
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Ex: Amaci"
@@ -3575,20 +3603,20 @@ export default function StudiesScreen() {
                 </div>
 
                 <div className="relative">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1 mb-2 block">Categoria</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1 mb-2 block">Categoria</label>
                   <button
                     type="button"
                     onClick={() => setIsGlossaryCategoryOpen(!isGlossaryCategoryOpen)}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-copper/20 outline-none flex items-center justify-between group transition-all duration-300",
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-brand-gold/20 outline-none flex items-center justify-between group transition-all duration-300",
                       settings.darkMode && "bg-black text-white",
-                      isGlossaryCategoryOpen && "ring-2 ring-brand-copper/20 bg-white shadow-sm",
+                      isGlossaryCategoryOpen && "ring-2 ring-brand-gold/20 bg-white shadow-sm",
                       settings.darkMode && isGlossaryCategoryOpen && "bg-zinc-900"
                     )}
                   >
                     <span className="truncate">{glossaryForm.category}</span>
                     <ChevronDown className={cn(
-                      "w-4 h-4 text-brand-copper transition-transform duration-300",
+                      "w-4 h-4 text-brand-gold transition-transform duration-300",
                       isGlossaryCategoryOpen && "rotate-180"
                     )} />
                   </button>
@@ -3620,7 +3648,7 @@ export default function StudiesScreen() {
                               className={cn(
                                 "w-full text-left px-5 py-3 text-xs font-bold transition-all flex items-center justify-between",
                                 glossaryForm.category === cat 
-                                  ? "bg-brand-copper/10 text-brand-copper" 
+                                  ? "bg-brand-gold/10 text-brand-gold" 
                                   : "text-gray-600 hover:bg-gray-50",
                                 settings.darkMode && glossaryForm.category !== cat && "text-gray-400 hover:bg-black"
                               )}
@@ -3637,12 +3665,12 @@ export default function StudiesScreen() {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-copper ml-1">Definição / Significado</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-gold ml-1">Definição / Significado</label>
                     {glossaryForm.definition && (
                       <button 
                         onClick={handleAiRefine}
                         disabled={isRefiningAi}
-                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-copper hover:text-brand-navy transition-colors bg-brand-copper/5 px-2 py-1 rounded-full mr-2"
+                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-brand-gold hover:text-brand-navy transition-colors bg-brand-gold/5 px-2 py-1 rounded-full mr-2"
                       >
                         {isRefiningAi ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -3658,7 +3686,7 @@ export default function StudiesScreen() {
                     onChange={(e) => setGlossaryForm({ ...glossaryForm, definition: e.target.value })}
                     rows={6}
                     className={cn(
-                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-[24px] text-xs font-medium focus:ring-2 focus:ring-brand-copper/20 outline-none resize-none leading-relaxed",
+                      "w-full bg-gray-50 border-0 py-4 px-5 rounded-[24px] text-xs font-medium focus:ring-2 focus:ring-brand-gold/20 outline-none resize-none leading-relaxed",
                       settings.darkMode && "bg-black text-white"
                     )}
                     placeholder="Descreva o significado deste termo na umbanda..."

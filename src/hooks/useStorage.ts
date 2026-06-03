@@ -86,48 +86,57 @@ export function useStorage<T>(key: string, initialValue: T): [T, (value: T | ((v
   // Sync to Supabase when value changes
   const setValue = useCallback(async (value: T | ((val: T) => T)) => {
     try {
-      let valueToStore = value instanceof Function ? value(storedValue) : value;
-      if (key === 'templo_settings' && valueToStore) {
-        (valueToStore as any).darkMode = true;
-      }
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(storageKey, JSON.stringify(valueToStore));
-      window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key: storageKey, value: valueToStore } }));
+      setStoredValue(prev => {
+        let valueToStore = value instanceof Function ? value(prev) : value;
+        if (key === 'templo_settings' && valueToStore) {
+          (valueToStore as any).darkMode = true;
+        }
+        
+        setTimeout(async () => {
+          try {
+            window.localStorage.setItem(storageKey, JSON.stringify(valueToStore));
+            window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key: storageKey, value: valueToStore } }));
 
-      if (user && table) {
-         if (key === 'templo_settings') {
-           await supabase.from(table).upsert({ 
-             id: user.id, // Or setting specific unique key
-             user_id: user.id, 
-             settings_data: valueToStore,
-             updated_at: new Date().toISOString()
-           });
-         } else if (Array.isArray(valueToStore)) {
-            // Very naive full sync: upsert everything. It requires elements to have an id!
-            const toUpsert = valueToStore.map(item => ({
-              ...item,
-              user_id: user.id
-            }));
-            
-            // Delete removed items (diff against current storedValue)
-            if (Array.isArray(storedValue)) {
-               const newIds = new Set(valueToStore.map(i => i.id));
-               const toDelete = storedValue.filter(i => !newIds.has(i.id)).map(i => i.id);
-               if (toDelete.length > 0) {
-                 await supabase.from(table).delete().in('id', toDelete).eq('user_id', user.id);
+            if (user && table) {
+               if (key === 'templo_settings') {
+                 await supabase.from(table).upsert({ 
+                   id: user.id, // Or setting specific unique key
+                   user_id: user.id, 
+                   settings_data: valueToStore,
+                   updated_at: new Date().toISOString()
+                 });
+               } else if (Array.isArray(valueToStore)) {
+                  // Very naive full sync: upsert everything. It requires elements to have an id!
+                  const toUpsert = valueToStore.map(item => ({
+                    ...item,
+                    user_id: user.id
+                  }));
+                  
+                  // Delete removed items (diff against current prev)
+                  if (Array.isArray(prev)) {
+                     const newIds = new Set(valueToStore.map(i => i.id));
+                     const toDelete = prev.filter(i => !newIds.has(i.id)).map(i => i.id);
+                     if (toDelete.length > 0) {
+                       await supabase.from(table).delete().in('id', toDelete).eq('user_id', user.id);
+                     }
+                  }
+                  
+                  if (toUpsert.length > 0) {
+                     await supabase.from(table).upsert(toUpsert);
+                  }
                }
             }
-            
-            if (toUpsert.length > 0) {
-               await supabase.from(table).upsert(toUpsert);
-            }
-         }
-      }
-      
+          } catch (e) {
+            console.error(e);
+          }
+        }, 0);
+        
+        return valueToStore;
+      });
     } catch (error) {
       console.error(error);
     }
-  }, [user, table, storedValue, storageKey, key]);
+  }, [user, table, storageKey, key]);
 
   useEffect(() => {
     const handleSync = (e: any) => {

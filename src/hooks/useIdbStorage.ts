@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { get, set } from 'idb-keyval';
 import { useAuth } from '../lib/AuthContext';
 
@@ -47,17 +47,23 @@ export function useIdbStorage<T>(key: string, initialValue: T): [T, (value: T | 
     loadData();
   }, [storageKey]);
 
-  const setValue = async (value: T | ((val: T) => T)) => {
+  const setValue = useCallback(async (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      await set(storageKey, valueToStore);
-      // Sync across tabs/instances
-      window.dispatchEvent(new CustomEvent('idb-storage-sync', { detail: { key: storageKey, value: valueToStore } }));
+      setStoredValue((prevStoredValue) => {
+        const valueToStore = value instanceof Function ? value(prevStoredValue) : value;
+        
+        // Execute side effect asynchronously
+        setTimeout(() => {
+          set(storageKey, valueToStore).catch(err => console.error('Error saving to IndexedDB:', err));
+          window.dispatchEvent(new CustomEvent('idb-storage-sync', { detail: { key: storageKey, value: valueToStore } }));
+        }, 0);
+        
+        return valueToStore;
+      });
     } catch (error) {
       console.error('Error saving to IndexedDB:', error);
     }
-  };
+  }, [storageKey]);
 
   useEffect(() => {
     const handleSync = (e: any) => {

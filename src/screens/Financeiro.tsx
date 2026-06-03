@@ -462,20 +462,23 @@ export default function Financeiro() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full"
+      className={cn(
+        "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent flex flex-col pt-safe relative"
+      )}
     >
-      {/* Year Selector & Summary */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-brand-navy rounded-xl text-white">
-            <CalendarDays className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className={cn("text-lg font-black uppercase tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
-              Financeiro {selectedYear}
-            </h2>
-            <p className="text-[10px] font-bold text-brand-copper uppercase tracking-widest">Controle Mensalidade</p>
-          </div>
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 transform-gpu will-change-transform" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-white/[0.02] dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
+
+      {/* Main Header Area */}
+      <header className="mb-6 sm:mb-8 mt-2 sm:mt-4 pl-1 relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className={cn("text-3xl sm:text-4xl font-black font-serif tracking-tight", settings.darkMode ? "text-brand-gold" : "text-brand-navy")}>
+            Financeiro
+          </h2>
+          <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">
+            Controle de Caixa
+          </p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -483,14 +486,15 @@ export default function Financeiro() {
             <button 
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all",
+                "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all",
                 settings.darkMode 
                   ? "bg-white/5 text-white border border-white/10" 
                   : "bg-white text-brand-navy border border-gray-100 shadow-sm"
               )}
             >
+              <CalendarDays className="w-3.5 h-3.5 opacity-50" />
               <span>{selectedYear}</span>
-              <ChevronDown className={cn("w-4 h-4 transition-transform duration-300", isYearDropdownOpen && "rotate-180")} />
+              <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-300", isYearDropdownOpen && "rotate-180")} />
             </button>
             
             <AnimatePresence>
@@ -539,33 +543,49 @@ export default function Financeiro() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setShowAddModal(true)}
-              className="w-9 h-9 bg-brand-copper text-white rounded-xl flex items-center justify-center shadow-lg shadow-brand-copper/20"
+              className="w-10 h-10 bg-brand-copper text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-copper/20"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5 stroke-[2.5px]" />
             </motion.button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* Submenu Tabs */}
-      <div className="flex gap-2 mb-6 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl">
-        {(['mensalidade', 'extra', 'oga'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center gap-1",
-              activeTab === tab
-                ? "bg-brand-navy text-white shadow-lg shadow-brand-navy/20"
-                : settings.darkMode ? "text-gray-400" : "text-gray-500"
-            )}
-          >
-            {tab === 'mensalidade' && <Calendar className="w-3.5 h-3.5 mb-0.5" />}
-            {tab === 'extra' && <Plus className="w-3.5 h-3.5 mb-0.5" />}
-            {tab === 'oga' && <DollarSign className="w-3.5 h-3.5 mb-0.5" />}
-            {tab === 'mensalidade' ? 'Mensalidade' : tab === 'extra' ? 'Gastos Adicionais' : 'Ogã'}
-          </button>
-        ))}
+      <div className={cn(
+        "flex p-1.5 rounded-[24px] mb-8 border transition-all relative z-10",
+        settings.darkMode 
+          ? "bg-[#161616]/80 backdrop-blur-md border-white/5 shadow-inner" 
+          : "bg-gray-50/80 backdrop-blur-md border-gray-100 shadow-sm"
+      )}>
+        {[
+          { id: 'mensalidade', label: 'Mensalidade', icon: Calendar },
+          { id: 'extra', label: 'Gastos Adicionais', icon: Plus },
+          { id: 'oga', label: 'Ogã', icon: DollarSign },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "flex-1 py-3 px-1 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 active:scale-95 border border-transparent",
+                isActive 
+                  ? (settings.darkMode 
+                      ? "bg-brand-copper/20 text-brand-gold border-brand-gold/30 shadow-lg shadow-black/20" 
+                      : "bg-brand-navy text-white shadow-md shadow-brand-navy/15"
+                    )
+                  : (settings.darkMode 
+                      ? "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]" 
+                      : "text-gray-400 hover:text-brand-navy hover:bg-gray-50"
+                    )
+              )}
+            >
+              <tab.icon className={cn("w-3.5 h-3.5 transition-colors", isActive ? (settings.darkMode ? "text-brand-gold animate-pulse" : "text-brand-gold") : "text-gray-400")} />
+              <span className="leading-none text-center">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Info Card - Rule */}

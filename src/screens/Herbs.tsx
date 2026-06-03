@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, ChevronRight, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake, Calendar, CalendarDays, Download, Upload } from 'lucide-react';
+import { Plus, Minus, X, Heart, Share2, Trash2, Search, CalendarClock, ChevronLeft, ChevronRight, Folder, PlusCircle, Droplet, Package, Leaf, AlertCircle, CheckCircle2, Settings, Pencil, Sliders, Copy, Check, Flame, Sun, Snowflake, Calendar, CalendarDays, Download, Upload, LayoutGrid, ListIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -431,6 +431,7 @@ export default function HerbsScreen() {
   const [customHerbName, setCustomHerbName] = useState('');
   const [stockSearch, setStockSearch] = useState('');
   const [copiedPix, setCopiedPix] = useState(false);
+  const [readyViewMode, setReadyViewMode] = useStorage<'list' | 'grid'>('templo_ready_baths_viewmode', 'grid');
 
   const { queueDelete } = useUndo();
 
@@ -1392,7 +1393,7 @@ export default function HerbsScreen() {
           <div className="space-y-4 px-2">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                   <Search className="text-gray-400 dark:text-gray-500 w-5 h-5" />
                 </div>
                 <input
@@ -1401,12 +1402,36 @@ export default function HerbsScreen() {
                   value={readySearch}
                   onChange={(e) => setReadySearch(e.target.value)}
                   className={cn(
-                    "w-full h-12 rounded-2xl pl-12 pr-6 outline-none text-sm transition-all shadow-sm border",
+                    "w-full h-12 rounded-[24px] pl-14 pr-[100px] outline-none text-sm transition-all shadow-sm border font-bold",
                     settings.darkMode 
                       ? "bg-[#161616] border-white/5 text-white placeholder-gray-500 focus:border-brand-gold/40 focus:ring-1 focus:ring-brand-gold/40" 
                       : "bg-white border-gray-100 text-brand-navy placeholder-gray-400 focus:border-brand-copper/30 shadow-gray-200/20"
                   )}
                 />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 p-1 rounded-xl bg-gray-50 dark:bg-black/20">
+                  <button
+                    onClick={() => setReadyViewMode('grid')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all",
+                      readyViewMode === 'grid' 
+                        ? "bg-white dark:bg-white/10 shadow-sm text-brand-navy dark:text-white" 
+                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setReadyViewMode('list')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all",
+                      readyViewMode === 'list' 
+                        ? "bg-white dark:bg-white/10 shadow-sm text-brand-navy dark:text-white" 
+                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                    )}
+                  >
+                    <ListIcon className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1509,7 +1534,9 @@ export default function HerbsScreen() {
           </div>
 
           {/* Ready Baths List */}
-          <div className="grid gap-4">
+          <div className={cn(
+            readyViewMode === 'grid' ? "columns-2 lg:columns-3 gap-3 sm:gap-4" : "flex flex-col gap-4"
+          )}>
             {filteredReadyBaths.map((rb) => {
               const statusBorder = rb.quantity > 0 ? "border-l-4 border-l-green-500/80" : "border-l-4 border-l-red-500/80";
               const isOutOfStockFixed = rb.isFixed && rb.quantity === 0;
@@ -1517,15 +1544,16 @@ export default function HerbsScreen() {
                 <motion.div
                   key={rb.id}
                   className={cn(
-                    "p-6 rounded-3xl relative overflow-hidden border flex flex-col gap-4 group transition-colors duration-300 shadow-md",
+                    "rounded-3xl relative overflow-hidden border flex flex-col gap-4 group transition-colors duration-300 shadow-md break-inside-avoid w-full",
+                    readyViewMode === 'grid' ? "p-4 sm:p-5 mb-3 sm:mb-4" : "p-4 sm:p-6 mb-4",
                     statusBorder,
                     settings.darkMode 
-                      ? "bg-[#161616] border-brand-gold/15 shadow-[0_4px_20px_rgba(0,0,0,0.3)]" 
-                      : "bg-white border-brand-copper/25 shadow-gray-200/20",
+                      ? "bg-[#161616] border-brand-gold/15 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:bg-[#1a1a1a]" 
+                      : "bg-white border-brand-copper/25 shadow-gray-200/20 hover:bg-gray-50",
                     isOutOfStockFixed && (settings.darkMode ? "bg-gradient-to-br from-red-950/15 to-[#161616] border-red-500/20" : "bg-red-50/15 border-red-200")
                   )}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                  <div className={cn("flex flex-col justify-between gap-4 flex-1", readyViewMode === 'list' ? "sm:flex-row sm:items-center" : "")}>
                     <div 
                       className="flex-1 cursor-pointer"
                       onClick={() => {
@@ -1589,63 +1617,9 @@ export default function HerbsScreen() {
                         </div>
                       )}
                     </div>
-
-                    <div className="flex flex-col items-center gap-1.5 shrink-0 self-end sm:self-center">
-                      <div className={cn(
-                        "flex items-center gap-1.5 p-1 rounded-2xl border",
-                        settings.darkMode ? "bg-black/40 border-white/15" : "bg-gray-100/60 border-gray-200/50"
-                      )}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            adjustReadyQuantity(rb.id, -1);
-                          }}
-                          className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90",
-                            settings.darkMode 
-                              ? "bg-[#202020] text-brand-gold border border-white/5 hover:bg-[#282828]" 
-                              : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50",
-                            rb.quantity === 0 && "opacity-30 cursor-not-allowed"
-                          )}
-                          disabled={rb.quantity === 0}
-                        >
-                          <Minus className="w-3.5 h-3.5 stroke-[3px]" />
-                        </button>
-                        
-                        <div className="min-w-[28px] text-center">
-                          <motion.span 
-                            key={rb.quantity}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={cn(
-                              "text-sm font-black tabular-nums",
-                              rb.quantity === 0 ? "text-gray-400" : (settings.darkMode ? "text-[#dcae1d]" : "text-brand-navy")
-                            )}
-                          >
-                            {rb.quantity}
-                          </motion.span>
-                        </div>
-
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            adjustReadyQuantity(rb.id, 1);
-                          }}
-                          className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-90",
-                            settings.darkMode 
-                              ? "bg-[#202020] text-brand-gold border border-white/5 hover:bg-[#282828]" 
-                              : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50"
-                          )}
-                        >
-                          <Plus className="w-3.5 h-3.5 stroke-[3px]" />
-                        </button>
-                      </div>
-                      <span className="text-[8px] font-black uppercase tracking-[0.15em] text-gray-400">Em Estoque</span>
-                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-gray-50 dark:border-white/5">
+                  <div className={cn("flex flex-wrap items-center justify-between gap-3 pt-3 mt-auto border-t", settings.darkMode ? "border-white/5" : "border-gray-50")}>
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "w-7 h-7 rounded-lg flex items-center justify-center",
@@ -1665,7 +1639,58 @@ export default function HerbsScreen() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "flex items-center gap-1 p-1 rounded-xl border",
+                        settings.darkMode ? "bg-black/40 border-white/10" : "bg-gray-100/60 border-gray-200/50"
+                      )}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            adjustReadyQuantity(rb.id, -1);
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90",
+                            settings.darkMode 
+                              ? "bg-white/5 text-brand-gold border border-white/5 hover:bg-white/10" 
+                              : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50",
+                            rb.quantity === 0 && "opacity-30 cursor-not-allowed"
+                          )}
+                          disabled={rb.quantity === 0}
+                        >
+                          <Minus className="w-3.5 h-3.5 stroke-[3px]" />
+                        </button>
+                        
+                        <div className="min-w-[24px] text-center">
+                          <motion.span 
+                            key={rb.quantity}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className={cn(
+                              "text-xs font-black tabular-nums",
+                              rb.quantity === 0 ? "text-gray-400" : (settings.darkMode ? "text-[#dcae1d]" : "text-brand-navy")
+                            )}
+                          >
+                            {rb.quantity}
+                          </motion.span>
+                        </div>
+
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            adjustReadyQuantity(rb.id, 1);
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-90",
+                            settings.darkMode 
+                              ? "bg-white/5 text-brand-gold border border-white/5 hover:bg-white/10" 
+                              : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50"
+                          )}
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[3px]" />
+                        </button>
+                      </div>
+
                       {isManaging && (
                         <div className="flex gap-2">
                           <button 
@@ -1675,7 +1700,7 @@ export default function HerbsScreen() {
                               setShowReadyModal(true);
                             }}
                             className={cn(
-                              "p-2.5 rounded-xl transition-all active:scale-95 border",
+                              "p-2 rounded-xl transition-all active:scale-95 border",
                               settings.darkMode 
                                 ? "bg-[#161616] border-white/10 text-brand-gold hover:bg-white/10" 
                                 : "bg-white border-gray-200 text-brand-navy hover:bg-gray-50 shadow-sm"
@@ -1688,7 +1713,7 @@ export default function HerbsScreen() {
                             <button 
                               onClick={() => deleteReadyBath(rb)}
                               className={cn(
-                                "p-2.5 rounded-xl active:scale-[0.93] transition-all border border-transparent",
+                                "p-2 rounded-xl active:scale-[0.93] transition-all border border-transparent",
                                 settings.darkMode 
                                   ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" 
                                   : "bg-red-50 text-red-500 hover:bg-red-100 shadow-sm"

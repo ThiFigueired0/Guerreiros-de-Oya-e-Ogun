@@ -11,6 +11,54 @@ import { RichTextEditor } from '../components/RichTextEditor';
 
 const PRESET_TAGS = ['Estudos', 'Giras', 'Sonhos', 'Insights', 'Consultas', 'Geral'];
 
+const TAG_STYLES: Record<string, { active: string, activeLight: string, pill: string }> = {
+  'Estudos': {
+    active: 'bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-md',
+    activeLight: 'bg-blue-50 text-blue-600 border-blue-200 shadow-md',
+    pill: 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400'
+  },
+  'Giras': {
+    active: 'bg-brand-gold/10 text-brand-gold border-brand-gold/20 shadow-md',
+    activeLight: 'bg-amber-50 text-amber-600 border-amber-200 shadow-md',
+    pill: 'bg-brand-gold/10 text-brand-gold dark:bg-brand-gold/20'
+  },
+  'Sonhos': {
+    active: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-md',
+    activeLight: 'bg-indigo-50 text-indigo-600 border-indigo-200 shadow-md',
+    pill: 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/20 dark:text-indigo-400'
+  },
+  'Insights': {
+    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-md',
+    activeLight: 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-md',
+    pill: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+  },
+  'Consultas': {
+    active: 'bg-orange-500/10 text-orange-400 border-orange-500/20 shadow-md',
+    activeLight: 'bg-orange-50 text-orange-600 border-orange-200 shadow-md',
+    pill: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400'
+  },
+  'Geral': {
+    active: 'bg-gray-400/10 text-gray-400 border-gray-400/20 shadow-md',
+    activeLight: 'bg-gray-100 text-gray-700 border-gray-200 shadow-md',
+    pill: 'bg-gray-400/10 text-gray-600 dark:bg-gray-400/20 dark:text-gray-300'
+  }
+};
+
+const getTagStyles = (tagName: string, isDarkMode: boolean) => {
+  const defaultStyles = {
+    active: isDarkMode ? 'bg-white/10 text-white border-white/20 shadow-md' : 'bg-brand-navy text-white border-brand-navy shadow-md',
+    pill: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300'
+  };
+  
+  if (TAG_STYLES[tagName]) {
+    return {
+      active: isDarkMode ? TAG_STYLES[tagName].active : TAG_STYLES[tagName].activeLight,
+      pill: TAG_STYLES[tagName].pill
+    };
+  }
+  return defaultStyles;
+};
+
 const TAG_COLORS: Record<string, string> = {
   'Estudos': 'border-t-blue-500',
   'Giras': 'border-t-purple-500',
@@ -61,7 +109,8 @@ export default function NotesScreen() {
 
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useStorage<'grid' | 'list'>('templo_notes_viewmode', 'grid');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -107,7 +156,7 @@ export default function NotesScreen() {
   };
 
   const handleOpenNew = () => {
-    setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: selectedTag ? [selectedTag] : ['Geral'] });
+    setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: selectedTags.length === 1 ? [selectedTags[0]] : ['Geral'] });
     setIsEditing(true);
     setSelectedNote(null);
   };
@@ -256,8 +305,8 @@ export default function NotesScreen() {
                           n.content.toLowerCase().includes(search.toLowerCase()) ||
                           (n.links || []).some(link => link.toLowerCase().includes(search.toLowerCase()));
     
-    if (selectedTag) {
-      return matchesSearch && (n.tags || []).includes(selectedTag);
+    if (selectedTags.length > 0) {
+      return matchesSearch && (n.tags || []).some(tag => selectedTags.includes(tag));
     }
     
     return matchesSearch;
@@ -269,95 +318,174 @@ export default function NotesScreen() {
 
   return (
     <motion.div className={cn(
-      "p-4 bg-transparent min-h-full pb-32 transition-colors duration-500"
+      "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent relative"
     )}>
-      <div className="flex items-center justify-between mb-6 px-1">
-        <h2 className={cn("text-2xl font-bold text-brand-navy", settings.darkMode && "text-white")}>Bloco de Notas</h2>
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 transform-gpu will-change-transform" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-white/[0.02] dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
+
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4 px-2 relative z-10">
+        <div>
+          <h2 className={cn(
+            "text-3xl sm:text-4xl font-black font-serif tracking-tight",
+            settings.darkMode ? "text-brand-gold" : "text-brand-navy"
+          )}>
+            Notas
+          </h2>
+          <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">
+            Bloco de anotações
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {!user && (
             <>
-              <button onClick={generateTestData} title="Gerar Notas Teste" className="p-3 text-brand-copper bg-brand-copper/10 rounded-2xl active:scale-95 transition-all">
+              <button onClick={generateTestData} title="Gerar Notas Teste" className="p-3.5 text-brand-copper bg-brand-copper/10 rounded-2xl active:scale-95 transition-all">
                 <Database className="w-5 h-5" />
               </button>
-              <button onClick={clearAllNotes} title="Limpar Todas" className="p-3 text-red-500 bg-red-500/10 rounded-2xl active:scale-95 transition-all">
+              <button onClick={clearAllNotes} title="Limpar Todas" className="p-3.5 text-red-500 bg-red-500/10 rounded-2xl active:scale-95 transition-all">
                 <Trash2 className="w-5 h-5" />
               </button>
             </>
           )}
-          <button onClick={handleOpenNew} className={cn(
-            "w-12 h-12 flex items-center justify-center bg-brand-copper text-white rounded-2xl shadow-xl active:scale-95 transition-all",
-            settings.darkMode && "shadow-brand-copper/20"
-          )}>
-            <Plus className="w-6 h-6" />
+          <button 
+            onClick={handleOpenNew}
+            className={cn(
+              "px-6 py-3.5 rounded-[20px] text-white flex items-center justify-center gap-2 active:scale-95 transition-all outline-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-navy/20",
+              settings.darkMode ? "bg-brand-gold text-brand-navy shadow-brand-gold/20 hover:bg-brand-gold/90" : "bg-brand-navy hover:bg-brand-navy/90"
+            )}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Nota</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Buscar nas anotações..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={cn(
-            "w-full bg-white border-none rounded-2xl p-4 pl-12 pr-24 shadow-sm focus:ring-1 focus:ring-brand-copper outline-none",
-            settings.darkMode && "bg-[#1A1A1A] text-white"
-          )}
-        />
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={cn(
-              "p-1.5 rounded-md transition-all",
-              viewMode === 'grid' 
-                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-navy dark:text-white" 
-                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={cn(
-              "p-1.5 rounded-md transition-all",
-              viewMode === 'list' 
-                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-navy dark:text-white" 
-                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <ListIcon className="w-4 h-4" />
-          </button>
+      <div className="flex flex-col gap-3 mb-6 z-10 px-1 relative">
+        <div className="flex gap-2 relative">
+          <div className="relative flex-1">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar nas anotações..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={cn(
+                "w-full rounded-[24px] p-5 pl-14 pr-[130px] shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border",
+                settings.darkMode 
+                  ? "bg-[#161616] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+                  : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
+              )}
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-50 dark:bg-black/20 p-1 rounded-xl">
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={cn(
+                  "p-2 rounded-lg transition-all relative",
+                  isFilterOpen || selectedTags.length > 0
+                    ? "bg-white dark:bg-white/10 shadow-sm text-brand-gold"
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                )}
+                title="Filtrar por Categoria"
+              >
+                <Tag className={cn("w-4 h-4", selectedTags.length > 0 ? "fill-current" : "")} />
+                {selectedTags.length > 0 && (
+                  <span className="absolute top-1 right-1 flex h-2 w-2 items-center justify-center rounded-full bg-red-500 shadow-sm" />
+                )}
+              </button>
+
+              <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-0.5" />
+
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  viewMode === 'grid' 
+                    ? "bg-white dark:bg-white/10 shadow-sm text-brand-navy dark:text-white" 
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  viewMode === 'list' 
+                    ? "bg-white dark:bg-white/10 shadow-sm text-brand-navy dark:text-white" 
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                )}
+              >
+                <ListIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-6 px-1">
-        <button
-          onClick={() => setSelectedTag(null)}
-          className={cn(
-            "px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border",
-            !selectedTag 
-              ? "bg-brand-navy border-brand-navy text-white shadow-md dark:bg-brand-gold dark:border-brand-gold dark:text-brand-navy"
-              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-[#1A1A1A] dark:border-gray-800 dark:text-gray-300"
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className={cn(
+                "p-4 rounded-[24px] border shadow-sm",
+                settings.darkMode ? "bg-[#161616] border-white/5" : "bg-white border-gray-100"
+              )}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={cn("text-[10px] font-black uppercase tracking-[0.2em]", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                    Filtrar por Categoria
+                  </h3>
+                  {selectedTags.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedTags([])}
+                      className="text-[10px] uppercase font-bold text-gray-400 hover:text-brand-navy dark:hover:text-white transition-colors"
+                    >
+                      Limpar Filtros
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className={cn(
+                      "px-6 py-3 rounded-[20px] whitespace-nowrap text-[10px] uppercase font-black tracking-widest transition-all border",
+                      selectedTags.length === 0 
+                        ? (settings.darkMode ? "bg-white/10 text-white border-white/20 shadow-md" : "bg-brand-navy text-white border-brand-navy shadow-md")
+                        : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100")
+                    )}
+                  >
+                    Todas
+                  </button>
+                  {allTags.map(tag => {
+                    const style = getTagStyles(tag, settings.darkMode);
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => setSelectedTags(prev => 
+                          prev.includes(tag) 
+                            ? prev.filter(t => t !== tag)
+                            : [...prev, tag]
+                        )}
+                        className={cn(
+                          "px-6 py-3 rounded-[20px] whitespace-nowrap text-[10px] uppercase font-black tracking-widest transition-all border flex items-center gap-2",
+                          isSelected
+                            ? style.active
+                            : (settings.darkMode ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white" : "bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100")
+                        )}
+                      >
+                        <Tag className={cn("w-3 h-3", isSelected ? "opacity-100" : "opacity-40")} />
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </motion.div>
           )}
-        >
-          Todas
-        </button>
-        {allTags.map(tag => (
-          <button
-            key={tag}
-            onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-            className={cn(
-              "px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all border flex items-center gap-1.5",
-              tag === selectedTag
-                ? "bg-brand-navy border-brand-navy text-white shadow-md dark:bg-brand-gold dark:border-brand-gold dark:text-brand-navy"
-                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-[#1A1A1A] dark:border-gray-800 dark:text-gray-300"
-            )}
-          >
-            <Tag className="w-3 h-3" />
-            {tag}
-          </button>
-        ))}
+        </AnimatePresence>
       </div>
 
       <div className={cn(
@@ -376,12 +504,12 @@ export default function NotesScreen() {
             key={note.id} 
             onClick={() => { setSelectedNote(note); setNoteForm(note); setIsEditing(false); }}
             className={cn(
-              "break-inside-avoid w-full relative overflow-hidden transition-all duration-300 group cursor-pointer border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_40px_rgba(0,0,0,0.1)]",
-              viewMode === 'grid' ? "p-4 sm:p-6 rounded-2xl sm:rounded-[28px] mb-3 sm:mb-4" : "p-4 sm:p-5 rounded-2xl mb-0",
+              "break-inside-avoid w-full relative overflow-hidden transition-all duration-300 group cursor-pointer border shadow-sm hover:shadow-lg",
+              viewMode === 'grid' ? "p-4 sm:p-6 rounded-[24px] mb-3 sm:mb-4" : "p-4 sm:p-5 rounded-[24px] mb-4",
               getTagColor(note.tags),
               settings.darkMode 
-                ? "bg-gradient-to-b from-[#1a2333] to-[#111827] border-[#2d3748]" 
-                : "bg-white"
+                ? "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]" 
+                : "bg-white border-gray-100 hover:border-gray-200"
             )}
           >
             {/* Top decorative gradient or shine */}
@@ -392,11 +520,13 @@ export default function NotesScreen() {
                  <div className="flex-1">
                    {note.tags && note.tags.length > 0 && (
                      <div className={cn("flex flex-wrap", viewMode === 'grid' ? "gap-1 sm:gap-1.5 mb-2" : "gap-1 mb-1")}>
-                       {note.tags.slice(0, 2).map(tag => (
-                         <span key={tag} className={cn("rounded-md bg-gray-100 dark:bg-gray-800 font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider truncate max-w-[80px] sm:max-w-none", viewMode === 'grid' ? "px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px]" : "px-1.5 py-0.5 whitespace-nowrap text-[8px]")}>
+                       {note.tags.slice(0, 2).map(tag => {
+                         const style = getTagStyles(tag, settings.darkMode);
+                         return (
+                         <span key={tag} className={cn("rounded-md font-bold uppercase tracking-wider truncate max-w-[80px] sm:max-w-none", style.pill, viewMode === 'grid' ? "px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px]" : "px-1.5 py-0.5 whitespace-nowrap text-[8px]")}>
                            {tag}
                          </span>
-                       ))}
+                       )})}
                        {note.tags.length > 2 && (
                          <span className={cn("rounded-md font-bold text-gray-400", viewMode === 'grid' ? "px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px]" : "px-1.5 py-0.5 text-[8px]")}>+{note.tags.length - 2}</span>
                        )}
@@ -466,23 +596,23 @@ export default function NotesScreen() {
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className={cn(
-              "fixed inset-0 z-[400] bg-white flex flex-col transition-colors duration-500",
-              settings.darkMode && "bg-[#121212]"
+              "fixed inset-0 z-[400] flex flex-col transition-colors duration-500",
+              settings.darkMode ? "bg-[#161616]" : "bg-white"
             )}
           >
-            <div className={cn("p-4 pt-12 flex items-center justify-between border-b border-gray-100", settings.darkMode && "border-gray-800")}>
-               <button onClick={() => { setSelectedNote(null); setIsEditing(false); setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: [] }); }} className="p-3 text-gray-400 active:scale-90 transition-all">
+            <div className={cn("p-4 pt-12 flex items-center justify-between border-b", settings.darkMode ? "border-white/5" : "border-gray-100")}>
+               <button onClick={() => { setSelectedNote(null); setIsEditing(false); setNoteForm({ title: '', content: '', images: [], links: [], attachments: [], tags: [] }); }} className="p-3 text-gray-400 active:scale-90 transition-all rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
                   <X className="w-7 h-7" />
                </button>
                {isEditing ? (
-                  <button onClick={handleSave} className="bg-brand-copper text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-2">
+                  <button onClick={handleSave} className="bg-brand-gold text-brand-navy px-8 py-3.5 rounded-[20px] font-black text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-2 hover:bg-brand-gold/90">
                      <Save className="w-4 h-4" /> Salvar
                   </button>
                ) : (
                   <div className="flex flex-col items-end gap-1">
                     <button onClick={() => setIsEditing(true)} className={cn(
-                      "font-black text-xs uppercase tracking-widest bg-gray-50 px-6 py-2.5 rounded-xl text-brand-navy shadow-sm active:scale-95 transition-all",
-                      settings.darkMode && "bg-[#1A1A1A] text-white"
+                      "font-black text-[10px] uppercase tracking-widest px-8 py-3.5 rounded-[20px] active:scale-95 transition-all border",
+                      settings.darkMode ? "bg-white/5 border-white/5 text-white hover:bg-white/10" : "bg-gray-50 border-gray-100 text-brand-navy hover:bg-gray-100"
                     )}>
                        Editar
                     </button>
@@ -516,10 +646,10 @@ export default function NotesScreen() {
                              key={tag}
                              onClick={() => toggleTag(tag)}
                              className={cn(
-                               "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
+                               "px-4 py-2 rounded-[20px] text-[10px] font-black uppercase tracking-wider transition-all",
                                noteForm.tags?.includes(tag)
-                                 ? "bg-brand-gold text-white"
-                                 : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
+                                 ? getTagStyles(tag, settings.darkMode).active
+                                 : (settings.darkMode ? "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200")
                              )}
                            >
                              {tag}
@@ -531,8 +661,8 @@ export default function NotesScreen() {
                              type="text"
                              placeholder="+ Nova tag"
                              className={cn(
-                               "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider outline-none w-28",
-                               settings.darkMode ? "bg-black text-white border border-gray-800" : "bg-white border border-gray-200"
+                               "px-4 py-2 rounded-[20px] text-[10px] font-black uppercase tracking-wider outline-none w-32 border transition-all",
+                               settings.darkMode ? "bg-white/5 text-white border-white/5 focus:border-brand-gold" : "bg-white border-gray-200 focus:border-brand-gold"
                              )}
                              onKeyDown={(e) => {
                                if (e.key === 'Enter') {
@@ -559,24 +689,24 @@ export default function NotesScreen() {
                     
                     <div className="space-y-4">
                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Anexos e Documentos</p>
-                       <div className="grid grid-cols-3 gap-3">
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex flex-col items-center justify-center gap-2 border-2 border-dashed transition-all", settings.darkMode ? "bg-white/5 border-white/10 hover:border-brand-gold hover:text-brand-gold text-white" : "bg-white border-gray-100 hover:border-brand-gold hover:text-brand-gold text-brand-navy")}
                           >
-                            <ImageIcon className="w-6 h-6 text-brand-copper" />
+                            <ImageIcon className="w-6 h-6 text-brand-copper dark:text-brand-gold" />
                             <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Galeria</span>
                           </button>
                           <button 
                             onClick={() => cameraInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex flex-col items-center justify-center gap-2 border-2 border-dashed transition-all", settings.darkMode ? "bg-white/5 border-white/10 hover:border-brand-gold hover:text-brand-gold text-white" : "bg-white border-gray-100 hover:border-brand-gold hover:text-brand-gold text-brand-navy")}
                           >
-                            <Camera className="w-6 h-6 text-brand-copper" />
+                            <Camera className="w-6 h-6 text-brand-copper dark:text-brand-gold" />
                             <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Câmera</span>
                           </button>
                           <button 
                             onClick={() => pdfInputRef.current?.click()}
-                            className={cn("p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-100 bg-white", settings.darkMode && "bg-black border-gray-800 text-white")}
+                            className={cn("p-4 rounded-[20px] flex flex-col items-center justify-center gap-2 border-2 border-dashed transition-all", settings.darkMode ? "bg-white/5 border-white/10 hover:border-brand-gold hover:text-brand-gold text-white" : "bg-white border-gray-100 hover:border-brand-gold hover:text-brand-gold text-brand-navy")}
                           >
                             <FileText className="w-6 h-6 text-brand-copper" />
                             <span className="text-[10px] uppercase font-bold tracking-widest leading-none">PDF</span>
@@ -670,11 +800,13 @@ export default function NotesScreen() {
                   <div className="space-y-1">
                     {selectedNote?.tags && selectedNote.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {selectedNote.tags.map(tag => (
-                          <span key={tag} className="px-3 py-1 rounded-full bg-brand-gold/20 text-brand-gold text-[10px] font-bold uppercase tracking-widest">
+                        {selectedNote.tags.map(tag => {
+                          const style = getTagStyles(tag, settings.darkMode);
+                          return (
+                          <span key={tag} className={cn("px-4 py-1.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest", style.pill)}>
                             {tag}
                           </span>
-                        ))}
+                        )})}
                       </div>
                     )}
                     <h2 className={cn("text-4xl font-black text-brand-navy mb-2 tracking-tight", settings.darkMode && "text-white")}>{selectedNote?.title}</h2>

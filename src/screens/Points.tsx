@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Heart, Share2, Youtube, Play, X, Plus, Trash2, Maximize2, Mic, Music, Square, PenTool, FolderIcon, ChevronLeft, MoreVertical } from 'lucide-react';
+import { Search, Heart, Share2, Youtube, Play, X, Plus, Trash2, Maximize2, Mic, Music, Square, PenTool, FolderIcon, ChevronLeft, ChevronDown, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -265,21 +265,28 @@ export default function PointsScreen() {
     }
   };
   return (
-    <motion.div className={cn(
-      "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent",
-      settings.darkMode ? "text-white" : "text-brand-navy"
-    )}>
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className={cn(
+        "p-4 min-h-full pb-32 transition-colors duration-500 bg-transparent relative"
+      )}
+    >
+      {/* Decorative Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-gold/[0.03] dark:bg-brand-gold/[0.04] rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 transform-gpu will-change-transform" />
+      <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-white/[0.02] dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none -translate-x-1/2 transform-gpu will-change-transform" />
+
       {/* Stage Mode Toggle Banner */}
       <div className={cn(
-        "w-full p-4 rounded-2xl flex items-center justify-between shadow-lg mb-6 transition-all",
+        "w-full p-4 rounded-2xl flex items-center justify-between shadow-lg mb-8 transition-all relative z-10",
         modoPalco 
-          ? (settings.darkMode ? "bg-brand-copper" : "bg-brand-navy shadow-brand-navy/20")
-          : (settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white border border-gray-100 shadow-gray-200/50")
+          ? (settings.darkMode ? "bg-brand-gold" : "bg-brand-navy shadow-brand-navy/20")
+          : (settings.darkMode ? "bg-[#1A1A1A] border border-white/5" : "bg-white border border-gray-100 shadow-gray-200/50")
       )}>
         <div className="flex flex-col flex-1">
           <span className={cn(
             "text-[10px] uppercase font-black tracking-wider mb-0.5",
-            modoPalco ? "text-white/60" : "text-brand-copper"
+            modoPalco ? "text-white/60" : "text-brand-gold"
           )}>Imersão Total</span>
           <span className={cn(
             "text-sm font-black",
@@ -309,30 +316,37 @@ export default function PointsScreen() {
         </button>
       </div>
 
-      <div className="flex items-center justify-between mb-6 px-2">
+      <div className="flex items-center justify-between mb-8 px-2 relative z-10">
         <div className="flex items-center gap-3">
           {currentFolderId && (
             <button 
               onClick={navigateUp}
               className={cn(
-                "p-2 rounded-xl transition-colors",
-                settings.darkMode ? "bg-white/5 text-white" : "bg-white text-brand-navy shadow-sm"
+                "p-2.5 rounded-2xl transition-all shadow-sm active:scale-95",
+                settings.darkMode ? "bg-white/5 text-white hover:bg-white/10" : "bg-white text-brand-navy hover:bg-gray-50 border border-gray-100"
               )}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <h2 className={cn(
-            "text-xl font-black text-brand-navy tracking-tight",
-            settings.darkMode && "text-white"
-          )}>{folderName}</h2>
+          <div className="flex flex-col">
+            <p className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] mb-1.5 ml-1">Pontos & Acervo</p>
+            <h2 className={cn(
+              "text-3xl sm:text-4xl font-black font-serif tracking-tight",
+              settings.darkMode ? "text-brand-gold" : "text-brand-navy"
+            )}>
+              {folderName}
+            </h2>
+          </div>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={() => setShowFolderModal(true)} 
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl active:scale-95 transition-all",
-              settings.darkMode ? "bg-gray-800 text-brand-copper shadow-brand-copper/5" : "bg-white text-brand-navy shadow-gray-200/50 border border-gray-100"
+              "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all outline-none",
+              settings.darkMode 
+                ? "bg-brand-gold/10 text-brand-gold border border-brand-gold/20 hover:bg-brand-gold/20" 
+                : "bg-white text-brand-navy border border-gray-100 hover:bg-gray-50"
             )}
             title="Nova Pasta"
           >
@@ -341,8 +355,8 @@ export default function PointsScreen() {
           <button 
             onClick={() => setShowModal(true)} 
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xl active:scale-95 transition-all",
-              settings.darkMode ? "bg-brand-copper shadow-brand-copper/20" : "bg-brand-navy shadow-brand-navy/20"
+              "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-navy/20 active:scale-95 transition-all outline-none",
+              settings.darkMode ? "bg-brand-gold shadow-brand-gold/20" : "bg-brand-navy hover:bg-brand-navy/90"
             )}
             title="Novo Ponto"
           >
@@ -351,70 +365,79 @@ export default function PointsScreen() {
         </div>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+      <div className="relative mb-6 z-10">
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
           type="text"
           placeholder="Qual ponto você quer cantar?"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={cn(
-            "w-full bg-white border border-gray-100 rounded-2xl p-5 pl-12 shadow-sm focus:ring-2 focus:ring-brand-copper/20 focus:border-brand-copper outline-none text-sm font-bold transition-all",
-            settings.darkMode && "bg-[#1A1A1A] border-gray-800 text-white"
+            "w-full rounded-[24px] p-5 pl-14 shadow-sm focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold outline-none text-sm font-bold transition-all border",
+            settings.darkMode 
+              ? "bg-[#1A1A1A] border-white/5 text-white placeholder:text-gray-600 focus:bg-[#222]" 
+              : "bg-white border-gray-100 text-brand-navy placeholder:text-gray-400 focus:bg-gray-50"
           )}
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 z-10 relative">
         {/* Folders List */}
         {filteredFolders.map(folder => (
           <div 
             key={folder.id}
             className={cn(
-              "group bg-white p-5 rounded-[24px] shadow-sm border border-gray-100 flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+              "group p-5 rounded-[28px] shadow-sm border flex items-center gap-4 active:scale-[0.99] transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer relative overflow-hidden",
+              settings.darkMode 
+                ? "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:border-white/10" 
+                : "bg-white border-gray-100 hover:border-gray-200"
             )}
             onClick={() => { if(!search) setCurrentFolderId(folder.id); }}
           >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 dark:bg-brand-gold/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            
             <div className={cn(
-               "w-12 h-12 rounded-2xl flex items-center justify-center",
-               settings.darkMode ? "bg-brand-copper/10 text-brand-copper" : "bg-brand-copper/10 text-brand-copper"
+               "w-[52px] h-[52px] rounded-[18px] flex items-center justify-center shrink-0 border relative z-10",
+               settings.darkMode 
+                 ? "bg-brand-gold/5 border-brand-gold/10 text-brand-gold" 
+                 : "bg-brand-gold/5 border-brand-gold/10 text-brand-gold"
             )}>
               <FolderIcon className="w-6 h-6 fill-current opacity-40" />
             </div>
-            <div className="flex-1">
-              <h4 className={cn("font-bold text-sm", settings.darkMode && "text-white")}>{folder.name}</h4>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+            <div className="flex-1 relative z-10">
+              <h4 className={cn("font-bold text-sm tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{folder.name}</h4>
+              <p className="text-[10px] text-brand-gold font-bold uppercase tracking-[0.2em] mt-1">
                 {pontos.filter(p => p.folderId === folder.id).length} pontos
               </p>
             </div>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingFolderId(folder.id);
-                setNewFolderName(folder.name);
-                setShowFolderModal(true);
-              }}
-              className={cn(
-                "p-2 rounded-lg transition-all",
-                settings.darkMode ? "bg-white/5 text-brand-copper/80" : "bg-gray-50 text-brand-copper"
-              )}
-            >
-              <PenTool className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteFolder(folder);
-              }}
-              className={cn(
-                "p-2 rounded-lg transition-all",
-                settings.darkMode ? "bg-red-500/10 text-red-400" : "bg-red-50 text-red-500"
-              )}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <ChevronRight className="w-5 h-5 text-gray-300" />
+            <div className="flex gap-1 relative z-10">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingFolderId(folder.id);
+                  setNewFolderName(folder.name);
+                  setShowFolderModal(true);
+                }}
+                className={cn(
+                  "p-2.5 rounded-xl transition-all",
+                  settings.darkMode ? "bg-white/5 text-brand-gold/80 hover:bg-white/10 hover:text-brand-gold" : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-brand-gold"
+                )}
+              >
+                <PenTool className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteFolder(folder);
+                }}
+                className={cn(
+                  "p-2.5 rounded-xl transition-all",
+                  settings.darkMode ? "bg-red-500/10 text-red-500/60 hover:bg-red-500/20 hover:text-red-400" : "bg-red-50 text-red-400 hover:bg-red-100"
+                )}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ))}
 
@@ -423,18 +446,27 @@ export default function PointsScreen() {
             key={ponto.id} 
             onClick={() => setSelectedPonto(ponto)}
             className={cn(
-              "bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer group",
-              settings.darkMode && "bg-[#1A1A1A] border-gray-800 shadow-xl"
+              "p-6 rounded-[32px] shadow-sm border flex flex-col gap-4 active:scale-[0.99] transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer group relative overflow-hidden",
+              settings.darkMode 
+                ? "bg-[#161616] border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:border-white/10" 
+                : "bg-white border-gray-100 hover:border-gray-200"
             )}
           >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 dark:bg-brand-gold/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+            <div className="flex justify-between items-start relative z-10">
+              <div className="flex-1 pr-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-brand-copper font-black text-[10px] uppercase tracking-[0.2em]">{ponto.entity}</span>
+                  <span className={cn(
+                    "font-black text-[10px] uppercase tracking-[0.2em]",
+                    settings.darkMode ? "text-brand-gold" : "text-brand-gold"
+                  )}>
+                    {ponto.entity}
+                  </span>
                 </div>
-                <h4 className={cn("font-black text-brand-navy text-lg leading-tight mb-2", settings.darkMode && "text-white")}>{ponto.title}</h4>
+                <h4 className={cn("font-black text-lg leading-tight mb-2 tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>{ponto.title}</h4>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 shrink-0">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -442,7 +474,7 @@ export default function PointsScreen() {
                   }}
                   className={cn(
                     "p-2.5 rounded-xl transition-all",
-                    settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white" : "bg-gray-50 text-gray-400 hover:text-brand-navy"
+                    settings.darkMode ? "bg-white/5 text-gray-400 hover:text-brand-gold hover:bg-white/10" : "bg-gray-50 text-gray-400 hover:text-brand-gold hover:bg-gray-100"
                   )}
                 >
                   <PenTool className="w-4 h-4" />
@@ -454,37 +486,37 @@ export default function PointsScreen() {
                   }}
                   className={cn(
                     "p-2.5 rounded-xl transition-all",
-                    settings.darkMode ? "bg-red-500/10 text-red-500/60" : "bg-red-50 text-red-400"
+                    settings.darkMode ? "bg-red-500/10 text-red-500/60 hover:bg-red-500/20 hover:text-red-400" : "bg-red-50 text-red-400 hover:bg-red-100"
                   )}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-                {ponto.isFavorite && <Heart className="w-5 h-5 fill-brand-red text-brand-red mt-2 ml-1" />}
+                {ponto.isFavorite && <Heart className="w-5 h-5 fill-brand-red text-brand-red ml-1 self-center" />}
               </div>
             </div>
             
             <div className={cn(
-              "mt-4 border-l-4 p-4 rounded-xl",
-              settings.darkMode ? "bg-black/20 border-brand-copper/40" : "bg-gray-50 border-brand-navy/10"
+              "mt-2 border-l-4 p-4 rounded-xl relative z-10",
+              settings.darkMode ? "bg-brand-gold/5 border-brand-gold/40" : "bg-brand-gold/5 border-brand-gold/20"
             )}>
-              <p className={cn("text-gray-500 text-xs font-medium italic line-clamp-2 leading-relaxed italic", settings.darkMode && "text-gray-400")}>
+              <p className={cn("text-xs font-medium italic line-clamp-2 leading-relaxed italic", settings.darkMode ? "text-gray-400" : "text-gray-600")}>
                 "{ponto.lyrics}"
               </p>
             </div>
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-3 relative z-10">
               {ponto.youtubeLink && (
                 <div className={cn(
-                  "p-2.5 rounded-xl bg-red-50 text-red-500",
-                  settings.darkMode && "bg-brand-red/10 text-brand-red"
+                  "p-2.5 rounded-xl",
+                  settings.darkMode ? "bg-brand-red/10 text-brand-red" : "bg-red-50 text-red-500"
                 )}>
                   <Youtube className="w-4 h-4" />
                 </div>
               )}
               {ponto.audioUrl && (
                 <div className={cn(
-                  "p-2.5 rounded-xl bg-blue-50 text-blue-500",
-                  settings.darkMode && "bg-blue-500/10 text-blue-400"
+                  "p-2.5 rounded-xl",
+                  settings.darkMode ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-500"
                 )}>
                   <Mic className="w-4 h-4" />
                 </div>
@@ -492,7 +524,7 @@ export default function PointsScreen() {
               <div className="flex-1" />
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg transform group-hover:scale-110 transition-transform",
-                settings.darkMode ? "bg-brand-copper shadow-brand-copper/30" : "bg-brand-navy shadow-brand-navy/30"
+                settings.darkMode ? "bg-brand-gold shadow-brand-gold/30" : "bg-brand-navy shadow-brand-navy/30"
               )}>
                 <Play className="w-5 h-5 fill-current ml-0.5" />
               </div>
@@ -544,7 +576,7 @@ export default function PointsScreen() {
               </div>
               <div className="text-center flex-1 min-w-0 px-4">
                 <h3 className="font-black text-sm truncate uppercase tracking-tight">{selectedPonto.title}</h3>
-                <p className="text-[9px] font-black text-brand-copper uppercase tracking-[0.3em] overflow-hidden truncate">{selectedPonto.entity}</p>
+                <p className="text-[9px] font-black text-brand-gold uppercase tracking-[0.3em] overflow-hidden truncate">{selectedPonto.entity}</p>
               </div>
               <button 
                 onClick={() => setModoPalco(!modoPalco)}
@@ -604,8 +636,8 @@ export default function PointsScreen() {
                        settings.darkMode ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100"
                      )}>
                         <div className="flex items-center gap-2 mb-6">
-                           <Mic className="w-4 h-4 text-brand-copper" />
-                           <p className="text-[10px] font-black text-brand-copper uppercase tracking-widest">Gravação do Terreiro</p>
+                           <Mic className="w-4 h-4 text-brand-gold" />
+                           <p className="text-[10px] font-black text-brand-gold uppercase tracking-widest">Gravação do Terreiro</p>
                         </div>
                         <audio controls className="w-full h-12 custom-audio">
                            <source src={selectedPonto.audioUrl} type="audio/wav" />
@@ -632,7 +664,7 @@ export default function PointsScreen() {
                </button>
                <button onClick={() => handleShare(selectedPonto)} className={cn(
                  "flex-1 p-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-all text-white",
-                 settings.darkMode ? "bg-brand-copper shadow-brand-copper/30" : "bg-brand-navy shadow-brand-navy/30"
+                 settings.darkMode ? "bg-brand-gold shadow-brand-gold/30" : "bg-brand-navy shadow-brand-navy/30"
                )}>
                   <Share2 className="w-5 h-5" /> Enviar
                </button>
@@ -653,29 +685,42 @@ export default function PointsScreen() {
         {showFolderModal && (
           <motion.div
              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-             className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[300] flex items-end sm:items-center justify-center p-4"
+             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-end sm:items-center justify-center p-4"
           >
              <motion.div 
-               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-               className={cn("w-full max-w-md rounded-[32px] p-8", settings.darkMode ? "bg-[#1A1A1A]" : "bg-white")}
+               initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+               animate={{ scale: 1, opacity: 1, y: 0 }} 
+               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               className={cn("w-full max-w-md rounded-[32px] p-6 sm:p-8", settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white shadow-2xl")}
              >
-                <h3 className={cn("text-2xl font-bold mb-6", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  {editingFolderId ? 'Editar Pasta' : 'Nova Pasta'}
-                </h3>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className={cn("text-2xl font-bold tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                    {editingFolderId ? 'Editar Pasta' : 'Nova Pasta'}
+                  </h3>
+                  <button 
+                    onClick={closeFolderModal}
+                    className={cn(
+                      "p-2 rounded-xl transition-all",
+                      settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white" : "bg-gray-50 text-gray-400 hover:text-brand-navy"
+                    )}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
                 <div className="space-y-4">
                   <input 
                     placeholder="Nome da Pasta (ex: Caboclos, Orixás...)" 
                     value={newFolderName} 
                     onChange={e => setNewFolderName(e.target.value)} 
-                    className={cn("w-full p-4 rounded-2xl outline-none border", settings.darkMode ? "bg-black text-white border-gray-800" : "bg-gray-50 border-gray-100")} 
+                    className={cn(
+                      "w-full rounded-2xl outline-none border p-5 text-sm font-bold transition-all", 
+                      settings.darkMode ? "bg-[#161616] text-white border-white/5 focus:border-brand-gold" : "bg-gray-50 border-gray-100 focus:border-brand-gold focus:bg-white"
+                    )} 
                     autoFocus
                   />
                   
-                  <div className="flex flex-col gap-4 pt-4">
-                    <div className="flex gap-4">
-                      <button onClick={closeFolderModal} className={cn("flex-1 p-4 rounded-2xl font-bold", settings.darkMode ? "bg-gray-800 text-white" : "bg-gray-100")}>Cancelar</button>
-                      <button onClick={handleSaveFolder} className="flex-1 p-4 rounded-2xl bg-brand-copper text-white font-bold">Salvar Pasta</button>
-                    </div>
+                  <div className="flex flex-col gap-4 pt-4 mt-2">
+                    <button onClick={handleSaveFolder} className="w-full p-4 rounded-2xl bg-brand-gold text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">Salvar Pasta</button>
 
                     {editingFolderId && (
                       <button 
@@ -685,8 +730,8 @@ export default function PointsScreen() {
                           closeFolderModal();
                         }}
                         className={cn(
-                          "w-full p-4 rounded-2xl border border-red-500/20 text-red-500 font-bold flex items-center justify-center gap-2",
-                          settings.darkMode && "bg-red-500/5"
+                          "w-full p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all",
+                          settings.darkMode ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" : "bg-red-50 text-red-500 hover:bg-red-100"
                         )}
                       >
                         <Trash2 className="w-4 h-4" /> Excluir Pasta
@@ -703,35 +748,51 @@ export default function PointsScreen() {
         {showModal && (
           <motion.div
              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-             className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[300] flex items-end sm:items-center justify-center"
+             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-end sm:items-center justify-center p-4"
           >
              <motion.div 
-               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-               className={cn("w-full max-w-lg rounded-t-[32px] p-8 max-h-[90vh] overflow-y-auto", settings.darkMode ? "bg-[#1A1A1A]" : "bg-white")}
+               initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+               animate={{ scale: 1, opacity: 1, y: 0 }} 
+               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               className={cn("w-full max-w-lg rounded-[32px] p-6 sm:p-8 max-h-[90vh] overflow-y-auto custom-scrollbar", settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white shadow-2xl")}
              >
-                <h3 className={cn("text-2xl font-bold mb-6", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                  {editingId ? 'Editar Ponto Cantado' : 'Novo Ponto Cantado'}
-                </h3>
+                <div className="flex justify-between items-center mb-6 sticky top-0 bg-inherit z-20 pb-2">
+                  <h3 className={cn("text-2xl font-bold tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                    {editingId ? 'Editar Ponto' : 'Novo Ponto'}
+                  </h3>
+                  <button 
+                    onClick={closeModal}
+                    className={cn(
+                      "p-2 rounded-xl transition-all",
+                      settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white" : "bg-gray-50 text-gray-400 hover:text-brand-navy"
+                    )}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1">
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Localização</p>
-                    <select 
-                      value={newPonto.folderId || ''} 
-                      onChange={e => setNewPonto({...newPonto, folderId: e.target.value || undefined})}
-                      className={cn("w-full p-4 rounded-2xl outline-none border appearance-none", settings.darkMode ? "bg-black text-white border-gray-800" : "bg-gray-50 border-gray-100")}
-                    >
-                      <option value="">Raiz (Nenhuma pasta)</option>
-                      {folders.map(f => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select 
+                        value={newPonto.folderId || ''} 
+                        onChange={e => setNewPonto({...newPonto, folderId: e.target.value || undefined})}
+                        className={cn("w-full p-5 rounded-2xl outline-none border appearance-none text-sm font-bold transition-all", settings.darkMode ? "bg-[#161616] text-white border-white/5 focus:border-brand-gold" : "bg-gray-50 border-gray-100 focus:border-brand-gold focus:bg-white")}
+                      >
+                        <option value="">Raiz (Nenhuma pasta)</option>
+                        {folders.map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
 
-                  <input placeholder="Título" value={newPonto.title} onChange={e => setNewPonto({...newPonto, title: e.target.value})} className={cn("w-full p-4 rounded-2xl outline-none", settings.darkMode ? "bg-[#1A1A1A] text-white border border-gray-800" : "bg-gray-50")} />
-                  <input placeholder="Entidade / Orixá" value={newPonto.entity} onChange={e => setNewPonto({...newPonto, entity: e.target.value})} className={cn("w-full p-4 rounded-2xl outline-none", settings.darkMode ? "bg-[#1A1A1A] text-white border border-gray-800" : "bg-gray-50")} />
-                  <textarea placeholder="Letra do Ponto" rows={8} value={newPonto.lyrics} onChange={e => setNewPonto({...newPonto, lyrics: e.target.value})} className={cn("w-full p-4 rounded-2xl outline-none", settings.darkMode ? "bg-[#1A1A1A] text-white border border-gray-800" : "bg-gray-50")} />
+                  <input placeholder="Título" value={newPonto.title} onChange={e => setNewPonto({...newPonto, title: e.target.value})} className={cn("w-full p-5 rounded-2xl outline-none border text-sm font-bold transition-all", settings.darkMode ? "bg-[#161616] text-white border-white/5 focus:border-brand-gold" : "bg-gray-50 border-gray-100 focus:border-brand-gold focus:bg-white")} />
+                  <input placeholder="Entidade / Orixá" value={newPonto.entity} onChange={e => setNewPonto({...newPonto, entity: e.target.value})} className={cn("w-full p-5 rounded-2xl outline-none border text-sm font-bold transition-all", settings.darkMode ? "bg-[#161616] text-white border-white/5 focus:border-brand-gold" : "bg-gray-50 border-gray-100 focus:border-brand-gold focus:bg-white")} />
+                  <textarea placeholder="Letra do Ponto" rows={8} value={newPonto.lyrics} onChange={e => setNewPonto({...newPonto, lyrics: e.target.value})} className={cn("w-full p-5 rounded-2xl outline-none border text-sm font-medium transition-all resize-none", settings.darkMode ? "bg-[#161616] text-white border-white/5 focus:border-brand-gold" : "bg-gray-50 border-gray-100 focus:border-brand-gold focus:bg-white")} />
                   
-                  <div className={cn("p-6 rounded-2xl border-2 border-dashed", settings.darkMode ? "bg-[#1A1A1A] border-gray-800" : "bg-gray-50 border-gray-200")}>
+                  <div className={cn("p-6 rounded-2xl border-2 border-dashed transition-all", settings.darkMode ? "bg-[#161616] border-white/5 hover:border-brand-gold/30" : "bg-gray-50 border-gray-200 hover:border-brand-gold/30")}>
                     <p className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest text-center">Audio de Referência</p>
                     <div className="flex items-center justify-center gap-4">
                       {!isRecording ? (
@@ -768,11 +829,8 @@ export default function PointsScreen() {
 
                   <input placeholder="Link do Youtube (opcional)" value={newPonto.youtubeLink} onChange={e => setNewPonto({...newPonto, youtubeLink: e.target.value})} className={cn("w-full p-4 rounded-2xl outline-none", settings.darkMode ? "bg-[#1A1A1A] text-white border border-gray-800" : "bg-gray-50")} />
                   
-                  <div className="flex flex-col gap-4 pt-4">
-                    <div className="flex gap-4">
-                      <button onClick={closeModal} className={cn("flex-1 p-4 rounded-2xl font-bold", settings.darkMode ? "bg-gray-800 text-white" : "bg-gray-100")}>Voltar</button>
-                      <button onClick={handleSavePonto} className="flex-1 p-4 rounded-2xl bg-brand-red text-white font-bold">Salvar Ponto</button>
-                    </div>
+                  <div className="flex flex-col gap-4 pt-4 mt-2">
+                    <button onClick={handleSavePonto} className="w-full p-4 rounded-2xl bg-brand-gold text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">Salvar Ponto</button>
 
                     {editingId && (
                       <button 
@@ -782,8 +840,8 @@ export default function PointsScreen() {
                           closeModal();
                         }}
                         className={cn(
-                          "w-full p-4 rounded-2xl border border-red-500/20 text-red-500 font-bold flex items-center justify-center gap-2",
-                          settings.darkMode && "bg-red-500/5"
+                          "w-full p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all",
+                          settings.darkMode ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" : "bg-red-50 text-red-500 hover:bg-red-100"
                         )}
                       >
                         <Trash2 className="w-4 h-4" /> Excluir Ponto

@@ -126,6 +126,43 @@ export default function CalendarScreen() {
   const startDayOfWeek = monthStart.getDay(); // 0 is Sunday, 1 is Monday, etc.
   const paddingDays = Array.from({ length: startDayOfWeek });
 
+  // Swipe State
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  
+  const minSwipeDistance = 30; // Lower distance for higher sensitivity
+  const maxVerticalSwipe = 50; // Prevent accidental swipes while scrolling
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = Math.abs(touchStart.y - touchEnd.y);
+    
+    setTouchStart(null);
+    setTouchEnd(null);
+
+    if (distanceY > maxVerticalSwipe) return; // Ignores mostly vertical scrolls
+
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      setCurrentDate(prev => addMonths(prev, 1));
+    } else if (isRightSwipe) {
+      setCurrentDate(prev => subMonths(prev, 1));
+    }
+  };
+
   const eventsInMonth = React.useMemo(() => {
     return events.filter(e => isSameMonth(parseEventDate(e.date), currentDate));
   }, [events, currentDate]);
@@ -506,7 +543,11 @@ export default function CalendarScreen() {
         </div>
       </div>
 
-      <div className={cn(
+      <div 
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        className={cn(
         "p-6 sm:p-8 rounded-[40px] shadow-lg mb-10 border transition-all duration-500 relative overflow-hidden",
         settings.darkMode 
           ? "bg-[#161616] border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" 

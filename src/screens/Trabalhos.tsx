@@ -227,6 +227,7 @@ export default function TrabalhosScreen() {
   const [candleForm, setCandleForm] = useState<Partial<Candle>>({ color: '', quantity: 0, type: 'Palito', observations: '' });
   const [showColorGuideModal, setShowColorGuideModal] = useState(false);
   const [showMaterialsGuideModal, setShowMaterialsGuideModal] = useState(false);
+  const [showEboMaterialsModal, setShowEboMaterialsModal] = useState(false);
 
   const [events] = useStorage<Event[]>('templo_events', []);
 
@@ -1048,62 +1049,25 @@ export default function TrabalhosScreen() {
                 ? "bg-white/[0.08] sm:bg-white/[0.03] border-white/10 hover:bg-white/10 hover:border-brand-gold/30 hover:-translate-y-[2px]" 
                 : "bg-white/80 border-black/[0.05] hover:border-brand-navy/30"
             )}>
-              <div className="p-8 relative z-10">
-              <div className="flex items-center justify-between mb-8">
+              <div className="p-8 relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-brand-gold/20 text-brand-gold">
-                      <List className="w-4 h-4" />
-                    </div>
-                    <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
-                      Lista de Materiais
-                    </h3>
-                  </div>
+                  <h3 className={cn("font-black text-xs uppercase tracking-[0.2em]", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                    Lista de Materiais
+                  </h3>
                   <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Ebó Tradicional</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
-                {[
-                  { icon: "🌾", label: "Cereais & Grãos", items: ["500g Feijão Branco", "500g Arroz", "500g Milho de Galinha", "500g Feijão Preto", "500g Milho de Canjica Branca", "500g Milho Pipoca"] },
-                  { icon: "🥣", label: "Farinhas & Pós", items: ["1kg Farinha de Milho Amarela", "500g Farinha de Mandioca", "1 Cartucho de Pólvora"] },
-                  { icon: "🏺", label: "Líquidos & Itens", items: ["1 Pinga (Cachaça)", "1 Azeite de Dendê", "1 Mel", "7 Charutos de Ebó", "7 Moedas (Qualquer valor)"] },
-                  { icon: "🧣", label: "Mantos (Morim)", items: ["1m Morim Branco", "1m Morim Vermelho", "1m Morim Preto", "Linhas: Preta, Branca e Vermelha"] },
-                  { icon: "🥚", label: "Perecíveis", items: ["7 Ovos", "7 Qualidades de Verduras/Legumes", "1 Frango(a) Branco(a)"] }
-                ].map((group, gIdx) => (
-                  <div key={gIdx} className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-gray-50 dark:border-white/5">
-                      <span className="text-sm">{group.icon}</span>
-                      <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
-                        {group.label}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                       {group.items.map((item, iIdx) => (
-                         <div key={iIdx} className="flex items-center gap-3">
-                            <div className="w-1 h-1 rounded-full bg-white/20" />
-                            <span className={cn("text-[11px] font-medium leading-tight", settings.darkMode ? "text-gray-500" : "text-gray-600")}>
-                              {item}
-                            </span>
-                         </div>
-                       ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Warnings */}
-              <div className={cn(
-                "mt-12 p-6 rounded-[32px] flex items-center gap-4",
-                settings.darkMode ? "bg-white/5" : "bg-gray-50"
-              )}>
-                <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
-                  <Info className="w-5 h-5" />
-                </div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase leading-relaxed tracking-wider">
-                  <span className="text-orange-500">Nota:</span> Legumes/Verduras usados no Ebó <span className="text-brand-red">não podem ser ingeridos</span> pelo período de 7 dias após o ritual.
-                </p>
-              </div>
+                <button
+                  onClick={() => setShowEboMaterialsModal(true)}
+                  className={cn(
+                    "flex items-center justify-center gap-2 px-5 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all active:scale-95",
+                    settings.darkMode 
+                      ? "bg-white/5 border-white/10 text-brand-gold hover:bg-white/10" 
+                      : "bg-gray-100/80 border-gray-250 text-brand-navy hover:bg-gray-200"
+                  )}
+                >
+                  <List className="w-4 h-4 text-brand-gold" />
+                  Ver Lista Completa
+                </button>
               </div>
             </section>
           </motion.div>
@@ -3076,6 +3040,119 @@ export default function TrabalhosScreen() {
               <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-end shrink-0">
                 <button 
                   onClick={() => setShowMaterialsGuideModal(false)}
+                  className={cn(
+                    "px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-[0.98]",
+                    settings.darkMode 
+                      ? "bg-brand-gold text-brand-navy font-semibold text-[10px] hover:bg-brand-gold/90" 
+                      : "bg-brand-navy text-white hover:bg-brand-navy/90"
+                  )}
+                >
+                  Fechar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Modal Lista de Materiais do Ebó */}
+      {createPortal(
+        <AnimatePresence>
+          {showEboMaterialsModal && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 pb-20">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setShowEboMaterialsModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={cn(
+                "w-full max-w-3xl rounded-[32px] p-5 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col max-h-[85vh]",
+                settings.darkMode ? "bg-[#1A1A1A] border border-gray-800" : "bg-white"
+              )}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5 sm:mb-6 shrink-0 relative">
+                <div className="flex items-center gap-4 pr-2">
+                  <div className={cn(
+                      "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-inner shrink-0",
+                      settings.darkMode ? "bg-white/5 border border-white/10" : "bg-gray-100/80 border border-gray-200"
+                    )}>
+                    <List className={cn("w-6 h-6 sm:w-7 sm:h-7", settings.darkMode ? "text-brand-gold" : "text-brand-navy")} />
+                  </div>
+                  <div>
+                    <h3 className={cn("text-xl sm:text-2xl font-black leading-tight tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                      Lista de Materiais
+                    </h3>
+                    <p className="text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1.5">
+                      Ebó Tradicional
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowEboMaterialsModal(false)}
+                  className={cn("p-2 sm:p-2.5 rounded-2xl transition-all shrink-0 active:scale-95", settings.darkMode ? "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10" : "bg-gray-100/80 text-gray-500 hover:text-brand-navy hover:bg-gray-200")}
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-2 sm:pr-4 -mr-2 sm:-mr-4 border-t border-gray-100 dark:border-white/5 pt-6 sm:pt-8 mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 sm:gap-y-8">
+                  {[
+                    { icon: "🌾", label: "Cereais & Grãos", items: ["500g Feijão Branco", "500g Arroz", "500g Milho de Galinha", "500g Feijão Preto", "500g Milho de Canjica Branca", "500g Milho Pipoca"] },
+                    { icon: "🥣", label: "Farinhas & Pós", items: ["1kg Farinha de Milho Amarela", "500g Farinha de Mandioca", "1 Cartucho de Pólvora"] },
+                    { icon: "🏺", label: "Líquidos & Itens", items: ["1 Pinga (Cachaça)", "1 Azeite de Dendê", "1 Mel", "7 Charutos de Ebó", "7 Moedas (Qualquer valor)"] },
+                    { icon: "🧣", label: "Mantos (Morim)", items: ["1m Morim Branco", "1m Morim Vermelho", "1m Morim Preto", "Linhas: Preta, Branca e Vermelha"] },
+                    { icon: "🥚", label: "Perecíveis", items: ["7 Ovos", "7 Qualidades de Verduras/Legumes", "1 Frango(a) Branco(a)"] }
+                  ].map((group, gIdx) => (
+                    <div key={gIdx} className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-50 dark:border-white/5">
+                        <span className="text-sm">{group.icon}</span>
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest", settings.darkMode ? "text-gray-400" : "text-gray-500")}>
+                          {group.label}
+                        </span>
+                      </div>
+                      <div className="space-y-2.5">
+                         {group.items.map((item, iIdx) => (
+                           <div key={iIdx} className="flex items-center gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                              <span className={cn("text-xs font-medium leading-tight", settings.darkMode ? "text-gray-400" : "text-gray-600")}>
+                                {item}
+                              </span>
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Warnings */}
+                <div className={cn(
+                  "mt-8 mb-4 p-5 sm:p-6 rounded-[24px] sm:rounded-[32px] flex items-center gap-4 border-l-4 border-orange-500",
+                  settings.darkMode ? "bg-white/5 border-white/5" : "bg-orange-50/50 border-orange-100"
+                )}>
+                  <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500 shrink-0">
+                    <Info className="w-5 h-5" />
+                  </div>
+                  <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-relaxed tracking-wider">
+                    <span className="text-orange-500">Nota:</span> Legumes/Verduras usados no Ebó <span className="text-brand-red">não podem ser ingeridos</span> pelo período de 7 dias após o ritual.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-end shrink-0">
+                <button 
+                  onClick={() => setShowEboMaterialsModal(false)}
                   className={cn(
                     "px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-[0.98]",
                     settings.darkMode 
