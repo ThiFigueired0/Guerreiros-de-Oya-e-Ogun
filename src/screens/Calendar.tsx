@@ -1312,30 +1312,43 @@ export default function CalendarScreen() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-brand-navy/60 backdrop-blur-md z-[110] flex items-center justify-center p-4"
             onClick={() => setShowDatePicker(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className={cn(
-                "bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl relative overflow-hidden",
-                settings.darkMode && "bg-[#1A1A1A] text-white border border-white/10"
+                "w-full max-w-sm rounded-[36px] p-6 shadow-2xl relative overflow-hidden flex flex-col",
+                settings.darkMode 
+                  ? "bg-[#050B14]/80 backdrop-blur-2xl border border-white/10" 
+                  : "bg-white/80 backdrop-blur-2xl border border-black/5"
               )}
               onClick={e => e.stopPropagation()}
             >
-              <div className="mb-6 flex justify-between items-center px-2">
-                <h3 className="text-xl font-bold">Selecionar Data</h3>
+              {/* Decorative Glow */}
+              <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-brand-copper/10 via-brand-copper/0 to-transparent pointer-events-none" />
+
+              <div className="mb-6 flex justify-between items-center relative z-10 px-2">
+                <h3 className={cn("text-2xl font-black font-serif tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+                  Selecionar Data
+                </h3>
                 <button 
                   onClick={() => setShowDatePicker(false)}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className={cn(
+                    "p-2 rounded-full backdrop-blur-md transition-colors",
+                    settings.darkMode 
+                      ? "text-gray-400 hover:bg-white/10 hover:text-white" 
+                      : "text-gray-500 hover:bg-black/5 hover:text-black"
+                  )}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-6 relative z-10">
                 <p className="text-[10px] font-black uppercase text-brand-copper tracking-widest mb-3 px-2">Ano</p>
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
                   {[2026, 2027, 2028, 2029, 2030].map(year => (
@@ -1343,10 +1356,10 @@ export default function CalendarScreen() {
                       key={year}
                       onClick={() => setCurrentDate(new Date(year, currentDate.getMonth(), 1))}
                       className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-all snap-center",
+                        "px-5 py-2.5 rounded-xl text-sm font-bold transition-all snap-center flex-shrink-0 border",
                         currentDate.getFullYear() === year
-                          ? "bg-brand-navy text-white shadow-lg shadow-brand-navy/20"
-                          : "bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400"
+                          ? (settings.darkMode ? "bg-white/[0.08] text-brand-gold border-brand-gold/30 shadow-[0_0_15px_rgba(212,175,55,0.15)]" : "bg-[#CD7F32]/10 text-brand-copper border-brand-copper/30 shadow-[0_0_15px_rgba(205,127,50,0.15)]")
+                          : (settings.darkMode ? "bg-white/[0.02] text-gray-400 border-white/5 hover:bg-white/[0.06] hover:text-white" : "bg-black/[0.02] text-gray-500 border-black/5 hover:bg-black/[0.06] hover:text-black")
                       )}
                     >
                       {year}
@@ -1355,9 +1368,9 @@ export default function CalendarScreen() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <p className="text-[10px] font-black uppercase text-brand-copper tracking-widest mb-3 px-2">Mês</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 px-1 pb-1">
                   {[
                     { full: 'Janeiro', short: 'Jan' },
                     { full: 'Fevereiro', short: 'Fev' },
@@ -1379,10 +1392,10 @@ export default function CalendarScreen() {
                         setShowDatePicker(false);
                       }}
                       className={cn(
-                        "py-3 rounded-xl text-sm font-bold transition-all",
+                        "py-3 rounded-xl text-sm font-bold transition-all border",
                         currentDate.getMonth() === idx
-                          ? "bg-brand-navy text-white shadow-lg shadow-brand-navy/20"
-                          : "bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400"
+                          ? (settings.darkMode ? "bg-white/[0.08] text-brand-gold border-brand-gold/30 shadow-[0_0_15px_rgba(212,175,55,0.15)]" : "bg-[#CD7F32]/10 text-brand-copper border-brand-copper/30 shadow-[0_0_15px_rgba(205,127,50,0.15)]")
+                          : (settings.darkMode ? "bg-white/[0.02] text-gray-400 border-white/5 hover:bg-white/[0.06] hover:text-white" : "bg-black/[0.02] text-gray-500 border-black/5 hover:bg-black/[0.06] hover:text-black")
                       )}
                     >
                       {month.short}

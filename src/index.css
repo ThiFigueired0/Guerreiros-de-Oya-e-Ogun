@@ -6,9 +6,9 @@
   --color-brand-navy: var(--brand-navy, #001F3F);
   --color-brand-copper: var(--brand-copper, #CD7F32);
   --color-brand-gold: var(--brand-gold, #D4AF37);
-  --color-brand-gold-light: var(--brand-gold-light, #FFE082);
-  --color-brand-gold-medium: var(--brand-gold-medium, #D4AF37);
-  --color-brand-gold-dark: var(--brand-gold-dark, #B8860B);
+  --color-brand-gold-light: var(--brand-gold-light, #FFF2CC);
+  --color-brand-gold-medium: var(--brand-gold-medium, #E0B53F);
+  --color-brand-gold-dark: var(--brand-gold-dark, #8C6211);
   --color-brand-brown: #3E2723;
   --color-brand-red: #B22222;
   --font-serif: "Playfair Display", serif;
@@ -35,11 +35,11 @@
   padding: 3px;
   background: conic-gradient(
     from 0deg,
-    rgba(212, 175, 55, 0) 0%,
-    rgba(205, 127, 50, 0.4) 25%,
-    rgba(212, 175, 55, 0.8) 60%,
-    rgba(255, 235, 160, 0.9) 80%,
-    rgba(212, 175, 55, 0) 100%
+    rgba(139, 90, 43, 0) 0%,
+    rgba(205, 127, 50, 0.45) 25%,
+    rgba(197, 160, 89, 0.8) 60%,
+    rgba(232, 195, 89, 0.95) 80%,
+    rgba(139, 90, 43, 0) 100%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -47,7 +47,7 @@
   animation: etherealSpin 12s linear infinite;
   z-index: -1;
   pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6)) blur(1px);
+  filter: drop-shadow(0 0 6px rgba(197, 160, 89, 0.6)) blur(1px);
 }
 
 .mystical-aura::after {
@@ -59,8 +59,8 @@
   background: conic-gradient(
     from 180deg,
     rgba(205, 127, 50, 0) 0%,
-    rgba(205, 127, 50, 0.3) 40%,
-    rgba(255, 235, 160, 0.6) 75%,
+    rgba(139, 90, 43, 0.3) 40%,
+    rgba(232, 195, 89, 0.6) 75%,
     rgba(205, 127, 50, 0) 100%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -131,11 +131,11 @@
   padding: 2px;
   background: conic-gradient(
     from var(--aura-angle),
-    rgba(212, 175, 55, 0) 0%,
-    rgba(205, 127, 50, 0.4) 25%,
-    rgba(212, 175, 55, 0.8) 60%,
-    rgba(255, 235, 160, 0.9) 80%,
-    rgba(212, 175, 55, 0) 100%
+    rgba(139, 90, 43, 0) 0%,
+    rgba(205, 127, 50, 0.45) 25%,
+    rgba(197, 160, 89, 0.8) 60%,
+    rgba(232, 195, 89, 0.95) 80%,
+    rgba(139, 90, 43, 0) 100%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -143,7 +143,7 @@
   animation: nameAuraSpin 12s linear infinite;
   z-index: -1;
   pointer-events: none;
-  filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.5));
+  filter: drop-shadow(0 0 4px rgba(197, 160, 89, 0.5));
 }
 
 .name-aura::after {
@@ -155,8 +155,8 @@
   background: conic-gradient(
     from calc(var(--aura-angle) + 180deg),
     rgba(205, 127, 50, 0) 0%,
-    rgba(205, 127, 50, 0.3) 40%,
-    rgba(255, 235, 160, 0.6) 75%,
+    rgba(139, 90, 43, 0.3) 40%,
+    rgba(232, 195, 89, 0.6) 75%,
     rgba(205, 127, 50, 0) 100%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -177,9 +177,9 @@
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 
     0 0 0 1px rgba(212, 175, 55, 0.6) inset,
-    0 15px 35px 5px rgba(0,0,0,0.5),
-    inset 0 6px 15px rgba(0,0,0,0.3),
-    0 0 20px rgba(212, 175, 55, 0.2);
+    0 6px 20px rgba(0,0,0,0.45),
+    inset 0 4px 10px rgba(0,0,0,0.3),
+    0 0 12px rgba(212, 175, 55, 0.15);
 }
 
 @keyframes metallicShine {
@@ -245,11 +245,11 @@
 
 /* Maintain essential animations and PDF viewer tweaks */
 @keyframes leafFloatGlobal {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.3; }
-  50% { transform: translate(var(--mx, 20px), var(--my, -20px)) rotate(180deg); opacity: 0.6; }
-  90% { opacity: 0.3; }
-  100% { transform: translate(0, 0) rotate(360deg); opacity: 0; }
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.35; }
+  50% { transform: translate3d(15px, -25px, 0) rotate(180deg); opacity: 0.6; }
+  90% { opacity: 0.35; }
+  100% { transform: translate3d(0, 0, 0) rotate(360deg); opacity: 0; }
 }
 
 .leaf-floating {
@@ -364,8 +364,7 @@
   background-size: cover;
   background-repeat: repeat-x;
   background-position: bottom;
-  mix-blend-mode: screen;
-  opacity: 0.6;
+  opacity: 0.25;
   will-change: transform;
   transform: translateZ(0); /* Hardware Acceleration */
 }
@@ -424,4 +423,493 @@
   50% { transform: scale(0.94) translate(3px, -4px); opacity: 0.22; }
   75% { transform: scale(1.05) translate(-2px, 1px); opacity: 0.32; }
 }
+
+@keyframes floatSmoke1 {
+  0% {
+    transform: translate3d(-200px, -15px, 0) scaleX(1.8) scaleY(0.35) rotate(-8deg);
+    opacity: 0.03;
+  }
+  30% {
+    opacity: 0.16;
+  }
+  75% {
+    opacity: 0.13;
+  }
+  100% {
+    transform: translate3d(450px, 20px, 0) scaleX(0.8) scaleY(1.5) rotate(12deg);
+    opacity: 0.02;
+  }
+}
+
+@keyframes floatSmoke2 {
+  0% {
+    transform: translate3d(450px, 35px, 0) scaleX(0.7) scaleY(1.4) rotate(8deg);
+    opacity: 0.01;
+  }
+  35% {
+    opacity: 0.15;
+  }
+  80% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translate3d(-200px, -20px, 0) scaleX(2.0) scaleY(0.3) rotate(-10deg);
+    opacity: 0.03;
+  }
+}
+
+@keyframes floatSmoke3 {
+  0%, 100% {
+    transform: translate3d(-120px, 30px, 0) scaleX(1.5) scaleY(0.5) rotate(15deg);
+    opacity: 0.09;
+  }
+  50% {
+    transform: translate3d(360px, -25px, 0) scaleX(0.5) scaleY(1.6) rotate(-12deg);
+    opacity: 0.17;
+  }
+}
+
+@keyframes floatSmoke4 {
+  0%, 100% {
+    transform: translate3d(340px, -35px, 0) scaleX(0.4) scaleY(1.8) rotate(-15deg);
+    opacity: 0.07;
+  }
+  50% {
+    transform: translate3d(-100px, 25px, 0) scaleX(1.6) scaleY(0.4) rotate(8deg);
+    opacity: 0.15;
+  }
+}
+
+@keyframes floatSmoke5 {
+  0%, 100% {
+    transform: translate3d(20px, -25px, 0) scaleX(1.3) scaleY(0.6) rotate(5deg);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate3d(280px, 30px, 0) scaleX(0.7) scaleY(1.4) rotate(22deg);
+    opacity: 0.08;
+  }
+}
+
+@keyframes floatSmoke6 {
+  0%, 100% {
+    transform: translate3d(220px, 20px, 0) scaleX(0.6) scaleY(1.5) rotate(-25deg);
+    opacity: 0.07;
+  }
+  50% {
+    transform: translate3d(-140px, -30px, 0) scaleX(1.7) scaleY(0.4) rotate(10deg);
+    opacity: 0.14;
+  }
+}
+
+.spotlight-animate-left {
+}
+
+.spotlight-animate-right {
+}
+
+.spotlight-animate-smoke-1 {
+}
+
+.spotlight-animate-smoke-2 {
+}
+
+.spotlight-animate-smoke-3 {
+}
+
+.spotlight-animate-smoke-4 {
+}
+
+@keyframes morphingSpot1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  55% {
+    transform: translate3d(40px, -30px, 0) scale(1.15) rotate(35deg);
+  }
+}
+
+@keyframes morphingSpot2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  45% {
+    transform: translate3d(-40px, 45px, 0) scale(1.08) rotate(-25deg);
+  }
+}
+
+@keyframes morphingSpot3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(30px, 35px, 0) scale(1.12) rotate(20deg);
+  }
+}
+
+@keyframes morphingSpot4 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-25px, -35px, 0) scale(0.92) rotate(-15deg);
+  }
+}
+
+.animate-morph-spot-1 {
+}
+
+.animate-morph-spot-2 {
+}
+
+.animate-morph-spot-3 {
+}
+
+.animate-morph-spot-4 {
+}
+
+/* 2. Rising Spiritual Sparks (Fogo de Oya) CSS styles */
+@keyframes sparkRise {
+  0% {
+    transform: translateY(20vh) translateX(0px) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--spark-opacity, 0.7);
+  }
+  85% {
+    opacity: var(--spark-opacity, 0.7);
+  }
+  100% {
+    transform: translateY(-90vh) translateX(var(--drift-x, 40px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.spiritual-spark {
+  position: absolute;
+  pointer-events: none;
+  animation: sparkRise var(--duration, 10s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  left: var(--left, 50%);
+  bottom: -50px;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  border-radius: 9999px;
+  will-change: transform, opacity;
+  box-shadow: 0 0 6px var(--color-spark-glow);
+}
+
+/* 5. Horizontal Incense Smoke Drift (Incenso Drift) */
+@keyframes incenseDrift1 {
+  0% {
+    transform: translate3d(-140px, -12px, 0) scaleX(0.4) scaleY(0.7) rotate(-3deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate3d(20px, 8deg, 0) scaleX(1.1) scaleY(1.3) rotate(4deg);
+    opacity: 0.32;
+  }
+  80% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translate3d(140px, -8px, 0) scaleX(0.5) scaleY(0.8) rotate(-1deg);
+    opacity: 0;
+  }
+}
+
+@keyframes incenseDrift2 {
+  0% {
+    transform: translate3d(140px, 12px, 0) scaleX(0.5) scaleY(0.7) rotate(5deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.22;
+  }
+  55% {
+    transform: translate3d(-20px, -6px, 0) scaleX(1.2) scaleY(1.2) rotate(-3deg);
+    opacity: 0.35;
+  }
+  75% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translate3d(-140px, 14px, 0) scaleX(0.4) scaleY(0.8) rotate(1deg);
+    opacity: 0;
+  }
+}
+
+.incense-trail {
+  position: absolute;
+  height: 5px;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(14px);
+  will-change: transform, opacity;
+}
+
+.incense-trail-1 {
+  width: 160px;
+  background: linear-gradient(90deg, transparent, rgba(235, 235, 245, 0.40), rgba(212, 175, 55, 0.22), transparent);
+}
+
+.incense-trail-2 {
+  width: 180px;
+  background: linear-gradient(90deg, transparent, rgba(205, 127, 50, 0.35), rgba(235, 235, 245, 0.20), transparent);
+}
+
+.incense-trail-3 {
+  width: 170px;
+  background: linear-gradient(90deg, transparent, rgba(215, 215, 225, 0.30), rgba(227, 122, 32, 0.18), transparent);
+}
+
+.incense-trail-4 {
+  width: 150px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.30), rgba(225, 225, 235, 0.20), transparent);
+}
+
+/* Elegant Soft Breathing Logo Frame */
+@keyframes logoFrameBreathe {
+  0%, 100% {
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 
+      0 4px 15px rgba(0, 0, 0, 0.4),
+      0 0 15px rgba(212, 175, 55, 0.25),
+      inset 0 1px 3px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    border-color: rgba(255, 223, 128, 0.85);
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.5),
+      0 0 28px rgba(212, 175, 55, 0.55),
+      0 0 10px rgba(205, 127, 50, 0.3),
+      inset 0 1px 4px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.templo-logo-frame-glow {
+  position: relative;
+  animation: logoFrameBreathe 6s ease-in-out infinite;
+  transition: all 0.5s ease-in-out;
+}
+
+/* Luxury Black & Gold Atmosphere classes - Extremely Professional & Deep Cinematic Style */
+
+@keyframes goldSpotlightPremium {
+  0%, 100% {
+    transform: translate3d(-10%, -10%, 0) scale(1) rotate(0deg);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate3d(10%, 10%, 0) scale(1.15) rotate(180deg);
+    opacity: 0.28;
+  }
+}
+
+@keyframes goldSpotlightPremiumSlow {
+  0%, 100% {
+    transform: translate3d(15%, -15%, 0) scale(1.1) rotate(0deg);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate3d(-15%, 15%, 0) scale(0.9) rotate(-180deg);
+    opacity: 0.22;
+  }
+}
+
+@keyframes luxuryMistDrift {
+  0% {
+    transform: translate3d(-50px, -20px, 0) scale(1) rotate(0deg);
+    opacity: 0.05;
+  }
+  50% {
+    transform: translate3d(50px, 15px, 0) scale(1.2) rotate(180deg);
+    opacity: 0.14;
+  }
+  100% {
+    transform: translate3d(-50px, -20px, 0) scale(1) rotate(360deg);
+    opacity: 0.05;
+  }
+}
+
+@keyframes premiumGlitter {
+  0% {
+    transform: translateY(110%) translateX(0) scale(0.6);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.45;
+  }
+  80% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(-30%) translateX(var(--drift-x, 30px)) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.luxury-black-gold {
+  background: radial-gradient(circle at 50% 50%, #0c0a05 0%, #030303 60%, #000000 100%) !important;
+}
+
+@keyframes goldGridWave {
+  0%, 100% {
+    background-size: 32px 32px;
+    background-position: 0 0;
+  }
+  50% {
+    background-size: 34px 34px;
+    background-position: 17px 17px;
+  }
+}
+
+.gold-grid-backdrop {
+  background-image: 
+    linear-gradient(rgba(184, 134, 11, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(205, 127, 50, 0.015) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@keyframes godRaysDrift {
+  0% { transform: translate3d(-3%, -3%, 0) rotate(0deg); }
+  50% { transform: translate3d(3%, 3%, 0) rotate(1.5deg); }
+  100% { transform: translate3d(-3%, -3%, 0) rotate(0deg); }
+}
+
+.gold-spotlight-1 {
+  background: radial-gradient(circle, rgba(197, 160, 89, 0.28) 0%, rgba(160, 82, 45, 0.08) 50%, transparent 80%);
+}
+
+.gold-spotlight-2 {
+  background: radial-gradient(circle, rgba(160, 82, 45, 0.20) 0%, rgba(139, 101, 8, 0.05) 60%, transparent 85%);
+}
+
+.gold-smoke-layer-1 {
+  background-image: radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  filter: blur(120px);
+}
+
+.gold-smoke-layer-2 {
+  background-image: radial-gradient(ellipse at 30% 60%, rgba(205, 127, 50, 0.06) 0%, transparent 65%);
+  filter: blur(140px);
+}
+
+.gold-vignette-ring {
+  box-shadow: 
+    inset 0 0 150px rgba(0, 0, 0, 0.98),
+    inset 0 0 60px rgba(184, 134, 11, 0.15);
+}
+
+.gold-sparkle-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 15%, rgba(212, 175, 55, 1) 60%, rgba(184, 134, 11, 0) 100%);
+  animation: premiumGlitter linear infinite;
+  pointer-events: none;
+  will-change: transform, opacity;
+  box-shadow: 0 0 3px rgba(212, 175, 55, 0.4);
+}
+
+/* Spiritual concentric expanding aura of Axé (concentric radiating layers seamlessly emerging from the contour) */
+@keyframes radiatingContourRipple1 {
+  0% {
+    transform: translate3d(-50%, -50%, 0) scale(0.95);
+    opacity: 0.8;
+    filter: blur(4px);
+  }
+  50% {
+    transform: translate3d(-50%, -50%, 0) scale(1.12);
+    opacity: 0.45;
+    filter: blur(8px);
+  }
+  100% {
+    transform: translate3d(-50%, -50%, 0) scale(1.3);
+    opacity: 0;
+    filter: blur(14px);
+  }
+}
+
+@keyframes radiatingContourRipple2 {
+  0% {
+    transform: translate3d(-50%, -50%, 0) scale(1.05);
+    opacity: 0.5;
+    filter: blur(8px);
+  }
+  50% {
+    transform: translate3d(-50%, -50%, 0) scale(1.35);
+    opacity: 0.25;
+    filter: blur(16px);
+  }
+  100% {
+    transform: translate3d(-50%, -50%, 0) scale(1.6);
+    opacity: 0;
+    filter: blur(28px);
+  }
+}
+
+@keyframes radiatingContourRipple3 {
+  0% {
+    transform: translate3d(-50%, -50%, 0) scale(1.15);
+    opacity: 0.3;
+    filter: blur(12px);
+  }
+  50% {
+    transform: translate3d(-50%, -50%, 0) scale(1.6);
+    opacity: 0.15;
+    filter: blur(24px);
+  }
+  100% {
+    transform: translate3d(-50%, -50%, 0) scale(2.0);
+    opacity: 0;
+    filter: blur(45px);
+  }
+}
+
+.radiating-contour-aura-1 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1.5px solid rgba(224, 181, 63, 0.45);
+  box-shadow: 0 0 15px rgba(224, 181, 63, 0.35), inset 0 0 10px rgba(224, 181, 63, 0.15);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.radiating-contour-aura-2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(224, 181, 63, 0.12) 0%, rgba(205, 127, 50, 0.05) 50%, transparent 100%);
+  border: 1px solid rgba(205, 127, 50, 0.25);
+  box-shadow: 0 0 25px rgba(205, 127, 50, 0.2), inset 0 0 15px rgba(205, 127, 50, 0.08);
+  pointer-events: none;
+  z-index: -2;
+}
+
+.radiating-contour-aura-3 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(205, 127, 50, 0.08) 0%, rgba(178, 34, 34, 0.03) 60%, transparent 100%);
+  border: 0.5px solid rgba(178, 34, 34, 0.15);
+  box-shadow: 0 0 45px rgba(178, 34, 34, 0.12);
+  pointer-events: none;
+  z-index: -3;
+}
+
 

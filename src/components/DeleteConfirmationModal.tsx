@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -27,7 +28,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
     pushNotifications: false
   });
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -90,6 +91,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

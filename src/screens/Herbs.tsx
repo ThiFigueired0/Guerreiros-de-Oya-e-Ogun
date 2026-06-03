@@ -910,10 +910,10 @@ export default function HerbsScreen() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
               )}
-              <div className="flex flex-col overflow-hidden">
-                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-0.5 ml-0.5">Catequese de Ervas</p>
+              <div className="flex flex-col">
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-0.5 ml-0.5">Composição dos banhos de ervas</p>
                 <h2 className={cn(
-                  "text-3xl sm:text-4xl font-black text-brand-navy font-serif tracking-tight truncate",
+                  "text-3xl sm:text-4xl font-black text-brand-navy font-serif tracking-tight",
                   settings.darkMode ? "text-brand-gold" : "text-brand-navy"
                 )}>
                   {selectedCategory ? selectedCategory : "Banhos"}
@@ -983,7 +983,7 @@ export default function HerbsScreen() {
                 onClick={() => setShowModal(true)} 
                 className={cn(
                   "w-11 h-11 bg-brand-navy text-white rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all shrink-0 hover:opacity-90",
-                  settings.darkMode ? "bg-brand-copper" : "shadow-brand-navy/10"
+                  settings.darkMode ? "bg-brand-gold text-brand-navy border border-brand-gold/20 shadow-[0_0_15px_rgba(212,175,55,0.25)]" : "shadow-brand-navy/10"
                 )}
               >
                 <Plus className="w-5 h-5 stroke-[2.5]" />
@@ -1021,13 +1021,13 @@ export default function HerbsScreen() {
                 
                 if (catLower.includes('orixá')) {
                   folderColorClasses = settings.darkMode 
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)]" 
-                    : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm";
+                    ? "bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-[0_0_12px_rgba(14,165,233,0.15)]" 
+                    : "bg-sky-50 text-sky-700 border border-sky-200 shadow-sm";
                   cardHoverClass = settings.darkMode 
-                    ? "hover:border-emerald-500/30 hover:bg-emerald-500/[0.01]" 
-                    : "hover:border-emerald-500/30 hover:bg-emerald-50/10";
-                  barClass = "via-emerald-500/40";
-                  chevronHoverColor = "group-hover:text-emerald-500";
+                    ? "hover:border-sky-500/30 hover:bg-sky-500/[0.01]" 
+                    : "hover:border-sky-500/30 hover:bg-sky-50/10";
+                  barClass = "via-sky-500/40";
+                  chevronHoverColor = "group-hover:text-sky-500";
                 } else if (catLower.includes('entidade')) {
                   folderColorClasses = settings.darkMode 
                     ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-[0_0_12px_rgba(244,63,94,0.15)]" 
@@ -1039,6 +1039,15 @@ export default function HerbsScreen() {
                   chevronHoverColor = "group-hover:text-rose-500";
                 } else if (catLower.includes('geral') || catLower.includes('gerais')) {
                   folderColorClasses = settings.darkMode 
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.15)]" 
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm";
+                  cardHoverClass = settings.darkMode 
+                    ? "hover:border-emerald-500/30 hover:bg-emerald-500/[0.01]" 
+                    : "hover:border-emerald-500/30 hover:bg-emerald-50/10";
+                  barClass = "via-emerald-500/40";
+                  chevronHoverColor = "group-hover:text-emerald-500";
+                } else {
+                  folderColorClasses = settings.darkMode 
                     ? "bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-[0_0_12px_rgba(249,115,22,0.15)]" 
                     : "bg-orange-50 text-orange-600 border border-orange-200 shadow-sm";
                   cardHoverClass = settings.darkMode 
@@ -1046,15 +1055,6 @@ export default function HerbsScreen() {
                     : "hover:border-orange-500/30 hover:bg-orange-50/10";
                   barClass = "via-orange-500/40";
                   chevronHoverColor = "group-hover:text-orange-500";
-                } else {
-                  folderColorClasses = settings.darkMode 
-                    ? "bg-sky-500/10 text-sky-400 border border-sky-500/20 shadow-[0_0_12px_rgba(14,165,233,0.15)]" 
-                    : "bg-sky-50 text-sky-700 border border-sky-200 shadow-sm";
-                  cardHoverClass = settings.darkMode 
-                    ? "hover:border-sky-500/30 hover:bg-sky-500/[0.01]" 
-                    : "hover:border-sky-500/30 hover:bg-sky-50/10";
-                  barClass = "via-sky-500/40";
-                  chevronHoverColor = "group-hover:text-sky-500";
                 }
 
                 return (
@@ -1470,21 +1470,21 @@ export default function HerbsScreen() {
                 if (isSelected) {
                   if (catLower.includes('orixá')) {
                     activeStyles = settings.darkMode 
-                      ? "bg-emerald-500/25 border-emerald-500/60 text-emerald-300 shadow-[0_3px_15px_rgba(16,185,129,0.3)]" 
-                      : "bg-emerald-600 border-emerald-600 text-white shadow-[0_3px_12px_rgba(5,150,105,0.2)]";
+                      ? "bg-sky-500/25 border-sky-500/60 text-sky-300 shadow-[0_3px_15px_rgba(14,165,233,0.3)]" 
+                      : "bg-sky-600 border-sky-600 text-white shadow-[0_3px_12px_rgba(3,105,161,0.2)]";
                   } else if (catLower.includes('entidade')) {
                     activeStyles = settings.darkMode 
                       ? "bg-rose-500/25 border-rose-500/60 text-rose-300 shadow-[0_3px_15px_rgba(244,63,94,0.3)]" 
                       : "bg-rose-600 border-rose-600 text-white shadow-[0_3px_12px_rgba(225,29,72,0.2)]";
                   } else if (catLower.includes('geral') || catLower.includes('gerais')) {
                     activeStyles = settings.darkMode 
-                      ? "bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_3px_15px_rgba(249,115,22,0.3)]" 
-                      : "bg-orange-600 border-orange-600 text-white shadow-[0_3px_12px_rgba(234,88,12,0.25)]";
+                      ? "bg-emerald-500/25 border-emerald-500/60 text-emerald-300 shadow-[0_3px_15px_rgba(16,185,129,0.3)]" 
+                      : "bg-emerald-600 border-emerald-600 text-white shadow-[0_3px_12px_rgba(5,150,105,0.2)]";
                   } else {
                     // default/Outros
                     activeStyles = settings.darkMode 
-                      ? "bg-sky-500/25 border-sky-500/60 text-sky-300 shadow-[0_3px_15px_rgba(14,165,233,0.3)]" 
-                      : "bg-sky-600 border-sky-600 text-white shadow-[0_3px_12px_rgba(3,105,161,0.2)]";
+                      ? "bg-orange-500/25 border-orange-500/60 text-orange-300 shadow-[0_3px_15px_rgba(249,115,22,0.3)]" 
+                      : "bg-orange-600 border-orange-600 text-white shadow-[0_3px_12px_rgba(234,88,12,0.25)]";
                   }
                 }
 
@@ -1549,8 +1549,8 @@ export default function HerbsScreen() {
                             const cat = (rb.category || 'Gerais').toLowerCase();
                             if (cat.includes('orixá')) {
                               return settings.darkMode 
-                                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" 
-                                : "bg-emerald-50 text-emerald-800 border-emerald-200";
+                                ? "bg-sky-500/10 text-sky-300 border-sky-500/20" 
+                                : "bg-sky-50 text-sky-800 border-sky-200";
                             }
                             if (cat.includes('entidade')) {
                               return settings.darkMode 
@@ -1559,13 +1559,13 @@ export default function HerbsScreen() {
                             }
                             if (cat.includes('geral') || cat.includes('gerais')) {
                               return settings.darkMode 
-                                ? "bg-orange-500/10 text-orange-400 border-orange-500/20" 
-                                : "bg-orange-50 text-orange-800 border-orange-200";
+                                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" 
+                                : "bg-emerald-50 text-emerald-800 border-emerald-200";
                             }
                             // Default / Outros
                             return settings.darkMode 
-                              ? "bg-sky-500/10 text-sky-300 border-sky-500/20" 
-                              : "bg-sky-50 text-sky-800 border-sky-205";
+                              ? "bg-orange-500/10 text-orange-400 border-orange-500/20" 
+                              : "bg-orange-50 text-orange-800 border-orange-200";
                           })()
                         )}>
                           {rb.category || 'Gerais'}
@@ -2430,20 +2430,20 @@ export default function HerbsScreen() {
                       if (isSelected) {
                         if (catLower.includes('orixá')) {
                           buttonClass = settings.darkMode 
-                            ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]" 
-                            : "bg-emerald-100/80 border-emerald-500 text-emerald-950 font-extrabold";
+                            ? "bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_12px_rgba(14,165,233,0.25)]" 
+                            : "bg-sky-100/80 border-sky-500 text-sky-950 font-extrabold";
                         } else if (catLower.includes('entidade')) {
                           buttonClass = settings.darkMode 
                             ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.25)]" 
                             : "bg-rose-100/80 border-rose-500 text-rose-950 font-extrabold";
                         } else if (catLower.includes('geral') || catLower.includes('gerais')) {
                           buttonClass = settings.darkMode 
-                            ? "bg-orange-500/20 border-orange-500/60 text-orange-350 shadow-[0_0_12px_rgba(249,115,22,0.25)]" 
-                            : "bg-orange-100/80 border-orange-500 text-orange-950 font-extrabold";
+                            ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]" 
+                            : "bg-emerald-100/80 border-emerald-500 text-emerald-950 font-extrabold";
                         } else {
                           buttonClass = settings.darkMode 
-                            ? "bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_12px_rgba(14,165,233,0.25)]" 
-                            : "bg-sky-100/80 border-sky-500 text-sky-950 font-extrabold";
+                            ? "bg-orange-500/20 border-orange-500/60 text-orange-350 shadow-[0_0_12px_rgba(249,115,22,0.25)]" 
+                            : "bg-orange-100/80 border-orange-500 text-orange-950 font-extrabold";
                         }
                       } else {
                         buttonClass = settings.darkMode 
@@ -2665,20 +2665,20 @@ export default function HerbsScreen() {
                       if (isSelected) {
                         if (catLower.includes('orixá')) {
                           buttonClass = settings.darkMode 
-                            ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]" 
-                            : "bg-emerald-100/80 border-emerald-500 text-emerald-950 font-extrabold";
+                            ? "bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_12px_rgba(14,165,233,0.25)]" 
+                            : "bg-sky-100/80 border-sky-500 text-sky-950 font-extrabold";
                         } else if (catLower.includes('entidade')) {
                           buttonClass = settings.darkMode 
                             ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.25)]" 
                             : "bg-rose-100/80 border-rose-500 text-rose-950 font-extrabold";
                         } else if (catLower.includes('geral') || catLower.includes('gerais')) {
                           buttonClass = settings.darkMode 
-                            ? "bg-orange-500/20 border-orange-500/60 text-orange-350 shadow-[0_0_12px_rgba(249,115,22,0.25)]" 
-                            : "bg-orange-100/80 border-orange-500 text-orange-950 font-extrabold";
+                            ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]" 
+                            : "bg-emerald-100/80 border-emerald-500 text-emerald-950 font-extrabold";
                         } else {
                           buttonClass = settings.darkMode 
-                            ? "bg-sky-500/20 border-sky-500/60 text-sky-300 shadow-[0_0_12px_rgba(14,165,233,0.25)]" 
-                            : "bg-sky-100/80 border-sky-500 text-sky-950 font-extrabold";
+                            ? "bg-orange-500/20 border-orange-500/60 text-orange-350 shadow-[0_0_12px_rgba(249,115,22,0.25)]" 
+                            : "bg-orange-100/80 border-orange-500 text-orange-950 font-extrabold";
                         }
                       } else {
                         buttonClass = settings.darkMode 

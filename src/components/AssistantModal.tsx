@@ -31,17 +31,19 @@ const TypewriterMarkdown = ({ content, onComplete }: { content: string, onComple
     }
     setDisplayedContent('');
     let i = 0;
+    const chunkSize = 4; // Add 4 characters at once
     const interval = setInterval(() => {
       if (i < content.length - 1) {
-        setDisplayedContent(prev => prev + content.charAt(i));
-        i++;
+        const nextChars = content.substr(i, chunkSize);
+        setDisplayedContent(prev => prev + nextChars);
+        i += chunkSize;
       } else {
         setDisplayedContent(content);
         setHasAnimated(true);
         clearInterval(interval);
         if (onCompleteRef.current) onCompleteRef.current();
       }
-    }, 15);
+    }, 25);
     return () => clearInterval(interval);
   }, [content, hasAnimated]);
 

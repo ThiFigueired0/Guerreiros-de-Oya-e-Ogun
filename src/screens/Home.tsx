@@ -322,38 +322,63 @@ export default function HomeScreen() {
       </div>
 
       {/* 1. Header Profiling & Next Event Unified */}
-      <header className="mb-6 mt-2 px-2 relative z-10">
+      <motion.header 
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+              duration: 0.8,
+              ease: [0.16, 1, 0.3, 1],
+              staggerChildren: 0.1
+            }
+          }
+        }}
+        className="mb-6 mt-2 relative z-10 group"
+      >
         <div className={cn(
-          "rounded-2xl relative overflow-hidden flex flex-col transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
+          "rounded-[2rem] px-1 relative overflow-hidden flex flex-col transition-all duration-500 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur-2xl border z-10",
+          settings.darkMode 
+            ? "bg-black/40 border-white/[0.08] hover:border-brand-gold/30 hover:shadow-[0_8px_40px_-12px_rgba(212,175,55,0.2)]" 
+            : "bg-white/60 border-black/[0.05] hover:border-brand-copper/30 hover:shadow-[0_8px_40px_-12px_rgba(205,127,50,0.2)]"
         )}>
-          {/* Subtle dynamic background light */}
-          <div className="absolute -left-12 -top-12 w-48 h-48 bg-brand-gold/[0.04] dark:bg-brand-gold/[0.06] rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-brand-copper/[0.03] dark:bg-[#3996ff]/5 rounded-full blur-3xl pointer-events-none" />
+          {/* Luxurious abstract light shapes inside the card */}
+          <div className="absolute -left-20 -top-20 w-64 h-64 bg-brand-gold/10 dark:bg-brand-gold-[0.15] rounded-full blur-[80px] pointer-events-none group-hover:bg-brand-gold/20 transition-colors duration-700" />
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-copper/10 dark:bg-brand-copper/[0.15] rounded-full blur-[80px] pointer-events-none group-hover:bg-brand-copper/20 transition-colors duration-700" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold/20 to-transparent pointer-events-none" />
           
           {/* Profiling Section */}
-          <div className="p-6 pb-5 flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0 z-10">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className={cn(settings.darkMode ? "text-brand-gold-light" : "text-brand-copper")}>
-                  {greeting === "Bom dia" ? <Sun className="w-4 h-4" /> : greeting === "Boa tarde" ? <CloudSun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }} className="p-7 pb-6 flex items-center justify-between gap-4 relative z-10">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  "flex items-center justify-center w-6 h-6 rounded-full border shadow-sm",
+                  settings.darkMode 
+                    ? "text-brand-gold border-brand-gold/30 bg-brand-gold/10 shadow-brand-gold/10" 
+                    : "text-brand-copper border-brand-copper/30 bg-brand-copper/10 shadow-brand-copper/10"
+                )}>
+                  {greeting === "Bom dia" ? <Sun className="w-3 h-3" /> : greeting === "Boa tarde" ? <CloudSun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
                 </div>
               <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest", 
-                settings.darkMode ? "text-brand-gold-light/60" : "text-brand-copper/80"
+                "text-[10px] font-black uppercase tracking-[0.2em]", 
+                settings.darkMode ? "text-brand-gold/80" : "text-brand-copper/80"
               )}>
                 {format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
               </span>
             </div>
             
             <h2 className={cn(
-              "text-2xl tracking-tight leading-none mb-1.5 font-serif font-bold",
+              "text-3xl sm:text-4xl tracking-tight leading-tight mb-2 font-serif font-bold",
               settings.darkMode ? "text-white" : "text-brand-navy"
             )}>
-              {greeting}, <span className="text-brand-brown dark:text-brand-gold font-black">{displayName}</span>!
+              {greeting}, <br/><span className="text-brand-brown dark:text-brand-gold/90 font-black">{displayName}</span>!
             </h2>
             <p className={cn(
-              "text-[10px] sm:text-xs font-semibold tracking-wide",
-              settings.darkMode ? "text-gray-400" : "text-brand-navy/60"
+              "text-xs sm:text-sm font-medium tracking-wide leading-relaxed max-w-[280px]",
+              settings.darkMode ? "text-gray-400" : "text-brand-navy/70"
             )}>
               {greeting === "Bom dia" 
                 ? "Que o Axé ilumine seus passos hoje." 
@@ -362,111 +387,109 @@ export default function HomeScreen() {
                   : "Sob o manto protetor de Ogum e as bênçãos de Oya."}
             </p>
           </div>
-
-          {/* Quick round elegant avatar/badge indicating community profile */}
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/settings')}
-            className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer relative z-10 group overflow-hidden box-content",
-              settings.darkMode 
-                ? "bg-white/[0.05] text-brand-gold hover:shadow-[0_0_12px_rgba(212,175,55,0.15)]" 
-                : "bg-gradient-to-br from-[#CD7F32]/10 to-[#D4AF37]/10 text-brand-copper shadow-sm"
-            )}
-          >
-            <User className="w-5 h-5 text-current" />
-            {/* Soft pulsing notification dot or badge */}
-            <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-white dark:border-[#121212] bg-brand-gold animate-pulse shadow-sm" />
           </motion.div>
-          </div>
-
-          {/* Separator / Divider */}
-          <div className={cn("h-px w-full", settings.darkMode ? "bg-white/[0.04]" : "bg-black/[0.04]")} />
 
           {/* Next Event Section */}
           <motion.div 
+            variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}
+            whileHover={{ backgroundColor: settings.darkMode ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.7)" }}
+            whileTap={{ scale: 0.995 }}
             onClick={() => navigate('/calendar')}
             className={cn(
-              "p-6 pt-5 cursor-pointer relative z-10 group overflow-hidden transition-colors",
-              "bg-white/[0.02] hover:bg-white/[0.06]"
+              "p-7 pt-6 cursor-pointer relative z-10 overflow-hidden transition-colors rounded-b-[2rem] border-t",
+              settings.darkMode ? "bg-black/20 border-white/[0.05]" : "bg-white/40 border-black/[0.03]"
             )}
           >
             {/* Background Icon Decoration */}
             <motion.div 
-              className="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-105 pointer-events-none text-brand-copper"
+              className="absolute -right-4 -bottom-4 opacity-[0.04] group-hover:scale-110 group-hover:rotate-6 pointer-events-none text-brand-copper transition-all duration-700"
               animate={{ rotate: [-12, -7, -12] }}
               transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
             >
               <Calendar className="w-44 h-44 stroke-[1]" />
             </motion.div>
 
-            <div className="flex items-center gap-2 mb-3.5 relative z-10">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px] opacity-60 pointer-events-none" />
-                <div className={cn(
-                  "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
-                  settings.darkMode 
-                    ? "bg-brand-gold/10 text-brand-gold" 
-                    : "bg-brand-copper/10 text-[#CD7F32]"
-                )}>
-                  <Clock className="w-4 h-4 animate-pulse" />
+            <div className="flex items-center justify-between mb-3.5 relative z-10 px-1">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-xl bg-brand-gold/25 dark:bg-brand-gold/15 blur-[2px] opacity-60 pointer-events-none" />
+                  <div className={cn(
+                    "p-1.5 rounded-xl flex items-center justify-center shrink-0 relative z-10",
+                    settings.darkMode 
+                      ? "bg-brand-gold/10 text-brand-gold" 
+                      : "bg-brand-copper/10 text-[#CD7F32]"
+                  )}>
+                    <Clock className="w-3.5 h-3.5 animate-pulse" />
+                  </div>
                 </div>
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-[0.2em]",
+                  settings.darkMode ? "text-brand-gold/80" : "text-[#CD7F32]/90"
+                )}>
+                  Próximo Evento
+                </span>
               </div>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest",
-                settings.darkMode ? "text-brand-gold/80" : "text-[#CD7F32]/90"
-              )}>
-                Próximo Evento
-              </span>
+              <ChevronRight className={cn(
+                "w-4 h-4 transition-transform group-hover:translate-x-1",
+                settings.darkMode ? "text-white/30" : "text-black/30"
+              )} />
             </div>
             
             {nextEvent ? (
-              <div className="space-y-2 relative z-10">
+              <div className="space-y-3 relative z-10 w-full px-1">
                 <h3 className={cn(
-                  "text-[15px] font-extrabold leading-snug mb-1 font-sans tracking-tight pr-10",
-                  settings.darkMode ? "text-white" : "text-brand-navy",
-                  nextEvent.isCanceled && "line-through opacity-50"
+                  "text-[16px] sm:text-[18px] font-extrabold leading-tight font-serif tracking-tight pr-10",
+                  settings.darkMode ? "text-white group-hover:text-amber-100 transition-colors" : "text-brand-navy group-hover:text-brand-copper transition-colors",
+                  nextEvent.isCanceled && "line-through opacity-50 text-red-500 group-hover:text-red-400"
                 )}>
                   {nextEvent.title}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={cn(
-                    "text-[9px] font-bold leading-none px-2.5 py-1 rounded-lg",
+                    "text-[10px] font-bold leading-none px-3 py-1.5 rounded-lg border",
                     settings.darkMode 
-                      ? "bg-white/5 text-gray-300" 
-                      : "bg-brand-navy/5 text-brand-navy/80"
+                      ? "bg-white/[0.03] border-white/10 text-gray-300" 
+                      : "bg-brand-navy/[0.03] border-brand-navy/10 text-brand-navy/80"
                   )}>
                     {format(parseISO(nextEvent.date), "dd 'de' MMMM", { locale: ptBR })}
                   </span>
                   <span className={cn(
-                    "text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                    "text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border shadow-sm",
                     settings.darkMode 
-                      ? "bg-white/5 text-brand-gold-light" 
-                      : "bg-[#CD7F32]/10 text-brand-copper"
+                      ? "bg-white/[0.03] border-brand-gold/20 text-brand-gold-light" 
+                      : "bg-[#CD7F32]/[0.05] border-brand-copper/20 text-brand-copper"
                   )}>
                     {nextEvent.category}
                   </span>
                   {nextEvent.isCanceled && (
-                    <span className="text-[9px] font-black uppercase tracking-wider bg-red-500/10 px-2.5 py-1 rounded-lg text-red-400">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400">
                       Cancelado
                     </span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="relative z-10">
+              <div className="relative z-10 px-1 mt-4">
                 <p className={cn(
-                  "text-[13px] font-bold leading-relaxed max-w-[280px] font-sans tracking-tight",
-                  settings.darkMode ? "text-white/80" : "text-[#3E2723]"
+                  "text-[14px] font-medium leading-relaxed max-w-[280px] tracking-wide mb-4",
+                  settings.darkMode ? "text-white/80" : "text-[#3E2723]/90"
                 )}>
                   Nenhum evento agendado para os próximos dias.
                 </p>
+                <div className={cn(
+                  "inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl transition-colors",
+                  settings.darkMode 
+                    ? "bg-white/10 text-white hover:bg-white/20" 
+                    : "bg-black/5 text-black hover:bg-black/10"
+                )}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  Ver Calendário
+                </div>
               </div>
             )}
           </motion.div>
         </div>
-      </header>
+      </motion.header>
 
       {/* AI Response Display */}
       <AnimatePresence>
@@ -479,7 +502,7 @@ export default function HomeScreen() {
           >
             <div className={cn(
               "p-5 relative overflow-hidden text-gray-200",
-              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
+              "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03]  border border-white/10 z-10 hover:bg-white/10 hover:border-amber-500/30"
             )}>
               {/* Spiritual whisper background ripple */}
               <motion.div 
@@ -516,7 +539,7 @@ export default function HomeScreen() {
           onClick={() => lastBook ? navigate('/studies', { state: { openBookId: lastBook.id } }) : navigate('/studies')}
           className={cn(
             "p-6 flex flex-col justify-between active:scale-[0.98] group overflow-hidden",
-            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
+            "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm: border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
           )}
         >
           {/* Inner ambient spiritual gold aura */}
@@ -624,7 +647,7 @@ export default function HomeScreen() {
               animate={{ scale: [1, 1.08, 1] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
               className={cn(
-                "p-2 rounded-xl backdrop-blur-sm transition-colors", 
+                "p-2 rounded-xl  transition-colors", 
                 settings.darkMode 
                   ? "bg-emerald-500/10 text-emerald-400" 
                   : "bg-emerald-500 text-white shadow-md shadow-emerald-500/15"
@@ -1323,7 +1346,12 @@ export default function HomeScreen() {
         </div>
 
         {/* Contatos Úteis */}
-        <div className={cn(
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className={cn(
           "p-6 sm:p-8 flex flex-col items-center mt-8 max-w-lg mx-auto overflow-hidden group hover:translate-y-[-2px]",
           "rounded-2xl transition-all duration-300 shadow-2xl bg-white/[0.08] sm:bg-white/[0.03] sm:backdrop-blur-md border border-white/10 relative z-10 hover:bg-white/10 hover:border-amber-500/30"
         )}>
@@ -1332,33 +1360,40 @@ export default function HomeScreen() {
             <Phone className="w-40 h-40 sm:w-56 sm:h-56 stroke-[1]" />
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-5 mb-6 relative z-10">
+          <div className="flex items-center gap-4 sm:gap-5 mb-6 relative z-10 w-full">
             <div className={cn(
-              "w-12 h-12 flex items-center justify-center rounded-[20px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-md",
+              "w-12 h-12 flex items-center justify-center rounded-[20px] shrink-0 transition-all duration-500 group-hover:scale-105 group-hover:-rotate-6 shadow-md relative overflow-hidden",
               settings.darkMode 
-                ? "bg-blue-500/20 text-blue-400" 
-                : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/10"
+                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-blue-500/10" 
+                : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-500/10 border border-transparent"
             )}>
-              <Phone className="w-5 h-5 stroke-[2.5]" />
+              <div className="absolute inset-0 bg-white/20 blur-xl rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+              <Phone className="w-5 h-5 stroke-[2.5] relative z-10 animate-pulse" />
             </div>
             <div>
-              <p className={cn("text-[9px] font-black uppercase tracking-[0.25em] mb-0.5", settings.darkMode ? "text-blue-400/85" : "text-blue-600/90")}>
+              <p className={cn("text-[10px] font-black uppercase tracking-[0.25em] mb-0.5", settings.darkMode ? "text-blue-400/85" : "text-blue-600/90")}>
                 Canais de Apoio
               </p>
-              <h3 className={cn("text-lg sm:text-xl font-black tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
+              <h3 className={cn("text-2xl sm:text-3xl font-black font-serif tracking-tight", settings.darkMode ? "text-white" : "text-brand-navy")}>
                 Contatos Úteis
               </h3>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 gap-4.5 relative z-10">
+          <div className="grid grid-cols-1 gap-4.5 relative z-10 w-full">
             {(settings.usefulContacts && settings.usefulContacts.length > 0 ? settings.usefulContacts : [
               { id: 'fixed-1', name: "Terreiro", phone: "(11) 98555-0847" },
               { id: 'fixed-2', name: "Mãe Stela", phone: "(11) 98235-0614" }
-            ]).map((contact) => {
+            ]).map((contact, index) => {
               return (
-                <div key={contact.id} className={cn(
-                   "relative flex items-center justify-between p-4 rounded-[24px] transition-all duration-300",
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.1 + (index * 0.1) }}
+                  key={contact.id} 
+                  className={cn(
+                   "relative flex items-center justify-between p-4 rounded-[24px] transition-all duration-300 group/contact cursor-pointer w-full overflow-hidden",
                    "bg-white/[0.02] hover:bg-white/[0.06] border border-white/5"
                 )}>
                   <div className="flex items-center gap-3.5 flex-1 min-w-0 pr-3">
@@ -1397,8 +1432,8 @@ export default function HomeScreen() {
                         copied === contact.id 
                           ? "bg-green-500 text-white shadow-md shadow-green-500/10" 
                           : settings.darkMode 
-                            ? "bg-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/5" 
-                            : "bg-gray-50 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                            ? "bg-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/5 group-hover/contact:bg-blue-500/10 group-hover/contact:text-blue-400" 
+                            : "bg-gray-50 text-gray-500 hover:text-blue-600 hover:bg-blue-50 group-hover/contact:bg-blue-50 group-hover/contact:text-blue-600"
                       )}
                     >
                       {copied === contact.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -1411,22 +1446,22 @@ export default function HomeScreen() {
                       className={cn(
                         "w-11 h-11 flex items-center justify-center rounded-2xl transition-all active:scale-[0.8] text-white shadow-sm overflow-hidden",
                         settings.whatsappLogo 
-                          ? (settings.darkMode ? "bg-white/5 p-1.5" : "bg-gray-50 p-1.5")
-                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/10 hover:shadow-[#25D366]/20 hover:-translate-y-0.5"
+                          ? (settings.darkMode ? "bg-white/5 p-1.5 group-hover/contact:bg-white/10" : "bg-gray-50 p-1.5 group-hover/contact:bg-gray-100")
+                          : "bg-gradient-to-br from-[#25D366] to-[#1fac53] shadow-[#25D366]/10 hover:-translate-y-0.5 group-hover/contact:shadow-[#25D366]/20"
                       )}
                     >
                       {settings.whatsappLogo ? (
-                        <img src={settings.whatsappLogo} className="w-full h-full object-contain" alt="WA" />
+                        <img src={settings.whatsappLogo} className="w-full h-full object-contain transition-transform duration-500 group-hover/contact:scale-110" alt="WA" />
                       ) : (
                         <MessageCircle className="w-4.5 h-4.5 fill-current stroke-none" />
                       )}
                     </a>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       </section>
       {/* Daily Fact Modal */}
       <AnimatePresence>

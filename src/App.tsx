@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import { cn } from './lib/utils';
 import { useStorage } from './hooks/useStorage';
-import { AppSettings, Event, Candle, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO, ReadyBath } from './types';
+import { AppSettings, Event, Candle, CandlePlan, NotificationItem, DEFAULT_TEMPLO_LOGO, DEFAULT_INSTAGRAM_LOGO, DEFAULT_TIKTOK_LOGO, ReadyBath } from './types';
 import { UndoContext, UndoAction } from './hooks/useUndo';
 import { AssistantProvider, useAssistant } from './lib/AssistantContext';
 
@@ -180,9 +180,6 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
   const isLeft = side === 'left';
   const tiltAngle = isLeft ? 15 : -15; // Elegant diagonal slant inwards (left tilts right, right tilts left)
   
-  const glowInner = 'from-amber-500/40 via-yellow-500/12 to-transparent';
-  const glowOuter = 'from-amber-600/25 via-orange-600/5 to-transparent';
-  
   return (
     <motion.div
       initial={{ opacity: 0, x: isLeft ? -25 : 25 }}
@@ -210,30 +207,6 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
           willChange: "transform"
         }}
       >
-        {/* LIGHTING REGION: Counter-rotated so the glow is upright */}
-        <div 
-          className="relative w-8 h-8 flex flex-col items-center justify-end z-30 origin-bottom overflow-visible"
-          style={{ transform: `rotate(${-tiltAngle}deg)` }}
-        >
-          {/* Inner Halo */}
-          <div
-            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-[4px] sm:blur-xl", glowInner)}
-            style={{ 
-              animation: `drumInnerGlow ${3.2 + (idx * 0.5)}s infinite ease-in-out`,
-              willChange: "transform, opacity" 
-            }}
-          />
-
-          {/* Outer Halo */}
-          <div
-            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-[8px] sm:blur-3xl", glowOuter)}
-            style={{ 
-              animation: `drumOuterGlow ${5.2 + (idx * 0.7)}s infinite ease-in-out`,
-              willChange: "transform, opacity" 
-            }}
-          />
-        </div>
-
         {/* Drum Image (Slants with parent container; mirrored on the right side) */}
         <div 
           className="relative w-24 h-auto sm:w-28 md:w-32 lg:w-36 mt-2 brightness-110 contrast-125 transition-transform"
@@ -253,28 +226,53 @@ const HeaderDrum = ({ side, idx = 0 }: { side: 'left' | 'right'; idx?: number })
         </div>
       </div>
       
-      {/* Ground Shadow for Anchoring */}
-      <div 
-        className="absolute -bottom-8 w-24 h-6 bg-black/80 rounded-[100%] blur-[10px] z-0"
-        style={{
-          animation: "drumGlowInner 4s infinite ease-in-out",
-          animationDelay: `${idx * 0.2}s`,
-          willChange: "transform, opacity"
-        }}
-      />
-      <motion.div 
-        className="absolute -bottom-4 w-12 h-3 bg-black rounded-[100%] blur-[4px] z-20"
-        animate={{
-          scale: [0.85, 1.05, 0.85],
-          opacity: [0.8, 1, 0.8]
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: idx * 0.2
-        }}
-      />
+      {/* 3D Contact Shadow and Altar of Mystical Copper/Amber Glow */}
+      <div className="absolute -bottom-10 w-36 h-10 -z-10 flex items-center justify-center pointer-events-none">
+        {/* Layer 1: Wide Diffused Brand-Copper & Amber Mystic Glow Altar */}
+        <motion.div 
+          className="absolute w-28 h-8 rounded-full bg-gradient-to-r from-brand-copper/35 via-brand-orange/15 to-brand-gold/10 blur-xl mix-blend-screen"
+          animate={{
+            scale: [0.9, 1.25, 0.9],
+            opacity: [0.4, 0.7, 0.4]
+          }}
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: idx * 0.4
+          }}
+        />
+
+        {/* Layer 2: Deep Dark Center Core Contact Shadow */}
+        <motion.div 
+          className="absolute w-20 h-5 bg-black/85 rounded-full blur-[6px]"
+          animate={{
+            scale: [0.95, 1.08, 0.95],
+            opacity: [0.75, 0.9, 0.75]
+          }}
+          transition={{
+            duration: 4.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: idx * 0.4
+          }}
+        />
+
+        {/* Layer 3: Warm Divine Red/Gold Accent Point Glow */}
+        <motion.div
+          className="absolute w-12 h-3 bg-brand-red/30 rounded-full blur-[10px]"
+          animate={{
+            scale: [0.8, 1.3, 0.8],
+            opacity: [0.3, 0.6, 0.3]
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: idx * 0.2
+          }}
+        />
+      </div>
     </motion.div>
   );
 };
@@ -289,6 +287,14 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
     glowInner: 'from-amber-500/40 via-yellow-500/12 to-transparent',
     glowOuter: 'from-amber-600/25 via-orange-600/5 to-transparent'
   };
+
+  const innerGlowSize = isScrolling ? "w-16 h-16" : "w-44 h-44";
+  const innerGlowBottom = isScrolling ? "-bottom-1.5" : "-bottom-4";
+  const innerGlowBlur = isScrolling ? "blur-[2px]" : "blur-[4px] sm:blur-xl";
+  
+  const outerGlowSize = isScrolling ? "w-28 h-28" : "w-80 h-80";
+  const outerGlowBottom = isScrolling ? "-bottom-3" : "-bottom-16";
+  const outerGlowBlur = isScrolling ? "blur-[4px]" : "blur-[8px] sm:blur-3xl";
   
   return (
     <motion.div
@@ -319,7 +325,7 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
         >
           {/* Soft warm surrounding glow that pulses gently to simulate casting light (Clear and vivid inner halo) */}
           <div
-            className={cn("absolute -bottom-4 w-44 h-44 bg-radial rounded-full blur-[4px] sm:blur-xl pointer-events-none", config.glowInner)}
+            className={cn("absolute bg-radial rounded-full pointer-events-none", innerGlowBottom, innerGlowSize, innerGlowBlur, config.glowInner)}
             style={{ 
               animation: `candleGlowInner ${3.5 + (idx * 0.4)}s infinite ease-in-out`,
               willChange: "transform, opacity" 
@@ -328,23 +334,25 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
 
           {/* A second, wider ambient halo mimicking warm golden light casting on the surrounding wall space */}
           <div
-            className={cn("absolute -bottom-16 w-80 h-80 bg-radial rounded-full blur-[8px] sm:blur-3xl pointer-events-none", config.glowOuter)}
+            className={cn("absolute bg-radial rounded-full pointer-events-none", outerGlowBottom, outerGlowSize, outerGlowBlur, config.glowOuter)}
             style={{ 
               animation: `candleGlowOuter ${5.0 + (idx * 0.6)}s infinite ease-in-out`,
               willChange: "transform, opacity" 
-}}
+            }}
           />
 
           {/* Majestic Layered Teardrop SVG Flame - Slow, serene sway & shiny GPU-friendly animation */}
           <div
-            className="relative w-7 h-11 origin-bottom flex items-center justify-center filter drop-shadow-[0_0_6px_#f59e0b] drop-shadow-[0_0_15px_rgba(234,88,12,0.7)] overflow-visible pointer-events-none"
+            className="relative w-7 h-11 origin-bottom flex items-center justify-center overflow-visible pointer-events-none"
             style={{ 
               animation: `candleFlameSway ${3.8 + (idx * 0.5)}s infinite ease-in-out`,
               willChange: "transform, opacity" 
             }}
           >
+            {/* Fake SVG GPU-friendly shadow drop */}
+            <div className="absolute inset-0 top-2 bg-amber-500 rounded-full blur-[6px] opacity-70 pointer-events-none" style={{ transform: 'scale(0.8)' }} />
             <svg 
-              className="w-full h-full overflow-visible" 
+              className="w-full h-full overflow-visible relative z-10" 
               viewBox="0 -30 100 230" 
               fill="none" 
               xmlns="http://www.w3.org/2000/svg"
@@ -447,6 +455,59 @@ const LitWhiteCandle = ({ side, top, idx = 0, isScrolling = false, colorType = '
     </motion.div>
   );
 };
+
+const Bandeirinhas = React.memo(function Bandeirinhas() {
+  return (
+    <div className="absolute top-0 left-0 w-full h-[60px] z-[61] pointer-events-none opacity-90">
+      <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" className="absolute top-0 left-0">
+         <path d="M0,0 Q25,18 50,0 Q75,18 100,0" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+      </svg>
+      <div className="absolute top-0 left-0 w-full h-full text-white">
+        {Array.from({ length: 26 }).map((_, i) => {
+          const count = 26;
+          const tGlobal = (i + 0.5) / count; // 0 to 1
+          
+          let tLocal;
+          if (tGlobal < 0.5) {
+            tLocal = tGlobal * 2;
+          } else {
+            tLocal = (tGlobal - 0.5) * 2;
+          }
+          
+          const yOffset = 18 * 2 * tLocal * (1 - tLocal);
+          const slopeApproximation = (1 - 2 * tLocal) * 12;
+          const isRed = i % 2 === 0;
+          const clipPath = 'polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%)';
+          const colorClass = isRed ? "bg-red-800/70" : "bg-white/70";
+
+          return (
+            <div 
+              key={i} 
+              className="absolute drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" 
+              style={{ 
+                left: `calc(${tGlobal * 100}% - 6px)`,
+                top: `${yOffset}px`,
+                width: '12px',
+                height: '16px',
+                transform: `rotate(${-slopeApproximation}deg)`,
+                transformOrigin: 'top center',
+              }}
+            >
+              <div 
+                className={`w-full h-full animate-sway ${colorClass}`}
+                style={{
+                  clipPath: clipPath,
+                  transformOrigin: 'top center',
+                  animationDelay: `${i * 0.15}s`
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+});
 
 const ICON_MAP: Record<string, any> = {
   Star, Calendar, Droplets, Heart, Music, FileText, Settings, Shield, Info, Book, Map, Hash, User, Users, Home, Layout,
@@ -709,6 +770,7 @@ function Navigation() {
 const TopHeader = React.memo(function TopHeader() {
   const { user } = useAuth();
   const [isGuest] = useStorage<boolean>('templo_guest', false);
+  const [showHeaderVideo, setShowHeaderVideo] = useStorage<boolean>('templo_header_video_visible', true);
   const [settings] = useStorage<AppSettings>('templo_settings', {
     darkMode: false,
     eventCategories: ['Gira aberta', 'Gira Fechada', 'Desenvolvimento', 'Festa', 'Trabalho', 'Reunião', 'Corte'],
@@ -721,6 +783,101 @@ const TopHeader = React.memo(function TopHeader() {
     instagramLogo: '',
     orixaPhotos: {}
   });
+
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const [headerClicks, setHeaderClicks] = React.useState<{ id: number; x: number; y: number }[]>([]);
+  const [logoHovered, setLogoHovered] = React.useState(false);
+  const [logoTilt, setLogoTilt] = React.useState({ x: 0, y: 0 });
+
+  const handleLogoMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    // Coordinates normalized from -1 to 1 relative to center
+    const x = (e.clientX - rect.left - width / 2) / (width / 2);
+    const y = (e.clientY - rect.top - height / 2) / (height / 2);
+    // Multiplied by max degrees of rotation (18 degrees)
+    setLogoTilt({
+      x: y * -18,
+      y: x * 18
+    });
+  };
+
+  const handleLogoMouseLeave = () => {
+    setLogoHovered(false);
+    setLogoTilt({ x: 0, y: 0 });
+  };
+
+  // 1. Generate elegant twinkling gold cosmic star assets for dark mode
+  const STARS = React.useMemo(() => {
+    return Array.from({ length: 28 }, (_, i) => ({
+      id: i,
+      left: `${(i * 17) % 96 + 2}%`,
+      top: `${(i * 13) % 86 + 7}%`,
+      delay: `${(i * 0.4).toFixed(2)}s`,
+      size: `${1 + (i % 3 === 0 ? 1 : 0)}px`,
+      opacity: 0.15 + (i % 4) * 0.18
+    }));
+  }, []);
+
+  // 1.5. Generate elegant floating leaves to drift mystically across the header
+  const headerLeaves = React.useMemo(() => {
+    const leafColors = [
+      "#C5A059", // Antique Gold
+      "#CD7F32", // Copper
+      "#B8860B", // Dark Goldenrod
+      "#D4AF37", // Metallic Gold
+      "#A0522D", // Sienna / Warm brown/copper
+      "#8B5A2B", // Bronze brown
+    ];
+    return Array.from({ length: 18 }, (_, i) => {
+      const isLeft = i % 2 === 0;
+      // Rich variety of elegant smaller leaf sizes: 6px to 18px max
+      const sizeList = [6, 8, 9, 11, 12, 14, 16, 18];
+      const size = sizeList[i % sizeList.length];
+      
+      // Speed inversely proportional to size to create natural parallax effect
+      // Small leaves move slower, large leaves move faster
+      const duration = size < 11 ? 32 + (i % 8) * 4 : 16 + (i % 6) * 3;
+      const color = leafColors[i % leafColors.length];
+      
+      return {
+        id: i,
+        left: `${(i * 11) % 96 + 2}%`,
+        top: `${(i * 17) % 80 + 10}%`,
+        size,
+        duration,
+        delay: -(i * 1.5), // staggered starting delay
+        mx: `${(isLeft ? -1 : 1) * (20 + (i % 6) * 15)}px`,
+        my: `${-25 - (i % 4) * 12}px`,
+        rotate: (i * 30) % 360,
+        opacity: size < 11 ? 0.18 : 0.40, // faint background, clearer foreground
+        color
+      };
+    });
+  }, []);
+
+  // 2. Full interactive 120fps mouse-hover tracking for luxury light spotlights
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Intentionally disabled to increase rendering performance
+    // and avoid GPU bottlenecks caused by real-time CSS variable updates + mix-blend-modes
+  };
+
+  // 3. Cinematic interactive click feedback (burst of gold spark elements)
+  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Do not spawn stars when clicking interactive buttons
+    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('.header-control-button')) {
+      return;
+    }
+    if (!headerRef.current) return;
+    const rect = headerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    const newClick = { id: Date.now() + Math.random(), x, y };
+    setHeaderClicks(prev => [...prev.slice(-6), newClick]); // Keep last 6 click triggers to maintain peak performance
+  };
 
   const fullName = React.useMemo(() => {
     if (isGuest) return "Modo Guest";
@@ -739,31 +896,22 @@ const TopHeader = React.memo(function TopHeader() {
     return settings.nickname || "Guerreiro";
   }, [isGuest, settings.firstName, settings.lastName, settings.nickname, user]);
 
-  const leaves = React.useMemo(() => {
-    return [...Array(12)].map((_, i) => ({
-      id: i,
-      size: 6 + Math.random() * 16,
-      duration: 20 + Math.random() * 20,
-      delay: Math.random() * -20,
-      opacity: 0.15 + Math.random() * 0.25,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      mx: `${Math.random() * 100 - 50}px`,
-      my: `${Math.random() * 100 - 50}px`
-    }));
-  }, []);
-
   return (
     <div 
+      ref={headerRef}
       id="app-top-header"
       className={cn(
-        "relative overflow-hidden flex flex-col items-center min-h-[30dvh] sm:min-h-0 z-20",
+        "relative overflow-hidden flex flex-col items-center min-h-[30dvh] sm:min-h-0 z-20 select-none cursor-pointer transition-colors duration-700",
         settings.darkMode 
-          ? "bg-gradient-to-b from-[#0A0A0A] to-black" 
+          ? "luxury-black-gold" 
           : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
       )}
+      title="Dê um duplo clique para ocultar ou exibir o vídeo de fundo. Passe o mouse ou clique no fundo!"
+      onDoubleClick={() => setShowHeaderVideo(prev => !prev)}
+      onMouseMove={handleMouseMove}
+      onClick={handleHeaderClick}
       style={{
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 100px)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 72px)',
         paddingBottom: '14rem',
         backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
@@ -771,30 +919,218 @@ const TopHeader = React.memo(function TopHeader() {
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Background Video - Opt-out on mobile */}
-      <div className="absolute inset-0 z-0 overflow-hidden opacity-[0.15] pointer-events-none hidden sm:block">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
+      {/* Background Video */}
+      {showHeaderVideo && (
+        <div 
+          className="absolute inset-0 z-0 overflow-hidden opacity-[0.11] sm:opacity-[0.15] pointer-events-none"
+          style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}
         >
-          <source src="https://res.cloudinary.com/dpv8m5igw/video/upload/v1780271294/9e98484151b9ea8647f4a81a9e6863bd_byrkb4.mp4" type="video/mp4" />
-        </video>
-      </div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover select-none pointer-events-none"
+            style={{ willChange: 'transform' }}
+          >
+            <source src="https://res.cloudinary.com/dpv8m5igw/video/upload/v1780271294/9e98484151b9ea8647f4a81a9e6863bd_byrkb4.mp4" type="video/mp4" />
+          </video>
+        </div>
+      )}
 
       {/* Decorative Animated Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-        {/* Smoke Layers - Disabled on mobile to prevent extreme lag/flickering */}
-        <div className="smoke-effect-1 hidden sm:block" />
-        <div className="smoke-effect-2 hidden sm:block" />
+        {settings.darkMode ? (
+          <>
+            {/* 0. Volumetric Sacred God Rays (Luxury shafts of golden light) */}
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(184,134,11,0.05)_0%,transparent_60%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(225deg,rgba(205,127,50,0.03)_0%,transparent_60%)] pointer-events-none" />
+            <div 
+              className="absolute top-[-35%] left-[-15%] w-[150%] h-[160%] pointer-events-none opacity-[0.10]"
+              style={{
+                background: 'repeating-linear-gradient(65deg, rgba(184,134,11,0.08) 0px, rgba(184,134,11,0.08) 40px, transparent 80px, transparent 160px)',
+                animation: 'godRaysDrift 30s linear infinite',
+              }}
+            />
 
-        {/* Floating Leaves across the entire banner - Higher visibility */}
-        {(settings.immersiveMode !== false && (typeof window === 'undefined' || window.innerWidth >= 640)) && leaves.map((leaf) => (
+            {/* 1. Golden Structural Sacred Geometry Grid Backdrop */}
+            <div className="absolute inset-0 gold-grid-backdrop opacity-70 pointer-events-none" />
+
+            {/* 2. Twinkling Stars Starfield Map */}
+            {STARS.map(star => (
+              <div 
+                key={star.id}
+                className="absolute rounded-full bg-[#EAF0F6] pointer-events-none"
+                style={{
+                  left: star.left,
+                  top: star.top,
+                  width: star.size,
+                  height: star.size,
+                  opacity: star.opacity
+                }}
+              />
+            ))}
+
+            {/* 3. Static Ambient Spotlight */}
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-40"
+              style={{
+                background: `radial-gradient(ellipse at center, rgba(184, 115, 51, 0.12) 0%, transparent 70%)`
+              }}
+            />
+
+            {/* 4. Volumetric Golden Moving Ambient Spotlights */}
+            <div className="absolute inset-0 gold-spotlight-1 pointer-events-none opacity-50" />
+            <div className="absolute inset-0 gold-spotlight-2 pointer-events-none opacity-50" />
+
+            {/* 5. Drifting Gold layers */}
+            <div className="absolute inset-0 gold-smoke-layer-1 pointer-events-none opacity-30" />
+            <div className="absolute inset-0 gold-smoke-layer-2 pointer-events-none opacity-20" />
+
+            {/* 6. Golden Vignette Shadow Framing */}
+            <div className="absolute inset-0 gold-vignette-ring pointer-events-none opacity-90" />
+
+            {/* 7. Elegant Moving Golden Embers/Sparks rising from bottom */}
+            {settings.immersiveMode !== false && [...Array(15)].map((_, i) => (
+              <div 
+                key={`gold-sparkle-${i}`} 
+                className="gold-sparkle-particle"
+                style={{
+                  width: `${2.5 + ((i * i) % 4)}px`,
+                  height: `${2.5 + ((i * i) % 4)}px`,
+                  left: `${5 + (i * 6.4)}%`,
+                  bottom: `-15px`,
+                  animationDuration: `${14 + ((i * i) % 8)}s`,
+                  animationDelay: `${-i * 1.8}s`,
+                  '--drift-x': `${(i % 2 === 0 ? 1 : -1) * (25 + (i * 6))}px`
+                } as React.CSSProperties}
+              />
+            ))}
+          </>
+        ) : (
+          <>
+            {/* Standard Multi-colored spiritual streams */}
+            <div className="smoke-effect-1 hidden sm:block" />
+            <div className="smoke-effect-2 hidden sm:block" />
+
+            {/* Layered, abstract, smoke-like flat wisps that interweave and float across the horizontal extent */}
+            <div 
+              className="absolute top-[12%] left-[-20%] w-[300px] sm:w-[380px] h-[18px] sm:h-[24px] bg-brand-copper blur-[35px] sm:blur-[45px] opacity-[0.12] sm:opacity-[0.16] spotlight-animate-left pointer-events-none"
+              style={{ borderRadius: '30% 70% 20% 80% / 40% 30% 70% 60%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute bottom-[10%] right-[-20%] w-[280px] sm:w-[350px] h-[15px] sm:h-[20px] bg-brand-red blur-[30px] sm:blur-[40px] opacity-[0.11] sm:opacity-[0.14] spotlight-animate-right pointer-events-none"
+              style={{ borderRadius: '20% 80% 30% 70% / 30% 60% 40% 70%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute top-[20%] left-[10%] w-[250px] sm:w-[320px] h-[22px] sm:h-[30px] bg-brand-gold blur-[35px] sm:blur-[45px] opacity-[0.10] sm:opacity-[0.13] spotlight-animate-smoke-1 pointer-events-none"
+              style={{ borderRadius: '50% 50% 60% 40% / 55% 35% 65% 45%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute top-[40%] right-[-10%] w-[240px] sm:w-[330px] h-[16px] sm:h-[22px] bg-sky-500 blur-[30px] sm:blur-[40px] opacity-[0.09] sm:opacity-[0.12] spotlight-animate-smoke-2 pointer-events-none"
+              style={{ borderRadius: '40% 60% 30% 70% / 35% 55% 45% 65%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute bottom-[5%] left-[5%] w-[270px] sm:w-[360px] h-[20px] sm:h-[28px] bg-brand-orange blur-[40px] sm:blur-[50px] opacity-[0.11] sm:opacity-[0.15] spotlight-animate-smoke-3 pointer-events-none"
+              style={{ borderRadius: '25% 75% 40% 60% / 30% 50% 50% 70%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+
+            {/* Desktop-only streams to enrich visual depth */}
+            <div 
+              className="absolute top-[5%] right-[25%] w-[310px] h-[22px] bg-brand-copper blur-[45px] opacity-[0.12] spotlight-animate-smoke-4 pointer-events-none hidden sm:block"
+              style={{ borderRadius: '60% 40% 50% 50% / 40% 60% 40% 60%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute bottom-[25%] left-[20%] w-[290px] h-[16px] bg-brand-gold blur-[35px] opacity-[0.11] spotlight-animate-smoke-1 pointer-events-none hidden sm:block"
+              style={{ borderRadius: '35% 65% 45% 55% / 45% 35% 65% 55%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute top-[30%] left-[-5%] w-[320px] h-[24px] bg-brand-red blur-[45px] opacity-[0.10] spotlight-animate-left pointer-events-none hidden sm:block"
+              style={{ borderRadius: '45% 55% 35% 65% / 35% 65% 35% 65%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute bottom-[18%] right-[15%] w-[260px] h-[19px] bg-sky-400 blur-[38px] opacity-[0.10] spotlight-animate-smoke-3 pointer-events-none hidden sm:block"
+              style={{ borderRadius: '50% 40% 60% 40% / 45% 50% 50% 55%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+            <div 
+              className="absolute top-[50%] right-[5%] w-[280px] h-[26px] bg-brand-orange blur-[45px] opacity-[0.11] spotlight-animate-smoke-4 pointer-events-none hidden sm:block"
+              style={{ borderRadius: '30% 70% 35% 65% / 40% 40% 60% 60%', transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+            />
+          </>
+        )}
+
+        {/* 8. Render Dynamic Interactive Click Burst Particles */}
+        <AnimatePresence>
+          {headerClicks.map((click) => (
+            <div 
+              key={click.id}
+              className="absolute pointer-events-none select-none z-25"
+              style={{ left: `${click.x}%`, top: `${click.y}%` }}
+            >
+              {/* Ripple Ring 1 */}
+              <motion.div 
+                initial={{ scale: 0, opacity: 0.9 }}
+                animate={{ scale: 5.5, opacity: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.9, ease: "easeOut" }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full border border-brand-gold/80"
+              />
+              {/* Ripple Ring 2 */}
+              <motion.div 
+                initial={{ scale: 0, opacity: 0.5 }}
+                animate={{ scale: 9, opacity: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.3, ease: "easeOut" }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full border border-amber-600/30"
+              />
+              {/* Radiating Star Sparks */}
+              {[...Array(8)].map((_, i) => {
+                const angle = (i * Math.PI) / 4;
+                const distance = 40 + Math.random() * 50;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ x: 0, y: 0, scale: 1.2, opacity: 1 }}
+                    animate={{ x: dx, y: dy, scale: 0.2, opacity: 0 }}
+                    transition={{ duration: 0.8 + Math.random() * 0.4, ease: "easeOut" }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-yellow-100 to-[#D4AF37] shadow-[0_0_8px_#E8C359]"
+                  />
+                );
+              })}
+              {/* Radiating Tiny Leaf Sparks */}
+              {[...Array(4)].map((_, i) => {
+                const angle = (i * Math.PI) / 2 + Math.random() * 0.3;
+                const distance = 30 + Math.random() * 40;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                return (
+                  <motion.div
+                    key={`leaf-spark-${i}`}
+                    initial={{ x: 0, y: 0, scale: 0.6, opacity: 1, rotate: 0 }}
+                    animate={{ x: dx, y: dy, scale: 0.1, opacity: 0, rotate: 360 }}
+                    transition={{ duration: 0.9 + Math.random() * 0.3, ease: "easeOut" }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                  >
+                    <Leaf 
+                      className={cn(
+                        "w-4 h-4",
+                        settings.darkMode ? "text-brand-gold/60 fill-brand-gold/10" : "text-emerald-500/50 fill-emerald-500/10"
+                      )} 
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          ))}
+        </AnimatePresence>
+
+        {/* Beautiful Floating Leaves Background */}
+        {settings.immersiveMode !== false && headerLeaves.map((leaf) => (
           <div
-            key={`leaf-fixed-${leaf.id}`}
-            className="leaf-floating absolute z-0"
+            key={`h-leaf-${leaf.id}`}
+            className="leaf-floating absolute pointer-events-none"
             style={{
               '--left': leaf.left,
               '--duration': `${leaf.duration}s`,
@@ -805,81 +1141,150 @@ const TopHeader = React.memo(function TopHeader() {
               top: leaf.top,
             } as React.CSSProperties}
           >
-            <Leaf className="text-brand-copper/60 fill-brand-copper/10 w-full h-full opacity-60" />
+            <Leaf 
+              className={cn(
+                "w-full h-full filter drop-shadow-md transition-colors duration-500",
+                !settings.darkMode && "text-emerald-600/30 fill-emerald-500/5"
+              )} 
+              style={{ 
+                color: settings.darkMode ? leaf.color : undefined,
+                fill: settings.darkMode ? `${leaf.color}15` : undefined,
+                opacity: leaf.opacity 
+              }}
+            />
           </div>
         ))}
-
-        <div className="absolute -top-20 -left-20 w-80 h-80 bg-brand-copper rounded-full blur-[100px] opacity-[0.15]" />
-        <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-red rounded-full blur-[80px] opacity-[0.15]" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center mt-4 sm:mt-6 pb-12 w-full">
-        {/* Floating Logo Container */}
+      <div className="relative z-10 flex flex-col items-center mt-1 sm:mt-2 pb-12 w-full">
+        {/* Floating Logo Container with Interactive 3D Perspective */}
         <motion.div 
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative mb-6 sm:mb-8"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+          className="w-32 h-32 sm:w-40 sm:h-40 mb-4 sm:mb-6 relative flex items-center justify-center cursor-pointer group mx-auto z-20"
+          onMouseEnter={() => setLogoHovered(true)}
+          onMouseMove={handleLogoMouseMove}
+          onMouseLeave={handleLogoMouseLeave}
+          style={{
+            perspective: "1000px"
+          }}
         >
-          {/* Outer Glowing Ring */}
-          <div className="absolute -inset-4 rounded-full bg-brand-copper/10 blur-xl" />
-          <div className="absolute -inset-1 rounded-full border border-brand-copper/20 ring-4 ring-brand-copper/5" />
-          
-          {/* Rotating decorative icons - Herb Leaves */}
-          <div className="absolute -inset-6 pointer-events-none">
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-              className="w-full h-full relative"
-            >
-              {[1, 2, 3, 4, 5, 6].map((_, i) => (
-                <div 
-                  key={i}
-                  className="absolute"
-                  style={{
-                    top: '50%',
-                    left: '50%',
-                    transform: `rotate(${i * 60}deg) translateY(-58px) rotate(-${i * 60}deg)`
-                  }}
-                >
-                  <Leaf className="w-4 h-4 text-brand-copper/30 drop-shadow-[0_0_5px_rgba(184,134,11,0.2)]" />
-                </div>
-              ))}
-            </motion.div>
-          </div>
+          {/* Inner 3D tilted card matching the tracked mouse coordinate tilts */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "relative",
+              transformStyle: "preserve-3d",
+              transform: `rotateX(${logoTilt.x}deg) rotateY(${logoTilt.y}deg)`,
+              transition: "transform 0.15s cubic-bezier(0.25, 1, 0.5, 1)"
+            }}
+            className="flex items-center justify-center"
+          >
+            {/* Spiritual Corona Background Glow - Positioned in deep 3D-space */}
+            <div 
+              className="absolute inset-[-12px] rounded-full bg-radial from-brand-gold-medium/20 via-brand-gold-medium/5 to-transparent blur-xl pointer-events-none transition-all duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100" 
+              style={{ transform: "translateZ(-20px)" }}
+            />
 
-          <div className={cn(
-            "w-24 h-24 sm:w-28 sm:h-28 rounded-full relative frame-3d mystical-aura transform",
-            settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
-          )}>
-            {/* Glossy Overlay */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/5 via-white/20 to-transparent z-10 pointer-events-none mix-blend-overlay" />
-            
-            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-black">
-              {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
-                <LogoMedia 
-                  src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
-                  className="w-[105%] h-[105%] max-w-[105%] object-cover filter drop-shadow-md rounded-full"
-                />
+            {/* Radiating Contour Aura Rings (The circular contour expanding and dissolving outwards) */}
+            <div className="radiating-contour-aura-1" style={{ transform: "translate3d(-50%, -50%, -10px)" }} />
+            <div className="radiating-contour-aura-2" style={{ transform: "translate3d(-50%, -50%, -15px)" }} />
+            <div className="radiating-contour-aura-3" style={{ transform: "translate3d(-50%, -50%, -20px)" }} />
+
+            {/* Incense Smoke Drift Behind the Logo */}
+            {settings.immersiveMode !== false && (
+              <div 
+                className="absolute inset-0 -z-10 pointer-events-none flex items-center justify-center overflow-visible"
+                style={{ transform: "translateZ(-8px)" }}
+              >
+                <div className="incense-trail incense-trail-1" />
+                <div className="incense-trail incense-trail-2" />
+                <div className="incense-trail incense-trail-3" />
+                <div className="incense-trail incense-trail-4" />
+              </div>
+            )}
+
+            {/* Inner Golden border lip of the medallion - Soft glass/gold border that blends into the canvas */}
+            <div 
+              className="absolute inset-[-3px] rounded-full border border-brand-gold-medium/40 pointer-events-none z-10 transition-colors duration-500 group-hover:border-brand-gold-light/60 shadow-[0_0_10px_rgba(212,175,55,0.08)]" 
+              style={{ transform: "translateZ(12px)" }}
+            />
+
+            {/* Core Medallion Circular Frame - Seamless polished gold boundary */}
+            <div 
+              className={cn(
+                "absolute inset-0 rounded-full flex items-center justify-center transition-all duration-500 z-20 overflow-hidden",
+                settings.darkMode 
+                  ? "bg-[#040404] border border-brand-gold-medium/60 shadow-[0_4px_12px_rgba(0,0,0,0.85)]" 
+                  : "bg-white border border-brand-gold-medium/45 shadow-[0_2px_8px_rgba(0,0,0,0.1)]",
+                logoHovered && "scale-[1.03]"
               )}
+              style={{
+                transformStyle: "preserve-3d",
+                transform: "translateZ(20px)"
+              }}
+            >
+              {/* Liquid Gold Glossy Reflection Sweep */}
+              <motion.div 
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-brand-gold-light/25 to-transparent z-25 pointer-events-none"
+                animate={{
+                  x: logoHovered ? ['-100%', '100%'] : ['-100%', '-100%'],
+                }}
+                transition={{
+                  duration: 1.3,
+                  ease: "easeInOut"
+                }}
+                style={{ transform: "translateZ(28px)" }}
+              />
+              {/* Standard Glassy Depth Filter */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/0 via-white/12 to-transparent z-10 pointer-events-none mix-blend-overlay" />
+              
+              {/* Inset Inner Bezel holding the Sacred Illustration */}
+              <div 
+                className="w-[94%] h-[94%] rounded-full overflow-hidden flex items-center justify-center relative bg-black border border-brand-gold-dark/30 shadow-[inset_0_2px_6px_rgba(0,0,0,0.85)]"
+                style={{
+                  transform: "translateZ(10px)",
+                }}
+              >
+                {(settings.logoBase64 || DEFAULT_TEMPLO_LOGO) && (
+                  <LogoMedia 
+                    src={settings.logoBase64 || DEFAULT_TEMPLO_LOGO} 
+                    className={cn(
+                      "w-full h-full object-cover rounded-full transition-transform duration-700 ease-out",
+                      logoHovered ? "scale-[1.06]" : "scale-100"
+                    )}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Title Moved below the logo */}
+        {/* Title Rendered below the logo (Sacred Nobility Font Cinzel) */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.25 }}
           className="flex flex-col items-center gap-1"
         >
-          <h2 className="bg-gradient-to-r from-yellow-100 via-[#E8C359] to-[#D4AF37] bg-clip-text text-transparent font-serif text-[12px] sm:text-[14px] md:text-[16px] uppercase tracking-[0.15em] font-bold text-center px-4 drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] pb-1">
+          <h2 className="bg-gradient-to-b from-[#FFFDF0] via-brand-gold-medium to-brand-gold-dark bg-clip-text text-transparent font-cinzel text-[11px] xs:text-[13px] sm:text-[15px] md:text-[17px] uppercase tracking-[0.14em] xs:tracking-[0.2em] sm:tracking-[0.25em] font-extrabold text-center px-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)] pb-1">
             GUERREIROS DE OYA E OGUM
           </h2>
-          <motion.div 
-            animate={{ width: ['0%', '100%', '0%'] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            className="h-[1px] w-full max-w-[200px] bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
-          />
+
+          {settings.darkMode ? (
+            <div className="flex items-center gap-3 w-64 justify-center mt-1">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-brand-gold/60" />
+              <div className="w-1.5 h-1.5 rotate-45 bg-[#D4AF37] border border-[#ffea9f] shadow-[0_0_8px_#D4AF37] animate-pulse" />
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-brand-gold/60 to-transparent" />
+            </div>
+          ) : (
+            <motion.div 
+              animate={{ width: ['0%', '100%', '0%'] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+              className="h-[1px] w-full max-w-[200px] bg-gradient-to-r from-transparent via-brand-copper/40 to-transparent mt-1" 
+            />
+          )}
         </motion.div>
       </div>
 
@@ -897,7 +1302,65 @@ const TopHeader = React.memo(function TopHeader() {
   );
 });
 
-function SocialButtons() {
+function ScreenglowReveal() {
+  const [settings] = useStorage<AppSettings>('templo_settings', {
+    darkMode: false,
+    immersiveMode: true,
+  });
+
+  if (settings.immersiveMode === false) return null;
+
+  return (
+    <div 
+      className="absolute top-[280px] sm:top-[340px] left-0 right-0 h-[650px] pointer-events-none overflow-hidden z-0 select-none"
+      style={{
+        maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 80%, transparent)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 80%, transparent)',
+      }}
+    >
+      {/* Dynamic colorful spiritual mists mirroring Oya and Ogum colors */}
+      <div className="absolute inset-0 w-full h-full">
+        {/* Spot 1: Brand Copper (Oya's warmth) */}
+        <div 
+          className="absolute top-[5%] left-[10%] w-[250px] sm:w-[350px] h-[150px] sm:h-[220px] bg-brand-copper/16 blur-[60px] sm:blur-[80px] animate-morph-spot-1"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+        
+        {/* Spot 2: Brand Red (Oya's fire) */}
+        <div 
+          className="absolute top-[25%] right-[10%] w-[220px] sm:w-[320px] h-[140px] sm:h-[200px] bg-brand-red/12 blur-[55px] sm:blur-[75px] animate-morph-spot-2"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+
+        {/* Spot 3: Brand Gold (Divine Axé light) */}
+        <div 
+          className="absolute top-[45%] left-[20%] w-[200px] sm:w-[300px] h-[120px] sm:h-[185px] bg-brand-gold/14 blur-[50px] sm:blur-[70px] animate-morph-spot-3"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+
+        {/* Spot 4: Sky Blue (Ogum's path opener) */}
+        <div 
+          className="absolute top-[15%] left-[40%] w-[180px] sm:w-[260px] h-[130px] sm:h-[180px] bg-sky-500/10 blur-[50px] sm:blur-[70px] animate-morph-spot-4"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+
+        {/* Spot 5: Brand Orange (Oya's wind & energy) */}
+        <div 
+          className="absolute top-[60%] right-[25%] w-[230px] sm:w-[310px] h-[140px] sm:h-[195px] bg-brand-orange/11 blur-[60px] sm:blur-[85px] animate-morph-spot-1"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+
+        {/* Spot 6: Second Copper Spark */}
+        <div 
+          className="absolute top-[75%] left-[15%] w-[210px] sm:w-[290px] h-[110px] sm:h-[160px] bg-brand-copper/10 blur-[45px] sm:blur-[65px] animate-morph-spot-3"
+          style={{ transform: 'translate3d(0,0,0)' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SocialButtons({ className, isSticky = false }: { className?: string, isSticky?: boolean }) {
   const location = useLocation();
   const { setShowAssistantModal, isScrolled } = useAssistant();
   const [settings] = useStorage<AppSettings>('templo_settings', {
@@ -928,77 +1391,135 @@ function SocialButtons() {
   }, [location.pathname]);
 
   return (
-    <div key={location.pathname} className="w-full flex-row gap-4 px-8 -mt-6 mb-4 relative z-30 flex items-center justify-center pointer-events-none h-14">
-      {/* INSTAGRAM (Left) */}
-      <motion.a
-        initial={{ width: 0, opacity: 0 }}
-        animate={{ width: shouldAnimate ? 180 : 0, opacity: shouldAnimate ? 1 : 0 }}
-        transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
-        whileHover={{ scale: 1.05, y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        href="https://www.instagram.com/guerreirosdeoyaeogum/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative pointer-events-auto z-10 origin-center transition-all duration-300 backdrop-blur-md name-aura"
-        )}
-      >
-        {/* Double border inner contour */}
-        <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
-        <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
-        <motion.div 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: shouldAnimate ? 1 : 0 }}
-           transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px] z-10"
+    <div key={location.pathname} className={cn("w-full px-4 relative z-30 flex items-center justify-center h-14 transition-opacity duration-300 pointer-events-none", 
+      !isSticky ? "-mt-6 mb-4" : "",
+      !isSticky && isScrolled ? "opacity-0" : "opacity-100",
+      className
+    )}>
+      <div className={cn("relative flex items-center justify-center transition-all duration-300", 
+        (!isSticky && isScrolled) || (isSticky && !isScrolled) ? "pointer-events-none" : "pointer-events-auto"
+      )}>
+        {/* INSTAGRAM (Left) */}
+        <motion.a
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: shouldAnimate ? 108 : 0, opacity: shouldAnimate ? 1 : 0 }}
+          transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
+          whileHover={{ scale: 1.04, x: -2 }}
+          whileTap={{ scale: 0.98 }}
+          href="https://www.instagram.com/guerreirosdeoyaeogum/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "h-9 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-right transition-all duration-300 backdrop-blur-md name-aura"
+          )}
+          style={{ marginRight: '-12px' }}
         >
-          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
-            {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
-              <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
+          {/* Double border inner contour */}
+          <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
+          <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: shouldAnimate ? 1 : 0 }}
+             transition={{ duration: 0.3, delay: 0.5 }}
+             className="h-full flex items-center justify-start gap-1.5 pl-3 pr-4 relative w-full z-10"
+          >
+            <div className="w-5 h-5 bg-black/50 border border-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
+              {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
+                <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
+              )}
+            </div>
+            <div className="text-left relative z-10 whitespace-nowrap">
+              <h3 className="text-[9px] sm:text-[10px] font-black tracking-wider leading-none text-white drop-shadow-sm font-sans">Instagram</h3>
+            </div>
+          </motion.div>
+        </motion.a>
+        
+        {/* ASSISTANT (Center Bridge/Overlap) */}
+        <div className="relative z-20 flex items-center justify-center group">
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => setShowAssistantModal(true)}
+            className={cn(
+              "flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
+              "w-12 h-12 backdrop-blur-md bg-gradient-to-b from-[#1e1915] via-[#0d0a09] to-[#040404]",
+              "shadow-[0_12px_36px_rgba(0,0,0,0.6),0_0_25px_rgba(212,175,55,0.35)]",
+              "border border-brand-gold/60 hover:border-brand-gold/80"
             )}
-          </div>
-          <div className="text-left relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-xs font-black tracking-tight leading-none text-white drop-shadow-sm font-sans">Instagram</h3>
-          </div>
-        </motion.div>
-      </motion.a>
-      
-      {/* Separator / Gap visually addressed by parent flex */}
- 
-      {/* TIKTOK (Right) */}
-      <motion.a
-        initial={{ width: 0, opacity: 0 }}
-        animate={{ width: shouldAnimate ? 180 : 0, opacity: shouldAnimate ? 1 : 0 }}
-        transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
-        whileHover={{ scale: 1.05, y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "h-12 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative pointer-events-auto z-10 origin-center transition-all duration-300 backdrop-blur-md name-aura"
-        )}
-      >
-        {/* Double border inner contour */}
-        <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
-        <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
-        <motion.div 
-           initial={{ opacity: 0 }}
-           animate={{ opacity: shouldAnimate ? 1 : 0 }}
-           transition={{ duration: 0.3, delay: 0.5 }}
-           className="h-full flex items-center justify-center gap-3 px-4 sm:px-6 relative min-w-[140px] sm:min-w-[170px] z-10"
+          >
+            {/* Inner Concentric Double Border to match the design language of the interface */}
+            <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 pointer-events-none z-10 transition-colors duration-300 group-hover:border-brand-gold/50" />
+            
+            {/* Shimmer overlay sweep on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-10 pointer-events-none" />
+            
+            {/* Ambient gold radial glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/25 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Soft pulsing halo aura */}
+            <motion.div 
+              animate={{ 
+                boxShadow: [
+                  '0 0 0px 0px rgba(212,175,55,0)', 
+                  '0 0 16px 4px rgba(212,175,55,0.45)', 
+                  '0 0 0px 0px rgba(212,175,55,0)'
+                ],
+                scale: [0.96, 1.04, 0.96]
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-2 rounded-full z-0 opacity-80"
+            />
+            
+            {/* Playful micro-animating Bot icon */}
+            <motion.div 
+              className="relative z-20 text-brand-gold flex items-center justify-center pointer-events-none"
+              whileHover={{ 
+                scale: 1.15,
+                rotate: [0, -12, 12, -6, 6, 0]
+              }}
+              transition={{ duration: 0.65, ease: "easeInOut" }}
+            >
+              <Bot className="w-5.5 h-5.5 stroke-[2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
+            </motion.div>
+          </motion.button>
+        </div>
+   
+        {/* TIKTOK (Right) */}
+        <motion.a
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: shouldAnimate ? 108 : 0, opacity: shouldAnimate ? 1 : 0 }}
+          transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
+          whileHover={{ scale: 1.04, x: 2 }}
+          whileTap={{ scale: 0.98 }}
+          href="https://www.tiktok.com/@guerreirosdeoyaeogum?lang=pt-BR"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "h-9 rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-left transition-all duration-300 backdrop-blur-md name-aura"
+          )}
+          style={{ marginLeft: '-12px' }}
         >
-          <div className="text-right relative z-10 mx-auto whitespace-nowrap">
-            <h3 className="text-xs sm:text-xs font-black tracking-tight leading-none text-white drop-shadow-sm font-sans">TikTok</h3>
-          </div>
-          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-black/50 border border-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
-            {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
-              <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
-            )}
-          </div>
-        </motion.div>
-      </motion.a>
+          {/* Double border inner contour */}
+          <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 hover:border-brand-gold/50 pointer-events-none z-0 transition-colors duration-300" />
+          <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-full" />
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: shouldAnimate ? 1 : 0 }}
+             transition={{ duration: 0.3, delay: 0.5 }}
+             className="h-full flex items-center justify-end gap-1.5 pr-3 pl-4 relative w-full z-10"
+          >
+            <div className="text-right relative z-10 whitespace-nowrap">
+              <h3 className="text-[9px] sm:text-[10px] font-black tracking-wider leading-none text-white drop-shadow-sm font-sans">TikTok</h3>
+            </div>
+            <div className="w-5 h-5 bg-black/50 border border-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md">
+              {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
+                <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
+              )}
+            </div>
+          </motion.div>
+        </motion.a>
 
+      </div>
     </div>
   );
 }
@@ -1115,8 +1636,8 @@ function NotificationCenter({
   const unreadNotifications = filteredNotifications.filter((n: NotificationItem) => !n.read);
   const readNotifications = filteredNotifications.filter((n: NotificationItem) => n.read);
   
-  // Badge count: Só mostra se houver não-lidas e o painel estiver fechado
-  const showBadge = !showNotifications && notifications.some(n => !n.read);
+  // Badge count: Mostra se houver não-lidas
+  const showBadge = notifications.some(n => !n.read);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const FILTERS = [
@@ -1132,23 +1653,30 @@ function NotificationCenter({
     <>
       <div className="absolute top-[36px] right-4 sm:right-6 z-[60] pointer-events-auto">
         <motion.div 
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowNotifications(true)}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all mystical-aura border",
+            "w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer backdrop-blur-md transition-all border relative group",
             darkMode 
-              ? "bg-black/40 border-white/10" 
-              : "bg-white/10 hover:bg-white/20 border-white/20"
+              ? "bg-black/40 border-brand-gold/50 hover:border-brand-gold/70 text-white" 
+              : "bg-black/40 border-brand-gold/50 hover:border-brand-gold/70 text-white"
           )}
         >
-          <div className="relative">
-            <Bell className={cn("w-5 h-5", darkMode ? "text-gray-300" : "text-white")} strokeWidth={2.5} />
+          <div className="absolute inset-[3px] rounded-full border border-brand-gold/30 pointer-events-none z-0 transition-colors duration-300 group-hover:border-brand-gold/50" />
+          <div className="relative z-10">
+            <motion.div
+              animate={showBadge ? { rotate: [0, -15, 15, -15, 15, 0] } : { rotate: 0 }}
+              transition={showBadge ? { duration: 0.5, repeat: Infinity, repeatDelay: 2.5 } : {}}
+              className="origin-top"
+            >
+              <Bell className="w-5 h-5 text-white" strokeWidth={2.5} />
+            </motion.div>
             {showBadge && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-5 w-5 bg-brand-red border-2 border-white items-center justify-center">
-                  <span className="text-[9px] font-black text-white leading-none">
+              <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-40"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-brand-red items-center justify-center shadow-lg border border-[#1A1A1A]">
+                  <span className="text-[8px] font-black text-white leading-none">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 </span>
@@ -1570,6 +2098,18 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
   const [progress, setProgress] = React.useState(100);
   const duration = 6000;
   const startTime = React.useRef(Date.now());
+  const [settings] = useStorage<AppSettings>('templo_settings', {
+    darkMode: false,
+    eventCategories: [],
+    eventNames: [],
+    pushNotifications: true,
+    immersiveMode: true,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
+  });
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -1591,32 +2131,129 @@ function UndoToast({ action, onUndo, onFinish }: { action: UndoAction, onUndo: (
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
-      className="fixed bottom-28 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-brand-navy text-white rounded-3xl overflow-hidden shadow-2xl z-[150] p-4 flex items-center justify-between gap-4"
+      className={cn(
+        "fixed bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-sm rounded-[24px] overflow-hidden shadow-2xl z-[150] p-4 flex items-center justify-between gap-3 border backdrop-blur-md pointer-events-auto",
+        settings.darkMode
+          ? "bg-[#0b0f19]/90 border-white/10 text-white shadow-black/80"
+          : "bg-white/95 border-gray-100 text-slate-800 shadow-slate-200/50"
+      )}
     >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-          <Trash2 className="w-5 h-5 text-brand-red" />
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={cn(
+          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
+          settings.darkMode ? "bg-rose-500/10 text-rose-400" : "bg-rose-50 text-rose-600"
+        )}>
+          <Trash2 className="w-5 h-5" />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs font-bold leading-tight truncate">Item "{action.label}" excluído</p>
-          <p className="text-[10px] opacity-60 font-medium italic">Esta ação não pode ser desfeita após o tempo esgotar</p>
+        <div className="flex-1 min-w-0">
+          <p className={cn(
+            "text-xs sm:text-[13px] font-bold leading-tight truncate",
+            settings.darkMode ? "text-white" : "text-slate-900"
+          )}>
+            Item "{action.label}" excluído
+          </p>
+          <p className={cn(
+            "text-[10px] mt-0.5 leading-none font-medium truncate",
+            settings.darkMode ? "text-slate-400" : "text-slate-500"
+          )}>
+            Esta ação não pode ser desfeita
+          </p>
         </div>
       </div>
       
       <button
         onClick={onUndo}
-        className="px-4 py-2 bg-brand-copper rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95 transition-all shadow-lg shadow-brand-copper/30"
+        className={cn(
+          "px-4 py-2 bg-brand-copper hover:bg-brand-copper/90 rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95 transition-all shadow-lg shadow-brand-copper/30 shrink-0"
+        )}
       >
         Desfazer
       </button>
 
       {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+      <div className={cn(
+        "absolute bottom-0 left-0 w-full h-[3px]",
+        settings.darkMode ? "bg-white/5" : "bg-gray-100"
+      )}>
         <motion.div 
-          className="h-full bg-brand-copper"
+          className="h-full bg-gradient-to-r from-brand-orange via-brand-copper to-brand-gold"
           style={{ width: `${progress}%` }}
         />
       </div>
+    </motion.div>
+  );
+}
+
+function TrashSuccessToast({ label, onClose }: { label: string, onClose: () => void }) {
+  const [settings] = useStorage<AppSettings>('templo_settings', {
+    darkMode: false,
+    eventCategories: [],
+    eventNames: [],
+    pushNotifications: true,
+    immersiveMode: true,
+    caixaLogo: '',
+    nubankLogo: '',
+    tiktokLogo: '',
+    instagramLogo: '',
+    orixaPhotos: {}
+  });
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 100, opacity: 0 }}
+      className={cn(
+        "fixed bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-sm rounded-[24px] overflow-hidden shadow-2xl z-[150] p-4 flex items-center justify-between gap-3 border backdrop-blur-md pointer-events-auto",
+        settings.darkMode
+          ? "bg-[#0b0f19]/90 border-white/10 text-white shadow-black/80"
+          : "bg-white/95 border-gray-100 text-slate-800 shadow-slate-200/50"
+      )}
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={cn(
+          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
+          settings.darkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-600"
+        )}>
+          <CheckCircle2 className="w-5 h-5 bg-clip-text" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={cn(
+            "text-xs sm:text-[13px] font-bold leading-tight truncate",
+            settings.darkMode ? "text-white" : "text-slate-900"
+          )}>
+            Movido para a lixeira
+          </p>
+          <p className={cn(
+            "text-[10px] mt-0.5 leading-none font-medium truncate",
+            settings.darkMode ? "text-slate-400" : "text-slate-500"
+          )}>
+            Item "{label}" foi apagado com sucesso
+          </p>
+        </div>
+      </div>
+      
+      <button
+        onClick={onClose}
+        className={cn(
+          "w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors shrink-0"
+        )}
+      >
+        <X className="w-4 h-4" />
+      </button>
+
+      {/* Subtle border bottom light accent */}
+      <div className={cn(
+        "absolute bottom-0 left-0 h-[3px] bg-emerald-500",
+        "w-full"
+      )} />
     </motion.div>
   );
 }
@@ -1719,7 +2356,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                 className={cn(
-                  "w-48 h-48 sm:w-56 sm:h-56 rounded-full relative frame-3d flex items-center justify-center overflow-hidden shadow-2xl",
+                  "w-48 h-48 sm:w-60 sm:h-60 rounded-full relative frame-3d flex items-center justify-center overflow-hidden shadow-2xl",
                   settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
                 )}
               >
@@ -1747,7 +2384,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               transition={{ delay: 0.5, duration: 0.8 }}
               className="mt-14 text-center relative z-20"
             >
-              <h1 className="bg-gradient-to-r from-yellow-100 via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[15px] sm:text-[17px] md:text-[19px] tracking-[0.18em] font-bold uppercase drop-shadow-sm flex items-center justify-center gap-2 pb-1 text-center px-4">
+              <h1 className="bg-gradient-to-r from-yellow-100 via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[12px] sm:text-[16px] md:text-[19px] tracking-[0.12em] sm:tracking-[0.18em] font-bold uppercase drop-shadow-sm flex items-center justify-center gap-2 pb-1 text-center px-4">
                 GUERREIROS DE OYA E OGUM
               </h1>
               
@@ -1888,7 +2525,7 @@ function AppContent() {
       clearTimeout(timer);
       clearTimeout(timer2);
     };
-  }, [location.pathname]);
+  }, []);
 
   useEffect(() => {
     const mainEl = mainScrollRef.current;
@@ -1896,22 +2533,29 @@ function AppContent() {
 
     let lastScrollTop = -1;
     let lastIsScrolled = false;
+    let ticking = false;
 
     const handleScroll = () => {
       const scrollTop = mainEl.scrollTop;
-      if (scrollTop !== lastScrollTop) {
-        lastScrollTop = scrollTop;
-        
-        // Zero-latency instant DOM updating!
-        if (scrollingCandlesRef.current) {
-          scrollingCandlesRef.current.style.transform = `translate3d(0, ${-scrollTop}px, 0)`;
-        }
+      
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (scrollTop !== lastScrollTop) {
+            lastScrollTop = scrollTop;
+            
+            if (scrollingCandlesRef.current) {
+              scrollingCandlesRef.current.style.transform = `translate3d(0, ${-scrollTop}px, 0)`;
+            }
 
-        const nextIsScrolled = scrollTop > 100;
-        if (nextIsScrolled !== lastIsScrolled) {
-          lastIsScrolled = nextIsScrolled;
-          setIsScrolled(nextIsScrolled);
-        }
+            const nextIsScrolled = scrollTop > 100;
+            if (nextIsScrolled !== lastIsScrolled) {
+              lastIsScrolled = nextIsScrolled;
+              setIsScrolled(nextIsScrolled);
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -1964,15 +2608,46 @@ function AppContent() {
     gender: 'masculino'
   });
 
-  // Apply the Primary Color dynamically
+  // Apply the Primary Color dynamically with full-spectrum metallic depth (prevents flat color collapse)
   React.useEffect(() => {
     if (settings.primaryColor) {
-      document.documentElement.style.setProperty('--brand-copper', settings.primaryColor);
-      // Also derive a lighter version if needed, or just let it use the same
-      document.documentElement.style.setProperty('--brand-gold', settings.primaryColor);
+      if (settings.primaryColor === '#B8860B') { // Luxury Gold Theme
+        document.documentElement.style.setProperty('--brand-gold', '#D4AF37'); // Classic Rich Satin Gold
+        document.documentElement.style.setProperty('--brand-gold-light', '#FFF2CC'); // Champagne reflection
+        document.documentElement.style.setProperty('--brand-gold-medium', '#E0B53F'); // Fluid bright gold
+        document.documentElement.style.setProperty('--brand-gold-dark', '#8C6211'); // Burnished copper-gold
+        document.documentElement.style.setProperty('--brand-copper', '#CD7F32'); // Warm copper
+      } else if (settings.primaryColor === '#8B4513') { // Raw Bronze / Clay Theme
+        document.documentElement.style.setProperty('--brand-gold', '#CD7F32');
+        document.documentElement.style.setProperty('--brand-gold-light', '#FFD2A1');
+        document.documentElement.style.setProperty('--brand-gold-medium', '#D48037');
+        document.documentElement.style.setProperty('--brand-gold-dark', '#5C2D09');
+        document.documentElement.style.setProperty('--brand-copper', '#8B4513');
+      } else if (settings.primaryColor === '#1A1A1A') { // Obsidian / Silver Theme
+        document.documentElement.style.setProperty('--brand-gold', '#E2E8F0');
+        document.documentElement.style.setProperty('--brand-gold-light', '#FFFFFF');
+        document.documentElement.style.setProperty('--brand-gold-medium', '#CBD5E1');
+        document.documentElement.style.setProperty('--brand-gold-dark', '#475569');
+        document.documentElement.style.setProperty('--brand-copper', '#1A1A1A');
+      } else if (settings.primaryColor === '#CC0000') { // Sacred Coral / Red Theme
+        document.documentElement.style.setProperty('--brand-gold', '#FF5555');
+        document.documentElement.style.setProperty('--brand-gold-light', '#FFC0C0');
+        document.documentElement.style.setProperty('--brand-gold-medium', '#DD2222');
+        document.documentElement.style.setProperty('--brand-gold-dark', '#660000');
+        document.documentElement.style.setProperty('--brand-copper', '#990000');
+      } else {
+        document.documentElement.style.setProperty('--brand-copper', settings.primaryColor);
+        document.documentElement.style.setProperty('--brand-gold', settings.primaryColor);
+        document.documentElement.style.setProperty('--brand-gold-light', '#FFF2CC');
+        document.documentElement.style.setProperty('--brand-gold-medium', '#E0B53F');
+        document.documentElement.style.setProperty('--brand-gold-dark', '#8C6211');
+      }
     } else {
       document.documentElement.style.removeProperty('--brand-copper');
       document.documentElement.style.removeProperty('--brand-gold');
+      document.documentElement.style.removeProperty('--brand-gold-light');
+      document.documentElement.style.removeProperty('--brand-gold-medium');
+      document.documentElement.style.removeProperty('--brand-gold-dark');
     }
   }, [settings.primaryColor]);
 
@@ -1984,6 +2659,9 @@ function AppContent() {
     { id: '1', color: 'Branca', quantity: 10, type: '7 Dias' },
     { id: '2', color: 'Vermelha', quantity: 5, type: 'Palito' },
     { id: '3', color: 'Preta', quantity: 12, type: 'Palito' }
+  ]);
+  const [candlePlanning, setCandlePlanning] = useStorage<CandlePlan[]>('templo_candle_planning', [
+    { id: '1', color: 'Branca', type: '7 Dias', quantityPerSession: 3 }
   ]);
   const [processedCandleEvents, setProcessedCandleEvents] = useStorage<string[]>('templo_processed_candle_events', []);
   const [processedOgaEvents, setProcessedOgaEvents] = useStorage<string[]>('templo_processed_oga_events', []);
@@ -2027,6 +2705,7 @@ function AppContent() {
   }, [user]); // Run when user logs in
 
   const [activeUndo, setActiveUndo] = React.useState<UndoAction | null>(null);
+  const [trashSuccessToast, setTrashSuccessToast] = React.useState<{ id: string, label: string } | null>(null);
   const [isAppReady, setIsAppReady] = React.useState(false);
   const [hasRemovedPreloader, setHasRemovedPreloader] = React.useState(false);
 
@@ -2180,6 +2859,8 @@ function AppContent() {
     if (activeUndo) {
       finalizeDelete();
     }
+    // Clear any previous success toast so the new undo toast takes full focus
+    setTrashSuccessToast(null);
     setActiveUndo(action);
   };
 
@@ -2198,6 +2879,12 @@ function AppContent() {
       read: false
     };
     setNotifications(prev => [newNotif, ...prev].slice(0, 50)); // Keep last 50
+    
+    // Display beautiful success modal/toast indicating item is moved to trash
+    setTrashSuccessToast({
+      id: activeUndo.id,
+      label: activeUndo.label
+    });
     
     setActiveUndo(null);
   };
@@ -2232,8 +2919,12 @@ function AppContent() {
 
     if (candleEventsToProcess.length > 0) {
       setCandles(prev => prev.map(c => {
-        if (c.color.toLowerCase() === 'branca' && c.type === '7 Dias') {
-          return { ...c, quantity: Math.max(0, c.quantity - (candleEventsToProcess.length * 3)) };
+        const planned = (candlePlanning || []).find(p => 
+          p.color.toLowerCase() === c.color.toLowerCase() && 
+          p.type.toLowerCase() === c.type.toLowerCase()
+        );
+        if (planned) {
+          return { ...c, quantity: Math.max(0, c.quantity - (candleEventsToProcess.length * planned.quantityPerSession)) };
         }
         return c;
       }));
@@ -2438,6 +3129,8 @@ function AppContent() {
     }
   }, [settings.darkMode]);
 
+  const showAssistant = !authLoading && (user || isGuest) && isProfileComplete && isAppReady && !isRecovering;
+
   return (
     <UndoContext.Provider value={{ queueDelete }}>
         <AssistantWrapper />
@@ -2451,10 +3144,12 @@ function AppContent() {
         "min-h-[100dvh] bg-[#020202] flex flex-col items-center justify-center p-0 sm:p-4 font-sans relative",
         settings.darkMode && "bg-[#020202]"
       )}>
-        {/* Diffused gold lights */}
-        <div className="fixed w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] bg-brand-gold/10 rounded-full blur-[120px] top-[10%] left-[-20%] pointer-events-none z-0" />
-        <div className="fixed w-[50vw] h-[50vw] max-w-[500px] max-h-[500px] bg-brand-gold/10 rounded-full blur-[100px] bottom-[20%] right-[-10%] pointer-events-none z-0" />
-        <div className="fixed w-[70vw] h-[70vw] max-w-[700px] max-h-[700px] bg-brand-gold/5 rounded-full blur-[150px] top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
+        {/* Irregular, dispersed, and beautifully morphing/moving spiritual light spots across the entire page extent */}
+        <div className="fixed w-[75vw] h-[55vw] max-w-[650px] max-h-[550px] bg-brand-gold/10 top-[5%] left-[-15%] pointer-events-none z-0 blur-[110px] sm:blur-[140px] animate-morph-spot-1" />
+        <div className="fixed w-[70vw] h-[60vw] max-w-[600px] max-h-[500px] bg-sky-500/8 bottom-[10%] right-[-15%] pointer-events-none z-0 blur-[130px] sm:blur-[150px] animate-morph-spot-2" />
+        <div className="fixed w-[80vw] h-[60vw] max-w-[700px] max-h-[600px] bg-brand-copper/8 top-[40%] left-[20%] -translate-x-1/2 pointer-events-none z-0 blur-[120px] sm:blur-[160px] animate-morph-spot-3" />
+        <div className="fixed w-[60vw] h-[60vw] max-w-[500px] max-h-[500px] bg-brand-orange/6 top-[20%] right-[10%] pointer-events-none z-0 blur-[140px] sm:blur-[160px] animate-morph-spot-4" />
+        <div className="fixed w-[50vw] h-[50vw] max-w-[450px] max-h-[450px] bg-brand-red/5 bottom-[30%] left-[10%] pointer-events-none z-0 blur-[100px] sm:blur-[130px] animate-morph-spot-1" />
 
         {/* Outer relative container that holds the side candles without clipping them */}
         <div className="relative w-full h-[100dvh] sm:h-[812px] max-w-lg flex flex-col pointer-events-none justify-center z-10">
@@ -2544,7 +3239,7 @@ function AppContent() {
                     "absolute inset-0 transition-opacity duration-300 pointer-events-none",
                     isScrolled ? "opacity-100" : "opacity-0"
                   )}>
-                    <div className="absolute inset-x-0 top-0 h-[100px] overflow-hidden backdrop-blur-md">
+                    <div className="absolute inset-x-0 top-0 h-[100px] overflow-hidden bg-black/40">
                       {/* Inner simulator container reproduces TopHeader container styling and proportions */}
                       <div 
                         className={cn(
@@ -2572,94 +3267,19 @@ function AppContent() {
                   </div>
 
                   {/* Bandeirinhas de Terreiro (Umbanda/Festa) */}
-                  <div className="absolute top-0 left-0 w-full h-[60px] z-[61] pointer-events-none opacity-90">
-                    <svg width="100%" height="24" viewBox="0 0 100 24" preserveAspectRatio="none" className="absolute top-0 left-0">
-                       <path d="M0,0 Q25,18 50,0 Q75,18 100,0" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
-                    </svg>
-                    <div className="absolute top-0 left-0 w-full h-full text-white">
-                      {Array.from({ length: 26 }).map((_, i) => {
-                        const count = 26;
-                        const tGlobal = (i + 0.5) / count; // 0 to 1
-                        
-                        let tLocal;
-                        if (tGlobal < 0.5) {
-                          tLocal = tGlobal * 2;
-                        } else {
-                          tLocal = (tGlobal - 0.5) * 2;
-                        }
-                        
-                        // Arco de Bezier Quadratica com max y para casar com SVG
-                        // Como o Q do SVG vai até 18, o y máximo (t=0.5) é 18 * 0.5 * 0.5 * 2 = 9 na tela
-                        const yOffset = 18 * 2 * tLocal * (1 - tLocal);
-                        
-                        // Derivada direcional aproximada para a rotação:
-                        const slopeApproximation = (1 - 2 * tLocal) * 12;
-                        
-                        // Rigorosamente alternado (1 vermelha, 1 branca sucessivamente):
-                        const isRed = i % 2 === 0;
-
-                        const clipPath = 'polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%)';
-                        
-                        const colorClass = isRed ? "bg-red-800/70" : "bg-white/70";
-
-                        return (
-                          <div 
-                            key={i} 
-                            className="absolute drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" 
-                            style={{ 
-                              left: `calc(${tGlobal * 100}% - 6px)`,
-                              top: `${yOffset}px`,
-                              width: '12px',
-                              height: '16px',
-                              transform: `rotate(${-slopeApproximation}deg)`,
-                              transformOrigin: 'top center',
-                            }}
-                          >
-                            <div 
-                              className={`w-full h-full animate-sway ${colorClass}`}
-                              style={{
-                                clipPath: clipPath,
-                                transformOrigin: 'top center',
-                                animationDelay: `${i * 0.15}s`
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <Bandeirinhas />
 
                   {/* Top Floating Buttons inside the Header Bar */}
                   <GlobalSearch />
-                  <div className="absolute top-[32px] left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center gap-1.5 shrink-0 pointer-events-none">
-                    <div className="pointer-events-auto">
-                      <AssistantButton onClick={() => setShowAssistantModal(true)} />
-                    </div>
-                    {fullName && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="relative p-[1.5px] rounded-full flex items-center justify-center pointer-events-auto shrink-0 overflow-hidden shadow-[0_6px_16px_rgba(0,0,0,0.6)] group hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 cursor-pointer"
-                      >
-                        {/* Moving Gradient Border Aura */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-brand-gold via-brand-copper to-brand-gold bg-[length:200%_auto] animate-[shimmerBackground_3s_linear_infinite]" />
-                        
-                        {/* Inner Container */}
-                        <div className="relative bg-neutral-900/90 backdrop-blur-md px-3 sm:px-4 py-[6px] sm:py-[7px] rounded-full flex items-center gap-2.5 border border-black/40">
-                          {isGuest ? (
-                            <Ghost className="w-3 h-3 text-brand-gold drop-shadow-md relative top-[0.5px]" />
-                          ) : settings.profilePhoto ? (
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden border border-brand-gold/50 shadow-[0_0_8px_rgba(212,175,55,0.4)] leading-none shrink-0 relative top-[0.5px]">
-                              <img src={settings.profilePhoto} alt="User" className="w-full h-full object-cover" />
-                            </div>
-                          ) : null}
-                          <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-white via-brand-gold to-white bg-[length:200%_auto] animate-[shimmerBackground_4s_linear_infinite] bg-clip-text text-transparent pt-[1.5px] leading-none drop-shadow-sm">
-                            {fullName}
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
+
+                  {/* Sticky Social Buttons */}
+                  <div className={cn(
+                    "absolute top-[28px] left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300",
+                    isScrolled ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+                  )}>
+                    <SocialButtons isSticky={true} />
                   </div>
+
                   <NotificationCenter 
                     darkMode={settings.darkMode} 
                     notifications={notifications} 
@@ -2677,6 +3297,13 @@ function AppContent() {
                       onUndo={handleUndo} 
                       onFinish={finalizeDelete} 
                       
+                    />
+                  )}
+                  {trashSuccessToast && (
+                    <TrashSuccessToast
+                      key={trashSuccessToast.id}
+                      label={trashSuccessToast.label}
+                      onClose={() => setTrashSuccessToast(null)}
                     />
                   )}
                 </AnimatePresence>
@@ -2931,6 +3558,7 @@ function AppContent() {
                   >
                     <TopHeader />
                     <SocialButtons />
+                    <ScreenglowReveal />
                     <div 
                       id="app-content-wrapper"
                       className={cn(
