@@ -47,7 +47,7 @@ export interface Note {
   images?: string[]; // Array of base64 image strings
   attachments?: {
     name: string;
-    type: 'image' | 'pdf';
+    type: 'image' | 'pdf' | 'audio';
     data: string; // base64
   }[];
   links?: string[];
@@ -184,7 +184,7 @@ export interface StudyBook {
   notes?: string;
   attachments?: {
     name: string;
-    type: 'image' | 'pdf';
+    type: 'image' | 'pdf' | 'audio';
     data: string; // base64
   }[];
   links?: string[];
@@ -225,7 +225,7 @@ export interface StudyContent {
   content: string;
   attachments?: {
     name: string;
-    type: 'image' | 'pdf';
+    type: 'image' | 'pdf' | 'audio';
     data: string; // base64
   }[];
   links?: string[];

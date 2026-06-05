@@ -18,8 +18,9 @@ export const searchBooks = async (query: string): Promise<GoogleBook[]> => {
   if (!query) return [];
 
   try {
+    const keyParam = API_KEY ? `&key=${API_KEY}` : '';
     const response = await fetch(
-      `${BASE_URL}?q=${encodeURIComponent(query)}&key=${API_KEY}`
+      `${BASE_URL}?q=${encodeURIComponent(query)}${keyParam}`
     );
 
     if (!response.ok) {

@@ -1402,7 +1402,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
         {/* INSTAGRAM (Left) */}
         <motion.a
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: shouldAnimate ? (!isSticky ? 134 : 100) : 0, opacity: shouldAnimate ? 1 : 0 }}
+          animate={{ width: shouldAnimate ? (!isSticky ? 130 : 108) : 0, opacity: shouldAnimate ? 1 : 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
           whileHover={{ scale: 1.04, x: -2 }}
           whileTap={{ scale: 0.98 }}
@@ -1411,7 +1411,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
           rel="noopener noreferrer"
           className={cn(
             "rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-right transition-all duration-300 backdrop-blur-md name-aura",
-            !isSticky ? "h-[46px]" : "h-9"
+            !isSticky ? "h-[40px]" : "h-[34px]"
           )}
           style={{ marginRight: '-12px' }}
         >
@@ -1422,15 +1422,15 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
              initial={{ opacity: 0 }}
              animate={{ opacity: shouldAnimate ? 1 : 0 }}
              transition={{ duration: 0.3, delay: 0.5 }}
-             className={cn("h-full flex items-center justify-start relative w-full z-10", !isSticky ? "gap-2.5 pl-3.5 pr-4" : "gap-1.5 pl-3 pr-4")}
+             className={cn("h-full flex items-center justify-start relative w-full z-10", !isSticky ? "gap-1.5 pl-3 pr-3.5" : "gap-1 pl-2.5 pr-3")}
           >
-            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[26px] h-[26px] rounded-[10px]" : "w-[20px] h-[20px] rounded-lg")}>
+            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[22px] h-[22px] rounded-lg" : "w-[18px] h-[18px] rounded-md")}>
               {(settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO) && (
                 <img src={settings.instagramLogo || DEFAULT_INSTAGRAM_LOGO} alt="Instagram Logo" className="w-full h-full object-cover" />
               )}
             </div>
             <div className="text-left relative z-10 whitespace-nowrap">
-              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[12px] sm:text-[13px]" : "text-[9px] sm:text-[10px]")}>Instagram</h3>
+              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[11px] sm:text-[12px]" : "text-[9px] sm:text-[10px]")}>Instagram</h3>
             </div>
           </motion.div>
         </motion.a>
@@ -1443,7 +1443,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
             onClick={() => setShowAssistantModal(true)}
             className={cn(
               "flex items-center justify-center p-0 rounded-full transition-all duration-300 relative overflow-hidden",
-              !isSticky ? "w-[56px] h-[56px]" : "w-[44px] h-[44px]",
+              !isSticky ? "w-[50px] h-[50px]" : "w-[42px] h-[42px]",
               "backdrop-blur-md bg-gradient-to-b from-[#1e1915] via-[#0d0a09] to-[#040404]",
               "shadow-[0_12px_36px_rgba(0,0,0,0.6),0_0_25px_rgba(212,175,55,0.35)]",
               "border border-brand-gold/60 hover:border-brand-gold/80"
@@ -1481,7 +1481,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
               }}
               transition={{ duration: 0.65, ease: "easeInOut" }}
             >
-              <Bot className={cn("stroke-[2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]", !isSticky ? "w-[26px] h-[26px]" : "w-5 h-5")} />
+              <Bot className={cn("stroke-[2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]", !isSticky ? "w-6 h-6" : "w-5 h-5")} />
             </motion.div>
           </motion.button>
         </div>
@@ -1489,7 +1489,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
         {/* TIKTOK (Right) */}
         <motion.a
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: shouldAnimate ? (!isSticky ? 122 : 94) : 0, opacity: shouldAnimate ? 1 : 0 }}
+          animate={{ width: shouldAnimate ? (!isSticky ? 116 : 94) : 0, opacity: shouldAnimate ? 1 : 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: "easeInOut" }}
           whileHover={{ scale: 1.04, x: 2 }}
           whileTap={{ scale: 0.98 }}
@@ -1498,7 +1498,7 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
           rel="noopener noreferrer"
           className={cn(
             "rounded-full bg-black/40 text-white border border-brand-gold/50 hover:border-brand-gold/70 shadow-lg justify-start flex items-center relative z-10 origin-left transition-all duration-300 backdrop-blur-md name-aura",
-            !isSticky ? "h-[46px]" : "h-9"
+            !isSticky ? "h-[40px]" : "h-[34px]"
           )}
           style={{ marginLeft: '-12px' }}
         >
@@ -1509,12 +1509,12 @@ function SocialButtons({ className, isSticky = false }: { className?: string, is
              initial={{ opacity: 0 }}
              animate={{ opacity: shouldAnimate ? 1 : 0 }}
              transition={{ duration: 0.3, delay: 0.5 }}
-             className={cn("h-full flex items-center justify-end relative w-full z-10", !isSticky ? "gap-2.5 pl-4 pr-4" : "gap-1.5 pl-4 pr-3")}
+             className={cn("h-full flex items-center justify-end relative w-full z-10", !isSticky ? "gap-1.5 pl-3.5 pr-3" : "gap-1 pl-3 pr-2.5")}
           >
             <div className="text-right relative z-10 whitespace-nowrap">
-              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[12px] sm:text-[13px]" : "text-[9px] sm:text-[10px]")}>TikTok</h3>
+              <h3 className={cn("font-black tracking-wider leading-none text-white drop-shadow-sm font-sans pt-[1px]", !isSticky ? "text-[11px] sm:text-[12px]" : "text-[9px] sm:text-[10px]")}>TikTok</h3>
             </div>
-            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[26px] h-[26px] rounded-[10px]" : "w-[20px] h-[20px] rounded-[8.5px]")}>
+            <div className={cn("bg-black/50 border border-white/10 flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform relative z-10 shrink-0 overflow-hidden shadow-md", !isSticky ? "w-[22px] h-[22px] rounded-lg" : "w-[18px] h-[18px] rounded-md")}>
               {(settings.tiktokLogo || DEFAULT_TIKTOK_LOGO) && (
                 <img src={settings.tiktokLogo || DEFAULT_TIKTOK_LOGO} alt="TikTok Logo" className="w-full h-full object-cover" />
               )}
@@ -2315,8 +2315,8 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
           className={cn(
             "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden h-[100dvh] cursor-pointer",
             settings.darkMode 
-              ? "bg-gradient-to-b from-[#0B1221] via-[#060A14] to-[#020202]" 
-              : "bg-gradient-to-br from-brand-navy via-[#001c38] to-[#000a14]"
+              ? "bg-gradient-to-b from-[#1c1308] via-[#050402] to-black" 
+              : "bg-gradient-to-br from-[#1c1308] via-black to-[#050402]"
           )}
         >
           {/* Global Animated Background */}
@@ -2359,8 +2359,8 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                 className={cn(
-                  "w-48 h-48 sm:w-60 sm:h-60 rounded-full relative frame-3d flex items-center justify-center overflow-hidden shadow-2xl",
-                  settings.darkMode ? "bg-gray-900" : "bg-gradient-to-tr from-brand-navy to-[#001c38]"
+                  "w-48 h-48 sm:w-60 sm:h-60 rounded-full relative frame-3d flex items-center justify-center overflow-hidden shadow-[0_0_80px_-20px_rgba(212,175,55,0.4)] ring-1 ring-brand-gold/30",
+                  settings.darkMode ? "bg-black" : "bg-black"
                 )}
               >
                 {/* Border / Gold Glow */}
@@ -2369,7 +2369,7 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
                 {/* Glossy Overlay */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 via-transparent to-transparent z-10 pointer-events-none mix-blend-overlay" />
 
-                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-[#0a0f18]">
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative bg-black">
                   {logo && (
                     <LogoMedia 
                       src={logo} 
@@ -2387,26 +2387,26 @@ function InitialLoader({ show, logo, onSkip }: { show: boolean, logo?: string | 
               transition={{ delay: 0.5, duration: 0.8 }}
               className="mt-14 text-center relative z-20"
             >
-              <h1 className="bg-gradient-to-r from-yellow-100 via-brand-gold to-brand-copper bg-clip-text text-transparent font-serif text-[12px] sm:text-[16px] md:text-[19px] tracking-[0.12em] sm:tracking-[0.18em] font-bold uppercase drop-shadow-sm flex items-center justify-center gap-2 pb-1 text-center px-4">
+              <h1 className="bg-gradient-to-r from-[#F9F295] via-[#E0AA3E] to-[#B8860B] bg-clip-text text-transparent font-serif text-[15px] sm:text-[20px] md:text-[24px] tracking-[0.2em] font-black uppercase flex items-center justify-center gap-2 pb-1 text-center px-4 drop-shadow-lg">
                 GUERREIROS DE OYA E OGUM
               </h1>
               
               {/* Progress Bar Container */}
-              <div className="w-64 h-[2px] bg-white/10 mx-auto mt-10 rounded-full overflow-hidden relative">
+              <div className="w-72 h-[3px] bg-brand-gold/10 mx-auto mt-12 rounded-full overflow-hidden relative shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
                 {/* Shimmer effect background */}
                 <motion.div 
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-gold/20 to-transparent -translate-x-full"
                   animate={{ translateX: ['-100%', '100%'] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
                 
                 {/* Active Progress */}
                 <div 
-                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-brand-gold to-[#FFF8D6] transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(212,175,55,0.5)] relative"
+                  className="absolute left-0 top-0 h-full bg-gradient-to-r from-brand-copper via-brand-gold to-[#FFF8D6] transition-all duration-100 ease-linear shadow-[0_0_15px_rgba(212,175,55,0.8)] relative"
                   style={{ width: `${progress}%` }}
                 >
                   {/* Progress tip glow */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white/80 rounded-full blur-[4px]" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white/90 rounded-full blur-[3px]" />
                 </div>
               </div>
               

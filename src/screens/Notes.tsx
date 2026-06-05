@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, X, Trash2, Search, FileText, ChevronRight, Save, Camera, Image as ImageIcon, Trash, Tag, Pin, LayoutGrid, List as ListIcon, Database, AlertCircle } from 'lucide-react';
+import { Plus, X, Trash2, Search, FileText, ChevronRight, Save, Camera, Image as ImageIcon, Trash, Tag, Pin, LayoutGrid, List as ListIcon, Database, AlertCircle, Mic, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStorage } from '../hooks/useStorage';
 import { useUndo } from '../hooks/useUndo';
@@ -119,6 +119,90 @@ export default function NotesScreen() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [newLink, setNewLink] = useState('');
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        if (!user) {
+           alert('Você precisa estar logado para enviar arquivos.');
+           return;
+        }
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64String = reader.result as string;
+          try {
+            const { uploadFileToSupabase } = await import('../lib/storage');
+            const url = await uploadFileToSupabase(
+              'templo-uploads', 
+              `notas/${user.id}/${Date.now()}_audio.webm`, 
+              base64String, 
+              'audio/webm'
+            );
+            
+            setNoteForm(prev => ({
+              ...prev,
+              attachments: [...(prev.attachments || []), {
+                name: `Áudio ${new Date().toLocaleTimeString()}`,
+                type: 'audio',
+                data: url
+              }]
+            }));
+          } catch(err) {
+            console.error('Failed to upload audio:', err);
+            alert('Falha ao enviar o áudio.');
+          }
+        };
+        reader.readAsDataURL(audioBlob);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('LOCKED_MIC', err);
+      alert('Não foi possível acessar o microfone.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    }
+  };
+
+  const formatTime = (timeInSeconds: number) => {
+     const m = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
+     const s = (timeInSeconds % 60).toString().padStart(2, '0');
+     return `${m}:${s}`;
+  };
 
   const { queueDelete } = useUndo();
 
@@ -627,7 +711,7 @@ export default function NotesScreen() {
 
             <div className="flex-1 p-6 overflow-y-auto">
                {isEditing ? (
-                 <div className="h-full flex flex-col gap-6 pb-20">
+                 <div className="h-full flex flex-col gap-6 pb-40">
                     <input 
                        className={cn(
                          "text-3xl font-black text-brand-navy border-none outline-none w-full bg-transparent placeholder:text-gray-300",
@@ -689,7 +773,28 @@ export default function NotesScreen() {
                     
                     <div className="space-y-4">
                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Anexos e Documentos</p>
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <button 
+                            onClick={isRecording ? stopRecording : startRecording}
+                            className={cn(
+                              "p-4 rounded-[20px] flex flex-col items-center justify-center gap-2 border-2 border-dashed transition-all relative overflow-hidden", 
+                              isRecording 
+                                ? "bg-red-500/10 border-red-500 text-red-500" 
+                                : settings.darkMode ? "bg-white/5 border-white/10 hover:border-brand-gold hover:text-brand-gold text-white" : "bg-white border-gray-100 hover:border-brand-gold hover:text-brand-gold text-brand-navy"
+                            )}
+                          >
+                            {isRecording && (
+                              <motion.div 
+                                className="absolute inset-0 bg-red-500/20"
+                                animate={{ opacity: [0.2, 0.5, 0.2] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                              />
+                            )}
+                            {isRecording ? <Square className="w-6 h-6 z-10 fill-current" /> : <Mic className="w-6 h-6 text-brand-copper dark:text-brand-gold z-10" />}
+                            <span className="text-[10px] uppercase font-bold tracking-widest leading-none z-10">
+                              {isRecording ? formatTime(recordingTime) : "Áudio"}
+                            </span>
+                          </button>
                           <button 
                             onClick={() => fileInputRef.current?.click()}
                             className={cn("p-4 rounded-[20px] flex flex-col items-center justify-center gap-2 border-2 border-dashed transition-all", settings.darkMode ? "bg-white/5 border-white/10 hover:border-brand-gold hover:text-brand-gold text-white" : "bg-white border-gray-100 hover:border-brand-gold hover:text-brand-gold text-brand-navy")}
@@ -738,14 +843,21 @@ export default function NotesScreen() {
                            {noteForm.attachments && noteForm.attachments.length > 0 && (
                              <div className="space-y-2">
                                {noteForm.attachments.map((att, idx) => (
-                                 <div key={idx} className={cn("flex items-center justify-between p-3 rounded-xl bg-gray-50", settings.darkMode && "bg-white/5")}>
-                                   <div className="flex items-center gap-3 overflow-hidden">
-                                     <FileText className="w-4 h-4 text-brand-copper shrink-0" />
-                                     <span className={cn("text-xs font-bold truncate", settings.darkMode && "text-white")}>{att.name}</span>
+                                 <div key={idx} className={cn("flex flex-col p-3 rounded-xl bg-gray-50 gap-2", settings.darkMode && "bg-white/5")}>
+                                   <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-3 overflow-hidden">
+                                       {att.type === 'audio' ? <Mic className="w-4 h-4 text-brand-copper shrink-0" /> : <FileText className="w-4 h-4 text-brand-copper shrink-0" />}
+                                       <span className={cn("text-xs font-bold truncate", settings.darkMode && "text-white")}>{att.name}</span>
+                                     </div>
+                                     <button onClick={() => removeAttachment(idx)} className="text-red-500 p-1">
+                                       <Trash className="w-4 h-4" />
+                                     </button>
                                    </div>
-                                   <button onClick={() => removeAttachment(idx)} className="text-red-500 p-1">
-                                     <Trash className="w-4 h-4" />
-                                   </button>
+                                   {att.type === 'audio' && (
+                                     <div className="w-full max-w-full overflow-x-auto overflow-y-hidden scrollbar-hide rounded-[20px]">
+                                       <audio controls src={att.data} className="min-w-[240px] max-w-full h-8 mt-1" />
+                                     </div>
+                                   )}
                                  </div>
                                ))}
                              </div>
@@ -796,7 +908,7 @@ export default function NotesScreen() {
                     </div>
                  </div>
                ) : (
-                 <div className="max-w-lg mx-auto pb-10 space-y-8">
+                 <div className="max-w-lg mx-auto pb-40 space-y-8">
                   <div className="space-y-1">
                     {selectedNote?.tags && selectedNote.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -848,28 +960,48 @@ export default function NotesScreen() {
                               <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Documentos ({selectedNote.attachments.length})</p>
                               <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
-                           </div>
-                           <div className="grid gap-3">
-                              {selectedNote.attachments.map((att, idx) => (
-                                 <a 
-                                    key={idx}
-                                    href={att.data}
-                                    download={att.name}
-                                    className={cn(
-                                       "flex items-center gap-4 p-4 rounded-[24px] bg-gray-50 border border-gray-100 transition-all active:scale-95",
-                                       settings.darkMode && "bg-white/5 border-white/5"
-                                    )}
-                                 >
-                                    <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
-                                       <FileText className="w-5 h-5 text-red-500" />
-                                    </div>
-                                    <div className="overflow-hidden">
-                                       <p className={cn("text-xs font-black text-brand-navy truncate", settings.darkMode && "text-white")}>{att.name}</p>
-                                       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Clique para baixar</p>
-                                    </div>
-                                 </a>
-                              ))}
-                           </div>
+                                <div className="grid gap-3">
+                              {selectedNote.attachments.map((att, idx) => {
+                                 if (att.type === 'audio') {
+                                    return (
+                                       <div key={idx} className={cn("flex flex-col gap-3 p-4 rounded-[24px] bg-gray-50 border border-gray-100", settings.darkMode && "bg-white/5 border-white/5")}>
+                                          <div className="flex items-center gap-4">
+                                             <div className="w-10 h-10 rounded-xl bg-brand-copper/10 flex items-center justify-center shrink-0">
+                                                <Mic className="w-5 h-5 text-brand-copper" />
+                                             </div>
+                                             <div className="overflow-hidden">
+                                                <p className={cn("text-xs font-black text-brand-navy truncate", settings.darkMode && "text-white")}>{att.name}</p>
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Gravado na nota</p>
+                                             </div>
+                                          </div>
+                                          <div className="w-full max-w-full overflow-x-auto overflow-y-hidden scrollbar-hide rounded-full">
+                                            <audio controls src={att.data} className="min-w-[240px] max-w-full" />
+                                          </div>
+                                       </div>
+                                    );
+                                 }
+
+                                 return (
+                                    <a 
+                                       key={idx}
+                                       href={att.data}
+                                       download={att.name}
+                                       className={cn(
+                                          "flex items-center gap-4 p-4 rounded-[24px] bg-gray-50 border border-gray-100 transition-all active:scale-95",
+                                          settings.darkMode && "bg-white/5 border-white/5"
+                                       )}
+                                    >
+                                       <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
+                                          <FileText className="w-5 h-5 text-red-500" />
+                                       </div>
+                                       <div className="overflow-hidden">
+                                          <p className={cn("text-xs font-black text-brand-navy truncate", settings.darkMode && "text-white")}>{att.name}</p>
+                                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Clique para baixar</p>
+                                       </div>
+                                    </a>
+                                 );
+                              })}
+                           </div>                        </div>
                         </div>
                      )}
 
